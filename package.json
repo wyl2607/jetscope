@@ -1,32 +1,36 @@
 {
-  "name": "safvsoil",
+  "name": "jetscope",
   "version": "0.1.0",
+  "description": "Sustainable Aviation Fuel market intelligence: real-time price benchmarking, carbon cost analysis, and procurement decision support",
   "private": true,
   "type": "module",
   "workspaces": [
     "apps/web"
   ],
   "scripts": {
-    "start": "node server.mjs",
-    "dev": "node server.mjs",
-    "check": "node --check server.mjs && node --check public/app.js && node --check server/local-persistence.mjs",
-    "test": "node --experimental-strip-types --test test/*.test.mjs packages/core/industry/__tests__/readiness.test.mjs",
-    "preflight": "npm run check && npm test && npm run web:build && npm run api:check && npm run preflight:product && npm run preflight:e2e && npm run preflight:load",
-    "preflight:product": "node scripts/preflight-product-smoke.mjs",
-    "preflight:load": "node scripts/preflight-load-test.mjs",
-    "test:e2e": "node scripts/preflight-ui-e2e.mjs",
-    "preflight:e2e": "npm run test:e2e",
-    "prototype:start": "node server.mjs",
+    "dev": "concurrently \"npm run api:dev\" \"npm run web:dev\"",
     "web:dev": "npm --prefix apps/web run dev",
     "web:build": "npm --prefix apps/web run build",
+    "web:start": "npm --prefix apps/web run start",
     "web:lint": "npm --prefix apps/web run lint",
     "web:typecheck": "npm --prefix apps/web run typecheck",
     "web:gate": "npm --prefix apps/web run gate",
-    "api:dev": "cd apps/api && uvicorn app.main:app --reload",
+    "api:dev": "cd apps/api && uvicorn app.main:app --reload --port 8000",
     "api:check": "cd apps/api && python3 -m compileall app",
-    "api:migrate": "cd apps/api && alembic upgrade head"
+    "api:migrate": "cd apps/api && alembic upgrade head",
+    "test": "node --experimental-strip-types --test test/*.test.mjs",
+    "preflight": "npm run web:gate && npm run api:check && npm test && npm run preflight:product && npm run preflight:e2e",
+    "preflight:product": "node scripts/preflight-product-smoke.mjs",
+    "preflight:e2e": "node scripts/preflight-ui-e2e.mjs",
+    "docker:up": "cd infra && docker-compose up -d",
+    "docker:down": "cd infra && docker-compose down"
   },
   "devDependencies": {
-    "@playwright/test": "^1.59.1"
+    "@playwright/test": "^1.59.1",
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
   }
 }

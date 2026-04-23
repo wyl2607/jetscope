@@ -1,202 +1,218 @@
 # JetScope
 
-> 可持续航空燃料 (SAF) 价格分析与竞争力评估工具
-> Sustainable Aviation Fuel Price Analysis & Competitiveness Dashboard
+> **Sustainable Aviation Fuel Market Intelligence**
+> 
+> Real-time price benchmarking, carbon cost analysis, and procurement decision support for European aviation operators.
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)]()
+[![Node.js](https://img.shields.io/badge/Node.js-22+-green.svg)](https://nodejs.org/)
+[![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://python.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-teal.svg)](https://fastapi.tiangolo.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
-## 快速开始
+## What is JetScope?
 
-### 前置要求
+JetScope helps aviation operators and fuel procurement teams make data-driven decisions about Sustainable Aviation Fuel (SAF) adoption. It combines real-time market data with policy analysis to answer:
 
-- **Node.js** 22+ (推荐 24 LTS)
-- **Python** 3.13+ (3.14 与 pydantic-core 暂不兼容)
-- **PostgreSQL** 15+ (可选，默认 SQLite)
-- **uv** (Python 包管理器，可选但推荐)
+- **When** is the right time to switch from fossil jet fuel to SAF?
+- **Which** SAF pathway offers the best cost-competitiveness?
+- **How much** carbon cost savings can be expected?
 
-### 安装
+### Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Real-time Market Snapshot** | Live Brent crude, jet fuel, EU ETS carbon prices, and Germany premium |
+| **SAF Route Analysis** | Cost comparison across 6 SAF pathways (HEFA, AtJ, FT-SPK, etc.) |
+| **Breakeven Calculator** | Interactive tool to find oil price thresholds where SAF becomes competitive |
+| **Policy Integration** | ReFuelEU targets and timeline visualization |
+| **Scenario Management** | Save, load, and compare procurement scenarios |
+| **Multi-language** | English, German, and Chinese (中文) support |
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- **Node.js** 22+ (with npm)
+- **Python** 3.13+ (3.14 not yet compatible with pydantic-core)
+- **PostgreSQL** 16+ (optional, SQLite works for development)
+
+### Installation
 
 ```bash
-# 克隆仓库
+# 1. Clone the repository
 git clone https://github.com/wyl2607/jetscope.git
 cd jetscope
 
-# 安装 Node 依赖
+# 2. Install Node.js dependencies
 npm install
+cd apps/web && npm install && cd ../..
 
-# 安装 Python 依赖
+# 3. Set up Python environment
 cd apps/api
-uv venv --python python3.13 .venv
+python3 -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cd ../..
+
+# 4. Configure environment
+cp .env.example .env
+# Edit .env with your settings (admin token, database URL, etc.)
+
+# 5. Initialize database
+npm run api:migrate
 ```
 
-### 运行
+### Running the Application
 
-**前端** (Next.js 16):
+**Option A: Full stack (recommended)**
 ```bash
-cd apps/web
 npm run dev
-# 打开 http://localhost:3000
 ```
+This starts both the Next.js frontend (port 3000) and FastAPI backend (port 8000).
 
-**后端** (FastAPI):
+**Option B: Separate terminals**
 ```bash
-cd apps/api
-source .venv/bin/activate
-uvicorn app.main:app --reload
-# API 文档 http://localhost:8000/docs
+# Terminal 1 - Backend
+npm run api:dev
+
+# Terminal 2 - Frontend
+npm run web:dev
 ```
 
-**数据库** (Docker，可选):
+**Option C: Docker (production-like)**
 ```bash
 cd infra
-docker compose up -d
+docker-compose up -d
 ```
 
-**一键验证**:
-```bash
-npm run preflight    # check + test + build + api-check + smoke
-```
+Then open http://localhost:3000
 
 ---
 
-## 功能特性
-
-| 功能 | 状态 | 说明 |
-|------|------|------|
-| 实时燃油价格监控 | ✅ | Brent / Jet Fuel / Rotterdam ARA |
-| EU ETS 碳价追踪 | ✅ | EEX 市场数据 |
-| SAF 竞争力分析 | ✅ | 7 条 SAF 路线盈亏平衡计算 |
-| 交互式盈亏平衡计算器 | ✅ | 可调节油价/SAF 价/碳价/Blend 率 |
-| 德国航空税溢价 | ✅ | 动态计算德国能源税影响 |
-| 场景管理 | ✅ | 保存/加载/对比分析场景 |
-| 多语言支持 | ✅ | 中文 / 英文 / 德文 |
-| 危机监控看板 | ✅ | EU 航空燃油储备预警 |
-
-### 数据来源
-
-- **Brent**: FRED `DCOILBRENTEU` / EIA Daily Prices
-- **Jet Fuel**: FRED `DJFUELUSGULF` / ARA Rotterdam
-- **EU ETS**: European Energy Exchange (EEX)
-- **Carbon Proxy**: EU CBAM + ECB EUR/USD
-- **SAF Costs**: 可编辑研究基线 (公开 API 稀缺，保留本地调整能力)
-
----
-
-## 技术栈
-
-```
-Frontend:    Next.js 16 + TypeScript 6 + Tailwind CSS 4
-Backend:     FastAPI + SQLAlchemy 2 + Pydantic 2
-Database:    SQLite (开发) / PostgreSQL (生产)
-API Style:   REST + OpenAPI 3.0
-Deployment:  Docker Compose + Nginx
-```
-
-### 项目结构
+## Architecture
 
 ```
 jetscope/
 ├── apps/
-│   ├── web/              # Next.js 前端
-│   │   ├── app/          # App Router (pages, API routes)
-│   │   ├── components/   # React 组件
-│   │   └── lib/          # 工具函数
-│   └── api/              # FastAPI 后端
-│       ├── app/          # 路由、模型、服务
-│       ├── adapters/     # 数据源适配器
-│       └── tests/        # 单元测试
-├── packages/core/        # 共享核心库
-├── infra/                # Docker Compose + Nginx
-└── docs/                 # API 契约 + 部署指南
+│   ├── web/              # Next.js 16 + TypeScript + Tailwind CSS
+│   │   ├── app/          # App router pages
+│   │   ├── components/   # Reusable UI components
+│   │   └── lib/          # Utilities and data fetching
+│   └── api/              # FastAPI + SQLAlchemy + Alembic
+│       ├── app/          # Application code
+│       │   ├── api/      # API routers
+│       │   ├── core/     # Market data pipeline
+│       │   ├── db/       # Database models
+│       │   └── services/ # Business logic
+│       └── migrations/   # Database migrations
+├── packages/core/        # Shared industry models and logic
+├── infra/                # Docker Compose + nginx config
+├── docs/                 # API contracts and deployment guides
+├── scripts/              # Preflight checks and testing
+└── test/                 # E2E and contract tests
 ```
 
 ---
 
-## API 概览
+## API Overview
 
-启动后端后访问 `http://localhost:8000/docs` 查看完整 OpenAPI 文档。
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/v1/health` | GET | Service health check |
+| `/v1/market/snapshot` | GET | Current market prices (7 metrics) |
+| `/v1/market/refresh` | POST | Force refresh market data (admin) |
+| `/v1/scenarios` | GET/POST | List/create scenarios |
+| `/v1/scenarios/{id}` | GET/PUT/DELETE | Manage specific scenario |
+| `/v1/pathways` | GET | SAF pathway cost data |
+| `/v1/policies/refuel-eu` | GET | ReFuelEU policy targets |
 
-核心端点：
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/market` | 市场数据快照 |
-| POST | `/market/refresh` | 强制刷新市场数据 |
-| GET | `/market/history` | 历史价格趋势 |
-| GET | `/scenarios` | 已保存场景列表 |
-| POST | `/scenarios` | 保存新场景 |
-| GET | `/pathways` | SAF 路线基线数据 |
-| GET | `/policies/refuel-eu` | ReFuelEU 政策时间线 |
+Full API documentation: `docs/API_CONTRACT_V1.md`
 
 ---
 
-## 可复用组件
+## Data Sources
 
-### 价格分析小工具
-
-前端核心计算逻辑位于 `packages/core/industry/`，可独立复用：
-
-```typescript
-import { calculateBreakeven } from 'packages/core/industry/readiness';
-
-const result = calculateBreakeven({
-  oilPrice: 115,        // Brent USD/bbl
-  safPrice: 1.75,       // SAF USD/L
-  euEtsPrice: 92.5,     // EUR/tCO2
-  blendRate: 6,         // SAF blend %
-  germanyPremium: 2.5,  // DE tax premium %
-});
-// result: { blendedCost, premiumVsJet, isCompetitive }
-```
-
-### 数据源适配器
-
-`apps/api/adapters/` 包含多个公开数据源的抓取适配器，可独立使用：
-
-- `euets.py` — EU ETS 价格抓取
-- `rotterdam.py` — ARA Rotterdam Jet Fuel
-- `contract.py` — 市场数据聚合
+| Metric | Source | Update Frequency |
+|--------|--------|------------------|
+| Brent Crude | FRED / EIA | Daily |
+| Jet Fuel Spot | FRED / EIA Gulf Coast | Daily |
+| EU ETS Carbon | EEX / European Commission | Hourly |
+| Germany Premium | Energy Tax Directive | Daily |
+| Rotterdam Jet | Investing.com | 4 hours |
+| SAF Proxy | EASA ReFuelEU Annual Report | Annual |
 
 ---
 
-## 部署
+## Development
 
-### 开发环境
+### Running Tests
+
 ```bash
-npm run preflight    # 完整验证
+# Unit tests
+npm test
+
+# E2E tests (requires running app)
+npm run preflight:e2e
+
+# Full preflight (build + typecheck + lint + test + smoke)
+npm run preflight
 ```
 
-### 生产部署 (Docker)
+### Project Scripts
+
+```bash
+npm run web:build      # Build Next.js for production
+npm run web:lint       # Run ESLint
+npm run web:typecheck  # TypeScript type checking
+npm run api:check      # Python syntax check
+npm run api:migrate    # Run database migrations
+npm run docker:up      # Start PostgreSQL in Docker
+```
+
+---
+
+## Deployment
+
+### Docker Compose (Recommended)
+
 ```bash
 cd infra
-docker compose -f docker-compose.prod.yml up -d
+cp ../.env.example .env  # Configure production values
+docker-compose up -d --build
 ```
 
-详见 [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)
+See `docs/DEPLOYMENT_GUIDE.md` for detailed instructions including:
+- SSL certificate setup (Let's Encrypt / Cloudflare Origin CA)
+- Environment configuration
+- Database backup strategies
+- Monitoring and alerting
 
 ---
 
-## 贡献
+## Contributing
 
-欢迎 PR 和 Issue！
+This is a research and development project. Contributions welcome:
 
-1. Fork 本仓库
-2. 创建功能分支：`git checkout -b feature/xxx`
-3. 提交前运行：`npm run preflight`
-4. 提交 PR
-
----
-
-## 许可证
-
-MIT License — 详见 LICENSE 文件
+1. Fork the repository
+2. Create a feature branch
+3. Run `npm run preflight` to ensure quality
+4. Submit a pull request
 
 ---
 
-**JetScope** © 2026 — 让 SAF 价格透明化
+## License
+
+MIT License - See [LICENSE](LICENSE) for details.
+
+---
+
+## Acknowledgments
+
+- Market data from [FRED](https://fred.stlouisfed.org/), [EIA](https://www.eia.gov/), [EEX](https://www.eex.com/)
+- Policy data from [EASA ReFuelEU](https://www.easa.europa.eu/)
+- Built with [Next.js](https://nextjs.org/), [FastAPI](https://fastapi.tiangolo.com/), [Tailwind CSS](https://tailwindcss.com/)

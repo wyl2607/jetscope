@@ -1,48 +1,61 @@
-data/local-preferences.json
-apps/web/node_modules
-apps/web/.next
-apps/web/.turbo
-apps/api/.venv
-apps/api/**/__pycache__/
-apps/api/**/*.pyc
-apps/api/.pytest_cache
-apps/api/.mypy_cache
-apps/api/.ruff_cache
-infra/postgres-data
-.omx
-SAFvsOil-notion-handoff-*.tar.gz
-docs/notion-opus-code-bundle-*.md
-docs/notion-opus-core-bundle-*.md
-docs/notion-opus-manifest-*.txt
+# Dependencies
+node_modules/
+apps/*/node_modules/
+packages/*/node_modules/
 
-# Secrets and credentials
+# Build outputs
+.next/
+apps/web/.next/
+apps/web/dist/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+apps/api/.venv/
+
+# Environment and secrets
 .env
+.env.local
 .env.*
 !.env.*.example
 
-# Workspace root ignore has `Public/`; on macOS case-insensitive FS this can
-# unintentionally hide this project's `public/` assets. Force-include them.
-!public/
-!public/**
-node_modules
-apps/*/node_modules
-packages/*/node_modules
-.next
-apps/web/.next
-apps/web/dist
-.DS_Store
-__pycache__/
-*.tsbuildinfo
+# Data and logs
+data/local-preferences.json
+infra/postgres-data/
+logs/
+webhook-logs/
+test-results/
+*.log
 
-# Archives and generated artifacts (not for GitHub)
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+*.tar.gz
+*.zip
+
+# Local development markers (not for GitHub)
+.safvsoil-root
+.jetscope-root
+
+# Documentation archives (internal only)
 docs/archive/
 archive/
-test-results/
-webhook-logs/
 .automation/
-logs/*.log
+.omx/
+.guard/
 
-# Deployment scripts (environment-specific)
-scripts/deploy-safvsoil.sh
-scripts/deploy-webhook.sh
-scripts/verify-*.sh
+# Playwright
+playwright-report/
+test-results/
