@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import JSON, DateTime, Float, ForeignKey, String, Text
+from sqlalchemy import DateTime, Enum, Float, ForeignKey, Index, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -77,3 +77,39 @@ class RefuelEuTarget(Base):
     saf_share_pct: Mapped[float] = mapped_column(Float)
     synthetic_share_pct: Mapped[float] = mapped_column(Float)
     label: Mapped[str] = mapped_column(String(120))
+
+
+class ReservesCoverage(Base):
+    __tablename__ = "reserves_coverage"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    country_iso: Mapped[str] = mapped_column(String(8), index=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    stock_days: Mapped[float] = mapped_column(Float)
+    source: Mapped[str] = mapped_column(String(80))
+    confidence: Mapped[float] = mapped_column(Float)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        Index("ix_reserves_coverage_country_iso_timestamp", "country_iso", timestamp.desc()),
+    )
+
+
+class TippingEvent(Base):
+    __tablename__ = "tipping_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    event_type: Mapped[str] = mapped_column(
+        Enum("ALERT", "CRITICAL", "CROSSOVER", name="tipping_event_type", native_enum=False, create_constraint=True),
+    )
+    gap_usd_per_litre: Mapped[float] = mapped_column(Float)
+    fossil_price: Mapped[float] = mapped_column(Float)
+    saf_effective_price: Mapped[float] = mapped_column(Float)
+    saf_pathway: Mapped[str] = mapped_column(String(120))
+    triggered_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    metadata_: Mapped[dict] = mapped_column("metadata", JSON)  # mapped as DB column `metadata`
+
+    __table_args__ = (
+        Index("ix_tipping_events_event_type_timestamp", "event_type", timestamp.desc()),
+    )
