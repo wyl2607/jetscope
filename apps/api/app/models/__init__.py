@@ -4,8 +4,10 @@ from app.models.tables import (
     MarketSnapshot,
     MarketRefreshRun,
     RefuelEuTarget,
+    ReservesCoverage,
     RouteCatalog,
     Scenario,
+    TippingEvent,
     Workspace,
     WorkspacePreference,
 )
@@ -13,9 +15,11 @@ from app.models.tables import (
 __all__ = [
     "MarketSnapshot",
     "MarketRefreshRun",
+    "ReservesCoverage",
     "RefuelEuTarget",
     "RouteCatalog",
     "Scenario",
+    "TippingEvent",
     "Workspace",
     "WorkspacePreference",
 ]
