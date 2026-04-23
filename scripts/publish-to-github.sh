@@ -30,10 +30,28 @@ emit_event "started" "publish started" "" "$COMMIT_BEFORE" ""
 echo "=== JetScope Publish ==="
 echo "Repo: $ROOT"
 
-# Strict: fail if working tree is dirty (uncommitted changes)
-if ! git diff --quiet || ! git diff --cached --quiet; then
-  echo "ERROR: Working tree is dirty. Commit or stash changes before publishing."
-  emit_event "failed" "working tree dirty" "uncommitted changes detected" "$COMMIT_BEFORE" "$COMMIT_BEFORE"
+# Strict: fail if working tree is dirty (uncommitted changes or untracked files)
+DIRTY_TRACKED=0
+DIRTY_STAGED=0
+DIRTY_UNTRACKED=0
+
+if ! git diff --quiet; then
+  DIRTY_TRACKED=1
+fi
+if ! git diff --cached --quiet; then
+  DIRTY_STAGED=1
+fi
+if [ -n "$(git ls-files --others --exclude-standard)" ]; then
+  DIRTY_UNTRACKED=1
+fi
+
+if [ "$DIRTY_TRACKED" -eq 1 ] || [ "$DIRTY_STAGED" -eq 1 ] || [ "$DIRTY_UNTRACKED" -eq 1 ]; then
+  REASON=""
+  [ "$DIRTY_TRACKED" -eq 1 ] && REASON="${REASON}modified tracked files; "
+  [ "$DIRTY_STAGED" -eq 1 ] && REASON="${REASON}staged changes; "
+  [ "$DIRTY_UNTRACKED" -eq 1 ] && REASON="${REASON}untracked files; "
+  echo "ERROR: Working tree is dirty. ${REASON}Commit or stash before publishing."
+  emit_event "failed" "working tree dirty" "${REASON}" "$COMMIT_BEFORE" "$COMMIT_BEFORE"
   exit 1
 fi
 
