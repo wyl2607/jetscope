@@ -27,3 +27,9 @@ docs/notion-opus-manifest-*.txt
 node_modules
 apps/*/node_modules
 packages/*/node_modules
+.next
+apps/web/.next
+apps/web/dist
+.DS_Store
+__pycache__/
+*.tsbuildinfo
