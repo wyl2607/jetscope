@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SAFvsOil · Home</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-theme="light" data-page="home">
+    <div id="site-header"></div>
+
+    <main class="page-main page-home">
+      <section class="page-hero">
+        <p class="eyebrow">Home · 现状快照</p>
+        <h1>今天 SAF 到底比传统航油贵多少？</h1>
+        <p class="hero-copy">首页只保留一屏摘要：当前成本差、核心信号、Top 路线，深度探索统一跳转 Explorer。</p>
+        <div id="home-hero-stat" class="hero-stat" aria-live="polite"></div>
+        <div id="runtime-status" class="status-pill-wrap" role="status" aria-live="polite" aria-atomic="true">
+          <div class="status-pill">加载中…</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>四个核心信号</h2>
+          <p>首页只显示当前比较基准、最优 SAF、全球采用率与转型信号。</p>
+        </div>
+        <div id="home-signal-grid" class="home-signal-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="panel breakeven-route-panel">
+        <div class="panel-head">
+          <h2>Top 路线（快速判断）</h2>
+          <p>只展示最接近盈亏平衡的路线，完整列表请看 Routes / Explorer。</p>
+        </div>
+        <div id="home-top-routes" class="home-top-routes" aria-live="polite"></div>
+      </section>
+
+      <section class="cta-row">
+        <a class="secondary-button" href="/explorer">打开 Explorer 探索参数</a>
+        <a class="ghost-button" href="/industry">查看行业进度</a>
+      </section>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script type="module" src="/_shared/layout.js"></script>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

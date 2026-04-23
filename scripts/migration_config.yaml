@@ -1,0 +1,49 @@
+# SAFvsOil Day 5 Production Migration Configuration
+# Zero-downtime Postgres dual-write migration
+# Version: v1.0.0-data-contract
+
+# Postgres connection (via environment variables)
+postgres:
+  host: "${POSTGRES_HOST:localhost}"
+  port: "${POSTGRES_PORT:5432}"
+  database: "${POSTGRES_DB:safvsoil_v1}"
+  user: "${POSTGRES_USER:postgres}"
+  password: "${POSTGRES_PASSWORD}"
+  ssl_mode: "${POSTGRES_SSL_MODE:require}"
+
+# Legacy API endpoint configuration
+legacy:
+  api_url: "${LEGACY_API_URL:http://localhost:8000}"
+  api_key: "${LEGACY_API_KEY}"
+  timeout_seconds: "${LEGACY_TIMEOUT:30}"
+
+# Migration parameters
+migration:
+  batch_size: "${MIGRATION_BATCH_SIZE:1000}"
+  max_retries: "${MIGRATION_MAX_RETRIES:3}"
+  retry_backoff_base: "${MIGRATION_BACKOFF_BASE:2}"
+  timeout_seconds: "${MIGRATION_TIMEOUT:30}"
+  max_concurrent_batches: "${MIGRATION_CONCURRENT_BATCHES:5}"
+
+# Logging configuration
+logging:
+  level: "${LOG_LEVEL:INFO}"
+  file: "migration.log"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# Data consistency checks
+consistency:
+  enable_verification: true
+  sample_size: "${CONSISTENCY_SAMPLE_SIZE:100}"
+  tolerance_percent: "${CONSISTENCY_TOLERANCE:5}"
+
+# Rollback configuration
+rollback:
+  enabled: true
+  checkpoint_interval_minutes: "${ROLLBACK_CHECKPOINT_INTERVAL:60}"
+  max_rollback_age_days: "${MAX_ROLLBACK_AGE_DAYS:7}"
+
+# Security (no hardcoded credentials - all via env vars)
+security:
+  validate_env_vars: true
+  require_ssl: true

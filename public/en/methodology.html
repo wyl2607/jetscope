@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SAFvsOil · Methodology</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-theme="light" data-page="methodology">
+    <div id="site-header"></div>
+
+    <main class="page-main">
+      <section class="page-hero">
+        <p class="eyebrow">Methodology</p>
+        <h1>Model assumptions and formulas</h1>
+        <p class="hero-copy">Single source of truth for formulas, constraints, and known bias.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Core formulas</h2>
+        <ul>
+          <li><code>P_effective SAF = baseCost − (carbon / 1000) × ΔCO₂ − subsidy</code></li>
+          <li><code>P_jet(proxy) = slope × crude + intercept</code></li>
+          <li><code>breakEvenCrude = (effectiveCost − intercept) / slope</code></li>
+        </ul>
+      </section>
+
+      <section class="panel">
+        <h2>State ownership</h2>
+        <ul>
+          <li>Shareable parameters live in the URL: <code>crude</code>, <code>carbon</code>, <code>subsidy</code>, <code>benchmarkMode</code>, <code>crudeSource</code>, <code>carbonSource</code>, <code>scenario</code>.</li>
+          <li>User-private overrides live in browser + server-local persistence: <code>routeEdits</code>, <code>savedScenarios</code>.</li>
+          <li>Language lives in the path: <code>/</code> and <code>/en/...</code>, not in query state.</li>
+        </ul>
+      </section>
+
+      <section class="panel">
+        <h2>Data lineage and cadence</h2>
+        <ul>
+          <li>Brent: EIA Daily Prices first, FRED Brent spot as fallback.</li>
+          <li>Jet fuel: FRED / EIA Gulf Coast jet fuel spot.</li>
+          <li>Carbon proxy: European Commission CBAM certificate price + ECB EUR/USD.</li>
+          <li>Policy timeline: ReFuelEU static baseline with quarterly manual review.</li>
+          <li>Current market-data parser version: <code>wave1-market-v2</code>.</li>
+        </ul>
+      </section>
+
+      <section class="panel">
+        <h2>Known limitations</h2>
+        <ul>
+          <li>SAF pathway costs remain research baselines with user overrides.</li>
+          <li>Carbon default uses CBAM + ECB proxy and is not full ETS trade tape.</li>
+          <li>Linear jet proxy is for quick parity exploration only.</li>
+        </ul>
+      </section>
+
+      <section class="panel">
+        <h2>Versioning and review</h2>
+        <ul>
+          <li>The Phase 0 Node prototype remains the reference implementation until Phase B URLs and semantics fully match.</li>
+          <li>Industry adoption and policy notes are currently maintained as manual research baselines with a target quarterly review cadence.</li>
+          <li>Pre-launch verification should run through <code>npm run preflight</code>.</li>
+        </ul>
+      </section>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script type="module" src="/_shared/layout.js"></script>
+  </body>
+</html>

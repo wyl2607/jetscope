@@ -1,0 +1,36 @@
+{
+  "dashboard": {
+    "market_price": "Marktpreis",
+    "carbon_intensity": "Kohlenstoffintensität",
+    "germany_premium": "Deutschland Prämie",
+    "rotterdam_port": "Rotterdam Hafen Emissionen",
+    "eu_ets_volume": "EU ETS Volumen",
+    "data_freshness": "Datenfrische",
+    "source_status": "Quellenstatus"
+  },
+  "indicators": {
+    "market_price": "SAF Preis",
+    "carbon_intensity": "Kohlenstoffintensität",
+    "germany_premium": "Deutschland Prämie",
+    "rotterdam_port": "Rotterdam Emissionen",
+    "eu_ets_volume": "ETS Volumen",
+    "freshness": "Datalalter",
+    "source_status": "Quellengesundheit"
+  },
+  "status": {
+    "fallback": "Gecachte Daten verwenden",
+    "primary": "Primäre Quelle",
+    "fallback_rate": "Fallback-Rate",
+    "last_updated": "Zuletzt aktualisiert",
+    "error": "Fehler beim Abrufen von Daten"
+  },
+  "units": {
+    "usd_per_barrel": "USD/Fass",
+    "usd_per_liter": "USD/L",
+    "eur_per_liter": "EUR/L",
+    "kg_co2_per_mwh": "kg CO2/MWh",
+    "g_co2_per_kj": "g CO2/kJ",
+    "tons_per_day": "Tonnen/Tag",
+    "pct": "%"
+  }
+}
