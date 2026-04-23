@@ -5,7 +5,8 @@ export async function proxyToApi(
   request: Request,
   apiPath: string
 ): Promise<Response> {
-  const url = `${API_BASE_URL}${API_PREFIX}${apiPath}`;
+  const requestUrl = new URL(request.url);
+  const url = `${API_BASE_URL}${API_PREFIX}${apiPath}${requestUrl.search}`;
   const headers = new Headers(request.headers);
   // Remove hop-by-hop headers that should not be forwarded
   headers.delete('host');

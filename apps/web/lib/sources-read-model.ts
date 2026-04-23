@@ -1,25 +1,11 @@
 import { buildApiUrl } from '@/lib/api-config';
-
-type SourceEntry = {
-  source?: string;
-  status?: string;
-  value?: number;
-  error?: string;
-  note?: string;
-  region?: string;
-  market_scope?: string;
-  lag_minutes?: number | null;
-  confidence_score?: number;
-  fallback_used?: boolean;
-  cbam_eur?: number;
-  usd_per_eur?: number;
-};
+import type { SourceCoverageMetric, SourceCoverageResponse } from '@/lib/source-coverage-contract';
 
 type MarketSnapshot = {
   generated_at: string;
   source_status: { overall: string };
   values: Record<string, number>;
-  source_details?: Record<string, SourceEntry>;
+  source_details?: Record<string, DisplaySupplement>;
 };
 
 type MarketHistoryMetric = {
@@ -42,6 +28,7 @@ type MarketHistory = {
 export type SourcesReadModel = {
   generatedAt: string;
   overallStatus: string;
+  coverageMetrics: SourceCoverageMetric[];
   rows: Array<{
     surface: string;
     metricKey: string;
@@ -60,74 +47,45 @@ export type SourcesReadModel = {
   }>;
   isFallback: boolean;
   error: string | null;
+  completeness: number;
+  degraded: boolean;
 };
 
-const FALLBACK_ROWS: SourcesReadModel["rows"] = [
-  {
-    surface: "Brent",
-    metricKey: "brent_usd_per_bbl",
-    source: "FRED / EIA",
-    scope: "global · benchmark",
-    confidence: "0.70",
-    lag: "n/a",
-    status: "seed",
-    value: "114.93 USD/bbl",
-    change1d: "n/a",
-    change7d: "n/a",
-    change30d: "n/a",
-    alertLevel: "normal",
-    sparkline: "",
-    note: "Fallback baseline"
-  },
-  {
-    surface: "Jet fuel",
-    metricKey: "jet_usd_per_l",
-    source: "FRED Gulf Coast",
-    scope: "us · statistical_series",
-    confidence: "0.70",
-    lag: "n/a",
-    status: "seed",
-    value: "0.99 USD/L",
-    change1d: "n/a",
-    change7d: "n/a",
-    change30d: "n/a",
-    alertLevel: "normal",
-    sparkline: "",
-    note: "Fallback baseline"
-  },
-  {
-    surface: "Carbon proxy",
-    metricKey: "carbon_proxy_usd_per_t",
-    source: "CBAM + ECB FX",
-    scope: "eu · regulatory_proxy",
-    confidence: "0.70",
-    lag: "n/a",
-    status: "seed",
-    value: "88.79 USD/tCO2",
-    change1d: "n/a",
-    change7d: "n/a",
-    change30d: "n/a",
-    alertLevel: "normal",
-    sparkline: "",
-    note: "Fallback baseline"
-  },
-  {
-    surface: "Jet fuel (EU proxy)",
-    metricKey: "jet_eu_proxy_usd_per_l",
-    source: "Derived from Brent",
-    scope: "eu · derived_proxy",
-    confidence: "0.65",
-    lag: "n/a",
-    status: "seed",
-    value: "0.99 USD/L",
-    change1d: "n/a",
-    change7d: "n/a",
-    change30d: "n/a",
-    alertLevel: "normal",
-    sparkline: "",
-    note: "Fallback baseline"
-  }
-];
+const PRIMARY_METRIC_ORDER = [
+  'brent_usd_per_bbl',
+  'jet_usd_per_l',
+  'carbon_proxy_usd_per_t',
+  'jet_eu_proxy_usd_per_l',
+  'rotterdam_jet_fuel_usd_per_l',
+  'eu_ets_price_eur_per_t',
+  'germany_premium_pct'
+] as const;
+
+// LEGACY DISPLAY-ONLY BRIDGE — temporary mapping from canonical metric_key
+// to the legacy source_detail key used in MarketSnapshot.source_details.
+// This bridge is DISPLAY-ONLY. It must never be used for source/scope/status/
+// confidence/lag decisions. Those fields come from SourceCoverageMetric.
+// TODO: Remove once backend inlines display supplements (error, cbam_eur,
+// note, etc.) into SourceCoverageMetric.
+const SOURCE_DETAIL_KEY_BY_METRIC: Record<string, string> = {
+  brent_usd_per_bbl: 'brent',
+  jet_usd_per_l: 'jet',
+  carbon_proxy_usd_per_t: 'carbon',
+  jet_eu_proxy_usd_per_l: 'jet_eu_proxy',
+  rotterdam_jet_fuel_usd_per_l: 'rotterdam_jet_fuel',
+  eu_ets_price_eur_per_t: 'eu_ets',
+  germany_premium_pct: 'germany_premium'
+};
+
+const SURFACE_LABELS: Record<string, string> = {
+  brent_usd_per_bbl: 'Brent',
+  jet_usd_per_l: 'Jet fuel',
+  carbon_proxy_usd_per_t: 'Carbon proxy',
+  jet_eu_proxy_usd_per_l: 'Jet fuel (EU proxy)',
+  rotterdam_jet_fuel_usd_per_l: 'Rotterdam jet fuel',
+  eu_ets_price_eur_per_t: 'EU ETS',
+  germany_premium_pct: 'Germany premium'
+};
 
 function formatNumber(value: number, digits = 2) {
   return Number(value).toLocaleString("en-US", {
@@ -144,6 +102,10 @@ function sourceLabel(raw?: string) {
   if (raw === "ara-rotterdam-public") return "ARA/Rotterdam (public)";
   if (raw === "brent-derived") return "Brent-derived fallback";
   return raw;
+}
+
+function surfaceLabel(metricKey: string) {
+  return SURFACE_LABELS[metricKey] ?? metricKey;
 }
 
 function statusLabel(raw?: string) {
@@ -201,120 +163,161 @@ function metricHistoryFor(history: MarketHistory | null, key: string): MarketHis
   return history.metrics[key] ?? null;
 }
 
-function buildRows(snapshot: MarketSnapshot, history: MarketHistory | null): SourcesReadModel["rows"] {
-  const details = snapshot.source_details ?? {};
-  const brent = details.brent ?? {};
-  const jet = details.jet ?? {};
-  const carbon = details.carbon ?? {};
-  const jetEuProxy = details.jet_eu_proxy ?? {};
-  const brentHistory = metricHistoryFor(history, "brent_usd_per_bbl");
-  const jetHistory = metricHistoryFor(history, "jet_usd_per_l");
-  const carbonHistory = metricHistoryFor(history, "carbon_proxy_usd_per_t");
-  const jetEuProxyHistory = metricHistoryFor(history, "jet_eu_proxy_usd_per_l");
-
-  return [
-    {
-      surface: "Brent",
-      metricKey: "brent_usd_per_bbl",
-      source: sourceLabel(brent.source),
-      scope: `${brent.region ?? "unknown"} · ${brent.market_scope ?? "unknown"}`,
-      confidence: Number.isFinite(brent.confidence_score ?? NaN)
-        ? Number(brent.confidence_score).toFixed(2)
-        : "n/a",
-      lag: formatLagMinutes(brent.lag_minutes),
-      status: statusLabel(brent.status),
-      value: `${formatNumber(snapshot.values.brent_usd_per_bbl)} USD/bbl`,
-      change1d: formatChange(brentHistory?.change_pct_1d),
-      change7d: formatChange(brentHistory?.change_pct_7d),
-      change30d: formatChange(brentHistory?.change_pct_30d),
-      alertLevel: computeAlertLevel(brentHistory),
-      sparkline: encodeSparklinePoints(brentHistory?.points ?? []),
-      note: brent.error ?? `${brent.note ?? "live"}${brent.fallback_used ? " | fallback" : ""}`
-    },
-    {
-      surface: "Jet fuel",
-      metricKey: "jet_usd_per_l",
-      source: sourceLabel(jet.source),
-      scope: `${jet.region ?? "unknown"} · ${jet.market_scope ?? "unknown"}`,
-      confidence: Number.isFinite(jet.confidence_score ?? NaN)
-        ? Number(jet.confidence_score).toFixed(2)
-        : "n/a",
-      lag: formatLagMinutes(jet.lag_minutes),
-      status: statusLabel(jet.status),
-      value: `${formatNumber(snapshot.values.jet_usd_per_l, 3)} USD/L`,
-      change1d: formatChange(jetHistory?.change_pct_1d),
-      change7d: formatChange(jetHistory?.change_pct_7d),
-      change30d: formatChange(jetHistory?.change_pct_30d),
-      alertLevel: computeAlertLevel(jetHistory),
-      sparkline: encodeSparklinePoints(jetHistory?.points ?? []),
-      note: jet.error ?? `${jet.note ?? "live"}${jet.fallback_used ? " | fallback" : ""}`
-    },
-    {
-      surface: "Carbon proxy",
-      metricKey: "carbon_proxy_usd_per_t",
-      source: sourceLabel(carbon.source),
-      scope: `${carbon.region ?? "unknown"} · ${carbon.market_scope ?? "unknown"}`,
-      confidence: Number.isFinite(carbon.confidence_score ?? NaN)
-        ? Number(carbon.confidence_score).toFixed(2)
-        : "n/a",
-      lag: formatLagMinutes(carbon.lag_minutes),
-      status: statusLabel(carbon.status),
-      value: `${formatNumber(snapshot.values.carbon_proxy_usd_per_t)} USD/tCO2`,
-      change1d: formatChange(carbonHistory?.change_pct_1d),
-      change7d: formatChange(carbonHistory?.change_pct_7d),
-      change30d: formatChange(carbonHistory?.change_pct_30d),
-      alertLevel: computeAlertLevel(carbonHistory),
-      sparkline: encodeSparklinePoints(carbonHistory?.points ?? []),
-      note:
-        carbon.error ??
-        (typeof carbon.cbam_eur === "number" && typeof carbon.usd_per_eur === "number"
-          ? `CBAM ${formatNumber(carbon.cbam_eur)} EUR × FX ${formatNumber(carbon.usd_per_eur, 4)}`
-          : `${carbon.note ?? "live"}${carbon.fallback_used ? " | fallback" : ""}`)
-    },
-    {
-      surface: "Jet fuel (EU proxy)",
-      metricKey: "jet_eu_proxy_usd_per_l",
-      source: sourceLabel(jetEuProxy.source),
-      scope: `${jetEuProxy.region ?? "eu"} · ${jetEuProxy.market_scope ?? "derived_proxy"}`,
-      confidence: Number.isFinite(jetEuProxy.confidence_score ?? NaN)
-        ? Number(jetEuProxy.confidence_score).toFixed(2)
-        : "0.65",
-      lag: formatLagMinutes(jetEuProxy.lag_minutes),
-      status: statusLabel(jetEuProxy.status ?? "derived"),
-      value: `${formatNumber(snapshot.values.jet_eu_proxy_usd_per_l ?? snapshot.values.jet_usd_per_l, 3)} USD/L`,
-      change1d: formatChange(jetEuProxyHistory?.change_pct_1d),
-      change7d: formatChange(jetEuProxyHistory?.change_pct_7d),
-      change30d: formatChange(jetEuProxyHistory?.change_pct_30d),
-      alertLevel: computeAlertLevel(jetEuProxyHistory),
-      sparkline: encodeSparklinePoints(jetEuProxyHistory?.points ?? []),
-      note:
-        jetEuProxy.error ??
-        `${jetEuProxy.note ?? "ARA/Rotterdam primary feed with Brent-derived fallback"}${jetEuProxy.fallback_used ? " | fallback" : ""}`
-    }
-  ];
+function formatMetricValue(metricKey: string, value: number | undefined): string {
+  if (!Number.isFinite(value ?? NaN)) {
+    return 'n/a';
+  }
+  if (metricKey === 'brent_usd_per_bbl') {
+    return `${formatNumber(Number(value))} USD/bbl`;
+  }
+  if (metricKey === 'germany_premium_pct') {
+    return `${formatNumber(Number(value), 1)}%`;
+  }
+  if (metricKey === 'carbon_proxy_usd_per_t') {
+    return `${formatNumber(Number(value))} USD/tCO2`;
+  }
+  if (metricKey === 'eu_ets_price_eur_per_t') {
+    return `${formatNumber(Number(value))} EUR/tCO2`;
+  }
+  return `${formatNumber(Number(value), 3)} USD/L`;
 }
 
-function fallback(error: unknown): SourcesReadModel {
+// DISPLAY-ONLY SUPPLEMENT — fields that backend does not yet inline into
+// SourceCoverageMetric but are useful for note rendering only.
+// This type must never expand to include source/scope/status/confidence/lag.
+type DisplaySupplement = {
+  error?: string;
+  note?: string;
+  cbam_eur?: number;
+  usd_per_eur?: number;
+};
+
+function extractDisplaySupplement(snapshot: MarketSnapshot, metricKey: string): DisplaySupplement | null {
+  const detail = snapshot.source_details?.[metricKey] ?? snapshot.source_details?.[SOURCE_DETAIL_KEY_BY_METRIC[metricKey] ?? ''];
+  if (!detail) {
+    return null;
+  }
   return {
-    generatedAt: new Date().toISOString(),
-    overallStatus: "degraded",
-    rows: FALLBACK_ROWS,
+    error: detail.error,
+    note: detail.note,
+    cbam_eur: detail.cbam_eur,
+    usd_per_eur: detail.usd_per_eur
+  };
+}
+
+function buildMetricNote(metric: SourceCoverageMetric, supplement?: DisplaySupplement | null): string {
+  if (supplement?.error) {
+    return supplement.error;
+  }
+  if (typeof supplement?.cbam_eur === 'number' && typeof supplement.usd_per_eur === 'number') {
+    return `CBAM ${formatNumber(supplement.cbam_eur)} EUR × FX ${formatNumber(supplement.usd_per_eur, 4)}`;
+  }
+  const parts: string[] = [];
+  if (supplement?.note) {
+    parts.push(supplement.note);
+  }
+  if (metric.fallback_used) {
+    parts.push('fallback');
+  }
+  return parts.join(' | ') || 'live';
+}
+
+function sortCoverageMetrics(metrics: SourceCoverageMetric[]): SourceCoverageMetric[] {
+  const order = new Map<string, number>(PRIMARY_METRIC_ORDER.map((metricKey, index) => [metricKey, index]));
+  return [...metrics].sort((left, right) => {
+    const leftOrder = order.get(left.metric_key) ?? Number.MAX_SAFE_INTEGER;
+    const rightOrder = order.get(right.metric_key) ?? Number.MAX_SAFE_INTEGER;
+    return leftOrder - rightOrder || left.metric_key.localeCompare(right.metric_key);
+  });
+}
+
+function buildRows(
+  snapshot: MarketSnapshot,
+  history: MarketHistory | null,
+  coverageMetrics: SourceCoverageMetric[]
+): SourcesReadModel['rows'] {
+  return coverageMetrics.map((metric) => {
+    const historyMetric = metricHistoryFor(history, metric.metric_key);
+    const supplement = extractDisplaySupplement(snapshot, metric.metric_key);
+    const snapshotValue = snapshot.values[metric.metric_key];
+
+    return {
+      surface: surfaceLabel(metric.metric_key),
+      metricKey: metric.metric_key,
+      source: sourceLabel(metric.source_name),
+      scope: `${metric.region} · ${metric.market_scope}`,
+      confidence: Number.isFinite(metric.confidence_score) ? metric.confidence_score.toFixed(2) : 'n/a',
+      lag: formatLagMinutes(metric.lag_minutes),
+      status: statusLabel(metric.status),
+      value: formatMetricValue(metric.metric_key, snapshotValue),
+      change1d: formatChange(historyMetric?.change_pct_1d),
+      change7d: formatChange(historyMetric?.change_pct_7d),
+      change30d: formatChange(historyMetric?.change_pct_30d),
+      alertLevel: computeAlertLevel(historyMetric),
+      sparkline: encodeSparklinePoints(historyMetric?.points ?? []),
+      note: buildMetricNote(metric, supplement)
+    };
+  });
+}
+
+function buildGenericFallbackCoverageMetrics(): SourceCoverageMetric[] {
+  return PRIMARY_METRIC_ORDER.map((metricKey) => ({
+    metric_key: metricKey,
+    source_name: 'coverage unavailable',
+    source_type: 'unknown',
+    confidence_score: 0,
+    lag_minutes: null,
+    fallback_used: true,
+    status: 'unknown',
+    region: 'unknown',
+    market_scope: 'coverage_unavailable'
+  }));
+}
+
+function emptySnapshot(): MarketSnapshot {
+  return {
+    generated_at: new Date().toISOString(),
+    source_status: { overall: 'degraded' },
+    values: {},
+    source_details: {}
+  };
+}
+
+function fallback(
+  error: unknown,
+  snapshot: MarketSnapshot = emptySnapshot(),
+  history: MarketHistory | null = null
+): SourcesReadModel {
+  const coverageMetrics = buildGenericFallbackCoverageMetrics();
+  return {
+    generatedAt: snapshot.generated_at,
+    overallStatus: snapshot.source_status?.overall ?? 'degraded',
+    coverageMetrics,
+    rows: buildRows(snapshot, history, coverageMetrics),
     isFallback: true,
-    error: error instanceof Error ? error.message : "unknown error"
+    error: error instanceof Error ? error.message : "unknown error",
+    completeness: 0.0,
+    degraded: true
   };
 }
 
 export async function getSourcesReadModel(): Promise<SourcesReadModel> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5000);
+  let snapshotPayload: MarketSnapshot | undefined;
+  let historyPayload: MarketHistory | null = null;
   try {
-    const [snapshotResponse, historyResponse] = await Promise.all([
+    const [snapshotResponse, historyResponse, coverageResponse] = await Promise.all([
       fetch(buildApiUrl("/market/snapshot"), {
         cache: "no-store",
         signal: controller.signal
       }),
       fetch(buildApiUrl("/market/history"), {
         cache: "no-store",
+        signal: controller.signal
+      }),
+      fetch(buildApiUrl("/sources/coverage"), {
+        cache: 'no-store',
         signal: controller.signal
       })
     ]);
@@ -323,20 +326,31 @@ export async function getSourcesReadModel(): Promise<SourcesReadModel> {
       throw new Error(`snapshot HTTP ${snapshotResponse.status}`);
     }
 
-    const snapshotPayload = (await snapshotResponse.json()) as MarketSnapshot;
-    const historyPayload = historyResponse.ok
+    snapshotPayload = (await snapshotResponse.json()) as MarketSnapshot;
+    historyPayload = historyResponse.ok
       ? ((await historyResponse.json()) as MarketHistory)
       : null;
+    const coveragePayload = coverageResponse.ok
+      ? ((await coverageResponse.json()) as SourceCoverageResponse)
+      : null;
+    if (!coveragePayload?.metrics?.length) {
+      throw new Error('coverage contract missing metrics');
+    }
+    const coverageMetrics = sortCoverageMetrics(coveragePayload.metrics);
 
+    const completeness = coveragePayload?.completeness ?? (coverageMetrics.length / PRIMARY_METRIC_ORDER.length);
     return {
-      generatedAt: snapshotPayload.generated_at,
+      generatedAt: coveragePayload?.generated_at ?? snapshotPayload.generated_at,
       overallStatus: snapshotPayload.source_status?.overall ?? "unknown",
-      rows: buildRows(snapshotPayload, historyPayload),
+      coverageMetrics,
+      rows: buildRows(snapshotPayload, historyPayload, coverageMetrics),
       isFallback: false,
-      error: null
+      error: null,
+      completeness,
+      degraded: coveragePayload?.degraded ?? completeness < 1.0
     };
   } catch (error) {
-    return fallback(error);
+    return fallback(error, snapshotPayload, historyPayload);
   } finally {
     clearTimeout(timeout);
   }

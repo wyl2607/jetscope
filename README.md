@@ -192,6 +192,23 @@ See `docs/DEPLOYMENT_GUIDE.md` for detailed instructions including:
 - Database backup strategies
 - Monitoring and alerting
 
+### Unified Release Flow
+
+```bash
+cd ~/projects/jetscope
+source scripts/safenv
+npm run release
+```
+
+This release entrypoint now standardizes the expected sequence after a successful improvement:
+- run full local `preflight`
+- sync the workspace to configured nodes
+- publish `main` to GitHub
+- trigger `usa-vps` deployment via `/opt/jetscope/scripts/auto-deploy.sh`
+- require the VPS to deploy the exact local `HEAD` commit, not just “latest when checked”
+
+Project deployment memory now lives in `OPERATIONS.md`. Future work should treat that file as the default operational source of truth.
+
 ---
 
 ## Contributing

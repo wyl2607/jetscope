@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import httpx
 from sqlalchemy import select, text
@@ -147,6 +147,12 @@ SOURCE_CONTEXT: dict[str, dict[str, object]] = {
 
 def _round(value: float, digits: int = 2) -> float:
     return round(float(value), digits)
+
+
+def _ensure_utc_datetime(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
 
 def _to_usd_per_l_from_usd_per_gal(value: float) -> float:
@@ -796,11 +802,13 @@ def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
     if latest_run is None:
         overall_status = "ok"
         source_details: dict[str, object] = {}
+        refreshed_at = generated_at
     else:
         overall_status = latest_run.source_status
         if overall_status not in {"ok", "degraded", "error", "seed"}:
             overall_status = "ok"
         source_details = latest_run.sources if isinstance(latest_run.sources, dict) else {}
+        refreshed_at = latest_run.refreshed_at
 
     typed_source_details: dict[str, MarketSourceDetail] = {}
     for key, raw in source_details.items():
@@ -830,11 +838,26 @@ def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
             fallback_used=bool(raw.get("fallback_used", False)),
             cbam_eur=float(raw["cbam_eur"]) if raw.get("cbam_eur") is not None else None,
             usd_per_eur=float(raw["usd_per_eur"]) if raw.get("usd_per_eur") is not None else None,
-        )
+            )
+
+    confidence_values = [detail.confidence_score for detail in typed_source_details.values()]
+    fallback_count = sum(1 for detail in typed_source_details.values() if detail.fallback_used)
+    confidence = _round(sum(confidence_values) / len(confidence_values), 3) if confidence_values else 1.0
+    fallback_rate = _round((fallback_count / len(typed_source_details)) * 100.0, 2) if typed_source_details else 0.0
+    freshness_minutes = max(
+        0,
+        int((utcnow() - _ensure_utc_datetime(refreshed_at)).total_seconds() // 60),
+    )
 
     return MarketSnapshotResponse(
         generated_at=generated_at,
-        source_status=SourceStatus(overall=str(overall_status)),
+        source_status=SourceStatus(
+            overall=str(overall_status),
+            confidence=confidence,
+            freshness_minutes=freshness_minutes,
+            fallback_rate=fallback_rate,
+            is_fallback=fallback_count > 0,
+        ),
         values=values,
         source_details=typed_source_details,
     )

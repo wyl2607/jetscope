@@ -40,9 +40,9 @@ async def _market_refresh_loop(interval_seconds: int) -> None:
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="SAFvsOil API",
+        title="JetScope API",
         version="0.1.0",
-        description="Product scaffold for SAF vs Oil data, scenarios, and assumptions.",
+        description="Aviation fuel transition intelligence API",
     )
     app.include_router(api_router, prefix=settings.api_prefix)
     app.state.market_refresh_task = None

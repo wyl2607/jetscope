@@ -1,0 +1,97 @@
+import { listCanonicalPathways } from '@core/aviation/pathways';
+
+type TippingPointPathway = {
+  pathway_key: string;
+  display_name: string;
+  net_cost_low_usd_per_l: number;
+  net_cost_high_usd_per_l: number;
+  spread_low_pct: number;
+  spread_high_pct: number;
+  status: string;
+};
+
+type Props = {
+  pathways: TippingPointPathway[];
+  selectedPathwayKey: string;
+};
+
+const maturityLabels: Record<string, string> = {
+  commercial: 'Commercial',
+  scaling: 'Scaling',
+  limited: 'Limited',
+  future: 'Future'
+};
+
+const canonicalByKey = new Map<string, (typeof listCanonicalPathways extends () => (infer T)[] ? T : never)>(
+  listCanonicalPathways().map((pathway) => [pathway.pathwayKey, pathway])
+);
+
+function formatRange(low: number, high: number): string {
+  return `$${low.toFixed(2)}–$${high.toFixed(2)}/L`;
+}
+
+export function SafPathwayComparisonTable({ pathways, selectedPathwayKey }: Props) {
+  return (
+    <section className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
+      <div className="mb-4">
+        <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
+          SAF pathway comparison
+        </h4>
+        <p className="mt-2 text-sm text-slate-500">
+          Canonical pathway catalog with live net-cost bands from the tipping-point contract.
+        </p>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-left text-sm text-slate-300">
+          <thead>
+            <tr className="border-b border-slate-800 text-slate-500">
+              <th className="py-3 pr-4">Pathway</th>
+              <th className="py-3 pr-4">Net cost</th>
+              <th className="py-3 pr-4">CO₂ reduction</th>
+              <th className="py-3 pr-4">Maturity</th>
+              <th className="py-3 pr-4">Status</th>
+              <th className="py-3">Spread</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pathways.map((pathway) => {
+              const canonical = canonicalByKey.get(pathway.pathway_key);
+              const isSelected = pathway.pathway_key === selectedPathwayKey;
+              const rowClass = isSelected ? 'bg-sky-950/25 ring-1 ring-sky-400/40' : '';
+              const statusColor =
+                pathway.status === 'competitive'
+                  ? 'text-emerald-300'
+                  : pathway.status === 'inflection'
+                    ? 'text-amber-300'
+                    : 'text-rose-300';
+              return (
+                <tr key={pathway.pathway_key} className={`border-b border-slate-900 last:border-none ${rowClass}`}>
+                  <td className="py-3 pr-4">
+                    <div className="font-medium text-white">{pathway.display_name}</div>
+                    <div className="text-xs text-slate-500">{pathway.pathway_key}</div>
+                  </td>
+                  <td className="py-3 pr-4">
+                    {formatRange(pathway.net_cost_low_usd_per_l, pathway.net_cost_high_usd_per_l)}
+                  </td>
+                  <td className="py-3 pr-4">
+                    {canonical
+                      ? `${canonical.carbonReductionLowPct.toFixed(0)}–${canonical.carbonReductionHighPct.toFixed(0)}%`
+                      : 'n/a'}
+                  </td>
+                  <td className="py-3 pr-4">
+                    {canonical ? maturityLabels[canonical.maturityLevel] ?? canonical.maturityLevel : 'n/a'}
+                  </td>
+                  <td className={`py-3 pr-4 font-medium ${statusColor}`}>{pathway.status}</td>
+                  <td className="py-3">
+                    {pathway.spread_low_pct.toFixed(1)}% to {pathway.spread_high_pct.toFixed(1)}%
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}

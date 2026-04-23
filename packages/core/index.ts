@@ -2,3 +2,8 @@ export * from './industry/countries.ts';
 export * from './industry/airlines.ts';
 export * from './industry/policyTimeline.ts';
 export * from './industry/readiness.ts';
+export * from './aviation/entities.ts';
+export * from './aviation/pathways.ts';
+export * from './aviation/scenarios.ts';
+export * from './aviation/modules.ts';
+export * from './aviation/units.ts';

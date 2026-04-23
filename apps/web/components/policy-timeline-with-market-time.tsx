@@ -17,7 +17,7 @@ export function PolicyTimelineWithMarketTime() {
   useEffect(() => {
     const fetchMarketTime = async () => {
       try {
-        const response = await fetch('/api/market/snapshot');
+        const response = await fetch('/api/market');
         if (!response.ok) {
           throw new Error(`API error: ${response.status}`);
         }

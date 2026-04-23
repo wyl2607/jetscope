@@ -1,4 +1,5 @@
 import { InfoCard } from '@/components/cards';
+import { SourceCoveragePanel } from '@/components/source-coverage-panel';
 import { Shell } from '@/components/shell';
 import { getSourcesReadModel } from '@/lib/sources-read-model';
 import type { Metadata } from 'next';
@@ -68,6 +69,15 @@ export default async function SourcesPage({
       description="该页已接通 FastAPI market snapshot 来源状态。显示每个关键来源的状态、数值与错误信息。"
     >
       <FocusScroll focusMetricKey={focusMetricKey} />
+      <div className="mb-6">
+        <SourceCoveragePanel
+          metrics={readModel.coverageMetrics}
+          completeness={readModel.completeness}
+          degraded={readModel.degraded}
+          title="API source coverage"
+          subtitle={`${readModel.coverageMetrics.length} canonical metrics · last updated ${new Date(readModel.generatedAt).toLocaleString()}`}
+        />
+      </div>
       <InfoCard title="Live source matrix" subtitle={`overall=${readModel.overallStatus}`}>
         <p className="mb-3 text-xs text-slate-400">
           generated_at: {new Date(readModel.generatedAt).toLocaleString()}

@@ -120,7 +120,7 @@ async function fetchText(url, init) {
 async function run() {
   const apiPort = randomPort();
   const webPort = randomPort(50001, 65000);
-  const tempDir = mkdtempSync(join(tmpdir(), 'safvsoil-smoke-'));
+  const tempDir = mkdtempSync(join(tmpdir(), 'jetscope-smoke-'));
   const sqlitePath = join(tempDir, 'smoke.db');
 
   let apiProc = null;
@@ -135,11 +135,11 @@ async function run() {
         cwd: join(rootDir, 'apps/api'),
         env: {
           ...process.env,
-          SAFVSOIL_DATABASE_URL: `sqlite+pysqlite:///${sqlitePath}`,
-          SAFVSOIL_SCHEMA_BOOTSTRAP_MODE: 'alembic',
-          SAFVSOIL_MARKET_REFRESH_INTERVAL_SECONDS: '0',
-          SAFVSOIL_ADMIN_TOKEN: adminToken,
-          SAFVSOIL_API_PREFIX: '/v1'
+          JETSCOPE_DATABASE_URL: `sqlite+pysqlite:///${sqlitePath}`,
+          JETSCOPE_SCHEMA_BOOTSTRAP_MODE: 'alembic',
+          JETSCOPE_MARKET_REFRESH_INTERVAL_SECONDS: '0',
+          JETSCOPE_ADMIN_TOKEN: adminToken,
+          JETSCOPE_API_PREFIX: '/v1'
         }
       }
     );
@@ -149,7 +149,7 @@ async function run() {
     webProc = startProcess(
       'web',
       'npm',
-      ['--prefix', 'apps/web', 'run', 'dev', '--', '--hostname', '127.0.0.1', '--port', String(webPort)],
+      ['--prefix', 'apps/web', 'run', 'start', '--', '--hostname', '127.0.0.1', '--port', String(webPort)],
       {
         cwd: rootDir,
         env: {

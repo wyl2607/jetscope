@@ -2,21 +2,10 @@ import { InfoCard, MetricCard } from '@/components/cards';
 import { Shell } from '@/components/shell';
 import { PolicyTimelineWithMarketTime } from '@/components/policy-timeline-with-market-time';
 import { PriceTrendsChart } from '@/components/price-trends-chart';
+import { computeDashboardAlertBanners } from '@/lib/market-signals';
 import { getDashboardReadModel, getPriceTrendChartReadModel, type DashboardReadModel } from '@/lib/product-read-model';
 import type { Metadata } from 'next';
 import { buildPageMetadata } from '@/lib/seo';
-
-// ---------------------------------------------------------------------------
-// Alert banner thresholds — env-overrideable
-// ---------------------------------------------------------------------------
-function envNumber(name: string, defaultValue: number): number {
-  const raw = process.env[name];
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : defaultValue;
-}
-
-const JET_PRICE_ALERT_THRESHOLD_USD_PER_L = envNumber('SAFVSOIL_ALERT_JET_PRICE_USD_PER_L', 1.30);
-const BRENT_DAILY_CHANGE_ALERT_PCT = envNumber('SAFVSOIL_ALERT_BRENT_DAILY_CHANGE_PCT', 5.0);
 
 const priorities = [
   'Real-time market data: Brent crude, jet fuel proxy, EU ETS carbon',
@@ -25,53 +14,6 @@ const priorities = [
   'Export & reporting: charts, snapshots, scenario comparison'
 ];
 
-type AlertBanner = {
-  level: 'alert' | 'watch';
-  title: string;
-  message: string;
-  href?: string;
-};
-
-function computeAlertBanners(
-  market: DashboardReadModel['market'],
-  risk: DashboardReadModel['topRiskSignal']
-): AlertBanner[] {
-  const banners: AlertBanner[] = [];
-  const values = market?.values ?? {};
-
-  const jetEu = values.jet_eu_proxy_usd_per_l ?? values.jet_usd_per_l ?? 0;
-  if (Number.isFinite(jetEu) && jetEu >= JET_PRICE_ALERT_THRESHOLD_USD_PER_L) {
-    banners.push({
-      level: 'alert',
-      title: 'Jet Fuel Price Alert',
-      message: `EU jet proxy reached $${jetEu.toFixed(3)}/L (threshold $${JET_PRICE_ALERT_THRESHOLD_USD_PER_L.toFixed(2)}/L). Short-haul margins under severe pressure.`,
-      href: '/crisis/eu-jet-reserves'
-    });
-  }
-
-  const brent1d = risk?.metricKey === 'brent_usd_per_bbl' && risk.window === '1d' ? risk.changePct : undefined;
-  if (Number.isFinite(brent1d ?? NaN) && Math.abs(brent1d!) >= BRENT_DAILY_CHANGE_ALERT_PCT) {
-    const direction = (brent1d! > 0) ? 'surged' : 'dropped';
-    banners.push({
-      level: 'alert',
-      title: 'SAF Inflection Alert',
-      message: `Brent ${direction} ${Math.abs(brent1d!).toFixed(2)}% in 1d. SAF competitiveness gap narrowing rapidly.`,
-      href: '/crisis/eu-jet-reserves'
-    });
-  }
-
-  // General watch: if any metric moved >10% in 1d but not yet at alert threshold
-  if (risk && risk.level === 'watch' && risk.window === '1d' && banners.length === 0) {
-    banners.push({
-      level: 'watch',
-      title: 'Market Watch',
-      message: `${risk.metric} moved ${risk.changePct > 0 ? '+' : ''}${risk.changePct.toFixed(2)}% in 1d. Monitor for inflection signals.`,
-      href: '/sources'
-    });
-  }
-
-  return banners;
-}
 
 export const dynamic = 'force-dynamic';
 
@@ -115,7 +57,7 @@ export default async function DashboardPage() {
       ? 'No history signal available yet'
       : `level=${risk.level} | as_of=${formatAsOf(risk.latestAsOf)} | samples=${risk.sampleCount}`;
 
-  const alertBanners = computeAlertBanners(readModel.market, risk);
+  const alertBanners = computeDashboardAlertBanners(readModel.market, risk);
 
   return (
     <Shell

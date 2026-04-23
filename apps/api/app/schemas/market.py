@@ -5,6 +5,10 @@ from pydantic import BaseModel, Field
 
 class SourceStatus(BaseModel):
     overall: str
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    freshness_minutes: int | None = None
+    fallback_rate: float | None = Field(default=None, ge=0.0, le=100.0)
+    is_fallback: bool | None = None
 
 
 class MarketSourceDetail(BaseModel):

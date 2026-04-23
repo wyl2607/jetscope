@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 
 interface MarketSnapshot {
   generated_at: string;
-  source_status: string;
+  source_status: {
+    overall: string;
+  };
   values: Record<string, number>;
   source_details: Record<string, {
     source: string;
@@ -71,11 +73,11 @@ export default function ClientMarketData() {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-sky-300">Echtzeit-Marktdaten</h2>
         <span className={`text-xs px-2 py-1 rounded ${
-          data.source_status === 'ok' ? 'bg-green-900/50 text-green-300' :
-          data.source_status === 'degraded' ? 'bg-yellow-900/50 text-yellow-300' :
+          data.source_status?.overall === 'ok' ? 'bg-green-900/50 text-green-300' :
+          data.source_status?.overall === 'degraded' ? 'bg-yellow-900/50 text-yellow-300' :
           'bg-red-900/50 text-red-300'
         }`}>
-          {data.source_status.toUpperCase()}
+          {(data.source_status?.overall ?? 'unknown').toUpperCase()}
         </span>
       </div>
 
@@ -90,7 +92,7 @@ export default function ClientMarketData() {
           label="Jet EU"
           value={`$${jetEu.toFixed(3)}`}
           unit="USD/L"
-          detail={data.source_details.jet_eu_proxy}
+          detail={data.source_details.jet_eu_proxy ?? data.source_details.jet_eu_proxy_usd_per_l}
         />
         <MetricCard
           label="Rotterdam"
@@ -102,13 +104,13 @@ export default function ClientMarketData() {
           label="EU ETS"
           value={`€${euEts.toFixed(2)}`}
           unit="EUR/tCO₂"
-          detail={data.source_details.eu_ets}
+          detail={data.source_details.eu_ets ?? data.source_details.eu_ets_price_eur_per_t}
         />
         <MetricCard
           label="DE Premium"
           value={`+${germanyPremium.toFixed(1)}%`}
           unit="auf Jet"
-          detail={data.source_details.germany_premium}
+          detail={data.source_details.germany_premium ?? data.source_details.germany_premium_pct}
           highlight
         />
       </div>

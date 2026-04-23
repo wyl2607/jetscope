@@ -4,7 +4,7 @@
 
 set -uo pipefail
 
-WEB_URL="https://saf.meichen.beauty/v1/health"
+WEB_URL="https://saf.meichen.beauty/"
 API_URL="http://127.0.0.1:8000/v1/health"
 LOG="/var/log/jetscope-health.log"
 
@@ -20,10 +20,11 @@ if [ "$API_STATUS" != "200" ]; then
     sleep 5
 fi
 
-# Check Web (Systemd)
+# Check Web serves real HTML (Systemd)
 WEB_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$WEB_URL" --connect-timeout 5 --max-time 10 2>/dev/null || echo "000")
-if [ "$WEB_STATUS" != "200" ] && [ "$WEB_STATUS" != "307" ]; then
-    log "Web unhealthy (status: $WEB_STATUS). Restarting..."
+WEB_CT=$(curl -sI "$WEB_URL" --connect-timeout 5 --max-time 10 2>/dev/null | grep -i "content-type:" | head -1 || echo "")
+if [ "$WEB_STATUS" != "200" ] || ! echo "$WEB_CT" | grep -qi "text/html"; then
+    log "Web unhealthy (status: $WEB_STATUS, content-type: $WEB_CT). Restarting..."
     systemctl restart jetscope-web.service
     sleep 5
 fi

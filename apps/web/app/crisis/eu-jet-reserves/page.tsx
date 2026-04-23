@@ -1,11 +1,11 @@
 import { InfoCard } from '@/components/cards';
 import { Shell } from '@/components/shell';
 import { PriceTrendsChart } from '@/components/price-trends-chart';
+import { getReserveSeverity } from '@/lib/market-signals';
 import { getDashboardReadModel, getPriceTrendChartReadModel } from '@/lib/product-read-model';
-import type { Metadata } from 'next';
+import type { Metadata, Route } from 'next';
 import Link from 'next/link';
 import { buildPageMetadata } from '@/lib/seo';
-import type { Route } from 'next';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,13 +33,6 @@ function getReserveData(): { weeks: number; updatedAt: string; source: string; n
   };
 }
 
-function reserveLevel(weeks: number): { label: string; color: string; barColor: string } {
-  if (weeks <= 2) return { label: 'CRITICAL — Immediate action required', color: 'text-rose-300', barColor: 'bg-rose-500' };
-  if (weeks <= 4) return { label: 'ELEVATED — SAF switch window opening', color: 'text-amber-300', barColor: 'bg-amber-500' };
-  if (weeks <= 6) return { label: 'WATCH — Monitor closely', color: 'text-yellow-300', barColor: 'bg-yellow-500' };
-  return { label: 'NORMAL', color: 'text-emerald-300', barColor: 'bg-emerald-500' };
-}
-
 function formatNumber(value: number, digits = 2) {
   return Number(value).toLocaleString('en-US', {
     minimumFractionDigits: digits,
@@ -58,8 +51,16 @@ export default async function EuJetReserveCrisisPage() {
     getPriceTrendChartReadModel()
   ]);
 
-  const reserve = getReserveData();
-  const level = reserveLevel(reserve.weeks);
+  const fallbackReserve = getReserveData();
+  const reserve = readModel.reserve
+    ? {
+        weeks: readModel.reserve.coverage_weeks,
+        updatedAt: readModel.reserve.generated_at,
+        source: readModel.reserve.source_name,
+        nextUpdate: fallbackReserve.nextUpdate
+      }
+    : fallbackReserve;
+  const level = getReserveSeverity(reserve.weeks);
   const market = readModel.market.values;
 
   const brent = market.brent_usd_per_bbl ?? 114.93;

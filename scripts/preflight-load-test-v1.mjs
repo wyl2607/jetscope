@@ -1,7 +1,7 @@
 import { performance } from 'node:perf_hooks';
 
 /**
- * SAFvsOil v1 API Load Test
+ * JetScope v1 API Load Test
  *
  * Targets:
  *   - 1000 req/min (~17 req/s sustained)
@@ -110,7 +110,7 @@ async function runLoadCase(baseUrl, config) {
 }
 
 async function main() {
-  console.log(`SAFvsOil v1 Load Test — Target: ${BASE_URL}`);
+  console.log(`JetScope v1 Load Test — Target: ${BASE_URL}`);
   console.log(`Goal: 1000 req/min sustained, p95 < 100ms for snapshot\n`);
 
   let overallPass = true;

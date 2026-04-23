@@ -1,5 +1,5 @@
 {
-  "name": "@safvsoil/web",
+  "name": "@jetscope/web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -8,8 +8,8 @@
     "build": "next build --webpack",
     "start": "next start",
     "typegen": "next typegen",
-    "typecheck": "tsc --noEmit --ignoreDeprecations 6.0",
-    "lint": "npm run typegen && npm run typecheck",
+    "typecheck": "npm run typegen && tsc --noEmit --ignoreDeprecations 6.0",
+    "lint": "npm run typecheck",
     "gate": "npm run build && npm run typecheck && npm run lint"
   },
   "dependencies": {

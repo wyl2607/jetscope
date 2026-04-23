@@ -3,7 +3,7 @@
 > **v1 FROZEN on 2026-04-22**  
 > 状态: ✅ FROZEN  
 > 有效期: 2026-04-22 ~ 2026-05-31 (冻结 39 天)  
-> 治理: 更改需 Codex 5.3 审批 + 迁移计划  
+> 治理: 更改需架构评审 + 迁移计划  
 > 版本: `v1.0.0` — 任何修改必须升级到 `v1.1.0` (非破坏性) 或 `v2.0.0` (破坏性)  
 > 签署: Codex (架构师), Lane D (数据), 2026-04-22
 
@@ -654,7 +654,7 @@ safvsoil_refresh_duration_seconds{metric="market_price"} 0.34
 - 3 节点同步
 
 **大改** (新增指标、fallback 逻辑、迁移):
-- 必须 Codex 5.3 设计评审
+- 必须经过架构设计评审
 - RFC 文档 (Data Contract v2)
 - 灰度发布计划
 - 2 周通知期
@@ -694,5 +694,5 @@ class DataSourceAdapter:
 ---
 
 **此文档已于 2026-04-22 正式冻结 (v1.0.0 FROZEN)。**  
-任何修改须经 Codex 5.3 审批，并在 CHANGELOG.md 中记录。  
+任何修改须经架构评审，并在 CHANGELOG.md 中记录。  
 非破坏性更新升为 v1.x.0；破坏性更新升为 v2.0.0。
