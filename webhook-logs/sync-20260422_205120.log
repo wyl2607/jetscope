@@ -1,0 +1,27 @@
+[2026-04-22 20:51:20] [INFO] Starting cluster sync to SHA: 2fd7be98232849b356b930ecdbceb646032fdac8
+[2026-04-22 20:51:20] [INFO] Nodes to sync: coco mac-mini us-vps
+[2026-04-22 20:51:20] [INFO] Starting sync for coco (attempt 1/3)
+[2026-04-22 20:51:20] [INFO] Starting sync for mac-mini (attempt 1/3)
+[2026-04-22 20:51:20] [INFO] Starting sync for us-vps (attempt 1/3)
+[2026-04-22 20:51:20] [INFO] [coco] Syncing to SHA: 2fd7be98232849b356b930ecdbceb646032fdac8 (attempt 1/3)
+[2026-04-22 20:51:20] [INFO] [mac-mini] Syncing to SHA: 2fd7be98232849b356b930ecdbceb646032fdac8 (attempt 1/3)
+[2026-04-22 20:51:20] [INFO] [us-vps] Syncing to SHA: 2fd7be98232849b356b930ecdbceb646032fdac8 (attempt 1/3)
+[2026-04-22 20:51:20] [WARN] [us-vps] Verification failed: expected 2fd7be98232849b356b930ecdbceb646032fdac8, got scripts/auto-sync-cluster.sh:line110:timeout:commandnotfound
+[2026-04-22 20:51:20] [WARN] [coco] Verification failed: expected 2fd7be98232849b356b930ecdbceb646032fdac8, got scripts/auto-sync-cluster.sh:line110:timeout:commandnotfound
+[2026-04-22 20:51:20] [WARN] [mac-mini] Verification failed: expected 2fd7be98232849b356b930ecdbceb646032fdac8, got scripts/auto-sync-cluster.sh:line110:timeout:commandnotfound
+[2026-04-22 20:51:25] [INFO] [us-vps] Syncing to SHA: 2fd7be98232849b356b930ecdbceb646032fdac8 (attempt 2/3)
+[2026-04-22 20:51:25] [INFO] [coco] Syncing to SHA: 2fd7be98232849b356b930ecdbceb646032fdac8 (attempt 2/3)
+[2026-04-22 20:51:25] [INFO] [mac-mini] Syncing to SHA: 2fd7be98232849b356b930ecdbceb646032fdac8 (attempt 2/3)
+[2026-04-22 20:51:25] [WARN] [us-vps] Verification failed: expected 2fd7be98232849b356b930ecdbceb646032fdac8, got scripts/auto-sync-cluster.sh:line110:timeout:commandnotfound
+[2026-04-22 20:51:25] [WARN] [mac-mini] Verification failed: expected 2fd7be98232849b356b930ecdbceb646032fdac8, got scripts/auto-sync-cluster.sh:line110:timeout:commandnotfound
+[2026-04-22 20:51:25] [WARN] [coco] Verification failed: expected 2fd7be98232849b356b930ecdbceb646032fdac8, got scripts/auto-sync-cluster.sh:line110:timeout:commandnotfound
+[2026-04-22 20:51:30] [INFO] [mac-mini] Syncing to SHA: 2fd7be98232849b356b930ecdbceb646032fdac8 (attempt 3/3)
+[2026-04-22 20:51:30] [INFO] [us-vps] Syncing to SHA: 2fd7be98232849b356b930ecdbceb646032fdac8 (attempt 3/3)
+[2026-04-22 20:51:30] [INFO] [coco] Syncing to SHA: 2fd7be98232849b356b930ecdbceb646032fdac8 (attempt 3/3)
+[2026-04-22 20:51:30] [WARN] [mac-mini] Verification failed: expected 2fd7be98232849b356b930ecdbceb646032fdac8, got scripts/auto-sync-cluster.sh:line110:timeout:commandnotfound
+[2026-04-22 20:51:30] [WARN] [us-vps] Verification failed: expected 2fd7be98232849b356b930ecdbceb646032fdac8, got scripts/auto-sync-cluster.sh:line110:timeout:commandnotfound
+[2026-04-22 20:51:30] [WARN] [coco] Verification failed: expected 2fd7be98232849b356b930ecdbceb646032fdac8, got scripts/auto-sync-cluster.sh:line110:timeout:commandnotfound
+[2026-04-22 20:51:35] [ERROR] [mac-mini] Failed after 3 attempts: Verification failed: expected 2fd7be98232849b356b930ecdbceb646032fdac8, got scripts/auto-sync-cluster.sh:line110:timeout:commandnotfound
+[2026-04-22 20:51:35] [ERROR] [us-vps] Failed after 3 attempts: Verification failed: expected 2fd7be98232849b356b930ecdbceb646032fdac8, got scripts/auto-sync-cluster.sh:line110:timeout:commandnotfound
+[2026-04-22 20:51:35] [ERROR] [coco] Failed after 3 attempts: Verification failed: expected 2fd7be98232849b356b930ecdbceb646032fdac8, got scripts/auto-sync-cluster.sh:line110:timeout:commandnotfound
+[2026-04-22 20:51:35] [INFO] Sync completed: 0 successful, 0 failed

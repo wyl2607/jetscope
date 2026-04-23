@@ -1,0 +1,19 @@
+[2026-04-22 23:11:15] [runner] launch lane_b_web on mac-mini
+[2026-04-22 23:11:15] [runner] launch lane_a_api on coco
+[2026-04-22 23:11:21] [runner] all lanes passed
+[2026-04-22 23:30:00] [runner] launch lane_b_web on mac-mini
+[2026-04-22 23:30:00] [runner] launch lane_a_api on coco
+[2026-04-22 23:30:07] [runner] all lanes passed
+bash: /Users/yumei/SAFvsOil/scripts/cline/run_parallel_lanes.sh: No such file or directory
+bash: /Users/yumei/SAFvsOil/scripts/cline/run_parallel_lanes.sh: No such file or directory
+bash: /Users/yumei/SAFvsOil/scripts/cline/run_parallel_lanes.sh: No such file or directory
+bash: /Users/yumei/SAFvsOil/scripts/cline/run_parallel_lanes.sh: No such file or directory
+bash: /Users/yumei/SAFvsOil/scripts/cline/run_parallel_lanes.sh: No such file or directory
+bash: /Users/yumei/SAFvsOil/scripts/cline/run_parallel_lanes.sh: No such file or directory
+bash: /Users/yumei/SAFvsOil/scripts/cline/run_parallel_lanes.sh: No such file or directory
+bash: /Users/yumei/SAFvsOil/scripts/cline/run_parallel_lanes.sh: No such file or directory
+bash: /Users/yumei/SAFvsOil/scripts/cline/run_parallel_lanes.sh: No such file or directory
+bash: /Users/yumei/SAFvsOil/scripts/cline/run_parallel_lanes.sh: No such file or directory
+bash: /Users/yumei/SAFvsOil/scripts/cline/run_parallel_lanes.sh: No such file or directory
+bash: /Users/yumei/SAFvsOil/scripts/cline/run_parallel_lanes.sh: No such file or directory
+bash: /Users/yumei/SAFvsOil/scripts/cline/run_parallel_lanes.sh: No such file or directory

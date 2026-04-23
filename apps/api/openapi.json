@@ -1,0 +1,2894 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SAFvsOil API",
+    "description": "Product scaffold for SAF vs Oil data, scenarios, and assumptions.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Get Health",
+        "operationId": "get_health_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Health V1 Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/market/snapshot": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Get Market Snapshot",
+        "operationId": "get_market_snapshot_v1_market_snapshot_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketSnapshotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/market/history": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Get Market History",
+        "operationId": "get_market_history_v1_market_history_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketHistoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/market/refresh": {
+      "post": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Refresh Market Snapshot",
+        "operationId": "refresh_market_snapshot_v1_market_refresh_post",
+        "parameters": [
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketRefreshResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pathways": {
+      "get": {
+        "tags": [
+          "pathways"
+        ],
+        "summary": "List Pathways",
+        "operationId": "list_pathways_v1_pathways_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PathwaySummary"
+                  },
+                  "title": "Response List Pathways V1 Pathways Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "pathways"
+        ],
+        "summary": "Upsert Pathways",
+        "operationId": "upsert_pathways_v1_pathways_put",
+        "parameters": [
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PathwayUpsert"
+                },
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PathwaySummary"
+                  },
+                  "title": "Response Upsert Pathways V1 Pathways Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/policies/refuel-eu": {
+      "get": {
+        "tags": [
+          "policies"
+        ],
+        "summary": "List Refuel Eu Targets",
+        "operationId": "list_refuel_eu_targets_v1_policies_refuel_eu_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PolicyTarget"
+                  },
+                  "title": "Response List Refuel Eu Targets V1 Policies Refuel Eu Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "policies"
+        ],
+        "summary": "Upsert Refuel Eu Targets",
+        "operationId": "upsert_refuel_eu_targets_v1_policies_refuel_eu_put",
+        "parameters": [
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PolicyTarget"
+                },
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PolicyTarget"
+                  },
+                  "title": "Response Upsert Refuel Eu Targets V1 Policies Refuel Eu Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspace_slug}/preferences": {
+      "get": {
+        "tags": [
+          "preferences"
+        ],
+        "summary": "Get Preferences",
+        "operationId": "get_preferences_v1_workspaces__workspace_slug__preferences_get",
+        "parameters": [
+          {
+            "name": "workspace_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferenceDocument"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "preferences"
+        ],
+        "summary": "Put Preferences",
+        "operationId": "put_preferences_v1_workspaces__workspace_slug__preferences_put",
+        "parameters": [
+          {
+            "name": "workspace_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Slug"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreferenceUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferenceDocument"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "preferences"
+        ],
+        "summary": "Delete Preferences",
+        "operationId": "delete_preferences_v1_workspaces__workspace_slug__preferences_delete",
+        "parameters": [
+          {
+            "name": "workspace_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Slug"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Preferences V1 Workspaces  Workspace Slug  Preferences Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspace_slug}/scenarios": {
+      "get": {
+        "tags": [
+          "scenarios"
+        ],
+        "summary": "List Scenarios",
+        "operationId": "list_scenarios_v1_workspaces__workspace_slug__scenarios_get",
+        "parameters": [
+          {
+            "name": "workspace_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScenarioRecord"
+                  },
+                  "title": "Response List Scenarios V1 Workspaces  Workspace Slug  Scenarios Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "scenarios"
+        ],
+        "summary": "Create Scenario",
+        "operationId": "create_scenario_v1_workspaces__workspace_slug__scenarios_post",
+        "parameters": [
+          {
+            "name": "workspace_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Slug"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspace_slug}/scenarios/{scenario_id}": {
+      "put": {
+        "tags": [
+          "scenarios"
+        ],
+        "summary": "Update Scenario",
+        "operationId": "update_scenario_v1_workspaces__workspace_slug__scenarios__scenario_id__put",
+        "parameters": [
+          {
+            "name": "workspace_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Slug"
+            }
+          },
+          {
+            "name": "scenario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Scenario Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "scenarios"
+        ],
+        "summary": "Delete Scenario",
+        "operationId": "delete_scenario_v1_workspaces__workspace_slug__scenarios__scenario_id__delete",
+        "parameters": [
+          {
+            "name": "workspace_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Slug"
+            }
+          },
+          {
+            "name": "scenario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Scenario Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Scenario V1 Workspaces  Workspace Slug  Scenarios  Scenario Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sqlite/market-prices": {
+      "get": {
+        "tags": [
+          "sqlite-markets",
+          "market-prices"
+        ],
+        "summary": "List Market Prices",
+        "description": "List market prices with optional filtering.\n\nQuery parameters:\n- start_date: ISO format datetime\n- end_date: ISO format datetime\n- market_type: Market type filter",
+        "operationId": "list_market_prices_v1_sqlite_market_prices_get",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start date for price range",
+              "title": "Start Date"
+            },
+            "description": "Start date for price range"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "End date for price range",
+              "title": "End Date"
+            },
+            "description": "End date for price range"
+          },
+          {
+            "name": "market_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by market type (ARA, US_Gulf, EU_ETS)",
+              "title": "Market Type"
+            },
+            "description": "Filter by market type (ARA, US_Gulf, EU_ETS)"
+          },
+          {
+            "name": "db_path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/opt/safvsoil/data/market.db",
+              "title": "Db Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MarketPriceRead"
+                  },
+                  "title": "Response List Market Prices V1 Sqlite Market Prices Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "sqlite-markets",
+          "market-prices"
+        ],
+        "summary": "Create Market Price",
+        "description": "Create new market price entry.",
+        "operationId": "create_market_price_v1_sqlite_market_prices_post",
+        "parameters": [
+          {
+            "name": "db_path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/opt/safvsoil/data/market.db",
+              "title": "Db Path"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarketPriceCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketPriceRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sqlite/market-prices/{price_id}": {
+      "get": {
+        "tags": [
+          "sqlite-markets",
+          "market-prices"
+        ],
+        "summary": "Get Market Price",
+        "description": "Get specific market price by ID.",
+        "operationId": "get_market_price_v1_sqlite_market_prices__price_id__get",
+        "parameters": [
+          {
+            "name": "price_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Price Id"
+            }
+          },
+          {
+            "name": "db_path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/opt/safvsoil/data/market.db",
+              "title": "Db Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketPriceRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "sqlite-markets",
+          "market-prices"
+        ],
+        "summary": "Update Market Price",
+        "description": "Update market price.",
+        "operationId": "update_market_price_v1_sqlite_market_prices__price_id__put",
+        "parameters": [
+          {
+            "name": "price_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Price Id"
+            }
+          },
+          {
+            "name": "db_path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/opt/safvsoil/data/market.db",
+              "title": "Db Path"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarketPriceUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketPriceRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "sqlite-markets",
+          "market-prices"
+        ],
+        "summary": "Delete Market Price",
+        "description": "Delete market price.",
+        "operationId": "delete_market_price_v1_sqlite_market_prices__price_id__delete",
+        "parameters": [
+          {
+            "name": "price_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Price Id"
+            }
+          },
+          {
+            "name": "db_path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/opt/safvsoil/data/market.db",
+              "title": "Db Path"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sqlite/market-prices/latest/{market_type}": {
+      "get": {
+        "tags": [
+          "sqlite-markets",
+          "market-prices"
+        ],
+        "summary": "Get Latest Price",
+        "description": "Get latest price for market type (uses cache if available).",
+        "operationId": "get_latest_price_v1_sqlite_market_prices_latest__market_type__get",
+        "parameters": [
+          {
+            "name": "market_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Market Type"
+            }
+          },
+          {
+            "name": "db_path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/opt/safvsoil/data/market.db",
+              "title": "Db Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/MarketPriceRead"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Get Latest Price V1 Sqlite Market Prices Latest  Market Type  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sqlite/user-scenarios": {
+      "get": {
+        "tags": [
+          "sqlite-scenarios",
+          "user-scenarios-sqlite"
+        ],
+        "summary": "List User Scenarios",
+        "description": "List all scenarios for a user.",
+        "operationId": "list_user_scenarios_v1_sqlite_user_scenarios_get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User ID to filter scenarios",
+              "title": "User Id"
+            },
+            "description": "User ID to filter scenarios"
+          },
+          {
+            "name": "db_path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/opt/safvsoil/data/market.db",
+              "title": "Db Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserScenarioRead"
+                  },
+                  "title": "Response List User Scenarios V1 Sqlite User Scenarios Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "sqlite-scenarios",
+          "user-scenarios-sqlite"
+        ],
+        "summary": "Create User Scenario",
+        "description": "Create new user scenario.",
+        "operationId": "create_user_scenario_v1_sqlite_user_scenarios_post",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User ID",
+              "title": "User Id"
+            },
+            "description": "User ID"
+          },
+          {
+            "name": "db_path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/opt/safvsoil/data/market.db",
+              "title": "Db Path"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserScenarioCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserScenarioRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "sqlite-scenarios",
+          "user-scenarios-sqlite"
+        ],
+        "summary": "Delete User Scenarios",
+        "description": "Delete all scenarios for a user.",
+        "operationId": "delete_user_scenarios_v1_sqlite_user_scenarios_delete",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User ID",
+              "title": "User Id"
+            },
+            "description": "User ID"
+          },
+          {
+            "name": "db_path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/opt/safvsoil/data/market.db",
+              "title": "Db Path"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sqlite/user-scenarios/{scenario_id}": {
+      "get": {
+        "tags": [
+          "sqlite-scenarios",
+          "user-scenarios-sqlite"
+        ],
+        "summary": "Get User Scenario",
+        "description": "Get specific user scenario by ID.",
+        "operationId": "get_user_scenario_v1_sqlite_user_scenarios__scenario_id__get",
+        "parameters": [
+          {
+            "name": "scenario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Scenario Id"
+            }
+          },
+          {
+            "name": "db_path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/opt/safvsoil/data/market.db",
+              "title": "Db Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserScenarioRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "sqlite-scenarios",
+          "user-scenarios-sqlite"
+        ],
+        "summary": "Update User Scenario",
+        "description": "Update user scenario.",
+        "operationId": "update_user_scenario_v1_sqlite_user_scenarios__scenario_id__put",
+        "parameters": [
+          {
+            "name": "scenario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Scenario Id"
+            }
+          },
+          {
+            "name": "db_path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/opt/safvsoil/data/market.db",
+              "title": "Db Path"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserScenarioUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserScenarioRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "sqlite-scenarios",
+          "user-scenarios-sqlite"
+        ],
+        "summary": "Delete User Scenario",
+        "description": "Delete user scenario.",
+        "operationId": "delete_user_scenario_v1_sqlite_user_scenarios__scenario_id__delete",
+        "parameters": [
+          {
+            "name": "scenario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Scenario Id"
+            }
+          },
+          {
+            "name": "db_path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/opt/safvsoil/data/market.db",
+              "title": "Db Path"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sqlite/market-alerts": {
+      "get": {
+        "tags": [
+          "sqlite-alerts",
+          "market-alerts-sqlite"
+        ],
+        "summary": "List Market Alerts",
+        "description": "List market alerts with optional filtering.",
+        "operationId": "list_market_alerts_v1_sqlite_market_alerts_get",
+        "parameters": [
+          {
+            "name": "market_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by market type",
+              "title": "Market Type"
+            },
+            "description": "Filter by market type"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by status (active/inactive)",
+              "title": "Status"
+            },
+            "description": "Filter by status (active/inactive)"
+          },
+          {
+            "name": "db_path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/opt/safvsoil/data/market.db",
+              "title": "Db Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MarketAlertRead"
+                  },
+                  "title": "Response List Market Alerts V1 Sqlite Market Alerts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "sqlite-alerts",
+          "market-alerts-sqlite"
+        ],
+        "summary": "Create Market Alert",
+        "description": "Create new market alert.",
+        "operationId": "create_market_alert_v1_sqlite_market_alerts_post",
+        "parameters": [
+          {
+            "name": "db_path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/opt/safvsoil/data/market.db",
+              "title": "Db Path"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarketAlertCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketAlertRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sqlite/market-alerts/{alert_id}": {
+      "get": {
+        "tags": [
+          "sqlite-alerts",
+          "market-alerts-sqlite"
+        ],
+        "summary": "Get Market Alert",
+        "description": "Get specific market alert by ID.",
+        "operationId": "get_market_alert_v1_sqlite_market_alerts__alert_id__get",
+        "parameters": [
+          {
+            "name": "alert_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Alert Id"
+            }
+          },
+          {
+            "name": "db_path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/opt/safvsoil/data/market.db",
+              "title": "Db Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketAlertRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "sqlite-alerts",
+          "market-alerts-sqlite"
+        ],
+        "summary": "Update Market Alert",
+        "description": "Update market alert.",
+        "operationId": "update_market_alert_v1_sqlite_market_alerts__alert_id__put",
+        "parameters": [
+          {
+            "name": "alert_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Alert Id"
+            }
+          },
+          {
+            "name": "db_path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/opt/safvsoil/data/market.db",
+              "title": "Db Path"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarketAlertUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketAlertRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "sqlite-alerts",
+          "market-alerts-sqlite"
+        ],
+        "summary": "Delete Market Alert",
+        "description": "Delete market alert.",
+        "operationId": "delete_market_alert_v1_sqlite_market_alerts__alert_id__delete",
+        "parameters": [
+          {
+            "name": "alert_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Alert Id"
+            }
+          },
+          {
+            "name": "db_path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/opt/safvsoil/data/market.db",
+              "title": "Db Path"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sqlite/market-alerts/{alert_id}/trigger": {
+      "put": {
+        "tags": [
+          "sqlite-alerts",
+          "market-alerts-sqlite"
+        ],
+        "summary": "Trigger Market Alert",
+        "description": "Mark alert as triggered with current timestamp.",
+        "operationId": "trigger_market_alert_v1_sqlite_market_alerts__alert_id__trigger_put",
+        "parameters": [
+          {
+            "name": "alert_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Alert Id"
+            }
+          },
+          {
+            "name": "db_path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "/opt/safvsoil/data/market.db",
+              "title": "Db Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketAlertRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "MarketAlertCreate": {
+        "properties": {
+          "market_type": {
+            "type": "string",
+            "title": "Market Type",
+            "description": "Market type: ARA, US_Gulf, EU_ETS"
+          },
+          "threshold_type": {
+            "type": "string",
+            "title": "Threshold Type",
+            "description": "Type: 'above' or 'below'"
+          },
+          "threshold_value": {
+            "type": "number",
+            "title": "Threshold Value"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Status: active or inactive",
+            "default": "active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "market_type",
+          "threshold_type",
+          "threshold_value"
+        ],
+        "title": "MarketAlertCreate",
+        "description": "Schema for creating market alert."
+      },
+      "MarketAlertRead": {
+        "properties": {
+          "market_type": {
+            "type": "string",
+            "title": "Market Type",
+            "description": "Market type: ARA, US_Gulf, EU_ETS"
+          },
+          "threshold_type": {
+            "type": "string",
+            "title": "Threshold Type",
+            "description": "Type: 'above' or 'below'"
+          },
+          "threshold_value": {
+            "type": "number",
+            "title": "Threshold Value"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Status: active or inactive",
+            "default": "active"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "last_triggered": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Triggered"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "market_type",
+          "threshold_type",
+          "threshold_value",
+          "id",
+          "last_triggered",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "MarketAlertRead",
+        "description": "Schema for reading market alert."
+      },
+      "MarketAlertUpdate": {
+        "properties": {
+          "threshold_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold Type"
+          },
+          "threshold_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold Value"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "title": "MarketAlertUpdate",
+        "description": "Schema for updating market alert."
+      },
+      "MarketHistoryPoint": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "as_of",
+          "value"
+        ],
+        "title": "MarketHistoryPoint"
+      },
+      "MarketHistoryResponse": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "windows_days": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Windows Days"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MarketMetricHistory"
+            },
+            "type": "object",
+            "title": "Metrics"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at"
+        ],
+        "title": "MarketHistoryResponse"
+      },
+      "MarketMetricHistory": {
+        "properties": {
+          "metric_key": {
+            "type": "string",
+            "title": "Metric Key"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "latest_value": {
+            "type": "number",
+            "title": "Latest Value"
+          },
+          "latest_as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Latest As Of"
+          },
+          "change_pct_1d": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Pct 1D"
+          },
+          "change_pct_7d": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Pct 7D"
+          },
+          "change_pct_30d": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Pct 30D"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/MarketHistoryPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "metric_key",
+          "unit",
+          "latest_value",
+          "latest_as_of"
+        ],
+        "title": "MarketMetricHistory"
+      },
+      "MarketPriceCreate": {
+        "properties": {
+          "market_type": {
+            "type": "string",
+            "title": "Market Type",
+            "description": "Market type: ARA, US_Gulf, EU_ETS"
+          },
+          "price": {
+            "type": "number",
+            "title": "Price",
+            "description": "Price value"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit",
+            "description": "Unit of price (USD/bbl, EUR/tonne, etc.)"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "market_type",
+          "price",
+          "unit"
+        ],
+        "title": "MarketPriceCreate",
+        "description": "Schema for creating market price."
+      },
+      "MarketPriceRead": {
+        "properties": {
+          "market_type": {
+            "type": "string",
+            "title": "Market Type",
+            "description": "Market type: ARA, US_Gulf, EU_ETS"
+          },
+          "price": {
+            "type": "number",
+            "title": "Price",
+            "description": "Price value"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit",
+            "description": "Unit of price (USD/bbl, EUR/tonne, etc.)"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "market_type",
+          "price",
+          "unit",
+          "id",
+          "timestamp",
+          "created_at"
+        ],
+        "title": "MarketPriceRead",
+        "description": "Schema for reading market price."
+      },
+      "MarketPriceUpdate": {
+        "properties": {
+          "price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "type": "object",
+        "title": "MarketPriceUpdate",
+        "description": "Schema for updating market price."
+      },
+      "MarketRefreshResponse": {
+        "properties": {
+          "accepted": {
+            "type": "boolean",
+            "title": "Accepted"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "accepted",
+          "message"
+        ],
+        "title": "MarketRefreshResponse"
+      },
+      "MarketSnapshotResponse": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "source_status": {
+            "$ref": "#/components/schemas/SourceStatus"
+          },
+          "values": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Values"
+          },
+          "source_details": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MarketSourceDetail"
+            },
+            "type": "object",
+            "title": "Source Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at",
+          "source_status",
+          "values"
+        ],
+        "title": "MarketSnapshotResponse"
+      },
+      "MarketSourceDetail": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region"
+          },
+          "market_scope": {
+            "type": "string",
+            "title": "Market Scope"
+          },
+          "lag_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lag Minutes"
+          },
+          "confidence_score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence Score"
+          },
+          "fallback_used": {
+            "type": "boolean",
+            "title": "Fallback Used",
+            "default": false
+          },
+          "cbam_eur": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cbam Eur"
+          },
+          "usd_per_eur": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usd Per Eur"
+          },
+          "raw_usd_per_metric_ton": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Usd Per Metric Ton"
+          },
+          "raw_eur_per_t": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Eur Per T"
+          },
+          "usd_per_t": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usd Per T"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "status",
+          "region",
+          "market_scope",
+          "confidence_score"
+        ],
+        "title": "MarketSourceDetail"
+      },
+      "PathwaySummary": {
+        "properties": {
+          "pathway_id": {
+            "type": "string",
+            "title": "Pathway Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "base_cost_usd_per_l": {
+            "type": "number",
+            "title": "Base Cost Usd Per L"
+          },
+          "co2_savings_kg_per_l": {
+            "type": "number",
+            "title": "Co2 Savings Kg Per L"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pathway_id",
+          "name",
+          "base_cost_usd_per_l",
+          "co2_savings_kg_per_l"
+        ],
+        "title": "PathwaySummary"
+      },
+      "PathwayUpsert": {
+        "properties": {
+          "pathway_id": {
+            "type": "string",
+            "title": "Pathway Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "base_cost_usd_per_l": {
+            "type": "number",
+            "title": "Base Cost Usd Per L"
+          },
+          "co2_savings_kg_per_l": {
+            "type": "number",
+            "title": "Co2 Savings Kg Per L"
+          },
+          "pathway": {
+            "type": "string",
+            "title": "Pathway",
+            "default": ""
+          },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "default": "saf"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pathway_id",
+          "name",
+          "base_cost_usd_per_l",
+          "co2_savings_kg_per_l"
+        ],
+        "title": "PathwayUpsert"
+      },
+      "PolicyTarget": {
+        "properties": {
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          },
+          "saf_share_pct": {
+            "type": "number",
+            "title": "Saf Share Pct"
+          },
+          "synthetic_share_pct": {
+            "type": "number",
+            "title": "Synthetic Share Pct"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "year",
+          "saf_share_pct",
+          "synthetic_share_pct",
+          "label"
+        ],
+        "title": "PolicyTarget"
+      },
+      "PreferenceDocument": {
+        "properties": {
+          "preferences": {
+            "$ref": "#/components/schemas/PreferencesPayload"
+          },
+          "route_edits": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/RouteEditPayload"
+            },
+            "type": "object",
+            "title": "Route Edits"
+          },
+          "workspace_slug": {
+            "type": "string",
+            "title": "Workspace Slug"
+          }
+        },
+        "type": "object",
+        "required": [
+          "workspace_slug"
+        ],
+        "title": "PreferenceDocument"
+      },
+      "PreferenceUpdate": {
+        "properties": {
+          "preferences": {
+            "$ref": "#/components/schemas/PreferencesPayload"
+          },
+          "route_edits": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/RouteEditPayload"
+            },
+            "type": "object",
+            "title": "Route Edits"
+          }
+        },
+        "type": "object",
+        "title": "PreferenceUpdate"
+      },
+      "PreferencesPayload": {
+        "properties": {
+          "schema_version": {
+            "type": "integer",
+            "title": "Schema Version",
+            "default": 1
+          },
+          "crudeSource": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "brentEia",
+              "brentFred"
+            ],
+            "title": "Crudesource",
+            "default": "manual"
+          },
+          "carbonSource": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "cbamCarbonProxyUsd"
+            ],
+            "title": "Carbonsource",
+            "default": "manual"
+          },
+          "benchmarkMode": {
+            "type": "string",
+            "enum": [
+              "crude-proxy",
+              "live-jet-spot"
+            ],
+            "title": "Benchmarkmode",
+            "default": "crude-proxy"
+          },
+          "crudeUsdPerBarrel": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crudeusdperbarrel"
+          },
+          "carbonPriceUsdPerTonne": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Carbonpriceusdpertonne"
+          },
+          "subsidyUsdPerLiter": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subsidyusdperliter"
+          },
+          "jetProxySlope": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jetproxyslope"
+          },
+          "jetProxyIntercept": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jetproxyintercept"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "PreferencesPayload"
+      },
+      "RouteEditPayload": {
+        "properties": {
+          "baseCostUsdPerLiter": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Basecostusdperliter"
+          },
+          "co2SavingsKgPerLiter": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Co2Savingskgperliter"
+          },
+          "pathway": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pathway"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "RouteEditPayload"
+      },
+      "ScenarioCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/PreferencesPayload"
+          },
+          "route_edits": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/RouteEditPayload"
+            },
+            "type": "object",
+            "title": "Route Edits"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ScenarioCreate"
+      },
+      "ScenarioRecord": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/PreferencesPayload"
+          },
+          "route_edits": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/RouteEditPayload"
+            },
+            "type": "object",
+            "title": "Route Edits"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "workspace_slug": {
+            "type": "string",
+            "title": "Workspace Slug"
+          },
+          "saved_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Saved At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "id",
+          "workspace_slug",
+          "saved_at"
+        ],
+        "title": "ScenarioRecord"
+      },
+      "SourceStatus": {
+        "properties": {
+          "overall": {
+            "type": "string",
+            "title": "Overall"
+          }
+        },
+        "type": "object",
+        "required": [
+          "overall"
+        ],
+        "title": "SourceStatus"
+      },
+      "UserScenarioCreate": {
+        "properties": {
+          "scenario_name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Scenario Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "parameters": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Parameters",
+            "description": "JSON parameters for scenario"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scenario_name",
+          "parameters"
+        ],
+        "title": "UserScenarioCreate",
+        "description": "Schema for creating user scenario."
+      },
+      "UserScenarioRead": {
+        "properties": {
+          "scenario_name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Scenario Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "parameters": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Parameters",
+            "description": "JSON parameters for scenario"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scenario_name",
+          "parameters",
+          "id",
+          "user_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "UserScenarioRead",
+        "description": "Schema for reading user scenario."
+      },
+      "UserScenarioUpdate": {
+        "properties": {
+          "scenario_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scenario Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameters"
+          }
+        },
+        "type": "object",
+        "title": "UserScenarioUpdate",
+        "description": "Schema for updating user scenario."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

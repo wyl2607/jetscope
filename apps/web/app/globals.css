@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: #020617;
+  color: #f1f5f9;
+}
+
+a {
+  color: #7dd3fc;
+}
+
+a:hover {
+  color: #bae6fd;
+}

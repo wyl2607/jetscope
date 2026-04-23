@@ -1,0 +1,37 @@
+#!/bin/sh
+# SAFvSoil Environment Self-Discovery (POSIX compatible)
+# Usage: . scripts/safenv
+# 自动发现 SAFvSoil 项目根目录并设置环境变量
+
+# 1. 如果已设置 SAFVSOIL_ROOT，直接使用
+if [ -n "$SAFVSOIL_ROOT" ] && [ -d "$SAFVSOIL_ROOT" ]; then
+  SAFVSOIL_ROOT="$SAFVSOIL_ROOT"
+# 2. 检查常见路径
+elif [ -d "$HOME/SAFvsOil" ]; then
+  SAFVSOIL_ROOT="$HOME/SAFvsOil"
+elif [ -d "$HOME/safvsoil" ]; then
+  SAFVSOIL_ROOT="$HOME/safvsoil"
+# 3. 通过 marker 文件搜索（向上递归）
+else
+  CURRENT_DIR="$PWD"
+  while [ "$CURRENT_DIR" != "/" ]; do
+    if [ -f "$CURRENT_DIR/.safvsoil-root" ]; then
+      SAFVSOIL_ROOT="$CURRENT_DIR"
+      break
+    fi
+    CURRENT_DIR="$(dirname "$CURRENT_DIR")"
+  done
+fi
+
+# 验证并导出子路径
+if [ -n "$SAFVSOIL_ROOT" ] && [ -d "$SAFVSOIL_ROOT" ]; then
+  export SAFVSOIL_ROOT
+  export SAFVSOIL_WEB="$SAFVSOIL_ROOT/apps/web"
+  export SAFVSOIL_API="$SAFVSOIL_ROOT/apps/api"
+  export SAFVSOIL_SCRIPTS="$SAFVSOIL_ROOT/scripts"
+  echo "✅ SAFVSOIL_ROOT=$SAFVSOIL_ROOT"
+else
+  echo "❌ SAFvSoil 项目未找到"
+  echo "提示: 设置 SAFVSOIL_ROOT 环境变量或创建 .safvsoil-root marker 文件"
+  return 1 2>/dev/null || exit 1
+fi

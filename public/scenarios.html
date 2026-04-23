@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SAFvsOil · Scenarios</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-theme="light" data-page="scenarios">
+    <div id="site-header"></div>
+
+    <main class="page-main">
+      <section class="page-hero">
+        <p class="eyebrow">Scenarios · 情景管理</p>
+        <h1>保存、加载、对比情景</h1>
+        <p class="hero-copy">Explorer 中的状态可直接保存为命名 scenario，并在这里集中管理。</p>
+      </section>
+
+      <section class="panel">
+        <div class="button-row">
+          <button id="save-scenario-btn" class="secondary-button" type="button">保存当前情景</button>
+          <button id="load-scenario-btn" class="ghost-button" type="button" disabled>加载选中情景</button>
+          <button id="delete-scenario-btn" class="ghost-button" type="button" disabled>删除选中情景</button>
+        </div>
+
+        <div class="scenario-layout">
+          <div class="scenario-stack">
+            <div class="local-state-card scenario-card">
+              <label class="field">
+                <span>当前情景名称</span>
+                <input
+                  id="scenario-name"
+                  type="text"
+                  maxlength="80"
+                  placeholder="例如：高碳价 / 低油价"
+                  autocomplete="off"
+                />
+              </label>
+              <div class="scenario-current-meta">
+                <span class="subtle">当前选中</span>
+                <strong id="active-scenario-name">未命名当前情景</strong>
+              </div>
+            </div>
+
+            <div class="local-state-card scenario-card">
+              <label class="field">
+                <span>已保存情景</span>
+                <select id="scenario-list" class="scenario-select" aria-label="已保存情景">
+                  <option value="">未选择</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="local-state-card scenario-card compare-summary-card">
+            <div class="local-state-head">
+              <strong>对比摘要</strong>
+              <span class="subtle">当前参数 vs. 选中情景</span>
+            </div>
+            <div class="scenario-summary" id="scenario-summary"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script type="module" src="/_shared/layout.js"></script>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

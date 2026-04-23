@@ -1,0 +1,36 @@
+{
+  "dashboard": {
+    "market_price": "市场价格",
+    "carbon_intensity": "碳强度",
+    "germany_premium": "德国补贴溢价",
+    "rotterdam_port": "鹿特丹港排放",
+    "eu_ets_volume": "欧盟ETS交易量",
+    "data_freshness": "数据新鲜度",
+    "source_status": "来源状态"
+  },
+  "indicators": {
+    "market_price": "SAF 价格",
+    "carbon_intensity": "碳强度",
+    "germany_premium": "德国溢价",
+    "rotterdam_port": "鹿特丹排放",
+    "eu_ets_volume": "ETS 交易量",
+    "freshness": "数据年龄",
+    "source_status": "来源健康状况"
+  },
+  "status": {
+    "fallback": "使用缓存数据",
+    "primary": "主数据源",
+    "fallback_rate": "回退率",
+    "last_updated": "最后更新",
+    "error": "数据获取错误"
+  },
+  "units": {
+    "usd_per_barrel": "美元/桶",
+    "usd_per_liter": "美元/升",
+    "eur_per_liter": "欧元/升",
+    "kg_co2_per_mwh": "kg 二氧化碳/MWh",
+    "g_co2_per_kj": "克 二氧化碳/kJ",
+    "tons_per_day": "吨/天",
+    "pct": "%"
+  }
+}

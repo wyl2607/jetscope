@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/de/layout,_N_T_/de/lufthansa-saf-2026/layout,_N_T_/de/lufthansa-saf-2026/page,_N_T_/de/lufthansa-saf-2026"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/de/lufthansa-saf-2026/__PAGE__",
+    "/de/lufthansa-saf-2026",
+    "/de",
+    "/_index",
+    "/_head"
+  ]
+}

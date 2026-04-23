@@ -1,0 +1,32 @@
+{
+  "name": "safvsoil",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs",
+    "check": "node --check server.mjs && node --check public/app.js && node --check server/local-persistence.mjs",
+    "test": "node --experimental-strip-types --test test/*.test.mjs packages/core/industry/__tests__/readiness.test.mjs",
+    "preflight": "npm run check && npm test && npm run web:build && npm run api:check && npm run preflight:product && npm run preflight:e2e && npm run preflight:load",
+    "preflight:product": "node scripts/preflight-product-smoke.mjs",
+    "preflight:load": "node scripts/preflight-load-test.mjs",
+    "test:e2e": "node scripts/preflight-ui-e2e.mjs",
+    "preflight:e2e": "npm run test:e2e",
+    "prototype:start": "node server.mjs",
+    "web:dev": "npm --prefix apps/web run dev",
+    "web:build": "npm --prefix apps/web run build",
+    "web:lint": "npm --prefix apps/web run lint",
+    "web:typecheck": "npm --prefix apps/web run typecheck",
+    "web:gate": "npm --prefix apps/web run gate",
+    "api:dev": "cd apps/api && uvicorn app.main:app --reload",
+    "api:check": "cd apps/api && python3 -m compileall app",
+    "api:migrate": "cd apps/api && alembic upgrade head"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}

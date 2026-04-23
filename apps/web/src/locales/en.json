@@ -1,0 +1,36 @@
+{
+  "dashboard": {
+    "market_price": "SAF Market Price",
+    "carbon_intensity": "Carbon Intensity",
+    "germany_premium": "Germany Premium",
+    "rotterdam_port": "Rotterdam Port Emissions",
+    "eu_ets_volume": "EU ETS Volume",
+    "data_freshness": "Data Freshness",
+    "source_status": "Source Status"
+  },
+  "indicators": {
+    "market_price": "SAF Price",
+    "carbon_intensity": "Carbon Intensity",
+    "germany_premium": "Germany Premium",
+    "rotterdam_port": "Rotterdam Emissions",
+    "eu_ets_volume": "ETS Volume",
+    "freshness": "Data Age",
+    "source_status": "Source Health"
+  },
+  "status": {
+    "fallback": "Using cached data",
+    "primary": "Primary Source",
+    "fallback_rate": "Fallback Rate",
+    "last_updated": "Last Updated",
+    "error": "Error retrieving data"
+  },
+  "units": {
+    "usd_per_barrel": "USD/barrel",
+    "usd_per_liter": "USD/L",
+    "eur_per_liter": "EUR/L",
+    "kg_co2_per_mwh": "kg CO2/MWh",
+    "g_co2_per_kj": "g CO2/kJ",
+    "tons_per_day": "tons/day",
+    "pct": "%"
+  }
+}

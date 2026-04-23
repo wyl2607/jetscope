@@ -1,0 +1,18 @@
+# SAFvsOil Cluster Automation Cron Configuration
+# 
+# This file defines the cron jobs for automated health checks and data validation.
+# Install using: bash scripts/setup_cron.sh
+# 
+# Format: minute hour day_of_month month day_of_week command
+
+# Daily health check at 8:00 AM (UTC)
+# Runs comprehensive cluster health check across all 6 endpoints
+0 8 * * * /Users/yumei/SAFvsOil/scripts/health_check.sh >> /var/log/safvsoil/health_check.log 2>&1
+
+# 6-hourly data validation (0:00, 6:00, 12:00, 18:00)
+# Validates critical metrics: market_price, carbon_intensity, emissions, etc.
+0 0,6,12,18 * * * /Users/yumei/SAFvsOil/scripts/validate.sh >> /var/log/safvsoil/validate.log 2>&1
+
+# Database backup every 2 hours
+# Preserves SQLite database snapshots
+0 */2 * * * /Users/yumei/SAFvsOil/scripts/backup-db-cron.sh >> /var/log/safvsoil/backup.log 2>&1

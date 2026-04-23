@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: safvsoil-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: safvsoil
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d safvsoil"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: safvsoil-api
+    restart: unless-stopped
+    environment:
+      SAFVSOIL_DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/safvsoil
+      SAFVSOIL_MARKET_REFRESH_INTERVAL_SECONDS: "600"
+      SAFVSOIL_ADMIN_TOKEN: ${SAFVSOIL_ADMIN_TOKEN:-dev-admin-token-change-me}
+      SAFVSOIL_APP_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8000"
+
+  nginx:
+    image: nginx:alpine
+    container_name: safvsoil-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./apps/web/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - api
+
+volumes:
+  postgres-data:

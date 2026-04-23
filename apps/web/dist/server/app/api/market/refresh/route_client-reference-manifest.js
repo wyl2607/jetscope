@@ -1,0 +1,1 @@
+globalThis.__RSC_MANIFEST=(globalThis.__RSC_MANIFEST||{});globalThis.__RSC_MANIFEST["/api/market/refresh/route"]={"moduleLoading":{"prefix":"/_next/"},"ssrModuleMapping":{},"edgeSSRModuleMapping":{},"clientModules":{},"entryCSSFiles":{"/Users/yumei/projects/SAF-signal/apps/web/app/api/market/refresh/route":[]},"rscModuleMapping":{},"edgeRscModuleMapping":{}};

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SAFvsOil · Routes</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-theme="light" data-page="routes">
+    <div id="site-header"></div>
+
+    <main class="page-main">
+      <section class="page-hero">
+        <p class="eyebrow">Routes · 路线库</p>
+        <h1>SAF 路线全量视图</h1>
+        <p class="hero-copy">7 条 SAF + Jet-A，支持 per-route 覆盖编辑和跳转详情页。</p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>路线总表</h2>
+          <p>可编辑基础成本与减排参数。</p>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>路线</th>
+                <th>基础成本 ($/L)</th>
+                <th>减排 (kg/L)</th>
+                <th>有效成本 ($/L)</th>
+                <th>与传统价差</th>
+                <th>盈亏平衡油价</th>
+                <th>竞争力</th>
+              </tr>
+            </thead>
+            <tbody id="routes-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>竞争力排名</h2>
+        </div>
+        <div id="breakeven-route-list" aria-live="polite"></div>
+      </section>
+
+      <section class="panel">
+        <p class="subtle">
+          详情页示例：<a href="/routes/sugar-atj">/routes/sugar-atj</a>、
+          <a href="/routes/reed-hefa">/routes/reed-hefa</a>
+        </p>
+      </section>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script type="module" src="/_shared/layout.js"></script>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

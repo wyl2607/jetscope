@@ -1,0 +1,24 @@
+Phase 0 Route,HTML File,Phase 0 URL,Phase B Route,Phase B File,Coverage %,Migration Status,Priority,Difficulty,Notes
+Home,index.html,/,/dashboard,app/dashboard/page.tsx,100%,✅ Completed,P0,Low,Redirects to dashboard
+Home (English),en/index.html,/en/,/en/dashboard,app/[locale]/dashboard/page.tsx,100%,⚠️ Planned,P1,Low,i18n routing pending
+Explorer,explorer.html,/explorer,/dashboard?tab=explorer,app/dashboard/page.tsx,95%,⚠️ Partial,P1,Medium,Explorer tab needs integration
+Explorer (English),en/explorer.html,/en/explorer,/en/dashboard?tab=explorer,app/[locale]/dashboard/page.tsx,95%,⚠️ Partial,P1,Medium,i18n routing pending
+Scenarios,scenarios.html,/scenarios,/scenarios,app/scenarios/page.tsx,100%,✅ Completed,P0,Low,Full feature parity
+Scenarios (English),en/scenarios.html,/en/scenarios,/en/scenarios,app/[locale]/scenarios/page.tsx,100%,⚠️ Planned,P1,Low,i18n routing pending
+Industry,industry.html,/industry,/industry,app/industry/page.tsx,80%,⚠️ Partial,P1,Medium,Missing adoption rate API
+Industry (English),en/industry.html,/en/industry,/en/industry,app/[locale]/industry/page.tsx,80%,⚠️ Partial,P1,Medium,i18n + adoption API pending
+Routes,routes.html,/routes,/routes,app/routes/page.tsx,0%,❌ Missing,P1,Medium,Not yet implemented
+Routes (English),en/routes.html,/en/routes,/en/routes,app/[locale]/routes/page.tsx,0%,❌ Missing,P1,Medium,Not yet implemented
+Route Detail,routes-detail.html,/routes-detail?route=<id>,/routes/[id],app/routes/[id]/page.tsx,0%,❌ Missing,P1,Medium,Dynamic route needed
+Route Detail (English),en/routes-detail.html,/en/routes-detail?route=<id>,/en/routes/[id],app/[locale]/routes/[id]/page.tsx,0%,❌ Missing,P1,Medium,Not yet implemented
+Methodology,methodology.html,/methodology,/methodology,app/methodology/page.tsx,0%,❌ Missing,P2,Low,Content-driven page
+Methodology (English),en/methodology.html,/en/methodology,/en/methodology,app/[locale]/methodology/page.tsx,0%,❌ Missing,P2,Low,Not yet implemented
+Sources,sources.html,/sources,/sources,app/sources/page.tsx,100%,✅ Completed,P0,Low,Full feature parity
+Sources (English),en/sources.html,/en/sources,/en/sources,app/[locale]/sources/page.tsx,100%,⚠️ Planned,P1,Low,i18n routing pending
+Admin (New),N/A,N/A,/admin,app/admin/page.tsx,95%,✅ Completed,P0,Medium,Backend admin console
+Admin German,N/A,N/A,/de/admin,app/de/admin/page.tsx,95%,⚠️ Partial,P1,Medium,German admin pending
+Prices: Germany,N/A,N/A,/prices/germany-jet-fuel,app/prices/germany-jet-fuel/page.tsx,100%,✅ Completed,P0,Low,Indexable price page
+Analysis Index,N/A,N/A,/analysis,app/analysis/page.tsx,10%,⚠️ Partial,P2,Low,Only 1 analysis entry
+Analysis Detail: Lufthansa,N/A,N/A,/analysis/lufthansa-flight-cuts-2026-04,app/analysis/lufthansa-flight-cuts-2026-04/page.tsx,100%,✅ Completed,P1,Low,Research case study
+German Dashboard,N/A,N/A,/de/dashboard,app/de/dashboard/page.tsx,95%,⚠️ Partial,P1,Medium,Partially implemented
+German SAF 2026,N/A,N/A,/de/lufthansa-saf-2026,app/de/lufthansa-saf-2026.tsx,90%,⚠️ Partial,P2,Medium,Research context

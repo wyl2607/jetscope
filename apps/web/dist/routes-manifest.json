@@ -1,0 +1,192 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "app",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "onMatchHeaders": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/api/scenarios/[scenarioId]",
+      "regex": "^/api/scenarios/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPscenarioId": "nxtPscenarioId"
+      },
+      "namedRegex": "^/api/scenarios/(?<nxtPscenarioId>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/admin",
+      "regex": "^/admin(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin(?:/)?$"
+    },
+    {
+      "page": "/analysis",
+      "regex": "^/analysis(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/analysis(?:/)?$"
+    },
+    {
+      "page": "/analysis/lufthansa-2026-de",
+      "regex": "^/analysis/lufthansa\\-2026\\-de(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/analysis/lufthansa\\-2026\\-de(?:/)?$"
+    },
+    {
+      "page": "/analysis/lufthansa-flight-cuts-2026-04",
+      "regex": "^/analysis/lufthansa\\-flight\\-cuts\\-2026\\-04(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/analysis/lufthansa\\-flight\\-cuts\\-2026\\-04(?:/)?$"
+    },
+    {
+      "page": "/api/market",
+      "regex": "^/api/market(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/market(?:/)?$"
+    },
+    {
+      "page": "/api/market/refresh",
+      "regex": "^/api/market/refresh(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/market/refresh(?:/)?$"
+    },
+    {
+      "page": "/api/pathways",
+      "regex": "^/api/pathways(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/pathways(?:/)?$"
+    },
+    {
+      "page": "/api/policies/refuel-eu",
+      "regex": "^/api/policies/refuel\\-eu(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/policies/refuel\\-eu(?:/)?$"
+    },
+    {
+      "page": "/api/scenarios",
+      "regex": "^/api/scenarios(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/scenarios(?:/)?$"
+    },
+    {
+      "page": "/crisis/eu-jet-reserves",
+      "regex": "^/crisis/eu\\-jet\\-reserves(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/crisis/eu\\-jet\\-reserves(?:/)?$"
+    },
+    {
+      "page": "/dashboard",
+      "regex": "^/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard(?:/)?$"
+    },
+    {
+      "page": "/de",
+      "regex": "^/de(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/de(?:/)?$"
+    },
+    {
+      "page": "/de/dashboard",
+      "regex": "^/de/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/de/dashboard(?:/)?$"
+    },
+    {
+      "page": "/de/lufthansa-saf-2026",
+      "regex": "^/de/lufthansa\\-saf\\-2026(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/de/lufthansa\\-saf\\-2026(?:/)?$"
+    },
+    {
+      "page": "/de/prices/germany-jet-fuel",
+      "regex": "^/de/prices/germany\\-jet\\-fuel(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/de/prices/germany\\-jet\\-fuel(?:/)?$"
+    },
+    {
+      "page": "/prices/germany-jet-fuel",
+      "regex": "^/prices/germany\\-jet\\-fuel(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/prices/germany\\-jet\\-fuel(?:/)?$"
+    },
+    {
+      "page": "/robots.txt",
+      "regex": "^/robots\\.txt(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/robots\\.txt(?:/)?$"
+    },
+    {
+      "page": "/scenarios",
+      "regex": "^/scenarios(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/scenarios(?:/)?$"
+    },
+    {
+      "page": "/sitemap.xml",
+      "regex": "^/sitemap\\.xml(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/sitemap\\.xml(?:/)?$"
+    },
+    {
+      "page": "/sources",
+      "regex": "^/sources(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/sources(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

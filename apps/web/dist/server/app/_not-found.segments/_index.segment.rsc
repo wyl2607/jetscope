@@ -1,0 +1,6 @@
+1:"$Sreact.fragment"
+2:I[594,["177","static/chunks/app/layout-e53efcf24f7de515.js"],""]
+3:I[9630,[],""]
+4:I[1380,[],""]
+:HL["/_next/static/css/0fcfed08dff8a7f3.css","style"]
+0:{"rsc":["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/css/0fcfed08dff8a7f3.css","precedence":"next"}]],["$","html",null,{"lang":"zh-CN","children":["$","body",null,{"children":[["$","$L2",null,{"id":"safvsoil-jsonld-website","type":"application/ld+json","children":"{\"@context\":\"https://schema.org\",\"@type\":\"WebSite\",\"name\":\"SAFvsOil\",\"url\":\"https://saf.meichen.beauty\",\"description\":\"SAF versus fossil jet fuel decision cockpit with market snapshots, scenario comparison, and source provenance.\",\"inLanguage\":[\"zh-CN\",\"en\",\"de\"],\"publisher\":{\"@type\":\"Organization\",\"name\":\"SAFvsOil\",\"url\":\"https://saf.meichen.beauty\"}}"}],["$","$L2",null,{"id":"safvsoil-jsonld-organization","type":"application/ld+json","children":"{\"@context\":\"https://schema.org\",\"@type\":\"Organization\",\"name\":\"SAFvsOil\",\"url\":\"https://saf.meichen.beauty\",\"sameAs\":[\"https://saf.meichen.beauty\"]}"}],["$","$L3",null,{"parallelRouterKey":"children","template":["$","$L4",null,{}]}]]}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"Mn9grM0d1bK1KYIWNtoUY"}
