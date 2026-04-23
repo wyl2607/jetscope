@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = buildPageMetadata({
   title: 'Dashboard (DE)',
   description:
-    'Deutsches SAFvsOil-Dashboard mit Live-Marktsnapshot, Szenarioregister und Risikosignal fuer SAF-gegen-Kerosin Entscheidungen.',
+    'Deutsches JetScope-Dashboard mit Live-Marktsnapshot, Szenarioregister und Risikosignal fuer SAF-gegen-Kerosin Entscheidungen.',
   path: '/de/dashboard'
 });
 

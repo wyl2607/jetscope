@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { buildPageMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = buildPageMetadata({
-  title: 'SAFvsOil Deutschland',
+  title: 'JetScope Deutschland',
   description:
-    'Indexierbare deutsche Startseite fuer SAFvsOil mit Einstieg in Dashboard und Deutschland Jet-Fuel Preisbeobachtung.',
+    'Indexierbare deutsche Startseite fuer JetScope mit Einstieg in Dashboard und Deutschland Jet-Fuel Preisbeobachtung.',
   path: '/de'
 });
 
@@ -15,7 +15,7 @@ export default function GermanIndexPage() {
   return (
     <Shell
       eyebrow="Startseite · Deutsch"
-      title="SAFvsOil Deutschland"
+      title="JetScope Deutschland"
       description="Einstieg fuer den deutschen Markt: Live-Dashboard fuer SAF-vs-Kerosin Entscheidungen und indexierbare Preisseite fuer Deutschland."
     >
       <section className="grid gap-5 lg:grid-cols-2 lg:grid-cols-3">

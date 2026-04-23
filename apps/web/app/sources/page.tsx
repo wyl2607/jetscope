@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = buildPageMetadata({
   title: 'Sources',
   description:
-    'Inspect SAFvsOil source provenance with confidence, lag, fallback status, and live market source health details.',
+    'Inspect JetScope source provenance with confidence, lag, fallback status, and live market source health details.',
   path: '/sources'
 });
 

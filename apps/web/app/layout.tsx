@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { ReactNode } from 'react';
 import Script from 'next/script';
 
-const SITE_NAME = 'SAFvsOil';
+const SITE_NAME = 'JetScope';
 const SITE_URL = 'https://saf.meichen.beauty';
 const SITE_DESCRIPTION =
   'SAF versus fossil jet fuel decision cockpit with market snapshots, scenario comparison, and source provenance.';
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: SITE_NAME,
-    template: '%s | SAFvsOil'
+    template: '%s | JetScope'
   },
   description: SITE_DESCRIPTION,
   keywords: DEFAULT_KEYWORDS,
@@ -36,8 +36,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    site: '@safvsoil',
-    creator: '@safvsoil',
+    site: '@jetscope',
+    creator: '@jetscope',
     title: SITE_NAME,
     description: SITE_DESCRIPTION
   },
@@ -77,10 +77,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="zh-CN">
       <body>
-        <Script id="safvsoil-jsonld-website" type="application/ld+json">
+        <Script id="jetscope-jsonld-website" type="application/ld+json">
           {JSON.stringify(websiteJsonLd)}
         </Script>
-        <Script id="safvsoil-jsonld-organization" type="application/ld+json">
+        <Script id="jetscope-jsonld-organization" type="application/ld+json">
           {JSON.stringify(organizationJsonLd)}
         </Script>
         {children}

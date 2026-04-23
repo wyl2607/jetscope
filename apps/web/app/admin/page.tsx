@@ -15,7 +15,7 @@ const adminTasks = [
 export const metadata: Metadata = buildPageMetadata({
   title: 'Admin',
   description:
-    'Operate SAFvsOil policy assumptions, pathway parameters, and market refresh controls through the backoffice admin console.',
+    'Operate JetScope policy assumptions, pathway parameters, and market refresh controls through the backoffice admin console.',
   path: '/admin'
 });
 

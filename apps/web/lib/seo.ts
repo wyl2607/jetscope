@@ -19,7 +19,7 @@ export function buildPageMetadata(options: SEOOptions): Metadata {
       title: options.title,
       description: options.description,
       url: url,
-      siteName: 'SAFvsOil',
+      siteName: 'JetScope',
       images: [
         {
           url: options.image || `${baseUrl}/og-image.png`,

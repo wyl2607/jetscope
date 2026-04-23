@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { InfoCard } from '@/components/cards';
 import { validatePathwaysPayload, validatePoliciesPayload } from '@/lib/admin-validation';
 
-const ADMIN_TOKEN_STORAGE_KEY = 'safvsoil.admin-token.v1';
+const ADMIN_TOKEN_STORAGE_KEY = 'jetscope.admin-token.v1';
 
 const PATHWAYS_PLACEHOLDER = `[
   {

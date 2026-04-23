@@ -18,7 +18,7 @@ export const revalidate = 600;
 export const metadata: Metadata = buildPageMetadata({
   title: 'Analysis Index',
   description:
-    'Index of SAFvsOil analysis pages with crawlable summaries for airline fuel shocks, policy context, and SAF competitiveness research.',
+    'Index of JetScope analysis pages with crawlable summaries for airline fuel shocks, policy context, and SAF competitiveness research.',
   path: '/analysis'
 });
 

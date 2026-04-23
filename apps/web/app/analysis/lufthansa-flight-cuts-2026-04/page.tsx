@@ -71,7 +71,7 @@ export default function LufthansaFuelShockAnalysisPage() {
           </p>
         </InfoCard>
 
-        <InfoCard title="对 SAFvsOil 的直接影响" subtitle="Parameter delta">
+        <InfoCard title="对 JetScope 的直接影响" subtitle="Parameter delta">
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm text-slate-300">
               <thead>
