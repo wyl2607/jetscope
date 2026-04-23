@@ -19,10 +19,10 @@ const JET_PRICE_ALERT_THRESHOLD_USD_PER_L = envNumber('SAFVSOIL_ALERT_JET_PRICE_
 const BRENT_DAILY_CHANGE_ALERT_PCT = envNumber('SAFVSOIL_ALERT_BRENT_DAILY_CHANGE_PCT', 5.0);
 
 const priorities = [
-  '实时市场数据：Brent / jet proxy / carbon proxy',
-  '统一情景计算：价格、补贴、碳价、break-even',
-  '管理后台：路线假设、政策参数、数据来源',
-  '导出/汇报：图表、快照、scenario comparison'
+  'Real-time market data: Brent crude, jet fuel proxy, EU ETS carbon',
+  'Unified scenario engine: price, subsidy, carbon cost, break-even analysis',
+  'Admin control: route assumptions, policy parameters, data provenance',
+  'Export & reporting: charts, snapshots, scenario comparison'
 ];
 
 type AlertBanner = {
@@ -119,9 +119,9 @@ export default async function DashboardPage() {
 
   return (
     <Shell
-      eyebrow="Product dashboard"
-      title="SAF vs Oil decision cockpit"
-      description="B-5 垂直切片：该页现在直接读取 FastAPI + PostgreSQL 的 market snapshot 和 scenario registry（API 不可达时会降级到安全默认值）。"
+      eyebrow="Market Intelligence"
+      title="SAF vs Oil Decision Cockpit"
+      description="Live market snapshot, scenario modelling, and transition risk signals for sustainable aviation fuel decisions."
     >
       {alertBanners.length > 0 && (
         <section className="mb-6 space-y-3">
@@ -208,7 +208,7 @@ export default async function DashboardPage() {
       </section>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <InfoCard title="What this dashboard will own" subtitle="正式产品前端职责">
+        <InfoCard title="Dashboard capabilities" subtitle="Product features">
           <ul className="space-y-3 text-sm leading-7 text-slate-300">
             {priorities.map((item) => (
               <li key={item}>• {item}</li>
@@ -216,17 +216,18 @@ export default async function DashboardPage() {
           </ul>
         </InfoCard>
 
-        <InfoCard title="Current migration rule" subtitle="从 prototype 到 product">
+        <InfoCard title="Data sources" subtitle="Market coverage">
           <div className="space-y-3 text-sm leading-7 text-slate-300">
-            <p>1. 先用垂直切片把 market + scenarios 数据链路打通，再扩大覆盖面。</p>
-            <p>2. API 不可达时 dashboard 仍保留安全降级，避免空白页。</p>
-            <p>3. 下一步把 compare/sweep 写入和读取都迁到同一工作区模型。</p>
+            <p>• Brent Crude: Yahoo Finance (real-time)</p>
+            <p>• EU ETS Carbon: Market proxy (real-time)</p>
+            <p>• Jet Fuel / SAF: Modelled from Brent + crack spread + premium</p>
+            <p>• Fallback values ensure the dashboard never shows a blank page.</p>
           </div>
         </InfoCard>
       </section>
 
       <section className="mt-8">
-        <InfoCard title="Recent scenarios" subtitle="来自 FastAPI / PostgreSQL">
+        <InfoCard title="Recent scenarios" subtitle="From FastAPI / PostgreSQL">
           {readModel.recentScenarioNames.length ? (
             <ul className="space-y-2 text-sm leading-7 text-slate-300">
               {readModel.recentScenarioNames.map((name) => (
