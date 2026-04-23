@@ -1,6 +1,0 @@
-[web] > @safvsoil/web@0.1.0 dev
-[web] > next dev --hostname 127.0.0.1 --port 60782
-[web] ▲ Next.js 16.2.4 (Turbopack)
-[web] - Local:         http://127.0.0.1:60782
-[web] - Network:       http://127.0.0.1:60782
-[web] ✓ Ready in 171ms

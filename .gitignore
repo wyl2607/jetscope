@@ -33,3 +33,16 @@ apps/web/dist
 .DS_Store
 __pycache__/
 *.tsbuildinfo
+
+# Archives and generated artifacts (not for GitHub)
+docs/archive/
+archive/
+test-results/
+webhook-logs/
+.automation/
+logs/*.log
+
+# Deployment scripts (environment-specific)
+scripts/deploy-safvsoil.sh
+scripts/deploy-webhook.sh
+scripts/verify-*.sh
