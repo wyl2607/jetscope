@@ -1,0 +1,10 @@
+eu_saf_capacity_mt: 12.4
+hefa_share_pct: 58.0
+refueleu_mandate_progress_pct: 18.5
+report_period: "2025-Q4"
+published_at: "2026-01-18"
+source_status:
+  status: healthy
+  confidence: 0.97
+  error_code: null
+  missing_fields: []
