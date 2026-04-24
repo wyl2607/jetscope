@@ -30,6 +30,8 @@ logs/
 webhook-logs/
 test-results/
 *.log
+apps/api/data/
+apps/api/data/*.db
 
 # System files
 .DS_Store
