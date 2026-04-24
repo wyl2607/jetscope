@@ -19,18 +19,12 @@ This directory contains JetScope project automation scripts.
 
 ## Data Bus Integration
 
-JetScope now writes operational events to:
+Some private deployments can write operational events to an external workspace data bus:
 
 - `tools/workspace-data-bus/topics/publish-event.jsonl`
 - `tools/workspace-data-bus/topics/node-sync-event.jsonl`
 
-Useful commands:
-
-```bash
-/Users/yumei/tools/script-core/bin/sc-bus-list publish-event --tail 20
-/Users/yumei/tools/script-core/bin/sc-bus-list node-sync-event --tail 20
-/Users/yumei/tools/script-core/bin/sc-bus-read publish-event --latest --key jetscope-main
-```
+Those tools are optional and are not required for a standard local checkout.
 
 ## Typical Workflow
 
@@ -59,4 +53,4 @@ Release and deploy behavior is also pinned in `../OPERATIONS.md`; treat that as 
 
 - Legacy SAFvsOil naming has been removed from active script entrypoints.
 - Environment variable names like `SAFVSOIL_*` may still exist inside app/test code for compatibility and are not covered by this scripts README.
-- Shared reusable script infrastructure lives in `~/tools/script-core/`.
+- Private deployment wrappers may add extra observability around these scripts, but the checked-in scripts should remain runnable from this repository alone.
