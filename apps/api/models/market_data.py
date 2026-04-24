@@ -1,9 +1,13 @@
 """Pydantic models for market data metrics."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from pydantic import BaseModel, Field, ConfigDict
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class MarketPrice(BaseModel):
@@ -14,7 +18,7 @@ class MarketPrice(BaseModel):
     confidence: float = Field(..., ge=0, le=1, description="Confidence 0-1")
     freshness_seconds: int = Field(..., ge=0, description="Data age seconds")
     error_code: Optional[str] = Field(None, description="Error code if failed")
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=_utcnow)
 
     model_config = ConfigDict(json_schema_extra={
         "example": {
@@ -35,7 +39,7 @@ class CarbonIntensity(BaseModel):
     confidence: float = Field(..., ge=0, le=1, description="Confidence 0-1")
     freshness_seconds: int = Field(..., ge=0, description="Data age seconds")
     error_code: Optional[str] = Field(None, description="Error code if failed")
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=_utcnow)
 
 
 class GermanyPremium(BaseModel):
@@ -46,7 +50,7 @@ class GermanyPremium(BaseModel):
     confidence: float = Field(..., ge=0, le=1, description="Confidence 0-1")
     freshness_seconds: int = Field(..., ge=0, description="Data age seconds")
     error_code: Optional[str] = Field(None, description="Error code if failed")
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=_utcnow)
 
 
 class RotterdamEmissions(BaseModel):
@@ -59,7 +63,7 @@ class RotterdamEmissions(BaseModel):
     confidence: float = Field(..., ge=0, le=1, description="Confidence 0-1")
     freshness_seconds: int = Field(..., ge=0, description="Data age seconds")
     error_code: Optional[str] = Field(None, description="Error code if failed")
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=_utcnow)
 
 
 class EUETSVolume(BaseModel):
@@ -71,7 +75,7 @@ class EUETSVolume(BaseModel):
     confidence: float = Field(..., ge=0, le=1, description="Confidence 0-1")
     freshness_seconds: int = Field(..., ge=0, description="Data age seconds")
     error_code: Optional[str] = Field(None, description="Error code if failed")
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=_utcnow)
 
 
 class Freshness(BaseModel):
@@ -84,7 +88,7 @@ class Freshness(BaseModel):
     confidence: float = Field(..., ge=0, le=1, description="Confidence 0-1")
     freshness_seconds: int = Field(..., ge=0, description="Report age seconds")
     error_code: Optional[str] = Field(None, description="Error code if failed")
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=_utcnow)
 
 
 class SourceStatus(BaseModel):
@@ -98,4 +102,4 @@ class SourceStatus(BaseModel):
     consecutive_failures: int = Field(..., ge=0, description="Failure count")
     error_code: Optional[str] = Field(None, description="Last error code")
     cache_ttl_seconds: int = Field(..., ge=0, description="Cache TTL seconds")
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=_utcnow)

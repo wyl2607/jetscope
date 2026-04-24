@@ -15,10 +15,10 @@ from typing import Any, Dict, Optional, Tuple
 import httpx
 from pydantic import BaseModel, Field
 
-from apps.api.adapters.contract import DataSourceAdapter
-from apps.api.app.db.session import SessionLocal
-from apps.api.app.services.cache import PriceCacheService
-from apps.api.models.market_data import SourceStatus
+from app.db.session import SessionLocal
+from app.services.cache import PriceCacheService
+from adapters.contract import DataSourceAdapter
+from models.market_data import SourceStatus
 
 logger = logging.getLogger(__name__)
 

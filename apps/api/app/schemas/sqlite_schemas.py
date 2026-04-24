@@ -1,9 +1,13 @@
 """Pydantic schemas for SQLite models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class MarketPriceBase(BaseModel):
@@ -16,7 +20,7 @@ class MarketPriceBase(BaseModel):
 
 class MarketPriceCreate(MarketPriceBase):
     """Schema for creating market price."""
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=_utcnow)
 
 
 class MarketPriceUpdate(BaseModel):

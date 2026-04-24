@@ -1,13 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime
-from pathlib import Path
-import sys
-
 import httpx
 import pytest
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from adapters.iea import ConfigError, IEAAdapter
 

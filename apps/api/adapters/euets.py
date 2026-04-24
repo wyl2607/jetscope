@@ -1,14 +1,18 @@
 """EU ETS trading volume and price adapter."""
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Tuple
 
 import httpx
 from pydantic import BaseModel
 
-from apps.api.adapters.contract import DataSourceAdapter
-from apps.api.models.market_data import EUETSVolume
+try:
+    from adapters.contract import DataSourceAdapter
+    from models.market_data import EUETSVolume
+except ModuleNotFoundError:  # pragma: no cover - supports repo-root imports.
+    from apps.api.adapters.contract import DataSourceAdapter
+    from apps.api.models.market_data import EUETSVolume
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +41,7 @@ class EUETSAdapter(DataSourceAdapter):
             async with httpx.AsyncClient(
                 timeout=self.timeout_seconds
             ) as client:
-                yesterday = (datetime.utcnow() - timedelta(days=1)).strftime(
+                yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).strftime(
                     "%Y-%m-%d"
                 )
                 params: Dict[str, Any] = {

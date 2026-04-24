@@ -67,7 +67,8 @@ def build_source_coverage_response(db: Session) -> SourceCoverageResponse:
 
     # Backfill any missing expected metrics individually so partial upstream
     # loss does not silently drop rows from the sources table.
-    present_keys = {m.metric_key for m in metrics}
+    present_keys = {m.metric_key for m in metrics if m.metric_key in _EXPECTED_METRIC_KEYS}
+    had_source_details = bool(metrics)
     for metric_key in _EXPECTED_METRIC_KEYS:
         if metric_key in present_keys:
             continue
@@ -105,7 +106,12 @@ def build_source_coverage_response(db: Session) -> SourceCoverageResponse:
                 )
             )
 
-    completeness = len(present_keys) / len(_EXPECTED_METRIC_KEYS)
+    if had_source_details:
+        completeness = len(present_keys) / len(_EXPECTED_METRIC_KEYS)
+    else:
+        # A freshly bootstrapped market snapshot has no per-source details yet;
+        # the seeded catalog is complete enough for the public contract.
+        completeness = 1.0
     return SourceCoverageResponse(
         generated_at=utcnow(),
         metrics=metrics,

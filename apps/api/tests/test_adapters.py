@@ -5,18 +5,18 @@ Tests adapter implementations for fetch, validate, transform, and status.
 
 import pytest
 import httpx
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from apps.api.adapters.contract import DataSourceAdapter
-from apps.api.adapters.rotterdam import RotterdamAdapter
-from apps.api.adapters.euets import EUETSAdapter
-from apps.api.models.market_data import (
+from adapters.contract import DataSourceAdapter
+from adapters.rotterdam import RotterdamAdapter
+from adapters.euets import EUETSAdapter
+from models.market_data import (
     RotterdamEmissions,
     EUETSVolume,
 )
-from apps.api.constants.error_codes import is_fallback_allowed
+from constants.error_codes import is_fallback_allowed
 
 
 class TestDataSourceAdapterBase:
@@ -89,7 +89,7 @@ class TestRotterdamAdapter:
     def test_rotterdam_transform(self):
         """Test transformation to RotterdamEmissions."""
         adapter = RotterdamAdapter()
-        adapter._last_fetch_time = datetime.utcnow()
+        adapter._last_fetch_time = datetime.now(timezone.utc)
         data = {
             "pm25_ugm3": 12.5,
             "no2_ppb": 28.3,
@@ -160,7 +160,7 @@ class TestEUETSAdapter:
     def test_euets_transform_full(self):
         """Test transformation with price and volume."""
         adapter = EUETSAdapter()
-        adapter._last_fetch_time = datetime.utcnow()
+        adapter._last_fetch_time = datetime.now(timezone.utc)
         data = {"price_eur": 85.50, "volume_tons": 150000}
 
         result = adapter.transform(data)
@@ -172,7 +172,7 @@ class TestEUETSAdapter:
     def test_euets_transform_price_only(self):
         """Test transformation with price only."""
         adapter = EUETSAdapter()
-        adapter._last_fetch_time = datetime.utcnow()
+        adapter._last_fetch_time = datetime.now(timezone.utc)
         data = {"price_eur": 85.50, "volume_tons": None}
 
         result = adapter.transform(data)

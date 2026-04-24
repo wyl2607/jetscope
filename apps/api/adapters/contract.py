@@ -6,12 +6,15 @@ implement this interface to ensure consistent behavior and error handling.
 
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Tuple
 
 from pydantic import BaseModel
 
-from apps.api.constants.error_codes import ERROR_CODES
+try:
+    from constants.error_codes import ERROR_CODES
+except ModuleNotFoundError:  # pragma: no cover - supports repo-root imports.
+    from apps.api.constants.error_codes import ERROR_CODES
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +151,7 @@ class DataSourceAdapter(ABC):
                 raise ValueError(f"{self.source_id}: Data validation failed")
 
             self._consecutive_failures = 0
-            self._last_fetch_time = datetime.utcnow()
+            self._last_fetch_time = datetime.now(timezone.utc)
             self._last_error_code = None
 
             return self.transform(raw_data)
@@ -181,7 +184,7 @@ class DataSourceAdapter(ABC):
         """
         if self._last_fetch_time is None:
             return -1
-        return int((datetime.utcnow() - self._last_fetch_time).total_seconds())
+        return int((datetime.now(timezone.utc) - self._last_fetch_time).total_seconds())
 
     def is_error_recoverable(self, error_code: str) -> bool:
         """Check if an error allows fallback to another source.

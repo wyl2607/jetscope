@@ -9,8 +9,12 @@ from typing import Any, Dict, Optional, Tuple
 import httpx
 from pydantic import BaseModel
 
-from apps.api.adapters.contract import DataSourceAdapter
-from apps.api.models.market_data import RotterdamEmissions
+try:
+    from adapters.contract import DataSourceAdapter
+    from models.market_data import RotterdamEmissions
+except ModuleNotFoundError:  # pragma: no cover - supports repo-root imports.
+    from apps.api.adapters.contract import DataSourceAdapter
+    from apps.api.models.market_data import RotterdamEmissions
 
 logger = logging.getLogger(__name__)
 
