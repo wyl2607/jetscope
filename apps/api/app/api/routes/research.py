@@ -38,6 +38,7 @@ def list_research_signals(
         ResearchSignalResponse(
             id=row.id,
             created_at=row.created_at,
+            updated_at=row.updated_at,
             source_url=row.source_url,
             signal_type=row.signal_type,
             entities=list(row.entities or []),

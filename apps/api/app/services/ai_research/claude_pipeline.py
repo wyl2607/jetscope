@@ -4,7 +4,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
+from sqlalchemy.orm import Session
+
 from app.core.config import settings
+from app.services.ai_research.budget import BudgetStateRepository
 from app.services.ai_research.scraper import RawArticle
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
@@ -52,13 +55,14 @@ class ClaudeSignalExtractor:
         self._tokens_today = 0
         self._budget_day = self._current_day()
         self._client = None
+        self._budget_state_repository = BudgetStateRepository()
         if not self._mock_mode:
             from anthropic import Anthropic
 
             key = anthropic_api_key if anthropic_api_key is not None else settings.anthropic_api_key
             self._client = Anthropic(api_key=key or None)
 
-    def extract(self, article: RawArticle) -> list[ExtractedSignal]:
+    def extract(self, article: RawArticle, *, db: Session | None = None) -> list[ExtractedSignal]:
         self._reset_budget_if_new_day()
         if self._mock_mode:
             return [
@@ -77,6 +81,16 @@ class ClaudeSignalExtractor:
 
         if self._client is None:
             raise RuntimeError("Anthropic client is not initialized")
+
+        if db is not None:
+            budget_state = self._budget_state_repository.get_or_create(db, self._budget_day)
+            if budget_state.exhausted:
+                raise BudgetExceeded("AI research daily token budget exhausted")
+
+            estimated_request_tokens = self._estimate_request_tokens(article)
+            if budget_state.tokens_used + estimated_request_tokens > self._token_budget:
+                self._budget_state_repository.mark_exhausted(db, self._budget_day)
+                raise BudgetExceeded("AI research daily token budget exhausted")
 
         response = self._client.messages.create(
             model=self._model,
@@ -110,9 +124,22 @@ class ClaudeSignalExtractor:
         input_tokens = int(getattr(usage, "input_tokens", 0) or 0)
         output_tokens = int(getattr(usage, "output_tokens", 0) or 0)
         total_tokens = input_tokens + output_tokens
-        if self._tokens_today + total_tokens > self._token_budget:
-            raise BudgetExceeded("AI research daily token budget exceeded")
-        self._tokens_today += total_tokens
+        if db is not None:
+            budget_state = self._budget_state_repository.get_or_create(db, self._budget_day)
+            if budget_state.tokens_used + total_tokens > self._token_budget:
+                self._budget_state_repository.mark_exhausted(db, self._budget_day)
+                raise BudgetExceeded("AI research daily token budget exceeded")
+            budget_state = self._budget_state_repository.record_usage(
+                db,
+                self._budget_day,
+                total_tokens,
+                self._token_budget,
+            )
+            self._tokens_today = budget_state.tokens_used
+        else:
+            if self._tokens_today + total_tokens > self._token_budget:
+                raise BudgetExceeded("AI research daily token budget exceeded")
+            self._tokens_today += total_tokens
 
         parsed = self._parse_signal_payload(response)
         signal = ExtractedSignal(
@@ -188,3 +215,13 @@ class ClaudeSignalExtractor:
         if day != self._budget_day:
             self._budget_day = day
             self._tokens_today = 0
+
+    @staticmethod
+    def _estimate_request_tokens(article: RawArticle) -> int:
+        payload = (
+            f"Title: {article.title}\n"
+            f"Published: {article.published_at.isoformat()}\n"
+            f"Excerpt: {article.excerpt}"
+        )
+        estimated_input_tokens = max(1, len(payload) // 4)
+        return estimated_input_tokens + 600

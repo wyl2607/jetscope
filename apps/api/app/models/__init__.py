@@ -1,6 +1,7 @@
 """ORM models package."""
 
 from app.models.tables import (
+    AIResearchBudgetDay,
     ESGSignal,
     MarketSnapshot,
     MarketRefreshRun,
@@ -14,6 +15,7 @@ from app.models.tables import (
 )
 
 __all__ = [
+    "AIResearchBudgetDay",
     "ESGSignal",
     "MarketSnapshot",
     "MarketRefreshRun",

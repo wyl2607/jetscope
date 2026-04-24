@@ -120,6 +120,7 @@ class ESGSignal(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     source_url: Mapped[str] = mapped_column(String(1024), unique=True, index=True)
     signal_type: Mapped[str] = mapped_column(
         Enum(
@@ -156,3 +157,12 @@ class ESGSignal(Base):
     __table_args__ = (
         Index("ix_esg_signals_signal_type_created_at", "signal_type", created_at.desc()),
     )
+
+
+class AIResearchBudgetDay(Base):
+    __tablename__ = "ai_research_budget_days"
+
+    day: Mapped[str] = mapped_column(String(10), primary_key=True)
+    tokens_used: Mapped[int] = mapped_column(default=0)
+    exhausted: Mapped[bool] = mapped_column(Boolean, default=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)

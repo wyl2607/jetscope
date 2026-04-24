@@ -17,6 +17,7 @@ ResearchImpactDirection = Literal["BEARISH_SAF", "BULLISH_SAF", "NEUTRAL"]
 class ResearchSignalResponse(BaseModel):
     id: str
     created_at: datetime
+    updated_at: datetime
     source_url: str
     signal_type: ResearchSignalType
     entities: list[str] = Field(default_factory=list)

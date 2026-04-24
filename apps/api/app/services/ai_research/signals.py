@@ -19,6 +19,7 @@ class SignalRepository:
             signal = ESGSignal(
                 id=str(uuid4()),
                 created_at=now,
+                updated_at=now,
                 source_url=raw_article.url,
                 signal_type=extracted.signal_type,
                 entities=extracted.entities,
@@ -37,7 +38,7 @@ class SignalRepository:
             db.refresh(signal)
             return signal
 
-        existing.created_at = now
+        existing.updated_at = now
         existing.signal_type = extracted.signal_type
         existing.entities = extracted.entities
         existing.impact_direction = extracted.impact_direction

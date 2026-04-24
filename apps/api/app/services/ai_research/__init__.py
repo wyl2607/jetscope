@@ -19,12 +19,12 @@ def run_daily_pipeline(db: Session) -> dict[str, int]:
 
     articles = scraper.fetch_recent()
     fetched = len(articles)
-    for article in articles:
+    for index, article in enumerate(articles):
         try:
-            signals = extractor.extract(article)
+            signals = extractor.extract(article, db=db)
         except BudgetExceeded:
-            skipped_budget += 1
-            continue
+            skipped_budget += len(articles) - index
+            break
 
         extracted += len(signals)
         for signal in signals:

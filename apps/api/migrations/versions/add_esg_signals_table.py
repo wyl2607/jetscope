@@ -43,6 +43,7 @@ def upgrade() -> None:
         "esg_signals",
         sa.Column("id", sa.String(length=36), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("source_url", sa.String(length=1024), nullable=False),
         sa.Column("signal_type", signal_type_enum, nullable=False),
         sa.Column("entities", sa.JSON(), nullable=False),
@@ -60,6 +61,7 @@ def upgrade() -> None:
         sa.CheckConstraint("confidence >= 0 AND confidence <= 1", name="ck_esg_signals_confidence_range"),
     )
     op.create_index("ix_esg_signals_created_at", "esg_signals", ["created_at"], unique=False)
+    op.create_index("ix_esg_signals_updated_at", "esg_signals", ["updated_at"], unique=False)
     op.create_index("ix_esg_signals_source_url", "esg_signals", ["source_url"], unique=True)
     op.execute(
         sa.text(
@@ -67,10 +69,27 @@ def upgrade() -> None:
             "ON esg_signals (signal_type, created_at DESC)"
         )
     )
+    op.create_table(
+        "ai_research_budget_days",
+        sa.Column("day", sa.String(length=10), nullable=False),
+        sa.Column("tokens_used", sa.Integer(), nullable=False),
+        sa.Column("exhausted", sa.Boolean(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.PrimaryKeyConstraint("day"),
+    )
+    op.create_index(
+        "ix_ai_research_budget_days_updated_at",
+        "ai_research_budget_days",
+        ["updated_at"],
+        unique=False,
+    )
 
 
 def downgrade() -> None:
+    op.drop_index("ix_ai_research_budget_days_updated_at", table_name="ai_research_budget_days")
+    op.drop_table("ai_research_budget_days")
     op.execute(sa.text("DROP INDEX ix_esg_signals_signal_type_created_at"))
     op.drop_index("ix_esg_signals_source_url", table_name="esg_signals")
+    op.drop_index("ix_esg_signals_updated_at", table_name="esg_signals")
     op.drop_index("ix_esg_signals_created_at", table_name="esg_signals")
     op.drop_table("esg_signals")

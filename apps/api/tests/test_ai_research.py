@@ -15,7 +15,7 @@ from sqlalchemy.orm import sessionmaker
 from app.api.router import api_router
 from app.db.base import Base
 from app.db.session import get_db
-from app.models.tables import ESGSignal
+from app.models.tables import AIResearchBudgetDay, ESGSignal
 from app.services.ai_research import run_daily_pipeline
 from app.services.ai_research.claude_pipeline import BudgetExceeded, ClaudeSignalExtractor
 from app.services.ai_research.scraper import RawArticle
@@ -144,6 +144,53 @@ def test_claude_extractor_budget_exceeded(monkeypatch: pytest.MonkeyPatch):
         extractor.extract(_article())
 
 
+def test_claude_extractor_persists_budget_across_instances(monkeypatch: pytest.MonkeyPatch, session_factory):
+    calls = {"count": 0}
+
+    class FakeUsage:
+        input_tokens = 40
+        output_tokens = 20
+        cache_read_input_tokens = 0
+
+    class FakeBlock:
+        text = (
+            '{"signal_type":"OTHER","entities":[],"impact_direction":"NEUTRAL",'
+            '"confidence":0.2,"summary_en":"n/a","summary_cn":"n/a"}'
+        )
+        input = None
+
+    class FakeResponse:
+        usage = FakeUsage()
+        content = [FakeBlock()]
+        model = "claude-sonnet-4-6"
+
+    class FakeMessages:
+        def create(self, **kwargs):
+            calls["count"] += 1
+            return FakeResponse()
+
+    class FakeAnthropic:
+        def __init__(self, api_key=None):
+            self.messages = FakeMessages()
+
+    monkeypatch.setitem(sys.modules, "anthropic", types.SimpleNamespace(Anthropic=FakeAnthropic))
+
+    with session_factory() as db:
+        first = ClaudeSignalExtractor(mock_mode=False, token_budget=650, anthropic_api_key="x")
+        first.extract(_article("https://example.com/one"), db=db)
+
+        second = ClaudeSignalExtractor(mock_mode=False, token_budget=650, anthropic_api_key="x")
+        with pytest.raises(BudgetExceeded):
+            second.extract(_article("https://example.com/two"), db=db)
+
+        budget_row = db.get(AIResearchBudgetDay, datetime.now(timezone.utc).date().isoformat())
+
+    assert budget_row is not None
+    assert budget_row.tokens_used == 60
+    assert budget_row.exhausted is True
+    assert calls["count"] == 1
+
+
 def test_signal_repository_upsert_dedup_by_url(session_factory):
     repo = SignalRepository()
     article = _article("https://example.com/dupe")
@@ -190,6 +237,8 @@ def test_signal_repository_upsert_dedup_by_url(session_factory):
     assert len(rows) == 1
     assert rows[0].signal_type == "PRICE_SHOCK"
     assert rows[0].summary_en == "second"
+    assert rows[0].created_at == first.created_at
+    assert rows[0].updated_at >= first.updated_at
 
 
 def test_run_daily_pipeline_mock_end_to_end(monkeypatch: pytest.MonkeyPatch, session_factory):
@@ -201,7 +250,7 @@ def test_run_daily_pipeline_mock_end_to_end(monkeypatch: pytest.MonkeyPatch, ses
             return [article1, article2]
 
     class FakeExtractor:
-        def extract(self, _article):
+        def extract(self, _article, *, db=None):
             return [
                 type(
                     "Sig",
@@ -230,6 +279,52 @@ def test_run_daily_pipeline_mock_end_to_end(monkeypatch: pytest.MonkeyPatch, ses
     assert count == 2
 
 
+def test_run_daily_pipeline_stops_after_budget_exhaustion(monkeypatch: pytest.MonkeyPatch, session_factory):
+    articles = [
+        _article("https://example.com/1"),
+        _article("https://example.com/2"),
+        _article("https://example.com/3"),
+    ]
+    seen: list[str] = []
+
+    class FakeScraper:
+        def fetch_recent(self):
+            return articles
+
+    class FakeExtractor:
+        def extract(self, article, *, db=None):
+            seen.append(article.url)
+            if article.url == "https://example.com/2":
+                raise BudgetExceeded("limit")
+            return [
+                type(
+                    "Sig",
+                    (),
+                    {
+                        "signal_type": "OTHER",
+                        "entities": [],
+                        "impact_direction": "NEUTRAL",
+                        "confidence": 0.5,
+                        "summary_en": "mock",
+                        "summary_cn": "mock",
+                        "claude_model": "mock",
+                        "prompt_cache_hit": False,
+                    },
+                )()
+            ]
+
+    monkeypatch.setattr("app.services.ai_research.NewsScraper", lambda: FakeScraper())
+    monkeypatch.setattr("app.services.ai_research.ClaudeSignalExtractor", lambda: FakeExtractor())
+
+    with session_factory() as db:
+        result = run_daily_pipeline(db)
+        count = db.query(ESGSignal).count()
+
+    assert seen == ["https://example.com/1", "https://example.com/2"]
+    assert result == {"fetched": 3, "extracted": 1, "persisted": 1, "skipped_budget": 2}
+    assert count == 1
+
+
 def test_research_route_filters_since_limit_signal_type(client: TestClient, session_factory):
     now = datetime.now(timezone.utc)
     with session_factory() as db:
@@ -238,6 +333,7 @@ def test_research_route_filters_since_limit_signal_type(client: TestClient, sess
                 ESGSignal(
                     id=str(uuid4()),
                     created_at=now - timedelta(days=2),
+                    updated_at=now - timedelta(days=2),
                     source_url="https://example.com/old",
                     signal_type="OTHER",
                     entities=[],
@@ -254,6 +350,7 @@ def test_research_route_filters_since_limit_signal_type(client: TestClient, sess
                 ESGSignal(
                     id=str(uuid4()),
                     created_at=now - timedelta(hours=1),
+                    updated_at=now - timedelta(hours=1),
                     source_url="https://example.com/new1",
                     signal_type="POLICY_CHANGE",
                     entities=["EU"],
@@ -270,6 +367,7 @@ def test_research_route_filters_since_limit_signal_type(client: TestClient, sess
                 ESGSignal(
                     id=str(uuid4()),
                     created_at=now - timedelta(minutes=30),
+                    updated_at=now - timedelta(minutes=30),
                     source_url="https://example.com/new2",
                     signal_type="PRICE_SHOCK",
                     entities=["Market"],
@@ -300,6 +398,7 @@ def test_research_route_filters_since_limit_signal_type(client: TestClient, sess
     assert len(payload) == 1
     assert payload[0]["source_url"] == "https://example.com/new1"
     assert payload[0]["signal_type"] == "POLICY_CHANGE"
+    assert "updated_at" in payload[0]
 
 
 def test_research_route_defaults_to_recent_window(client: TestClient, session_factory):
@@ -309,6 +408,7 @@ def test_research_route_defaults_to_recent_window(client: TestClient, session_fa
             ESGSignal(
                 id=str(uuid4()),
                 created_at=now - timedelta(hours=1),
+                updated_at=now - timedelta(hours=1),
                 source_url="https://example.com/default-window",
                 signal_type="OTHER",
                 entities=[],
