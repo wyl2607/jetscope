@@ -20,8 +20,8 @@ function textResponse(body, status = 200) {
 function installEnv(t, nextEnv = {}) {
   const previous = new Map();
   const env = {
-    SAFVSOIL_API_BASE_URL: 'https://api.example.com',
-    SAFVSOIL_API_PREFIX: '/v1',
+    JETSCOPE_API_BASE_URL: 'https://api.example.com',
+    JETSCOPE_API_PREFIX: '/v1',
     ...nextEnv
   };
   for (const [key, value] of Object.entries(env)) {

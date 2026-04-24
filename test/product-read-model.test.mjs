@@ -44,9 +44,9 @@ function installEnv(t, nextEnv) {
 
 test('getDashboardReadModel summarizes live market, scenario, and risk signals for the dashboard', async (t) => {
   installEnv(t, {
-    SAFVSOIL_API_BASE_URL: 'https://api.example.com',
-    SAFVSOIL_API_PREFIX: '/v1',
-    SAFVSOIL_WORKSPACE_SLUG: 'ops'
+    JETSCOPE_API_BASE_URL: 'https://api.example.com',
+    JETSCOPE_API_PREFIX: '/v1',
+    JETSCOPE_WORKSPACE_SLUG: 'ops'
   });
 
   const originalDateNow = Date.now;
@@ -197,9 +197,9 @@ test('getDashboardReadModel summarizes live market, scenario, and risk signals f
 
 test('getDashboardReadModel falls back to safe dashboard defaults when the market snapshot fails', async (t) => {
   installEnv(t, {
-    SAFVSOIL_API_BASE_URL: 'https://api.example.com',
-    SAFVSOIL_API_PREFIX: '/v1',
-    SAFVSOIL_WORKSPACE_SLUG: 'ops'
+    JETSCOPE_API_BASE_URL: 'https://api.example.com',
+    JETSCOPE_API_PREFIX: '/v1',
+    JETSCOPE_WORKSPACE_SLUG: 'ops'
   });
 
   installFetchStub(
@@ -224,8 +224,8 @@ test('getDashboardReadModel falls back to safe dashboard defaults when the marke
 
 test('getGermanyJetFuelReadModel falls back from EU proxy history to global jet history when needed', async (t) => {
   installEnv(t, {
-    SAFVSOIL_API_BASE_URL: 'https://api.example.com',
-    SAFVSOIL_API_PREFIX: '/v1'
+    JETSCOPE_API_BASE_URL: 'https://api.example.com',
+    JETSCOPE_API_PREFIX: '/v1'
   });
 
   installFetchStub(
