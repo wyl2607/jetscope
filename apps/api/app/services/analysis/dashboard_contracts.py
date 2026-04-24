@@ -137,8 +137,8 @@ def build_airline_decision_response(
     )
 
 
-def build_eu_reserve_signal_response() -> ReserveSignalResponse:
-    reserve_stress = get_eu_reserve_stress()
+def build_eu_reserve_signal_response(db=None) -> ReserveSignalResponse:
+    reserve_stress = get_eu_reserve_stress(db=db)
     return ReserveSignalResponse(
         generated_at=utcnow(),
         region=reserve_stress.region,

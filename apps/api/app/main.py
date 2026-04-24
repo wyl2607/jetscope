@@ -12,17 +12,21 @@ from app.db.session import SessionLocal, engine
 from app.services.market import refresh_market_snapshot_set
 from app.services.analysis.tipping_point import TippingPointEngine
 from app.services.bootstrap import utcnow
+from app.services.reserves import refresh_reserves_coverage
 
 logger = logging.getLogger("safvsoil.market_refresh")
 tipping_logger = logging.getLogger("safvsoil.tipping_point")
+reserves_logger = logging.getLogger("jetscope.reserves_refresh")
 
 TIPPING_EVALUATION_INTERVAL = timedelta(minutes=15)
+RESERVES_REFRESH_INTERVAL = timedelta(hours=24)
 
 
 async def _market_refresh_loop(interval_seconds: int) -> None:
     consecutive_failures = 0
     tipping_engine = TippingPointEngine()
     next_tipping_eval_at = utcnow()
+    next_reserves_refresh_at = utcnow()
     while True:
         db = SessionLocal()
         try:
@@ -36,6 +40,18 @@ async def _market_refresh_loop(interval_seconds: int) -> None:
             )
 
             now = utcnow()
+            if now >= next_reserves_refresh_at:
+                try:
+                    inserted = refresh_reserves_coverage(db)
+                    reserves_logger.info(
+                        "reserves_refresh_cycle inserted=%s next_in_seconds=%s",
+                        inserted,
+                        int(RESERVES_REFRESH_INTERVAL.total_seconds()),
+                    )
+                except Exception:
+                    reserves_logger.exception("reserves_refresh_cycle_failed")
+                next_reserves_refresh_at = now + RESERVES_REFRESH_INTERVAL
+
             if now >= next_tipping_eval_at:
                 events = tipping_engine.evaluate(now=now, db=db)
                 tipping_engine.record_events(events, db)
