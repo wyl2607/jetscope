@@ -32,10 +32,11 @@ export function SourceCoveragePanel({
   title = 'Source coverage',
   subtitle = 'Live metric provenance and source trust'
 }: Props) {
-  const liveCount = metrics.filter((m) => m.status !== 'seed').length;
+  const liveCount = metrics.filter((m) => trustState(m) === 'live').length;
   const seedCount = metrics.filter((m) => m.status === 'seed').length;
-  const fallbackCount = metrics.filter((m) => m.fallback_used).length;
+  const fallbackCount = metrics.filter((m) => trustState(m) === 'fallback').length;
   const proxyCount = metrics.filter((m) => trustState(m) === 'proxy').length;
+  const degradedCount = metrics.filter((m) => trustState(m) === 'degraded').length;
 
   return (
     <InfoCard title={title} subtitle={subtitle}>
@@ -68,6 +69,11 @@ export function SourceCoveragePanel({
         {fallbackCount > 0 && (
           <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-slate-300">
             {fallbackCount} fallback
+          </span>
+        )}
+        {degradedCount > 0 && (
+          <span className="rounded-full border border-amber-700/50 bg-amber-950/30 px-3 py-1 text-amber-300">
+            {degradedCount} degraded
           </span>
         )}
         {metrics.length === 0 && (

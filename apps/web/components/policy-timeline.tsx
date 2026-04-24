@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 /**
- * Policy milestone timeline component for SAF vs Oil dashboard.
+ * Policy milestone timeline component for the JetScope dashboard.
  * Displays key regulatory milestones based on their status relative to current/market time.
  */
 

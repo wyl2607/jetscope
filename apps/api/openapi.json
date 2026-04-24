@@ -29,6 +29,27 @@
         }
       }
     },
+    "/v1/readiness": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Get Readiness",
+        "operationId": "get_readiness_v1_readiness_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/analysis/tipping-point": {
       "get": {
         "tags": [
@@ -1795,6 +1816,96 @@
         "additionalProperties": true,
         "type": "object",
         "title": "PreferencesPayload"
+      },
+      "ReadinessCheck": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "status"
+        ],
+        "title": "ReadinessCheck"
+      },
+      "ReadinessResponse": {
+        "properties": {
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "service": {
+            "type": "string",
+            "title": "Service",
+            "default": "api"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "default": "0.1.0"
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment"
+          },
+          "api_prefix": {
+            "type": "string",
+            "title": "Api Prefix"
+          },
+          "schema_bootstrap_mode": {
+            "type": "string",
+            "title": "Schema Bootstrap Mode"
+          },
+          "degraded": {
+            "type": "boolean",
+            "title": "Degraded",
+            "default": false
+          },
+          "checks": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ReadinessCheck"
+            },
+            "type": "object",
+            "title": "Checks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ready",
+          "status",
+          "generated_at",
+          "environment",
+          "api_prefix",
+          "schema_bootstrap_mode"
+        ],
+        "title": "ReadinessResponse"
       },
       "ResearchSignalResponse": {
         "properties": {
