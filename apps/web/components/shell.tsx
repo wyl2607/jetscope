@@ -4,7 +4,7 @@ import { ReactNode } from 'react';
 
 const nav = [
   { href: '/dashboard', label: 'Dashboard' },
-  { href: '/crisis/eu-jet-reserves', label: 'Crisis' },
+  { href: '/crisis', label: 'Crisis' },
   { href: '/scenarios', label: 'Scenarios' },
   { href: '/research', label: 'Research' },
   { href: '/reports', label: 'Reports' },

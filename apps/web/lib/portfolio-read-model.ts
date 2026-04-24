@@ -1,6 +1,6 @@
 import { buildApiUrl } from '@/lib/api-config';
 
-const FETCH_TIMEOUT_MS = 5000;
+const DEFAULT_FETCH_TIMEOUT_MS = 5000;
 
 export type ReserveCoverage = {
   generated_at: string;
@@ -54,6 +54,14 @@ export type ResearchSignalsResult =
 export const AI_RESEARCH_ENABLED =
   String(process.env.JETSCOPE_AI_RESEARCH_ENABLED ?? process.env.AI_RESEARCH_ENABLED ?? '').toLowerCase() === 'true';
 
+function portfolioFetchTimeoutMs(): number {
+  const parsed = Number(process.env.JETSCOPE_PORTFOLIO_FETCH_TIMEOUT_MS);
+  if (!Number.isFinite(parsed) || parsed < 100) {
+    return DEFAULT_FETCH_TIMEOUT_MS;
+  }
+  return Math.floor(parsed);
+}
+
 function normalizeImpactDirection(value: unknown): ResearchSignal['impact_direction'] {
   const normalized = String(value ?? '').trim().toLowerCase();
   if (normalized === 'positive' || normalized === 'negative' || normalized === 'neutral') {
@@ -92,9 +100,10 @@ function normalizeSignal(raw: Record<string, unknown>, index: number): ResearchS
   };
 }
 
-async function fetchJsonWithStatus<T>(path: string): Promise<{ status: number; data: T | null }> {
+async function fetchJsonWithStatus<T>(path: string): Promise<{ status: number; data: T | null; error?: string }> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  const timeoutMs = portfolioFetchTimeoutMs();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(buildApiUrl(path), {
       cache: 'no-store',
@@ -111,6 +120,28 @@ async function fetchJsonWithStatus<T>(path: string): Promise<{ status: number; d
     return {
       status: response.status,
       data: (await response.json()) as T
+    };
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return {
+        status: 408,
+        data: null,
+        error: `timeout after ${timeoutMs}ms`
+      };
+    }
+
+    if (error instanceof SyntaxError) {
+      return {
+        status: 502,
+        data: null,
+        error: 'invalid JSON response'
+      };
+    }
+
+    return {
+      status: 502,
+      data: null,
+      error: error instanceof Error ? error.message : 'portfolio fetch failed'
     };
   } finally {
     clearTimeout(timeout);
@@ -171,7 +202,7 @@ export async function getResearchSignals(): Promise<ResearchSignalsResult> {
       return {
         status: 'error',
         signals: [],
-        message: `HTTP ${response.status}`
+        message: response.error ? `HTTP ${response.status}: ${response.error}` : `HTTP ${response.status}`
       };
     }
 
