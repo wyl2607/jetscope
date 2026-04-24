@@ -19,7 +19,7 @@
     "api:dev": "cd apps/api && .venv/bin/uvicorn app.main:app --reload --port 8000",
     "api:check": "node scripts/api-check.mjs",
     "api:migrate": "cd apps/api && alembic upgrade head",
-    "test": "node --experimental-strip-types --test test/admin-validation.test.mjs test/product-read-model.test.mjs test/sources-read-model.test.mjs test/portfolio-read-model.test.mjs",
+    "test": "node --experimental-strip-types --test test/admin-validation.test.mjs test/product-read-model.test.mjs test/sources-read-model.test.mjs test/portfolio-read-model.test.mjs test/routing.test.mjs test/tipping-point-workbench-contract.test.mjs",
     "sync:check": "bash ./scripts/sync-check.sh",
     "preflight": "npm run web:gate && npm run api:check && npm test && npm run preflight:product && npm run preflight:e2e",
     "preflight:product": "node scripts/preflight-product-smoke.mjs",

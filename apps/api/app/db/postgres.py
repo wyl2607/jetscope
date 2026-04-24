@@ -8,8 +8,8 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 
 DEFAULT_POSTGRES_URL = os.getenv(
-    "SAFVSOIL_POSTGRES_URL",
-    settings.database_url,
+    "JETSCOPE_POSTGRES_URL",
+    os.getenv("SAFVSOIL_POSTGRES_URL", settings.database_url),
 )
 
 

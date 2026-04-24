@@ -17,7 +17,7 @@ Usage:
     python migration_zero_downtime.py --phase 3 --strict
 
 Environment:
-    SAFVSOIL_POSTGRES_URL   Postgres connection string
+    JETSCOPE_POSTGRES_URL   Postgres connection string, with SAFVSOIL_POSTGRES_URL as a legacy fallback
     DUAL_WRITE_PHASE        phase1 | phase2 | phase3
     READ_POSTGRES_PCT       0-100 (Phase 2 only)
 """
@@ -43,10 +43,10 @@ from app.db.postgres import create_postgres_engine
 from app.db.sqlite import create_sqlite_engine
 from app.models.tables import MarketRefreshRun, MarketSnapshot
 
-DEFAULT_SQLITE_PATH = os.getenv("SAFVSOIL_SQLITE_PATH", "/opt/safvsoil/data/market.db")
+DEFAULT_SQLITE_PATH = os.getenv("JETSCOPE_SQLITE_PATH", os.getenv("SAFVSOIL_SQLITE_PATH", "/opt/safvsoil/data/market.db"))
 DEFAULT_POSTGRES_URL = os.getenv(
-    "SAFVSOIL_POSTGRES_URL",
-    "postgresql+psycopg://postgres:postgres@localhost:5432/safvsoil",
+    "JETSCOPE_POSTGRES_URL",
+    os.getenv("SAFVSOIL_POSTGRES_URL", "postgresql+psycopg://postgres:postgres@localhost:5432/jetscope"),
 )
 
 # Tables that participate in dual-write migration
