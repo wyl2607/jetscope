@@ -67,7 +67,7 @@ export default async function DashboardPage() {
   return (
     <Shell
       eyebrow="Market Intelligence"
-      title="SAF vs Oil Decision Cockpit"
+      title="JetScope Decision Cockpit"
       description="Live market snapshot, scenario modelling, and transition risk signals for sustainable aviation fuel decisions."
     >
       {alertBanners.length > 0 && (
