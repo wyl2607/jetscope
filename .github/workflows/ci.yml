@@ -57,6 +57,9 @@ jobs:
       - name: Compile API
         run: npm run api:check
 
+      - name: Check OpenAPI schema drift
+        run: npm run api:openapi:check
+
       - name: Run API tests
         working-directory: apps/api
         run: python -m pytest

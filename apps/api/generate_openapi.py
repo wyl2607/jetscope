@@ -36,7 +36,7 @@ def main() -> int:
         traceback.print_exc()
         return 1
 
-    output_path = SCRIPT_DIR / "openapi.json"
+    output_path = Path(os.environ.get("JETSCOPE_OPENAPI_OUTPUT", SCRIPT_DIR / "openapi.json"))
     try:
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(schema, f, indent=2, ensure_ascii=False)
