@@ -31,7 +31,6 @@ type Props = {
   };
 };
 
-const ADMIN_TOKEN_STORAGE_KEY = 'jetscope.admin-token.v1';
 const PATHWAY_KEYS = ['hefa', 'atj', 'ft', 'ptl'] as const;
 
 function finiteNumber(value: string | null, fallback: number): number {
@@ -104,15 +103,6 @@ export function TippingPointWorkbench({
   const selectedPathwayKey = selectedPathway?.pathway_key ?? pathwayKey;
 
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
-      if (stored) setAdminToken(stored);
-    } catch {
-      // Local storage is optional for this workbench.
-    }
-  }, []);
-
-  useEffect(() => {
     const timeout = window.setTimeout(() => {
       startTransition(() => {
         router.replace(`/crisis/saf-tipping-point?${query}` as Route, { scroll: false });
@@ -175,15 +165,6 @@ export function TippingPointWorkbench({
 
   function handleAdminTokenChange(value: string) {
     setAdminToken(value);
-    try {
-      if (value) {
-        window.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, value);
-      } else {
-        window.localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
-      }
-    } catch {
-      // Ignore storage write issues.
-    }
   }
 
   async function postScenario() {

@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react';
 import { InfoCard } from '@/components/cards';
 import { validatePathwaysPayload, validatePoliciesPayload } from '@/lib/admin-validation';
 
-const ADMIN_TOKEN_STORAGE_KEY = 'jetscope.admin-token.v1';
-
 const PATHWAYS_PLACEHOLDER = `[
   {
     "pathway_id": "sugar-atj",
@@ -161,28 +159,11 @@ export function AdminDataOps() {
   }
 
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
-      if (stored) {
-        setAdminToken(stored);
-      }
-    } catch {
-      // Ignore storage read issues.
-    }
     loadAll();
   }, []);
 
   function handleAdminTokenChange(value: string) {
     setAdminToken(value);
-    try {
-      if (value) {
-        window.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, value);
-      } else {
-        window.localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
-      }
-    } catch {
-      // Ignore storage write issues.
-    }
   }
 
   function appendDraftPathway() {
