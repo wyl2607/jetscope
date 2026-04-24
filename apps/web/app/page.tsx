@@ -118,11 +118,17 @@ export default async function HomePage() {
           <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Core Figure 3 · Research Signals</p>
           <h3 className="mt-2 text-lg font-semibold text-white">/v1/research/signals</h3>
           <p className="mt-4 text-3xl font-semibold text-sky-300">
-            {signalsResult.status === 'not_found' ? '404 fallback' : `${signalCount} signals`}
+            {signalsResult.status === 'not_found'
+              ? '404 fallback'
+              : signalsResult.status === 'error'
+                ? 'Error'
+                : `${signalCount} signals`}
           </p>
           <p className="mt-2 text-sm text-slate-300">
             {signalsResult.status === 'not_found'
               ? 'Phase B API not merged: show deployment banner instead of crashing the page.'
+              : signalsResult.status === 'error'
+                ? `Research API degraded: ${signalsResult.message}`
               : AI_RESEARCH_ENABLED
                 ? 'Signals grouped by type with bilingual summaries and confidence threshold.'
                 : 'AI_RESEARCH_ENABLED=false: research page renders empty-state by design.'}

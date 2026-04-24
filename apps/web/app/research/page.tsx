@@ -53,7 +53,7 @@ export default async function ResearchPage() {
         </section>
       ) : null}
 
-      {result.signals.length === 0 ? (
+      {result.status !== 'error' && result.signals.length === 0 ? (
         <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
           <h3 className="text-xl font-semibold text-white">No research signals yet</h3>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
@@ -61,7 +61,7 @@ export default async function ResearchPage() {
             ready for the Phase B signal feed.
           </p>
         </section>
-      ) : (
+      ) : result.status === 'error' ? null : (
         <section className="mt-6 grid gap-4">
           {result.signals.map((signal) => (
             <article key={signal.id} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">

@@ -1,5 +1,7 @@
 import { buildApiUrl } from '@/lib/api-config';
 
+const FETCH_TIMEOUT_MS = 5000;
+
 export type ReserveCoverage = {
   generated_at: string;
   region: string;
@@ -91,21 +93,28 @@ function normalizeSignal(raw: Record<string, unknown>, index: number): ResearchS
 }
 
 async function fetchJsonWithStatus<T>(path: string): Promise<{ status: number; data: T | null }> {
-  const response = await fetch(buildApiUrl(path), {
-    cache: 'no-store'
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const response = await fetch(buildApiUrl(path), {
+      cache: 'no-store',
+      signal: controller.signal
+    });
 
-  if (!response.ok) {
+    if (!response.ok) {
+      return {
+        status: response.status,
+        data: null
+      };
+    }
+
     return {
       status: response.status,
-      data: null
+      data: (await response.json()) as T
     };
+  } finally {
+    clearTimeout(timeout);
   }
-
-  return {
-    status: response.status,
-    data: (await response.json()) as T
-  };
 }
 
 export async function getEuReserveCoverage(): Promise<ReserveCoverage | null> {
