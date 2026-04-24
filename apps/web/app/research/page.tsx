@@ -1,5 +1,6 @@
 import { Shell } from '@/components/shell';
-import { AI_RESEARCH_ENABLED, getResearchSignals } from '@/lib/portfolio-read-model';
+import { ResearchDecisionBriefCard } from '@/components/research-decision-brief';
+import { AI_RESEARCH_ENABLED, buildResearchDecisionBrief, getResearchSignals } from '@/lib/portfolio-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
 
@@ -30,6 +31,7 @@ function formatTime(value: string): string {
 
 export default async function ResearchPage() {
   const result = await getResearchSignals();
+  const brief = buildResearchDecisionBrief(result);
 
   return (
     <Shell
@@ -52,6 +54,10 @@ export default async function ResearchPage() {
           Research API error: {result.message}
         </section>
       ) : null}
+
+      <section className="mt-6">
+        <ResearchDecisionBriefCard brief={brief} />
+      </section>
 
       {result.status !== 'error' && result.signals.length === 0 ? (
         <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900/70 p-6">

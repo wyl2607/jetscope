@@ -78,4 +78,4 @@ These routes require header `x-admin-token` matching `JETSCOPE_ADMIN_TOKEN`:
 
 ## Runtime note
 
-Use the project virtual environment for API commands. On Windows hosts where `python3` resolves to the Microsoft Store alias, use `python -m compileall app` instead of the root `npm run api:check` wrapper.
+Use the project virtual environment for API commands. The root `npm run api:check` wrapper auto-detects `JETSCOPE_PYTHON_BIN`, `PYTHON_BIN`, `.venv/Scripts/python.exe`, `.venv/bin/python`, or the platform default interpreter.

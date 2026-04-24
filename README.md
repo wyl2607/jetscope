@@ -155,7 +155,7 @@ The full operational gate is:
 npm run preflight
 ```
 
-On Windows, `npm run api:check` may fail if `python3` resolves to the Microsoft Store alias. In that case, `cd apps/api && python -m compileall app` is the equivalent syntax check.
+`npm run api:check` auto-detects `JETSCOPE_PYTHON_BIN`, `PYTHON_BIN`, the API virtual environment, or the platform default Python interpreter.
 
 ### Deployment
 

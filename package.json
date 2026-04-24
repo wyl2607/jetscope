@@ -17,7 +17,7 @@
     "web:typecheck": "npm --prefix apps/web run typecheck",
     "web:gate": "npm --prefix apps/web run gate",
     "api:dev": "cd apps/api && .venv/bin/uvicorn app.main:app --reload --port 8000",
-    "api:check": "cd apps/api && python3 -m compileall app",
+    "api:check": "node scripts/api-check.mjs",
     "api:migrate": "cd apps/api && alembic upgrade head",
     "test": "node --experimental-strip-types --test test/admin-validation.test.mjs test/product-read-model.test.mjs test/sources-read-model.test.mjs test/portfolio-read-model.test.mjs",
     "sync:check": "bash ./scripts/sync-check.sh",
@@ -25,7 +25,8 @@
     "preflight:product": "node scripts/preflight-product-smoke.mjs",
     "preflight:e2e": "node scripts/preflight-ui-e2e.mjs",
     "docker:up": "cd infra && docker-compose up -d",
-    "docker:down": "cd infra && docker-compose down"
+    "docker:down": "cd infra && docker-compose down",
+    "audit:security": "npm audit --audit-level=high"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
