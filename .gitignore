@@ -59,3 +59,4 @@ archive/
 # Playwright
 playwright-report/
 test-results/
+data/market.db
