@@ -55,7 +55,7 @@ def get_readiness(db: Session = Depends(get_db)) -> ReadinessResponse:
     try:
         coverage = build_source_coverage_response(db)
         checks["source_coverage"] = ReadinessCheck(
-            ok=coverage.completeness > 0,
+            ok=coverage.completeness > 0 and bool(coverage.metrics),
             status="degraded" if coverage.degraded else "ok",
             detail=f"completeness={coverage.completeness:.3f}; metrics={len(coverage.metrics)}",
         )
@@ -64,9 +64,13 @@ def get_readiness(db: Session = Depends(get_db)) -> ReadinessResponse:
 
     ready = all(check.ok for check in checks.values())
     degraded = any(check.status == "degraded" for check in checks.values())
+    status = "not_ready"
+    if ready:
+        status = "degraded" if degraded else "ready"
+
     return ReadinessResponse(
         ready=ready,
-        status="ready" if ready else "not_ready",
+        status=status,
         generated_at=utcnow(),
         environment=settings.app_env,
         api_prefix=settings.api_prefix,

@@ -90,7 +90,7 @@ def test_reserve_and_source_routes_return_contract_shapes(client: TestClient):
     assert "metrics" in source_payload
     assert len(source_payload["metrics"]) > 0
     assert 0.0 <= source_payload["completeness"] <= 1.0
-    assert source_payload["degraded"] is False
+    assert source_payload["degraded"] is True
     first_metric = source_payload["metrics"][0]
     assert {"metric_key", "source_name", "source_type", "confidence_score"}.issubset(first_metric.keys())
     metric_keys = {metric["metric_key"] for metric in source_payload["metrics"]}
@@ -101,6 +101,7 @@ def test_reserve_and_source_routes_return_contract_shapes(client: TestClient):
 
     assert "completeness" in source_payload
     assert isinstance(source_payload["completeness"], (int, float))
+    assert source_payload["completeness"] == 0.0
     assert "degraded" in source_payload
     assert isinstance(source_payload["degraded"], bool)
 
@@ -300,3 +301,15 @@ def test_source_coverage_route_marks_partial_coverage_as_degraded(client: TestCl
         "eu_ets_price_eur_per_t",
         "germany_premium_pct",
     }
+
+
+def test_source_coverage_route_marks_seed_only_catalog_as_degraded(client: TestClient):
+    response = client.get("/v1/sources/coverage")
+    assert response.status_code == 200
+    payload = response.json()
+
+    assert payload["degraded"] is True
+    assert payload["completeness"] == 0.0
+    assert len(payload["metrics"]) == 7
+    assert all(metric["fallback_used"] is True for metric in payload["metrics"])
+    assert all(metric["status"] == "seed" for metric in payload["metrics"])
