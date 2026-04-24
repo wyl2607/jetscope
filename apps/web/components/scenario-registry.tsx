@@ -14,7 +14,6 @@ type ScenarioRecord = {
 };
 
 const EMPTY_OBJECT_JSON = '{}';
-const ADMIN_TOKEN_STORAGE_KEY = 'jetscope.admin-token.v1';
 const DEFAULT_ROUTE_ID = 'sugar-atj';
 const CRUDE_SOURCES = ['manual', 'brentEia', 'brentFred'] as const;
 const CARBON_SOURCES = ['manual', 'cbamCarbonProxyUsd'] as const;
@@ -234,28 +233,11 @@ export function ScenarioRegistry() {
   }
 
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
-      if (stored) {
-        setAdminToken(stored);
-      }
-    } catch {
-      // Ignore storage read issues.
-    }
     loadScenarios();
   }, []);
 
   function handleAdminTokenChange(value: string) {
     setAdminToken(value);
-    try {
-      if (value) {
-        window.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, value);
-      } else {
-        window.localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
-      }
-    } catch {
-      // Ignore storage write issues.
-    }
   }
 
   function setPreferenceField(key: string, value: unknown, removable = true) {
