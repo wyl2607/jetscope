@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, Index, JSON, String, Text
+from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, Index, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -112,4 +112,47 @@ class TippingEvent(Base):
 
     __table_args__ = (
         Index("ix_tipping_events_event_type_timestamp", "event_type", timestamp.desc()),
+    )
+
+
+class ESGSignal(Base):
+    __tablename__ = "esg_signals"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    source_url: Mapped[str] = mapped_column(String(1024), unique=True, index=True)
+    signal_type: Mapped[str] = mapped_column(
+        Enum(
+            "SUPPLY_DISRUPTION",
+            "POLICY_CHANGE",
+            "PRICE_SHOCK",
+            "CAPACITY_ANNOUNCEMENT",
+            "OTHER",
+            name="esg_signal_type",
+            native_enum=False,
+            create_constraint=True,
+        )
+    )
+    entities: Mapped[list[str]] = mapped_column(JSON)
+    impact_direction: Mapped[str] = mapped_column(
+        Enum(
+            "BEARISH_SAF",
+            "BULLISH_SAF",
+            "NEUTRAL",
+            name="esg_impact_direction",
+            native_enum=False,
+            create_constraint=True,
+        )
+    )
+    confidence: Mapped[float] = mapped_column(Float)
+    summary_en: Mapped[str] = mapped_column(Text)
+    summary_cn: Mapped[str] = mapped_column(Text)
+    raw_title: Mapped[str] = mapped_column(String(512))
+    raw_excerpt: Mapped[str] = mapped_column(Text)
+    published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    claude_model: Mapped[str] = mapped_column(String(120))
+    prompt_cache_hit: Mapped[bool] = mapped_column(Boolean)
+
+    __table_args__ = (
+        Index("ix_esg_signals_signal_type_created_at", "signal_type", created_at.desc()),
     )

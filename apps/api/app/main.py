@@ -13,6 +13,7 @@ from app.services.market import refresh_market_snapshot_set
 from app.services.analysis.tipping_point import TippingPointEngine
 from app.services.bootstrap import utcnow
 from app.services.reserves import refresh_reserves_coverage
+from app.services.ai_research import run_daily_pipeline
 
 logger = logging.getLogger("safvsoil.market_refresh")
 tipping_logger = logging.getLogger("safvsoil.tipping_point")
@@ -20,6 +21,7 @@ reserves_logger = logging.getLogger("jetscope.reserves_refresh")
 
 TIPPING_EVALUATION_INTERVAL = timedelta(minutes=15)
 RESERVES_REFRESH_INTERVAL = timedelta(hours=24)
+AI_RESEARCH_REFRESH_INTERVAL = timedelta(hours=24)
 
 
 async def _market_refresh_loop(interval_seconds: int) -> None:
@@ -27,6 +29,7 @@ async def _market_refresh_loop(interval_seconds: int) -> None:
     tipping_engine = TippingPointEngine()
     next_tipping_eval_at = utcnow()
     next_reserves_refresh_at = utcnow()
+    next_ai_research_refresh_at = utcnow()
     while True:
         db = SessionLocal()
         try:
@@ -61,6 +64,21 @@ async def _market_refresh_loop(interval_seconds: int) -> None:
                     int(TIPPING_EVALUATION_INTERVAL.total_seconds()),
                 )
                 next_tipping_eval_at = now + TIPPING_EVALUATION_INTERVAL
+
+            if settings.ai_research_enabled and now >= next_ai_research_refresh_at:
+                try:
+                    result = run_daily_pipeline(db)
+                    logger.info(
+                        "ai_research_cycle fetched=%s extracted=%s persisted=%s skipped_budget=%s next_in_seconds=%s",
+                        result.get("fetched", 0),
+                        result.get("extracted", 0),
+                        result.get("persisted", 0),
+                        result.get("skipped_budget", 0),
+                        int(AI_RESEARCH_REFRESH_INTERVAL.total_seconds()),
+                    )
+                except Exception:
+                    logger.exception("ai_research_cycle_failed")
+                next_ai_research_refresh_at = now + AI_RESEARCH_REFRESH_INTERVAL
         except Exception:
             consecutive_failures += 1
             logger.exception(
