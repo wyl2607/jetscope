@@ -16,9 +16,9 @@ if str(SCRIPT_DIR) not in sys.path:
 
 # Provide sensible defaults for any settings that may be required at import time.
 # The app uses pydantic-settings with defaults, but this guarantees no missing env issues.
-os.environ.setdefault("SAFVSOIL_DATABASE_URL", "postgresql+psycopg://postgres:postgres@localhost:5432/safvsoil")
-os.environ.setdefault("SAFVSOIL_ADMIN_TOKEN", "dev-admin-token-change-me")
-os.environ.setdefault("SAFVSOIL_API_PREFIX", "/v1")
+os.environ.setdefault("JETSCOPE_DATABASE_URL", "sqlite:///./data/market.db")
+os.environ.setdefault("JETSCOPE_ADMIN_TOKEN", "dev-admin-token-change-me")
+os.environ.setdefault("JETSCOPE_API_PREFIX", "/v1")
 
 
 def main() -> int:

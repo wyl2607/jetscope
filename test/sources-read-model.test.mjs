@@ -26,20 +26,20 @@ function installFetchStub(t, handlers) {
 }
 
 function installEnv(t) {
-  const previousBase = process.env.SAFVSOIL_API_BASE_URL;
-  const previousPrefix = process.env.SAFVSOIL_API_PREFIX;
-  process.env.SAFVSOIL_API_BASE_URL = 'https://api.example.com';
-  process.env.SAFVSOIL_API_PREFIX = '/v1';
+  const previousBase = process.env.JETSCOPE_API_BASE_URL;
+  const previousPrefix = process.env.JETSCOPE_API_PREFIX;
+  process.env.JETSCOPE_API_BASE_URL = 'https://api.example.com';
+  process.env.JETSCOPE_API_PREFIX = '/v1';
   t.after(() => {
     if (previousBase === undefined) {
-      delete process.env.SAFVSOIL_API_BASE_URL;
+      delete process.env.JETSCOPE_API_BASE_URL;
     } else {
-      process.env.SAFVSOIL_API_BASE_URL = previousBase;
+      process.env.JETSCOPE_API_BASE_URL = previousBase;
     }
     if (previousPrefix === undefined) {
-      delete process.env.SAFVSOIL_API_PREFIX;
+      delete process.env.JETSCOPE_API_PREFIX;
     } else {
-      process.env.SAFVSOIL_API_PREFIX = previousPrefix;
+      process.env.JETSCOPE_API_PREFIX = previousPrefix;
     }
   });
 }

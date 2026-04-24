@@ -438,9 +438,9 @@ async function runAttempt(attempt) {
         cwd: rootDir,
         env: {
           ...process.env,
-          SAFVSOIL_API_BASE_URL: `http://127.0.0.1:${apiPort}`,
-          SAFVSOIL_API_PREFIX: '/v1',
-          SAFVSOIL_WORKSPACE_SLUG: 'default',
+          JETSCOPE_API_BASE_URL: `http://127.0.0.1:${apiPort}`,
+          JETSCOPE_API_PREFIX: '/v1',
+          JETSCOPE_WORKSPACE_SLUG: 'default',
           SAFVSOIL_MARKET_REFRESH_TIMEOUT_MS: '1500'
         }
       }
