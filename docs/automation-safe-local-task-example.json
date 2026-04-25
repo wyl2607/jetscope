@@ -1,0 +1,38 @@
+{
+  "task_id": "jetscope-safe-local-doc-001",
+  "project": "jetscope",
+  "goal": "Document a minimal low-risk safe-local automation task that can be used as the first bounded trial without touching release, deploy, sync, secrets, or runtime artifacts.",
+  "mode": "write",
+  "risk": "low",
+  "conflict_group": "docs-automation-safe-local",
+  "allowed_paths": [
+    "docs/AUTOMATION_LOOP.md",
+    "docs/automation-safe-local-task-example.json"
+  ],
+  "forbidden_paths": [
+    ".env*",
+    ".automation/**",
+    ".omx/**",
+    "apps/api/data/**",
+    "scripts/release.sh",
+    "scripts/publish-to-github.sh",
+    "scripts/sync-to-nodes.sh",
+    "scripts/sync-from-node.sh",
+    "**/*.log"
+  ],
+  "verification": [
+    "python3 -m json.tool docs/automation-safe-local-task-example.json >/dev/null",
+    "test -f docs/AUTOMATION_LOOP.md",
+    "git diff --name-only | grep -Ev '^(docs/AUTOMATION_LOOP.md|docs/automation-safe-local-task-example.json)$' >/tmp/jetscope-safe-local-scope.err && exit 1 || test $? -eq 1"
+  ],
+  "max_attempts": 2,
+  "pr_policy": "required-before-main",
+  "merge_policy": "human-or-controller-after-ci",
+  "stop_conditions": [
+    "requires remote deploy, sync, SSH, rsync, install, uninstall, cleanup, publish, push, or merge",
+    "touches forbidden path",
+    "weakens automation guardrails, stop conditions, or forbidden operation coverage",
+    "verification command is missing or non-deterministic",
+    "more than two repair attempts"
+  ]
+}

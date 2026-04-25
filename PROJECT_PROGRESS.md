@@ -6,6 +6,24 @@
 - Scope: JetScope web/API workspace, local data ignores, traceability entrypoint, release-path documentation, and worker/VPS sync boundaries.
 - Release entrypoint: `npm run release` after `source scripts/jetscope-env`; development worker sync is opt-in.
 
+## 2026-04-25 Safe-Local Automation Trial Prep
+
+### Completed
+
+- Added `docs/automation-safe-local-task-example.json` as the first bounded low-risk automation task contract.
+- Updated `docs/AUTOMATION_LOOP.md` so the first autonomous write trial is documentation-only and explicitly blocks release, deploy, sync, SSH, rsync, publish, push, and merge actions.
+- Narrowed the example task scope to `docs/AUTOMATION_LOOP.md` and the task JSON itself, with a diff-name check and a stop condition against weakening guardrails.
+
+### Verification
+
+- `python3 -m json.tool docs/automation-safe-local-task-example.json >/dev/null`
+- `test -f docs/AUTOMATION_LOOP.md`
+- `git diff --name-only | grep -Ev '^(docs/AUTOMATION_LOOP.md|docs/automation-safe-local-task-example.json)$' >/tmp/jetscope-safe-local-scope.err && exit 1 || test $? -eq 1`
+
+### Impact
+
+- JetScope now has a concrete safe-local task seed that can exercise automation planning without changing runtime behavior or touching high-risk operational scripts.
+
 ## 2026-04-25 Backend Pytest Restoration
 
 ### Completed

@@ -9,6 +9,7 @@ JetScope allows parallel AI-assisted development, but automation must stay bound
 - Require pull requests for all changes to `main`.
 - Require `Verify web and API` to pass before `main` can update.
 - Do not use VPS, deploy, sync, rollout, pullback, SSH, rsync, install, uninstall, or cleanup flows without explicit approval.
+- Do not publish, push, merge, auto-merge, or update `main` without explicit approval and the repository gates required by `AGENTS.md`.
 - Do not touch secrets, `.env*`, private runtime ledgers, `.automation/`, `.omx/`, local databases, logs, or build artifacts.
 - Default to human/controller merge for anything beyond pre-approved low-risk maintenance.
 
@@ -151,6 +152,7 @@ Default outcome is `AWAIT_HUMAN_MERGE`. Auto-merge is reserved for pre-approved 
 Stop immediately when any of these are true:
 
 - A task requires VPS, deploy, sync, rollout, pullback, SSH, rsync, install, uninstall, or cleanup without explicit approval.
+- A task requires publish, push, merge, auto-merge, or direct `main` updates without explicit approval and required repository gates.
 - A task touches `.env*`, credentials, private personal artifacts, `.automation/`, `.omx/`, runtime ledgers, local databases, logs, or build output.
 - Two agents need the same file or conflict group.
 - The same task fails more than two repair attempts.
@@ -164,8 +166,25 @@ Stop immediately when any of these are true:
 
 High-value follow-up tasks, in priority order:
 
-1. Add repository PR/security labels.
-2. Add automation scope validation to CI once task specs are attached to automation PRs.
+1. Run the first bounded safe-local documentation task using `docs/automation-safe-local-task-example.json` as the task contract.
+2. Add repository PR/security labels.
+3. Add automation scope validation to CI once task specs are attached to automation PRs.
+
+## First Safe-Local Trial
+
+The first autonomous write trial should use `docs/automation-safe-local-task-example.json` as the task contract. It is intentionally limited to documentation paths and local deterministic validation so the controller can verify the loop without release, deploy, sync, SSH, rsync, publish, push, or merge actions.
+
+Minimum verification:
+
+```bash
+python3 -m json.tool docs/automation-safe-local-task-example.json >/dev/null
+test -f docs/AUTOMATION_LOOP.md
+git diff --name-only \
+  | grep -Ev '^(docs/AUTOMATION_LOOP.md|docs/automation-safe-local-task-example.json)$' >/tmp/jetscope-safe-local-scope.err \
+  && exit 1 || test $? -eq 1
+```
+
+The task must not weaken automation guardrails, stop conditions, or forbidden operation coverage.
 
 ## Verification Commands
 
