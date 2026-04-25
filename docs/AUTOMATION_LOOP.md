@@ -9,6 +9,7 @@ JetScope allows parallel AI-assisted development, but automation must stay bound
 - Require pull requests for all changes to `main`.
 - Require `Verify web and API` to pass before `main` can update.
 - Do not use VPS, deploy, sync, rollout, pullback, SSH, rsync, install, uninstall, or cleanup flows without explicit approval.
+- Do not publish, push, merge, auto-merge, or update `main` without explicit approval and the repository gates required by `AGENTS.md`.
 - Do not touch secrets, `.env*`, private runtime ledgers, `.automation/`, `.omx/`, local databases, logs, or build artifacts.
 - Default to human/controller merge for anything beyond pre-approved low-risk maintenance.
 
@@ -146,11 +147,27 @@ Before merge:
 
 Default outcome is `AWAIT_HUMAN_MERGE`. Auto-merge is reserved for pre-approved low-risk maintenance categories.
 
+Use `scripts/pr-approval-gate.mjs` to produce a fail-closed merge readiness report. Default mode is read-only and must not merge:
+
+```bash
+npm run pr:approval:gate -- --pr <number>
+```
+
+Actual merge is approval-gated and requires both `--execute` and a matching one-time `APPROVE_JETSCOPE_PR_MERGE` token:
+
+```bash
+APPROVE_JETSCOPE_PR_MERGE=<approval-token> \
+  npm run pr:approval:gate -- --pr <number> --execute --approval-token <approval-token>
+```
+
+Do not provide the approval token until the controller report says the PR is ready, the human approver has reviewed the PR, and the repository gates required by `AGENTS.md` are satisfied. The gate blocks draft PRs, non-`main` base branches, unapproved reviews, non-mergeable PRs, failed or pending checks, high-risk file changes, and missing local push gates.
+
 ## Stop Conditions
 
 Stop immediately when any of these are true:
 
 - A task requires VPS, deploy, sync, rollout, pullback, SSH, rsync, install, uninstall, or cleanup without explicit approval.
+- A task requires publish, push, merge, auto-merge, or direct `main` updates without explicit approval and required repository gates.
 - A task touches `.env*`, credentials, private personal artifacts, `.automation/`, `.omx/`, runtime ledgers, local databases, logs, or build output.
 - Two agents need the same file or conflict group.
 - The same task fails more than two repair attempts.
@@ -164,8 +181,28 @@ Stop immediately when any of these are true:
 
 High-value follow-up tasks, in priority order:
 
-1. Add repository PR/security labels.
-2. Add automation scope validation to CI once task specs are attached to automation PRs.
+1. Run the first bounded safe-local documentation task using `docs/automation-safe-local-task-example.json` as the task contract.
+2. Add repository PR/security labels.
+3. Add automation scope validation to CI once task specs are attached to automation PRs.
+
+## First Safe-Local Trial
+
+The first autonomous write trial should use `docs/automation-safe-local-task-example.json` as the task contract. It is intentionally limited to documentation paths and local deterministic validation so the controller can verify the loop without release, deploy, sync, SSH, rsync, publish, push, or merge actions.
+
+Before dispatch, the controller must snapshot any pre-existing ignored local artifacts that match forbidden patterns (`.env*`, `.automation/`, `.omx/`, `apps/api/data/`, `*.log`). The task should fail only if new forbidden artifacts appear or existing forbidden artifacts are modified by the task; pre-existing local state is not a cleanup request.
+
+Minimum verification:
+
+```bash
+python3 -m json.tool docs/automation-safe-local-task-example.json >/dev/null
+test -f docs/AUTOMATION_LOOP.md
+(git diff --name-only HEAD; git ls-files --others --exclude-standard) \
+  | sort -u \
+  | grep -Ev '^(PROJECT_PROGRESS.md|docs/AUTOMATION_LOOP.md|docs/automation-safe-local-task-example.json)$' >/tmp/jetscope-safe-local-scope.err \
+  && exit 1 || test $? -eq 1
+```
+
+The task must not weaken automation guardrails, stop conditions, or forbidden operation coverage.
 
 ## Verification Commands
 

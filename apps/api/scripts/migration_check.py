@@ -35,11 +35,20 @@ except ImportError:
 # ---------------------------------------------------------------------------
 POSTGRES_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+psycopg://safvsoil:safvsoil@localhost:5432/safvsoil",
+    os.getenv(
+        "JETSCOPE_POSTGRES_URL",
+        os.getenv("SAFVSOIL_POSTGRES_URL", "postgresql+psycopg://jetscope:jetscope@localhost:5432/jetscope"),
+    ),
 )
 SQLITE_URL = os.getenv(
     "SQLITE_URL",
-    f"sqlite:///{os.path.join(os.path.dirname(__file__), '../../data/safvsoil.db')}",
+    os.getenv(
+        "JETSCOPE_SQLITE_URL",
+        os.getenv(
+            "SAFVSOIL_SQLITE_URL",
+            f"sqlite:///{os.path.join(os.path.dirname(__file__), '../../data/jetscope.db')}",
+        ),
+    ),
 )
 
 # 对账表清单 (表名 → 唯一键列名)
@@ -241,7 +250,7 @@ def run_check(phase: int, strict: bool, report: bool) -> bool:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="SAFvsOil migration data reconciliation check")
+    parser = argparse.ArgumentParser(description="JetScope migration data reconciliation check")
     parser.add_argument("--phase", type=int, choices=[1, 2, 3], default=1, help="Migration phase (1-3)")
     parser.add_argument("--strict", action="store_true", help="Use strictest tolerances regardless of phase")
     parser.add_argument("--report", action="store_true", help="Save JSON report file")

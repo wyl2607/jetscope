@@ -1,4 +1,4 @@
--- SQLite Schema Initialization for SAFvsOil
+-- SQLite schema initialization for JetScope
 -- Version: 001_init_schema
 -- Created: 2026-04-22
 

@@ -4,8 +4,8 @@ This directory contains JetScope project automation scripts.
 
 ## Current Scripts
 
-- `safenv`: POSIX self-discovery for `JETSCOPE_ROOT`
-- `safenv.ps1`: PowerShell self-discovery for `JETSCOPE_ROOT`
+- `jetscope-env`: POSIX self-discovery for `JETSCOPE_ROOT`
+- `jetscope-env.ps1`: PowerShell self-discovery for `JETSCOPE_ROOT`
 - `publish-to-github.sh`: validate and push JetScope to GitHub, writing `publish-event` records to the workspace data bus
 - `security_check.sh`: fail-closed local safety gate for tracked/local-sensitive artifacts before push
 - `review_push_guard.sh`: fail-closed outgoing-change guard against `origin/main` before push
@@ -46,7 +46,7 @@ The gates fail closed when the worktree is dirty, blocked local/generated paths 
 
 ```bash
 cd ~/projects/jetscope
-source scripts/safenv
+source scripts/jetscope-env
 npm run release
 ```
 
@@ -101,7 +101,7 @@ Release and deploy behavior is also pinned in `../OPERATIONS.md`; treat that as 
 
 ## Notes
 
-- Legacy SAFvsOil naming has been removed from active script entrypoints.
+- Legacy JetScope predecessor naming has been removed from active script entrypoints.
 - Environment variable names like `SAFVSOIL_*` may still exist inside app/test code for compatibility and are not covered by this scripts README.
 - Shared reusable script infrastructure lives in `~/tools/script-core/`.
 - `usa-vps:/opt/jetscope` is the production deploy path. `usa-vps:~/jetscope` is a non-production workdir and is never synced unless explicitly requested.

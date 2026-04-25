@@ -11,6 +11,23 @@ fail() {
   exit 1
 }
 
+run_secret_scan() {
+  if command -v gitleaks >/dev/null 2>&1; then
+    gitleaks detect --source . --redact --no-banner
+    return
+  fi
+
+  echo "security_check: warning: gitleaks not found; using built-in high-signal secret pattern scan" >&2
+  local secret_matches
+  secret_matches=$(git grep -I -n -E \
+    '(-----BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{20,}|gh[pousr]_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{20,}|sk-live-[A-Za-z0-9]{20,}|npm_[A-Za-z0-9]{20,}|pypi-[A-Za-z0-9_\-]{20,})' \
+    -- . ':!package-lock.json' ':!apps/web/package-lock.json' || true)
+  if [ -n "$secret_matches" ]; then
+    printf 'security_check: content-level secret patterns detected:\n%s\n' "$secret_matches" >&2
+    exit 1
+  fi
+}
+
 tracked_blocked_patterns=(
   '.env'
   '.env.local'
@@ -114,5 +131,7 @@ if [ "${#credential_named[@]}" -gt 0 ]; then
   printf '  %s\n' "${credential_named[@]}" | sort -u >&2
   exit 1
 fi
+
+run_secret_scan
 
 echo "security_check: ok"

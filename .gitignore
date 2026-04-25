@@ -54,7 +54,7 @@ Thumbs.db
 *.zip
 
 # Local development markers (not for GitHub)
-.safvsoil-root
+.saf*-root
 .jetscope-root
 
 # Documentation archives (internal only)

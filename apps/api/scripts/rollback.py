@@ -1,5 +1,5 @@
 """
-rollback.py — SAFvsOil 自动回滚脚本
+rollback.py — JetScope 自动回滚脚本
 
 在迁移失败时将读写路径从 Postgres 切回 SQLite:
 1. 设置环境变量 READ_POSTGRES_PCT=0
@@ -36,11 +36,20 @@ except ImportError:
 # ---------------------------------------------------------------------------
 POSTGRES_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+psycopg://safvsoil:safvsoil@localhost:5432/safvsoil",
+    os.getenv(
+        "JETSCOPE_POSTGRES_URL",
+        os.getenv("SAFVSOIL_POSTGRES_URL", "postgresql+psycopg://jetscope:jetscope@localhost:5432/jetscope"),
+    ),
 )
 SQLITE_URL = os.getenv(
     "SQLITE_URL",
-    f"sqlite:///{pathlib.Path(__file__).parent.parent / 'data' / 'safvsoil.db'}",
+    os.getenv(
+        "JETSCOPE_SQLITE_URL",
+        os.getenv(
+            "SAFVSOIL_SQLITE_URL",
+            f"sqlite:///{pathlib.Path(__file__).parent.parent / 'data' / 'jetscope.db'}",
+        ),
+    ),
 )
 
 # .rollback_flag 文件路径 (FastAPI 启动时检查此文件)
@@ -69,7 +78,7 @@ def _ts() -> str:
 def send_alert(message: str, dry_run: bool) -> None:
     """发送告警. 生产中接 Slack webhook; 现在打印到 stderr."""
     payload = {
-        "text": f"🚨 *SAFvsOil Migration ROLLBACK* — {_ts()}\n{message}",
+        "text": f"🚨 *JetScope Migration ROLLBACK* — {_ts()}\n{message}",
     }
     print(f"\n🚨 ALERT: {message}", file=sys.stderr)
     if SLACK_WEBHOOK_URL and not dry_run:
@@ -165,7 +174,7 @@ def check_postgres_health() -> bool:
 
 def rollback(reason: str, dry_run: bool, force: bool) -> bool:
     print(f"\n{'='*60}")
-    print(f" SAFvsOil Migration Rollback")
+    print(f" JetScope Migration Rollback")
     print(f" Reason: {reason}")
     print(f" Time:   {_ts()}")
     print(f" Mode:   {'DRY-RUN' if dry_run else 'LIVE'}")
@@ -252,7 +261,7 @@ def auto_rollback_check(dry_run: bool) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="SAFvsOil migration rollback utility")
+    parser = argparse.ArgumentParser(description="JetScope migration rollback utility")
     parser.add_argument("--reason", default="Manual rollback", help="Reason for rollback")
     parser.add_argument("--dry-run", action="store_true", help="Simulate without making changes")
     parser.add_argument("--force", action="store_true", help="Skip health checks and force rollback")

@@ -4,7 +4,43 @@
 
 - Status: release/sync hardening is committed locally; backend pytest is restored as a local gate.
 - Scope: JetScope web/API workspace, local data ignores, traceability entrypoint, release-path documentation, and worker/VPS sync boundaries.
-- Release entrypoint: `npm run release` after `source scripts/safenv`; development worker sync is opt-in.
+- Release entrypoint: `npm run release` after `source scripts/jetscope-env`; development worker sync is opt-in.
+
+## 2026-04-25 Safe-Local Automation Trial Prep
+
+### Completed
+
+- Added `docs/automation-safe-local-task-example.json` as the first bounded low-risk automation task contract.
+- Updated `docs/AUTOMATION_LOOP.md` so the first autonomous write trial is documentation-only and explicitly blocks release, deploy, sync, SSH, rsync, publish, push, and merge actions.
+- Narrowed the example task scope to `PROJECT_PROGRESS.md`, `docs/AUTOMATION_LOOP.md`, and the task JSON itself, with a tracked/untracked changed-file check and stop conditions against weakening guardrails or creating/modifying ignored forbidden artifacts relative to the controller pre-run snapshot.
+
+### Verification
+
+- `python3 -m json.tool docs/automation-safe-local-task-example.json >/dev/null`
+- `test -f docs/AUTOMATION_LOOP.md`
+- `(git diff --name-only HEAD; git ls-files --others --exclude-standard) | sort -u | grep -Ev '^(PROJECT_PROGRESS.md|docs/AUTOMATION_LOOP.md|docs/automation-safe-local-task-example.json)$' >/tmp/jetscope-safe-local-scope.err && exit 1 || test $? -eq 1`
+
+### Impact
+
+- JetScope now has a concrete safe-local task seed that can exercise automation planning without changing runtime behavior or touching high-risk operational scripts.
+
+## 2026-04-25 Approval-Gated PR Merge Prep
+
+### Completed
+
+- Added `scripts/pr-approval-gate.mjs` as a fail-closed PR readiness and merge approval gate.
+- Added `npm run pr:approval:gate` as the default read-only command for PR merge readiness reports.
+- Documented explicit merge approval: actual merge requires `--execute`, `--approval-token`, and matching `APPROVE_JETSCOPE_PR_MERGE`.
+
+### Verification
+
+- `node scripts/pr-approval-gate.mjs --help`
+- `bash -n` is not applicable to the Node script; syntax is checked by Node help execution.
+
+### Impact
+
+- The automation system can now develop and review toward a PR, then stop at `AWAIT_HUMAN_MERGE` until a human supplies the explicit approval token.
+- The gate blocks draft PRs, non-`main` bases, unapproved reviews, non-mergeable PRs, failed or pending checks, high-risk file changes, and missing local push gates before any merge execution path can run.
 
 ## 2026-04-25 Backend Pytest Restoration
 

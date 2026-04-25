@@ -9,7 +9,7 @@ import { startMockedServer } from './helpers/server-harness.mjs';
 test('local preferences persist through API writes, market-data hydration, and restart', async () => {
   const localPreferencesFile = path.join(
     tmpdir(),
-    `safvsoil-local-preferences-test-${process.pid}-${Date.now()}.json`
+    `jetscope-local-preferences-test-${process.pid}-${Date.now()}.json`
   );
   await rm(localPreferencesFile, { force: true });
 

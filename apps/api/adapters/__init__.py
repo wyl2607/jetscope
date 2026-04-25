@@ -1,4 +1,4 @@
-"""Adapters package for SAFvsOil data sources.
+"""Adapters package for JetScope data sources.
 
 Exports the base DataSourceAdapter class for implementing data adapters.
 """

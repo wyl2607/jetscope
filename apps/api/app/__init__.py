@@ -1,1 +1,1 @@
-"""SAFvsOil API package."""
+"""JetScope API package."""
