@@ -325,9 +325,25 @@ async function runUiFlow(page) {
   await waitForErrorText(page, /401|token|forbidden|unauthorized/i);
 
   await adminTokenInput.fill(adminToken);
+  await page.waitForFunction(
+    () => {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const refresh = buttons.find((button) => button.textContent?.trim() === 'Trigger market refresh');
+      return !!refresh && !refresh.disabled;
+    },
+    undefined,
+    { timeout: 10_000 }
+  );
+  const validRefreshStatus = await page.evaluate(async (token) => {
+    const response = await fetch('/api/market/refresh', {
+      method: 'POST',
+      headers: { 'x-admin-token': token }
+    });
+    return response.status;
+  }, adminToken);
   assert(
-    !(await triggerMarketRefreshButton.isDisabled()),
-    'Trigger market refresh should be enabled when token is present'
+    validRefreshStatus !== 401 && validRefreshStatus !== 403,
+    `Market refresh with valid token must not fail auth, got ${validRefreshStatus}`
   );
 
   await pathwaysTextArea.fill('{');
