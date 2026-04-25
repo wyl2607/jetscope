@@ -179,7 +179,7 @@ Minimum verification:
 ```bash
 python3 -m json.tool docs/automation-safe-local-task-example.json >/dev/null
 test -f docs/AUTOMATION_LOOP.md
-git diff --name-only \
+git diff --name-only HEAD \
   | grep -Ev '^(docs/AUTOMATION_LOOP.md|docs/automation-safe-local-task-example.json)$' >/tmp/jetscope-safe-local-scope.err \
   && exit 1 || test $? -eq 1
 ```
