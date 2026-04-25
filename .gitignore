@@ -27,6 +27,49 @@ apps/api/.venv/
 !.env.*.example
 .envrc
 
+# Local credentials and AI tool state
+.ssh/
+.mcp.json
+.cc-switch/
+.cc-switch-sidecar/
+.cc-switch-sidecar-install-backups/
+.claude
+.claude/
+.claude-*/
+.claude.json
+.claude.json.*
+.claude-mem/
+.codex
+.codex/
+.codex-*/
+.codex-desktop/
+.cursor/
+.opencode
+.opencode/
+.omx/
+.gemini/
+.kimi/
+.cline/
+.openclaw/
+.agents/
+.semgrep/
+.credential-backups*/
+.security-backups/
+.esg-deploy-config
+.esg-deploy-config.*
+.gitconfig
+.viminfo
+.cursorrules
+
+# Shell and local machine history
+.bash_history
+.zsh_history
+.zsh_sessions/
+.zcompdump
+.zshrc.backup*
+.zshrc.bak*
+backups/
+
 # Data and logs
 data/local-preferences.json
 infra/postgres-data/
@@ -38,10 +81,46 @@ apps/api/data/
 apps/api/data/*.db
 coverage/
 htmlcov/
+automation-logs/
+build-logs/
+wave3-execution-logs/
+gpt*-probe-report-*.json
+gpt-model-fingerprint-*.json
 
 # System files
 .DS_Store
 Thumbs.db
+.Trash/
+
+# Home workspace boundaries
+machine-label-ocr/
+projects/
+tools/*
+!tools/automation/
+tools/automation/*
+!tools/automation/scripts/
+tools/automation/scripts/*
+!tools/automation/scripts/task-similar-dedup.py
+!tools/automation/scripts/next-action-recommender.py
+tools/automation/runtime/
+yumei/
+
+# Obsidian vaults and local-only bridge artifacts
+Obsidian/
+Documents/Obsidian*/
+Library/Mobile Documents/iCloud~md~obsidian/
+Library/Application Support/obsidian/
+.obsidian/
+obsidian-*.md
+obsidian-*.json
+obsidian-*.log
+obsidian-*.txt
+obsidian-audit-output/
+Obsidian_*.md
+copilot-obsidian-*.md
+!docs/obsidian-local-bridge.md
+30-AI-Ingest/
+workspace-project-index.md
 
 # IDE
 .vscode/
@@ -57,38 +136,26 @@ Thumbs.db
 .saf*-root
 .jetscope-root
 
-# Documentation archives (internal only)
+# Documentation archives and AI runtime outputs
 docs/archive/
 archive/
 .automation/
+.harness/
 .omx/
 .guard/
-
-# Playwright
-playwright-report/
-test-results/
-data/market.db
+agents/
+docs/ai/
+docs/progress/
+docs/PROGRESS.md
 
 # Local AI tool configuration and generated graph outputs
-.claude/
-.codex/
-.cursor/
-.gemini/
-.opencode/
 .graphifyignore
 CLAUDE.md
 GEMINI.md
 graphify-out/
 reports/pr-approval-gate/
 
-# Obsidian vaults and local-only bridge artifacts
-Obsidian/
-Documents/Obsidian*/
-.obsidian/
-obsidian-*.md
-obsidian-*.json
-obsidian-*.log
-obsidian-*.txt
-Obsidian_*.md
-30-AI-Ingest/
-workspace-project-index.md
+# Playwright
+playwright-report/
+test-results/
+data/market.db
