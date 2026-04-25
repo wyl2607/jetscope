@@ -4,7 +4,7 @@
 
 - Status: release/sync hardening is committed locally; backend pytest is restored as a local gate.
 - Scope: JetScope web/API workspace, local data ignores, traceability entrypoint, release-path documentation, and worker/VPS sync boundaries.
-- Release entrypoint: `npm run release` after `source scripts/safenv`; development worker sync is opt-in.
+- Release entrypoint: `npm run release` after `source scripts/jetscope-env`; development worker sync is opt-in.
 
 ## 2026-04-25 Backend Pytest Restoration
 

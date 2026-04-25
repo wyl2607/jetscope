@@ -8,7 +8,7 @@ export async function startMockedServer({ localPreferencesFile } = {}) {
     localPreferencesFile ??
     path.join(
       tmpdir(),
-      `safvsoil-local-preferences-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}.json`
+      `jetscope-local-preferences-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}.json`
     );
   const child = spawn(process.execPath, ['--import', './test/helpers/mock-market-fetch.mjs', './server.mjs'], {
     cwd: new URL('../..', import.meta.url),

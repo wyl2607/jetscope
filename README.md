@@ -117,7 +117,7 @@ The API uses `JETSCOPE_` environment variables by default. Important variables:
 | `JETSCOPE_ANTHROPIC_API_KEY` | empty | Anthropic key for live extraction. |
 | `JETSCOPE_NEWSAPI_KEY` | empty | Optional NewsAPI key; Reuters RSS fallback is used otherwise. |
 
-Selected legacy `SAFVSOIL_*` variables still exist in application code for compatibility with older deployments. New deployments should prefer `JETSCOPE_*` where supported.
+Selected legacy `SAFVSOIL_*` variables may still be accepted for compatibility with older deployments. New deployments should prefer `JETSCOPE_*` where supported.
 
 ### Running Locally
 
@@ -175,7 +175,7 @@ The canonical release path is documented in `OPERATIONS.md`:
 
 ```bash
 cd ~/projects/jetscope
-source scripts/safenv
+source scripts/jetscope-env
 npm run release
 ```
 
@@ -266,7 +266,7 @@ npm run dev
 - `JETSCOPE_ANTHROPIC_API_KEY`
 - `JETSCOPE_NEWSAPI_KEY`
 
-为了兼容旧部署，部分 `SAFVSOIL_*` 变量仍在代码中存在。新的部署和文档应逐步转向 `JETSCOPE_*`。
+为了兼容旧部署，部分 `SAFVSOIL_*` 变量仍可能被接受。新的部署和文档应使用 `JETSCOPE_*`。
 
 ### 验证命令
 
@@ -354,7 +354,7 @@ Neue Deployments sollten bevorzugt `JETSCOPE_*` Umgebungsvariablen verwenden:
 - `JETSCOPE_ANTHROPIC_API_KEY`
 - `JETSCOPE_NEWSAPI_KEY`
 
-Einige ältere `SAFVSOIL_*` Variablen bleiben aus Kompatibilitätsgründen im Code erhalten. Neue Dokumentation und Deployments sollten schrittweise auf `JETSCOPE_*` wechseln.
+Einige ältere `SAFVSOIL_*` Variablen können aus Kompatibilitätsgründen noch akzeptiert werden. Neue Dokumentation und Deployments sollten `JETSCOPE_*` verwenden.
 
 ### Validierung
 

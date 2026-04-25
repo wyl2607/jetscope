@@ -83,6 +83,9 @@ if [ "$DIRTY_TRACKED" -eq 1 ] || [ "$DIRTY_STAGED" -eq 1 ] || [ "$DIRTY_UNTRACKE
   exit 1
 fi
 
+echo "Fetching latest $REMOTE_NAME/$BRANCH_NAME before push gates..."
+git fetch "$REMOTE_NAME" "$BRANCH_NAME:refs/remotes/$REMOTE_NAME/$BRANCH_NAME"
+
 check_push_gates_exist
 npm run web:gate
 run_push_gates

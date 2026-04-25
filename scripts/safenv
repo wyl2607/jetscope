@@ -1,32 +1,11 @@
 #!/bin/sh
-# JetScope Environment Self-Discovery (POSIX compatible)
-# Usage: . scripts/safenv
+# Compatibility shim. Prefer the JetScope environment entrypoint.
 
-if [ -n "$JETSCOPE_ROOT" ] && [ -d "$JETSCOPE_ROOT" ]; then
-  JETSCOPE_ROOT="$JETSCOPE_ROOT"
-elif [ -d "$HOME/projects/jetscope" ]; then
-  JETSCOPE_ROOT="$HOME/projects/jetscope"
-elif [ -d "$HOME/jetscope" ]; then
-  JETSCOPE_ROOT="$HOME/jetscope"
+if [ -f "./scripts/jetscope-env" ]; then
+  . "./scripts/jetscope-env"
+elif [ -f "./jetscope-env" ]; then
+  . "./jetscope-env"
 else
-  CURRENT_DIR="$PWD"
-  while [ "$CURRENT_DIR" != "/" ]; do
-    if [ -f "$CURRENT_DIR/.jetscope-root" ]; then
-      JETSCOPE_ROOT="$CURRENT_DIR"
-      break
-    fi
-    CURRENT_DIR="$(dirname "$CURRENT_DIR")"
-  done
-fi
-
-if [ -n "$JETSCOPE_ROOT" ] && [ -d "$JETSCOPE_ROOT" ]; then
-  export JETSCOPE_ROOT
-  export JETSCOPE_WEB="$JETSCOPE_ROOT/apps/web"
-  export JETSCOPE_API="$JETSCOPE_ROOT/apps/api"
-  export JETSCOPE_SCRIPTS="$JETSCOPE_ROOT/scripts"
-  echo "✅ JETSCOPE_ROOT=$JETSCOPE_ROOT"
-else
-  echo "❌ JetScope 项目未找到"
-  echo "提示: 设置 JETSCOPE_ROOT 环境变量或创建 .jetscope-root marker 文件"
-  return 1 2>/dev/null || exit 1
+  SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+  . "$SCRIPT_DIR/jetscope-env"
 fi

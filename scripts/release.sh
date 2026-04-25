@@ -14,6 +14,35 @@ RUN_SYNC_VPS_WORKDIR=0
 RUN_PUBLISH=1
 RUN_VPS_DEPLOY=1
 
+assert_skip_publish_deploy_safe() {
+  local current_branch
+  local local_commit
+  local remote_commit
+
+  current_branch="$(git branch --show-current)"
+  if [[ "$current_branch" != "main" ]]; then
+    echo "ERROR: --skip-publish deploy requires main branch; current branch is '${current_branch:-detached HEAD}'." >&2
+    exit 1
+  fi
+
+  if [[ -n "$(git status --porcelain)" ]]; then
+    echo "ERROR: --skip-publish deploy requires a clean working tree." >&2
+    git status --short >&2
+    exit 1
+  fi
+
+  git fetch origin main:refs/remotes/origin/main
+
+  local_commit="$(git rev-parse HEAD)"
+  remote_commit="$(git rev-parse origin/main)"
+  if [[ "$local_commit" != "$remote_commit" ]]; then
+    echo "ERROR: --skip-publish deploy requires HEAD to match origin/main." >&2
+    echo "       HEAD:        $local_commit" >&2
+    echo "       origin/main: $remote_commit" >&2
+    exit 1
+  fi
+}
+
 usage() {
   cat <<'EOF'
 Usage: ./scripts/release.sh [options]
@@ -80,6 +109,12 @@ cd "$ROOT"
 echo "=== JetScope Release ==="
 echo "Root: $ROOT"
 echo "VPS: $VPS_HOST:$VPS_DEPLOY_DIR"
+
+if [[ "$RUN_PUBLISH" -eq 0 && "$RUN_VPS_DEPLOY" -eq 1 ]]; then
+  echo
+  echo ">>> Safety check: skip-publish deploy must match origin/main"
+  assert_skip_publish_deploy_safe
+fi
 
 if [[ "$RUN_PREFLIGHT" -eq 1 ]]; then
   echo

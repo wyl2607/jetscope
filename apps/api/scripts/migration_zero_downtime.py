@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
-"""Zero-downtime migration script: SQLite -> PostgreSQL.
+"""Staged SQLite -> PostgreSQL migration helper.
 
-Implements the three-phase migration from migration_strategy.md:
+This script supports a guarded three-phase migration workflow, but it does not
+by itself guarantee zero downtime. Application dual-write/read-cutover behavior
+and deployment orchestration must be validated separately.
+
+Supports the three-phase migration from migration_strategy.md:
   Phase 1: Backfill + dual write (SQLite primary, Postgres shadow)
   Phase 2: Gradual read cutover (READ_POSTGRES_PCT env var)
   Phase 3: Postgres primary, SQLite retired
@@ -43,7 +47,7 @@ from app.db.postgres import create_postgres_engine
 from app.db.sqlite import create_sqlite_engine
 from app.models.tables import MarketRefreshRun, MarketSnapshot
 
-DEFAULT_SQLITE_PATH = os.getenv("JETSCOPE_SQLITE_PATH", os.getenv("SAFVSOIL_SQLITE_PATH", "/opt/safvsoil/data/market.db"))
+DEFAULT_SQLITE_PATH = os.getenv("JETSCOPE_SQLITE_PATH", os.getenv("SAFVSOIL_SQLITE_PATH", "/opt/jetscope/data/market.db"))
 DEFAULT_POSTGRES_URL = os.getenv(
     "JETSCOPE_POSTGRES_URL",
     os.getenv("SAFVSOIL_POSTGRES_URL", "postgresql+psycopg://postgres:postgres@localhost:5432/jetscope"),
@@ -125,7 +129,6 @@ def backfill_sqlite_to_postgres(sqlite_path: str, postgres_url: str, dry_run: bo
                             source_status=run.source_status,
                             sources=run.sources,
                             ingest=run.ingest,
-                            payload=run.payload,
                         )
                     )
             pg_sess.commit()
@@ -229,7 +232,7 @@ def cutover_phase(phase: str, sqlite_path: str, postgres_url: str, strict: bool 
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Zero-downtime SQLite->PostgreSQL migration")
+    parser = argparse.ArgumentParser(description="Staged SQLite->PostgreSQL migration helper")
     parser.add_argument("--phase", choices=["1", "2", "3"], help="Migration phase to execute")
     parser.add_argument("--reconcile", action="store_true", help="Run reconciliation check")
     parser.add_argument("--sqlite-path", default=DEFAULT_SQLITE_PATH, help="SQLite DB path")

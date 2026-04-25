@@ -1,6 +1,6 @@
 # AGENTS.md — JetScope AI 入口指南
 
-> **项目**: JetScope (原 SAFvSoil / SAF vs Oil)
+> **项目**: JetScope
 > **角色**: AI 并行开发系统入口
 > **版本**: v2.1
 
@@ -8,7 +8,7 @@
 
 ```bash
 cd ~/projects/jetscope
-source scripts/safenv
+source scripts/jetscope-env
 ```
 
 ## 路径

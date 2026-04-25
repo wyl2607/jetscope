@@ -89,7 +89,7 @@ Current implemented source posture includes:
 
 ## Architecture Rules
 
-1. New product work should use JetScope naming, not legacy SAFvsOil branding.
+1. New product work should use JetScope naming, not legacy predecessor branding.
 2. New API contracts should expose source status, freshness, confidence, and fallback state.
 3. New UI modules should consume read models rather than embedding transport logic directly in pages.
 4. New write operations should remain admin-token protected unless a full auth model is introduced.

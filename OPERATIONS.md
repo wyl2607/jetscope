@@ -8,7 +8,7 @@ JetScope after a successful improvement must use one canonical release command:
 
 ```bash
 cd ~/projects/jetscope
-source scripts/safenv
+source scripts/jetscope-env
 npm run release
 ```
 
@@ -41,8 +41,11 @@ Development worker sync is now opt-in. It is not part of the default production 
 - `.gitignore` is not a node-sync safety boundary; changes to local-only or sensitive ignore rules must be mirrored in `scripts/sync-excludes.sh`.
 - The VPS deploy must target the exact commit that was just published from local.
 - The VPS deploy fetches `origin/main` into `refs/remotes/origin/main` first and only advances the production checkout with `git merge --ff-only origin/main`.
+- The production API owner is the `jetscope-api` Docker container from `docker-compose.prod.yml`; legacy `jetscope-api.service` must stay inactive. The production web owner is `jetscope-web.service`.
+- Auto-deploy uses an atomic lock directory and records last success/failure under `/var/lib/jetscope/deploy-state`; it will not skip a same-commit deploy unless that commit is recorded successful and API/Web are currently healthy.
 - The VPS deploy must fail hard if:
   - origin/main is not yet at the expected commit
+  - `/opt/jetscope` is not on branch `main`
   - the deploy checkout cannot fast-forward to origin/main
   - the deploy tree does not advance to that commit
   - API health check fails within the bounded retry window
@@ -50,6 +53,18 @@ Development worker sync is now opt-in. It is not part of the default production 
   - final web health check fails within the bounded retry window
 - Auto-deploy failure handling is fail-closed and observable, but not transactional rollback. If API/Web restart or health checks fail after a fast-forward, use the deployment logs plus explicit operator recovery; do not assume automatic rollback.
 - Future AI runs should prefer `OPERATIONS.md` first for deployment behavior instead of re-checking scattered scripts.
+
+## Recovery Direction
+
+Current recovery is operator-managed. `scripts/rollback.sh` rolls back by `HEAD~1`, stashes local state, and rebuilds in place, so it is not the preferred automatic recovery mechanism for production.
+
+The next safe recovery implementation should be last-good or artifact-first, not ad hoc reset-based rollback:
+
+1. Record `LAST_GOOD_COMMIT` before fast-forwarding production.
+2. Build API/Web artifacts for the requested commit before switching live services where feasible.
+3. If a post-switch health check fails, restore the recorded last-good commit or artifact and rerun bounded health checks.
+4. Emit deployment events for start, fail, restore-start, restore-success, and restore-failed states.
+5. Keep destructive cleanup, manual `git reset --hard`, and service stop/start commands behind explicit operator approval until the recovery path is tested on the VPS.
 
 ## Allowed Variants
 
@@ -79,3 +94,4 @@ Use these only when there is a concrete reason:
 
 - Local backend pytest is restored through `npm run api:test`, which uses `apps/api/.venv/bin/python -m pytest tests`.
 - `scripts/rollback.sh` is older and more destructive than the preferred release path; do not make it the default recovery flow without explicit user approval.
+- Content-level secret scanning uses `gitleaks` when installed; otherwise `scripts/security_check.sh` falls back to a built-in high-signal pattern scan and logs a warning.

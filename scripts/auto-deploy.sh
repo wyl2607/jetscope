@@ -8,7 +8,10 @@ set -euo pipefail
 DEPLOY_DIR="/opt/jetscope"
 LOG="/var/log/jetscope-deploy.log"
 BUILD_LOG="/var/log/jetscope-build.log"
-LOCK_FILE="/tmp/jetscope-deploy.lock"
+DEPLOY_STATE_DIR="${JETSCOPE_DEPLOY_STATE_DIR:-/var/lib/jetscope/deploy-state}"
+LOCK_DIR="$DEPLOY_STATE_DIR/deploy.lock"
+LAST_SUCCESS_FILE="$DEPLOY_STATE_DIR/last-success-commit"
+LAST_FAILURE_FILE="$DEPLOY_STATE_DIR/last-failure-commit"
 BUS_WRITE="/Users/yumei/tools/script-core/bin/sc-bus-write"
 PRODUCER="jetscope/scripts/auto-deploy.sh"
 FORCE_DEPLOY="${JETSCOPE_FORCE_DEPLOY:-0}"
@@ -23,11 +26,75 @@ REMOTE_COMMIT=""
 API_STATUS="000"
 WEB_STATUS="000"
 WEB_CT=""
+SHOULD_RECORD_FAILURE=1
+
+ensure_deploy_state_dir() {
+    if ! mkdir -p "$DEPLOY_STATE_DIR"; then
+        echo "[$(date -Iseconds)] ERROR: cannot create deploy state dir $DEPLOY_STATE_DIR" | tee -a "$LOG"
+        exit 1
+    fi
+}
+
+acquire_deploy_lock() {
+    ensure_deploy_state_dir
+    if mkdir "$LOCK_DIR" 2>/dev/null; then
+        printf '%s\n' "$$" > "$LOCK_DIR/pid"
+        trap 'rm -rf "$LOCK_DIR"' EXIT
+        return 0
+    fi
+
+    local lock_pid=""
+    if [ -f "$LOCK_DIR/pid" ]; then
+        lock_pid=$(cat "$LOCK_DIR/pid" 2>/dev/null || true)
+    fi
+    if [ -n "$lock_pid" ] && kill -0 "$lock_pid" 2>/dev/null; then
+        echo "[$(date -Iseconds)] Deploy already running (PID $lock_pid). Skipping." >> "$LOG"
+        exit 0
+    fi
+
+    echo "[$(date -Iseconds)] Removing stale deploy lock $LOCK_DIR" | tee -a "$LOG"
+    rm -rf "$LOCK_DIR"
+    if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+        echo "[$(date -Iseconds)] ERROR: could not acquire deploy lock $LOCK_DIR" | tee -a "$LOG"
+        exit 1
+    fi
+    printf '%s\n' "$$" > "$LOCK_DIR/pid"
+    trap 'rm -rf "$LOCK_DIR"' EXIT
+}
+
+write_state_file() {
+    local path="$1"
+    local value="$2"
+    local tmp
+    ensure_deploy_state_dir
+    tmp=$(mktemp "$DEPLOY_STATE_DIR/.state.XXXXXX") || return 1
+    printf '%s\n' "$value" > "$tmp" || {
+        rm -f "$tmp"
+        return 1
+    }
+    mv "$tmp" "$path"
+}
+
+record_deploy_failure() {
+    if [ "$SHOULD_RECORD_FAILURE" -eq 1 ] && [ -n "${REMOTE_COMMIT:-}" ]; then
+        if ! write_state_file "$LAST_FAILURE_FILE" "$REMOTE_COMMIT"; then
+            echo "[$(date -Iseconds)] ERROR: failed to record deploy failure state for $REMOTE_COMMIT" | tee -a "$LOG"
+        fi
+    fi
+}
+
+record_deploy_success() {
+    if ! write_state_file "$LAST_SUCCESS_FILE" "$REMOTE_COMMIT"; then
+        fail_deploy "failed to record deploy success state" "could not write $LAST_SUCCESS_FILE"
+    fi
+    rm -f "$LAST_FAILURE_FILE" 2>/dev/null || true
+}
 
 fail_deploy() {
     local summary="$1"
     local error_text="${2:-}"
     echo "[$(date -Iseconds)] ERROR: ${summary}${error_text:+ ($error_text)}" | tee -a "$LOG"
+    record_deploy_failure
     emit_publish_event "failed" "$summary" "$error_text" "${LOCAL_COMMIT:-}" "${REMOTE_COMMIT:-}"
     exit 1
 }
@@ -85,22 +152,58 @@ sleep_until_next_health_attempt() {
     fi
 }
 
+curl_timeout_for_deadline() {
+    local deadline="$1"
+    local remaining=$((deadline - SECONDS))
+    if [ "$remaining" -le 0 ]; then
+        echo 1
+    elif [ "$remaining" -lt "$CURL_MAX_TIME_SECONDS" ]; then
+        echo "$remaining"
+    else
+        echo "$CURL_MAX_TIME_SECONDS"
+    fi
+}
+
+check_api_health_once() {
+    local max_time="$1"
+    local status
+    status=$(curl -s -o /dev/null -w "%{http_code}" "$API_HEALTH_URL" --connect-timeout 5 --max-time "$max_time" 2>/dev/null || true)
+    API_STATUS="${status:-000}"
+    [ "$API_STATUS" = "200" ]
+}
+
+check_web_health_once() {
+    local max_time="$1"
+    local headers
+    local status
+    headers=$(mktemp) || {
+        WEB_STATUS="000"
+        WEB_CT=""
+        return 1
+    }
+    status=$(curl -s -D "$headers" -o /dev/null -w "%{http_code}" "$WEB_HEALTH_URL" --connect-timeout 5 --max-time "$max_time" 2>/dev/null || true)
+    WEB_STATUS="${status:-000}"
+    WEB_CT=$(grep -i "content-type:" "$headers" | head -1 || true)
+    rm -f -- "$headers"
+    [ "$WEB_STATUS" = "200" ] && echo "$WEB_CT" | grep -qi "text/html"
+}
+
+current_deploy_is_healthy() {
+    check_api_health_once 5 && check_web_health_once 5
+}
+
 wait_for_api_health() {
     local deadline=$((SECONDS + HEALTH_TIMEOUT_SECONDS))
     local status="000"
 
     while [ "$SECONDS" -lt "$deadline" ]; do
-        status=$(curl -s -o /dev/null -w "%{http_code}" "$API_HEALTH_URL" --connect-timeout 5 --max-time "$CURL_MAX_TIME_SECONDS" 2>/dev/null || true)
-        status="${status:-000}"
-        if [ "$status" = "200" ]; then
-            API_STATUS="$status"
+        if check_api_health_once "$(curl_timeout_for_deadline "$deadline")"; then
             return 0
         fi
-        echo "[$(date -Iseconds)] Waiting for API health: status $status" | tee -a "$LOG"
+        echo "[$(date -Iseconds)] Waiting for API health: status $API_STATUS" | tee -a "$LOG"
         sleep_until_next_health_attempt "$deadline"
     done
 
-    API_STATUS="$status"
     return 1
 }
 
@@ -110,35 +213,24 @@ wait_for_web_health() {
     local content_type=""
 
     while [ "$SECONDS" -lt "$deadline" ]; do
-        status=$(curl -s -o /dev/null -w "%{http_code}" "$WEB_HEALTH_URL" --connect-timeout 5 --max-time "$CURL_MAX_TIME_SECONDS" 2>/dev/null || true)
-        status="${status:-000}"
-        content_type=$(curl -sI "$WEB_HEALTH_URL" --connect-timeout 5 --max-time "$CURL_MAX_TIME_SECONDS" 2>/dev/null | grep -i "content-type:" | head -1 || true)
-        if [ "$status" = "200" ] && echo "$content_type" | grep -qi "text/html"; then
-            WEB_STATUS="$status"
-            WEB_CT="$content_type"
+        if check_web_health_once "$(curl_timeout_for_deadline "$deadline")"; then
             return 0
         fi
-        echo "[$(date -Iseconds)] Waiting for web health: status $status content-type '$content_type'" | tee -a "$LOG"
+        echo "[$(date -Iseconds)] Waiting for web health: status $WEB_STATUS content-type '$WEB_CT'" | tee -a "$LOG"
         sleep_until_next_health_attempt "$deadline"
     done
 
-    WEB_STATUS="$status"
-    WEB_CT="$content_type"
     return 1
 }
 
 cd "$DEPLOY_DIR"
 
-# Prevent concurrent deployments
-if [ -f "$LOCK_FILE" ]; then
-    LOCK_PID=$(cat "$LOCK_FILE" 2>/dev/null || echo "")
-    if [ -n "$LOCK_PID" ] && kill -0 "$LOCK_PID" 2>/dev/null; then
-        echo "[$(date -Iseconds)] Deploy already running (PID $LOCK_PID). Skipping." >> "$LOG"
-        exit 0
-    fi
+acquire_deploy_lock
+
+CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || true)
+if [ "$CURRENT_BRANCH" != "main" ]; then
+    fail_deploy "wrong deploy branch" "expected main got ${CURRENT_BRANCH:-detached HEAD}"
 fi
-echo $$ > "$LOCK_FILE"
-trap 'rm -f "$LOCK_FILE"' EXIT
 
 # Check if GitHub has new commits. Fetch first so deploy only advances to the
 # locally resolved origin/main object and can enforce fast-forward semantics.
@@ -151,10 +243,20 @@ fi
 REMOTE_COMMIT=$(resolve_origin_main)
 
 if [ -n "$EXPECTED_COMMIT" ] && [ "$REMOTE_COMMIT" != "$EXPECTED_COMMIT" ]; then
+    SHOULD_RECORD_FAILURE=0
     fail_deploy "expected commit not yet visible on origin/main" "expected $EXPECTED_COMMIT got $REMOTE_COMMIT"
 fi
 
-if [ "$FORCE_DEPLOY" != "1" ] && [ "$LOCAL_COMMIT" = "$REMOTE_COMMIT" ]; then
+LAST_SUCCESS=""
+LAST_FAILURE=""
+if [ -f "$LAST_SUCCESS_FILE" ]; then
+    LAST_SUCCESS=$(cat "$LAST_SUCCESS_FILE" 2>/dev/null || true)
+fi
+if [ -f "$LAST_FAILURE_FILE" ]; then
+    LAST_FAILURE=$(cat "$LAST_FAILURE_FILE" 2>/dev/null || true)
+fi
+
+if [ "$FORCE_DEPLOY" != "1" ] && [ "$LOCAL_COMMIT" = "$REMOTE_COMMIT" ] && [ "$LAST_SUCCESS" = "$REMOTE_COMMIT" ] && [ "$LAST_FAILURE" != "$REMOTE_COMMIT" ] && current_deploy_is_healthy; then
     # No changes, exit silently (unless it's the 10-minute mark for a heartbeat)
     MINUTE=$(date +%M)
     if [ "${MINUTE:1:1}" = "0" ]; then
@@ -189,6 +291,9 @@ fi
 
 # Build API (Docker) - force recreate to avoid ContainerConfig bug
 echo "[$(date -Iseconds)] Building API..." | tee -a "$LOG"
+if systemctl is-active --quiet jetscope-api.service 2>/dev/null; then
+    fail_deploy "conflicting legacy API service is active" "jetscope-api.service must stay inactive; API is owned by docker-compose.prod.yml"
+fi
 docker-compose -f docker-compose.prod.yml down >> "$LOG" 2>&1 || true
 docker rm -f jetscope-api >> "$LOG" 2>&1 || true
 if ! docker-compose -f docker-compose.prod.yml up --build -d api >> "$LOG" 2>&1; then
@@ -233,6 +338,7 @@ fi
 # Verify Web serves real HTML (not API proxy)
 if wait_for_web_health; then
     echo "[$(date -Iseconds)] Deploy SUCCESS! Web: $WEB_STATUS (HTML), API: $API_STATUS" | tee -a "$LOG"
+    record_deploy_success
     emit_publish_event "success" "auto-deploy completed successfully" "" "$LOCAL_COMMIT" "$REMOTE_COMMIT"
 else
     fail_deploy "web health check failed after auto-deploy" "web status $WEB_STATUS content-type '$WEB_CT'"

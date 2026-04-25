@@ -6,7 +6,7 @@
 
 ## Purpose
 
-This document defines the data shapes that JetScope product surfaces rely on. It replaces older SAFvsOil wording and removes aspirational feed claims that are not currently implemented.
+This document defines the data shapes that JetScope product surfaces rely on. It replaces earlier project wording and removes aspirational feed claims that are not currently implemented.
 
 The contract is intentionally source-aware. A value without freshness, confidence, or fallback context is not sufficient for a decision-support product.
 
@@ -172,6 +172,6 @@ Patch updates may clarify documentation or add examples. Minor updates may add o
 
 ## Compatibility Notes
 
-- Older contract drafts referenced SAFvsOil branding and non-implemented primary feeds. Those references are now legacy.
+- Older contract drafts referenced earlier product branding and non-implemented primary feeds. Those references are now legacy.
 - Existing compatibility code may still accept `SAFVSOIL_*` environment variables. New documentation and deployments should prefer `JETSCOPE_*` where supported.
 - Historical migration notes are preserved in git history; this document describes the current product contract.

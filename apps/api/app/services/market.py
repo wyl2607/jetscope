@@ -175,7 +175,7 @@ def _fetch_text(url: str, timeout_s: float = 12.0) -> str:
     response = httpx.get(
         url,
         timeout=timeout_s,
-        headers={"User-Agent": "SAFvsOil API/0.1 (+fastapi vertical slice)"},
+        headers={"User-Agent": "JetScope API/0.1 (+fastapi vertical slice)"},
         follow_redirects=True,
     )
     response.raise_for_status()

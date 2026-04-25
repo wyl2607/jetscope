@@ -6,7 +6,7 @@
 
 ## Purpose
 
-This document describes the public API shape used by the JetScope web product. It supersedes older SAFvsOil wording while preserving compatibility where existing routes or environment variables still use legacy names.
+This document describes the public API shape used by the JetScope web product. It supersedes earlier project wording while preserving compatibility where existing routes or environment variables still use legacy names.
 
 JetScope API responses should make provenance explicit. Product surfaces must be able to distinguish live data, derived proxies, cached values, and deterministic fallback values.
 
@@ -203,6 +203,6 @@ Returns source quality and coverage metadata for the Sources page.
 
 ## Compatibility Notes
 
-- Older docs and scripts may still mention SAFvsOil. Treat that as legacy branding.
+- Older docs and scripts may still mention earlier project names. Treat that as legacy branding.
 - Some environment variables still accept `SAFVSOIL_*` names for compatibility. Prefer `JETSCOPE_*` for new deployments.
 - Earlier contract drafts referenced Bloomberg, PLATTS, or SENDX as primary feeds. Those should be considered aspirational unless implemented in code and configured in the deployment.
