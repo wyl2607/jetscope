@@ -6,6 +6,7 @@ ROOT="/Users/yumei/projects/jetscope"
 VPS_HOST="${JETSCOPE_VPS_HOST:-usa-vps}"
 VPS_DEPLOY_DIR="${JETSCOPE_VPS_DEPLOY_DIR:-/opt/jetscope}"
 EXPECTED_COMMIT=""
+APPROVAL_TOKEN=""
 
 RUN_PREFLIGHT=1
 RUN_SYNC_WORKERS=0
@@ -53,6 +54,7 @@ Default flow:
   3. ssh usa-vps "cd /opt/jetscope && JETSCOPE_FORCE_DEPLOY=1 JETSCOPE_EXPECT_COMMIT=<HEAD> ./scripts/auto-deploy.sh"
 
 Options:
+  --approval-token  Required for publish, sync, or VPS deploy side effects
   --skip-preflight   Skip local preflight
   --sync-workers     Sync mac-mini/coco before publish
   --sync-windows     Sync windows-pc before publish without implicitly syncing workers
@@ -63,13 +65,40 @@ Options:
   --help             Show this help
 
 Environment overrides:
+  APPROVE_JETSCOPE_RELEASE must match --approval-token when release has side effects
   JETSCOPE_VPS_HOST
   JETSCOPE_VPS_DEPLOY_DIR
 EOF
 }
 
+requires_approval() {
+  [[ "$RUN_PUBLISH" -eq 1 || "$RUN_VPS_DEPLOY" -eq 1 || "$RUN_SYNC_WORKERS" -eq 1 || "$RUN_SYNC_WINDOWS" -eq 1 || "$RUN_SYNC_VPS_WORKDIR" -eq 1 ]]
+}
+
+assert_release_approval() {
+  if ! requires_approval; then
+    return
+  fi
+  if [[ -z "$APPROVAL_TOKEN" ]]; then
+    echo "ERROR: publish, sync, or deploy requires --approval-token and matching APPROVE_JETSCOPE_RELEASE." >&2
+    exit 1
+  fi
+  if [[ "${APPROVE_JETSCOPE_RELEASE:-}" != "$APPROVAL_TOKEN" ]]; then
+    echo "ERROR: APPROVE_JETSCOPE_RELEASE must match --approval-token." >&2
+    exit 1
+  fi
+}
+
 while (($# > 0)); do
   case "$1" in
+    --approval-token)
+      APPROVAL_TOKEN="${2:-}"
+      if [[ -z "$APPROVAL_TOKEN" ]]; then
+        echo "ERROR: --approval-token requires a non-empty value" >&2
+        exit 1
+      fi
+      shift
+      ;;
     --skip-preflight)
       RUN_PREFLIGHT=0
       ;;
@@ -110,6 +139,8 @@ echo "=== JetScope Release ==="
 echo "Root: $ROOT"
 echo "VPS: $VPS_HOST:$VPS_DEPLOY_DIR"
 
+assert_release_approval
+
 if [[ "$RUN_PUBLISH" -eq 0 && "$RUN_VPS_DEPLOY" -eq 1 ]]; then
   echo
   echo ">>> Safety check: skip-publish deploy must match origin/main"
@@ -143,7 +174,7 @@ fi
 if [[ "$RUN_PUBLISH" -eq 1 ]]; then
   echo
   echo ">>> Step 2/3: publish to GitHub"
-  ./scripts/publish-to-github.sh
+  APPROVE_JETSCOPE_PUBLISH="$APPROVAL_TOKEN" ./scripts/publish-to-github.sh --approval-token "$APPROVAL_TOKEN"
 fi
 
 EXPECTED_COMMIT="$(git rev-parse HEAD)"
