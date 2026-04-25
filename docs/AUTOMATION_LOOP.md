@@ -147,6 +147,21 @@ Before merge:
 
 Default outcome is `AWAIT_HUMAN_MERGE`. Auto-merge is reserved for pre-approved low-risk maintenance categories.
 
+Use `scripts/pr-approval-gate.mjs` to produce a fail-closed merge readiness report. Default mode is read-only and must not merge:
+
+```bash
+npm run pr:approval:gate -- --pr <number>
+```
+
+Actual merge is approval-gated and requires both `--execute` and a matching one-time `APPROVE_JETSCOPE_PR_MERGE` token:
+
+```bash
+APPROVE_JETSCOPE_PR_MERGE=<approval-token> \
+  npm run pr:approval:gate -- --pr <number> --execute --approval-token <approval-token>
+```
+
+Do not provide the approval token until the controller report says the PR is ready, the human approver has reviewed the PR, and the repository gates required by `AGENTS.md` are satisfied. The gate blocks draft PRs, non-`main` base branches, unapproved reviews, non-mergeable PRs, failed or pending checks, high-risk file changes, and missing local push gates.
+
 ## Stop Conditions
 
 Stop immediately when any of these are true:
@@ -174,13 +189,16 @@ High-value follow-up tasks, in priority order:
 
 The first autonomous write trial should use `docs/automation-safe-local-task-example.json` as the task contract. It is intentionally limited to documentation paths and local deterministic validation so the controller can verify the loop without release, deploy, sync, SSH, rsync, publish, push, or merge actions.
 
+Before dispatch, the controller must snapshot any pre-existing ignored local artifacts that match forbidden patterns (`.env*`, `.automation/`, `.omx/`, `apps/api/data/`, `*.log`). The task should fail only if new forbidden artifacts appear or existing forbidden artifacts are modified by the task; pre-existing local state is not a cleanup request.
+
 Minimum verification:
 
 ```bash
 python3 -m json.tool docs/automation-safe-local-task-example.json >/dev/null
 test -f docs/AUTOMATION_LOOP.md
-git diff --name-only HEAD \
-  | grep -Ev '^(docs/AUTOMATION_LOOP.md|docs/automation-safe-local-task-example.json)$' >/tmp/jetscope-safe-local-scope.err \
+(git diff --name-only HEAD; git ls-files --others --exclude-standard) \
+  | sort -u \
+  | grep -Ev '^(PROJECT_PROGRESS.md|docs/AUTOMATION_LOOP.md|docs/automation-safe-local-task-example.json)$' >/tmp/jetscope-safe-local-scope.err \
   && exit 1 || test $? -eq 1
 ```
 
