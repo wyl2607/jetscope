@@ -68,3 +68,15 @@ archive/
 playwright-report/
 test-results/
 data/market.db
+
+# Local AI tool configuration and generated graph outputs
+.claude/
+.codex/
+.cursor/
+.gemini/
+.opencode/
+.graphifyignore
+CLAUDE.md
+GEMINI.md
+graphify-out/
+reports/pr-approval-gate/
