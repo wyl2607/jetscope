@@ -56,6 +56,12 @@ Do not commit/push Obsidian reports or vault-derived outputs. Do not run Obsidia
 
 - Root `/Users/yumei` shares the JetScope Git remote but also carries local workspace governance commits. Root reconciliation must preserve local-only boundaries and must not push blindly.
 - Root remote history contains many JetScope application commits; root local commits add governance/source files on top. Treat pushes from root as blocked unless a separate branch/PR plan is approved.
+- Root `/Users/yumei` is still a Git repo, but `.gitignore` now hides home/config/runtime project surfaces such as `projects/`, `tools/automation/runtime/`, `.Trash/`, `.cc-switch*`, `.gitconfig`, `.viminfo`, AI runtime state, and deploy config. Treat remaining visible files as explicit governance/source candidates only.
+- Root `scripts/README.md` now describes root workspace operations instead of stale JetScope project scripts.
+- AI tools daily report refreshes locally, accepts local-file-only alerting by policy, writes a local-file fallback alert, and can send external alerts through HTTPS webhook or Telegram when env vars are configured.
+- Windows daily inventory uses a native PowerShell SSH probe and reports Windows tool versions plus disk/memory data.
+- `/Users/yumei/scripts/ai_cluster_preflight.py` is still missing; `daily-runner.sh` logs this and continues with the existing `.omx/cluster/ai-cluster-status.json` snapshot.
+- VPS AI worker policy has a local drift guard in `/Users/yumei/tools/automation/scripts/validate-workspace-automation.sh`; it fails if `.omx/cluster` status/policy snapshots reintroduce `usa-vps` or `france-vps` as AI dispatch hosts.
 - SustainOS remains high-risk because it mixes product modules, ops scripts, remote/control-plane scripts, runtime state, and many untracked files.
 - Career Ops personal/job artifacts remain local/private; remaining source candidates need review before publication.
 - Meichen Web, Home Lab App, and Obsidian Knowledge Pipeline remain private/local under the root `projects/` ignore until explicitly reclassified.
@@ -95,6 +101,8 @@ Do not commit/push Obsidian reports or vault-derived outputs. Do not run Obsidia
 6. Decide whether `home-lab-app` should initialize/restore an independent repo boundary from reviewed source candidates.
 7. Decide whether `obsidian-knowledge-pipeline` remains a local utility or becomes a source repo from reviewed scripts only.
 8. For SustainOS, choose either local source-candidate review or explicitly approve remote/control-plane recovery; do not run sync/rollout/pullback/readback by default.
+9. Optionally classify/retire residual `usa-vps` shell-profile `.opencode` PATH and stale `.omx`/`.codex` history in a later approved remote cleanup pass; do not perform remote mutation without explicit approval.
+10. Run `/Users/yumei/tools/automation/scripts/validate-workspace-automation.sh` after future automation edits.
 
 ## Operating Rules
 

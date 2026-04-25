@@ -37,8 +37,13 @@ TOOLS = {
 }
 
 NODES = ["local", "mac-mini", "windows-pc", "coco", "usa-vps", "france-vps"]
-REQUIRED_NODES = ["coco", "local", "usa-vps"]
-OPTIONAL_NODES = ["france-vps", "mac-mini", "windows-pc"]
+REQUIRED_CONTROL_NODES = ["local"]
+REQUIRED_AI_WORKER_NODES = ["coco"]
+OPTIONAL_AI_WORKER_NODES = ["mac-mini", "windows-pc"]
+REQUIRED_INFRA_NODES = ["usa-vps"]
+OPTIONAL_INFRA_NODES = ["france-vps"]
+REQUIRED_NODES = REQUIRED_CONTROL_NODES + REQUIRED_AI_WORKER_NODES + REQUIRED_INFRA_NODES
+OPTIONAL_NODES = OPTIONAL_AI_WORKER_NODES + OPTIONAL_INFRA_NODES
 VPS_NODES = {"usa-vps", "france-vps"}
 VPS_FORBIDDEN_TOOLS = ["claude", "codex", "omx", "opencode"]
 REMOTE_TIMEOUT = 15
@@ -322,7 +327,19 @@ def remote_result(node: str) -> dict[str, Any]:
 def attach_policy_and_health(item: dict[str, Any]) -> dict[str, Any]:
     node = item["node"]
     required = node in REQUIRED_NODES
-    item["node_policy"] = {"tier": "required" if required else "optional", "required": required}
+    if node in REQUIRED_CONTROL_NODES:
+        tier = "required_control"
+    elif node in REQUIRED_AI_WORKER_NODES:
+        tier = "required_ai_worker"
+    elif node in OPTIONAL_AI_WORKER_NODES:
+        tier = "optional_ai_worker"
+    elif node in REQUIRED_INFRA_NODES:
+        tier = "required_infra"
+    elif node in OPTIONAL_INFRA_NODES:
+        tier = "optional_infra"
+    else:
+        tier = "required" if required else "optional"
+    item["node_policy"] = {"tier": tier, "required": required}
     issues: list[str] = []
     severity = "ok"
     if not item.get("ok"):
@@ -578,6 +595,11 @@ def critical_summary(report: dict[str, Any]) -> dict[str, Any]:
         "probe_blocked_nodes": [],
         "required_nodes": REQUIRED_NODES,
         "optional_nodes": OPTIONAL_NODES,
+        "required_control_nodes": REQUIRED_CONTROL_NODES,
+        "required_ai_worker_nodes": REQUIRED_AI_WORKER_NODES,
+        "optional_ai_worker_nodes": OPTIONAL_AI_WORKER_NODES,
+        "required_infra_nodes": REQUIRED_INFRA_NODES,
+        "optional_infra_nodes": OPTIONAL_INFRA_NODES,
         "critical_nodes": critical_nodes,
         "warning_nodes": warning_nodes,
         "critical_global_issues": global_critical,
@@ -605,7 +627,7 @@ def render_md(report: dict[str, Any]) -> str:
         f"- Checked at (UTC): {report['checked_at']}",
         f"- Scope: {', '.join(NODES)}",
         "- Policy: VPS forbidden tools = " + ", ".join(VPS_FORBIDDEN_TOOLS),
-        f"- Tiering: required={', '.join(REQUIRED_NODES)}; optional={', '.join(OPTIONAL_NODES)}",
+        f"- Tiering: required_control={', '.join(REQUIRED_CONTROL_NODES)}; required_ai_workers={', '.join(REQUIRED_AI_WORKER_NODES)}; optional_ai_workers={', '.join(OPTIONAL_AI_WORKER_NODES)}; required_infra={', '.join(REQUIRED_INFRA_NODES)}; optional_infra={', '.join(OPTIONAL_INFRA_NODES)}",
         f"- Alert preflight: severity={report['alert_config']['severity']}; channels={','.join(report['alert_config']['configured_channels']) or 'none'}; fallback={','.join(report['alert_config'].get('fallback_channels') or []) or 'none'}",
         "",
         "## Latest references",
@@ -788,6 +810,11 @@ def main() -> int:
             "vps_forbidden_tools": VPS_FORBIDDEN_TOOLS,
             "required_nodes": REQUIRED_NODES,
             "optional_nodes": OPTIONAL_NODES,
+            "required_control_nodes": REQUIRED_CONTROL_NODES,
+            "required_ai_worker_nodes": REQUIRED_AI_WORKER_NODES,
+            "optional_ai_worker_nodes": OPTIONAL_AI_WORKER_NODES,
+            "required_infra_nodes": REQUIRED_INFRA_NODES,
+            "optional_infra_nodes": OPTIONAL_INFRA_NODES,
         },
         "preventive_actions": [],
     }
