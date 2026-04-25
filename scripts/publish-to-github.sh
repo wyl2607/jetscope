@@ -9,6 +9,44 @@ REMOTE_NAME="origin"
 BRANCH_NAME="main"
 SECURITY_CHECK="$ROOT/scripts/security_check.sh"
 REVIEW_PUSH_GUARD="$ROOT/scripts/review_push_guard.sh"
+APPROVAL_TOKEN=""
+
+while (($# > 0)); do
+  case "$1" in
+    --approval-token)
+      APPROVAL_TOKEN="${2:-}"
+      if [[ -z "$APPROVAL_TOKEN" ]]; then
+        echo "ERROR: --approval-token requires a non-empty value" >&2
+        exit 1
+      fi
+      shift
+      ;;
+    --help|-h)
+      cat <<'EOF'
+Usage: ./scripts/publish-to-github.sh --approval-token <token>
+
+Requires APPROVE_JETSCOPE_PUBLISH to match --approval-token before pushing.
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
+  esac
+  shift
+done
+
+assert_publish_approval() {
+  if [[ -z "$APPROVAL_TOKEN" ]]; then
+    echo "ERROR: publish requires --approval-token and matching APPROVE_JETSCOPE_PUBLISH." >&2
+    exit 1
+  fi
+  if [[ "${APPROVE_JETSCOPE_PUBLISH:-}" != "$APPROVAL_TOKEN" ]]; then
+    echo "ERROR: APPROVE_JETSCOPE_PUBLISH must match --approval-token." >&2
+    exit 1
+  fi
+}
 
 emit_event() {
   local status="$1"
@@ -44,6 +82,8 @@ check_push_gates_exist() {
 }
 
 cd "$ROOT"
+
+assert_publish_approval
 
 COMMIT_BEFORE="$(git rev-parse HEAD 2>/dev/null || true)"
 emit_event "started" "publish started" "" "$COMMIT_BEFORE" ""
