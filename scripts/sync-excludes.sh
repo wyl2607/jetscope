@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# Shared local-only and generated-artifact excludes for JetScope node sync.
+# Source this file from sync scripts instead of maintaining divergent lists.
+SYNC_EXCLUDES=(
+  --exclude=.git
+  --exclude=node_modules
+  --exclude='apps/*/node_modules'
+  --exclude='packages/*/node_modules'
+  --exclude=.env
+  --exclude=.env.local
+  --exclude='.env.*'
+  --exclude=.envrc
+  --exclude=.venv
+  --exclude=apps/api/.venv
+  --exclude=__pycache__
+  --exclude='*.pyc'
+  --exclude='*.pyo'
+  --exclude='*.egg-info'
+  --exclude=.pytest_cache
+  --exclude=.ruff_cache
+  --exclude=apps/web/.next
+  --exclude=apps/web/dist
+  --exclude='*.tsbuildinfo'
+  --exclude=apps/web/next-env.d.ts
+  --exclude=apps/api/data
+  --exclude=data/local-preferences.json
+  --exclude=data/market.db
+  --exclude=infra/postgres-data
+  --exclude=logs
+  --exclude=webhook-logs
+  --exclude=test-results
+  --exclude='*.log'
+  --exclude=coverage
+  --exclude=htmlcov
+  --exclude=.omx
+  --exclude=.automation
+  --exclude=.guard
+  --exclude=.DS_Store
+  --exclude=Thumbs.db
+  --exclude=.vscode
+  --exclude=.idea
+  --exclude='*.swp'
+  --exclude='*.swo'
+  --exclude=.safvsoil-root
+  --exclude=.jetscope-root
+  --exclude=archive
+  --exclude=docs/archive
+  --exclude=playwright-report
+  --exclude='*.tar.gz'
+  --exclude='*.zip'
+)

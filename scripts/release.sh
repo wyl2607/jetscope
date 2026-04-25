@@ -8,7 +8,9 @@ VPS_DEPLOY_DIR="${JETSCOPE_VPS_DEPLOY_DIR:-/opt/jetscope}"
 EXPECTED_COMMIT=""
 
 RUN_PREFLIGHT=1
-RUN_SYNC=1
+RUN_SYNC_WORKERS=0
+RUN_SYNC_WINDOWS=0
+RUN_SYNC_VPS_WORKDIR=0
 RUN_PUBLISH=1
 RUN_VPS_DEPLOY=1
 
@@ -18,13 +20,15 @@ Usage: ./scripts/release.sh [options]
 
 Default flow:
   1. npm run preflight
-  2. ./scripts/sync-to-nodes.sh
-  3. ./scripts/publish-to-github.sh
-  4. ssh usa-vps "cd /opt/jetscope && JETSCOPE_FORCE_DEPLOY=1 JETSCOPE_EXPECT_COMMIT=<HEAD> ./scripts/auto-deploy.sh"
+  2. ./scripts/publish-to-github.sh
+  3. ssh usa-vps "cd /opt/jetscope && JETSCOPE_FORCE_DEPLOY=1 JETSCOPE_EXPECT_COMMIT=<HEAD> ./scripts/auto-deploy.sh"
 
 Options:
   --skip-preflight   Skip local preflight
-  --skip-sync        Skip sync-to-nodes
+  --sync-workers     Sync mac-mini/coco before publish
+  --sync-windows     Sync windows-pc before publish without implicitly syncing workers
+  --sync-vps-workdir Sync usa-vps:~/jetscope before publish without implicitly syncing workers
+  --skip-sync        Legacy no-op; sync is opt-in by default
   --skip-publish     Skip publish-to-github
   --skip-vps-deploy  Skip remote VPS deploy trigger
   --help             Show this help
@@ -40,8 +44,17 @@ while (($# > 0)); do
     --skip-preflight)
       RUN_PREFLIGHT=0
       ;;
+    --sync-workers)
+      RUN_SYNC_WORKERS=1
+      ;;
+    --sync-windows)
+      RUN_SYNC_WINDOWS=1
+      ;;
+    --sync-vps-workdir)
+      RUN_SYNC_VPS_WORKDIR=1
+      ;;
     --skip-sync)
-      RUN_SYNC=0
+      echo "Note: --skip-sync is a legacy no-op; node sync is opt-in by default."
       ;;
     --skip-publish)
       RUN_PUBLISH=0
@@ -70,19 +83,31 @@ echo "VPS: $VPS_HOST:$VPS_DEPLOY_DIR"
 
 if [[ "$RUN_PREFLIGHT" -eq 1 ]]; then
   echo
-  echo ">>> Step 1/4: local preflight"
+  echo ">>> Step 1/3: local preflight"
   npm run preflight
 fi
 
-if [[ "$RUN_SYNC" -eq 1 ]]; then
+if [[ "$RUN_SYNC_WORKERS" -eq 1 || "$RUN_SYNC_WINDOWS" -eq 1 || "$RUN_SYNC_VPS_WORKDIR" -eq 1 ]]; then
   echo
-  echo ">>> Step 2/4: sync workspace to nodes"
-  ./scripts/sync-to-nodes.sh
+  echo ">>> Optional: sync workspace to selected nodes"
+  SYNC_ARGS=()
+  if [[ "$RUN_SYNC_WORKERS" -eq 1 ]]; then
+    SYNC_ARGS+=(--workers)
+  else
+    SYNC_ARGS+=(--no-workers)
+  fi
+  if [[ "$RUN_SYNC_WINDOWS" -eq 1 ]]; then
+    SYNC_ARGS+=(--windows)
+  fi
+  if [[ "$RUN_SYNC_VPS_WORKDIR" -eq 1 ]]; then
+    SYNC_ARGS+=(--include-vps)
+  fi
+  ./scripts/sync-to-nodes.sh "${SYNC_ARGS[@]}"
 fi
 
 if [[ "$RUN_PUBLISH" -eq 1 ]]; then
   echo
-  echo ">>> Step 3/4: publish to GitHub"
+  echo ">>> Step 2/3: publish to GitHub"
   ./scripts/publish-to-github.sh
 fi
 
@@ -90,7 +115,7 @@ EXPECTED_COMMIT="$(git rev-parse HEAD)"
 
 if [[ "$RUN_VPS_DEPLOY" -eq 1 ]]; then
   echo
-  echo ">>> Step 4/4: trigger VPS deploy"
+  echo ">>> Step 3/3: trigger VPS deploy"
   ssh "$VPS_HOST" "cd '$VPS_DEPLOY_DIR' && JETSCOPE_FORCE_DEPLOY=1 JETSCOPE_EXPECT_COMMIT='$EXPECTED_COMMIT' ./scripts/auto-deploy.sh"
 fi
 

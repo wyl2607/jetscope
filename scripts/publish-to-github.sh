@@ -7,6 +7,8 @@ BUS_WRITE="/Users/yumei/tools/script-core/bin/sc-bus-write"
 PRODUCER="jetscope/scripts/publish-to-github.sh"
 REMOTE_NAME="origin"
 BRANCH_NAME="main"
+SECURITY_CHECK="$ROOT/scripts/security_check.sh"
+REVIEW_PUSH_GUARD="$ROOT/scripts/review_push_guard.sh"
 
 emit_event() {
   local status="$1"
@@ -22,6 +24,25 @@ EOF
   "$BUS_WRITE" publish-event --key "jetscope-main" --producer "$PRODUCER" --payload "$payload" >/dev/null || true
 }
 
+run_push_gates() {
+  check_push_gates_exist
+  "$SECURITY_CHECK"
+  "$REVIEW_PUSH_GUARD" "$REMOTE_NAME/$BRANCH_NAME"
+}
+
+check_push_gates_exist() {
+  if [ ! -x "$SECURITY_CHECK" ]; then
+    echo "ERROR: Missing required push gate: $SECURITY_CHECK" >&2
+    emit_event "failed" "missing push gate" "$SECURITY_CHECK" "$COMMIT_BEFORE" "$COMMIT_BEFORE"
+    exit 1
+  fi
+  if [ ! -x "$REVIEW_PUSH_GUARD" ]; then
+    echo "ERROR: Missing required push gate: $REVIEW_PUSH_GUARD" >&2
+    emit_event "failed" "missing push gate" "$REVIEW_PUSH_GUARD" "$COMMIT_BEFORE" "$COMMIT_BEFORE"
+    exit 1
+  fi
+}
+
 cd "$ROOT"
 
 COMMIT_BEFORE="$(git rev-parse HEAD 2>/dev/null || true)"
@@ -29,6 +50,13 @@ emit_event "started" "publish started" "" "$COMMIT_BEFORE" ""
 
 echo "=== JetScope Publish ==="
 echo "Repo: $ROOT"
+
+CURRENT_BRANCH="$(git branch --show-current)"
+if [ "$CURRENT_BRANCH" != "$BRANCH_NAME" ]; then
+  echo "ERROR: Publish must run from $BRANCH_NAME; current branch is '${CURRENT_BRANCH:-detached HEAD}'." >&2
+  emit_event "failed" "wrong publish branch" "current branch ${CURRENT_BRANCH:-detached HEAD}" "$COMMIT_BEFORE" "$COMMIT_BEFORE"
+  exit 1
+fi
 
 # Strict: fail if working tree is dirty (uncommitted changes or untracked files)
 DIRTY_TRACKED=0
@@ -55,7 +83,9 @@ if [ "$DIRTY_TRACKED" -eq 1 ] || [ "$DIRTY_STAGED" -eq 1 ] || [ "$DIRTY_UNTRACKE
   exit 1
 fi
 
+check_push_gates_exist
 npm run web:gate
+run_push_gates
 
 # Verify local is ahead of remote (something to push)
 LOCAL_COMMIT="$(git rev-parse HEAD)"
@@ -67,7 +97,7 @@ if [ "$LOCAL_COMMIT" = "$REMOTE_COMMIT" ]; then
   exit 0
 fi
 
-git push "$REMOTE_NAME" "$BRANCH_NAME"
+git push "$REMOTE_NAME" "HEAD:refs/heads/$BRANCH_NAME"
 
 # Verify remote now matches what we intended to push
 PUSHED_COMMIT="$(git rev-parse HEAD)"

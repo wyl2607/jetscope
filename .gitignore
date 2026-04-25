@@ -16,12 +16,16 @@ __pycache__/
 *.egg-info/
 .venv/
 apps/api/.venv/
+.pytest_cache/
+.ruff_cache/
 
 # Environment and secrets
 .env
 .env.local
 .env.*
+!.env.example
 !.env.*.example
+.envrc
 
 # Data and logs
 data/local-preferences.json
@@ -32,6 +36,8 @@ test-results/
 *.log
 apps/api/data/
 apps/api/data/*.db
+coverage/
+htmlcov/
 
 # System files
 .DS_Store
