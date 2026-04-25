@@ -340,17 +340,17 @@ async function runUiFlow(page) {
     undefined,
     { timeout: 10_000 }
   );
-  const validRefreshStatus = await page.evaluate(async (token) => {
-    const response = await fetch('/api/market/refresh', {
-      method: 'POST',
-      headers: { 'x-admin-token': token }
-    });
-    return response.status;
-  }, adminToken);
-  assert(
-    validRefreshStatus !== 401 && validRefreshStatus !== 403,
-    `Market refresh with valid token must not fail auth, got ${validRefreshStatus}`
+  const validRefreshRespPromise = page.waitForResponse(
+    (resp) => resp.request().method() === 'POST' && resp.url().includes('/api/market/refresh'),
+    { timeout: 10_000 }
   );
+  await triggerMarketRefreshButton.click();
+  const validRefreshResp = await validRefreshRespPromise;
+  if (!validRefreshResp.ok()) {
+    throw new Error(
+      `Market refresh with valid token failed: ${validRefreshResp.status()} ${await validRefreshResp.text()}`
+    );
+  }
 
   await pathwaysTextArea.fill('{');
   await savePathwaysButton.click();

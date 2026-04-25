@@ -25,7 +25,7 @@
     "api:migrate": "cd apps/api && alembic upgrade head",
     "automation:plan:check": "node scripts/automation-plan-check.mjs",
     "automation:scope:check": "node scripts/automation-scope-check.mjs",
-    "test": "node --experimental-strip-types --test test/admin-validation.test.mjs test/automation-scope-check.test.mjs test/product-read-model.test.mjs test/sources-read-model.test.mjs test/portfolio-read-model.test.mjs test/routing.test.mjs test/tipping-point-workbench-contract.test.mjs test/proxy-route-contract.test.mjs packages/core/industry/__tests__/*.test.mjs",
+    "test": "node --experimental-strip-types --test test/admin-validation.test.mjs test/automation-scope-check.test.mjs test/preflight-ui-e2e-contract.test.mjs test/product-read-model.test.mjs test/sources-read-model.test.mjs test/portfolio-read-model.test.mjs test/routing.test.mjs test/tipping-point-workbench-contract.test.mjs test/proxy-route-contract.test.mjs packages/core/industry/__tests__/*.test.mjs",
     "sync:check": "bash ./scripts/sync-check.sh",
     "preflight": "npm run web:gate && npm run api:check && npm run api:test && npm run api:openapi:check && npm test && npm run preflight:product && npm run preflight:e2e",
     "preflight:product": "node scripts/preflight-product-smoke.mjs",
