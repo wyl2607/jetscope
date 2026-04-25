@@ -1,0 +1,42 @@
+{
+  "tasks": [
+    {
+      "task_id": "jetscope-readiness-001",
+      "project": "jetscope",
+      "goal": "Add a /v1/readiness endpoint without changing /v1/health behavior.",
+      "mode": "write",
+      "risk": "low",
+      "conflict_group": "api-readiness",
+      "allowed_paths": [
+        "apps/api/app/api/routes/**",
+        "apps/api/app/schemas/**",
+        "apps/api/tests/**",
+        "apps/api/openapi.json"
+      ],
+      "forbidden_paths": [
+        ".env*",
+        ".automation/**",
+        ".omx/**",
+        "scripts/release.sh",
+        "scripts/sync-to-nodes.sh",
+        "scripts/sync-from-node.sh",
+        "prisma/dev.db",
+        "**/*.log"
+      ],
+      "verification": [
+        "npm run api:check",
+        "npm run api:openapi:check",
+        "cd apps/api && python -m pytest"
+      ],
+      "max_attempts": 2,
+      "pr_policy": "required",
+      "merge_policy": "human-or-controller-after-ci",
+      "stop_conditions": [
+        "requires remote deploy",
+        "touches forbidden path",
+        "CI failure is missing-secret or permission",
+        "more than two repair attempts"
+      ]
+    }
+  ]
+}

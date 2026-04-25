@@ -26,20 +26,20 @@ function installFetchStub(t, handlers) {
 }
 
 function installEnv(t) {
-  const previousBase = process.env.SAFVSOIL_API_BASE_URL;
-  const previousPrefix = process.env.SAFVSOIL_API_PREFIX;
-  process.env.SAFVSOIL_API_BASE_URL = 'https://api.example.com';
-  process.env.SAFVSOIL_API_PREFIX = '/v1';
+  const previousBase = process.env.JETSCOPE_API_BASE_URL;
+  const previousPrefix = process.env.JETSCOPE_API_PREFIX;
+  process.env.JETSCOPE_API_BASE_URL = 'https://api.example.com';
+  process.env.JETSCOPE_API_PREFIX = '/v1';
   t.after(() => {
     if (previousBase === undefined) {
-      delete process.env.SAFVSOIL_API_BASE_URL;
+      delete process.env.JETSCOPE_API_BASE_URL;
     } else {
-      process.env.SAFVSOIL_API_BASE_URL = previousBase;
+      process.env.JETSCOPE_API_BASE_URL = previousBase;
     }
     if (previousPrefix === undefined) {
-      delete process.env.SAFVSOIL_API_PREFIX;
+      delete process.env.JETSCOPE_API_PREFIX;
     } else {
-      process.env.SAFVSOIL_API_PREFIX = previousPrefix;
+      process.env.JETSCOPE_API_PREFIX = previousPrefix;
     }
   });
 }
@@ -259,16 +259,25 @@ test('getSourcesReadModel maps live coverage, volatility levels, and notes for t
   assert.equal(readModel.degraded, true);
   assert.ok(readModel.completeness < 1.0);
   assert.equal(readModel.rows[0].source, 'EIA Daily Prices');
+  assert.equal(readModel.rows[0].trustState, 'live');
+  assert.equal(readModel.rows[0].sourceType, 'market primary');
+  assert.match(readModel.rows[0].degradedReason, /live primary/);
   assert.equal(readModel.rows[0].lag, '45m');
   assert.equal(readModel.rows[1].source, 'FRED');
   assert.equal(readModel.rows[1].value, '1.043 USD/L');
   assert.equal(readModel.rows[1].alertLevel, 'alert');
   assert.equal(readModel.rows[1].change30d, '+21.70%');
+  assert.equal(readModel.rows[2].trustState, 'fallback');
   assert.equal(readModel.rows[2].note, 'CBAM 88.00 EUR × FX 1.0923');
   assert.equal(readModel.rows[4].surface, 'Rotterdam jet fuel');
   assert.equal(readModel.rows[4].source, 'rotterdam-jet-direct');
+  assert.equal(readModel.rows[4].trustState, 'proxy');
   assert.equal(readModel.rows[4].note, 'ARA direct quote');
   assert.equal(readModel.coverageMetrics[2].source_type, 'derived');
+  assert.equal(readModel.summary.liveCount, 2);
+  assert.equal(readModel.summary.proxyCount, 1);
+  assert.equal(readModel.summary.fallbackCount, 4);
+  assert.match(readModel.summary.trustLabel, /verify degraded inputs/);
   assert.notEqual(readModel.rows[1].sparkline, '');
 });
 
@@ -361,6 +370,8 @@ test('getSourcesReadModel falls back to a generic degraded state when coverage A
   );
   assert.equal(readModel.rows[0].source, 'coverage unavailable');
   assert.equal(readModel.rows[0].status, 'unknown');
+  assert.equal(readModel.rows[0].trustState, 'fallback');
+  assert.match(readModel.rows[0].degradedReason, /fallback path/);
   assert.equal(readModel.rows[0].scope, 'unknown · coverage_unavailable');
   assert.equal(readModel.rows[0].note, 'fallback');
   assert.equal(readModel.rows[1].value, '1.010 USD/L');
@@ -369,6 +380,8 @@ test('getSourcesReadModel falls back to a generic degraded state when coverage A
   assert.equal(readModel.rows[4].value, 'n/a');
   assert.equal(readModel.degraded, true);
   assert.equal(readModel.completeness, 0.0);
+  assert.equal(readModel.summary.fallbackCount, 7);
+  assert.match(readModel.summary.degradedReason, /coverage completeness 0%/);
 });
 
 test('getSourcesReadModel backfills missing metrics when coverage is partial (5 of 7)', async (t) => {

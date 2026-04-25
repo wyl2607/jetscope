@@ -11,7 +11,10 @@ class Settings(BaseSettings):
     market_refresh_interval_seconds: int = 600
     enable_sqlite_routes: bool = False
     phase0_deprecation_gate: str = "not-ready"
-    schema_bootstrap_mode: str = "alembic"
+    schema_bootstrap_mode: str = Field(
+        default="alembic",
+        validation_alias=AliasChoices("JETSCOPE_SCHEMA_BOOTSTRAP_MODE", "SAFVSOIL_SCHEMA_BOOTSTRAP_MODE"),
+    )
     anthropic_api_key: str = Field(
         default="",
         validation_alias=AliasChoices("JETSCOPE_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY"),

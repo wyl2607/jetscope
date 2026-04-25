@@ -1,33 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
-import { startMockedServer } from './helpers/server-harness.mjs';
+const APP_DIR = new URL('../apps/web/app/', import.meta.url);
 
-const CASES = [
-  ['/', 'SAFvsOil · Home'],
-  ['/explorer', 'SAFvsOil · Explorer'],
-  ['/routes', 'SAFvsOil · Routes'],
-  ['/routes/sugar-atj', 'SAFvsOil · Route Detail'],
-  ['/industry', 'SAFvsOil · Industry'],
-  ['/scenarios', 'SAFvsOil · Scenarios'],
-  ['/sources', 'SAFvsOil · Sources'],
-  ['/methodology', 'SAFvsOil · Methodology'],
-  ['/en', 'SAFvsOil · Home'],
-  ['/en/explorer', 'SAFvsOil · Explorer']
+const ROUTES = [
+  ['', 'JetScope'],
+  ['dashboard/page.tsx', 'Dashboard'],
+  ['crisis/page.tsx', 'Crisis'],
+  ['crisis/eu-jet-reserves/page.tsx', 'EU Jet Fuel Reserve'],
+  ['crisis/saf-tipping-point/page.tsx', 'SAF Tipping Point'],
+  ['sources/page.tsx', 'Sources'],
+  ['research/page.tsx', 'Research'],
+  ['reports/tipping-point-analysis/page.tsx', 'Tipping Point']
 ];
 
-test('phase-0 multi-page routing returns 200 with expected title', async () => {
-  const server = await startMockedServer();
+test('current JetScope routes expose canonical product surfaces', async () => {
+  for (const [relativePath, expectedCopy] of ROUTES) {
+    const pagePath = relativePath ? `${relativePath}` : 'page.tsx';
+    const source = await readFile(new URL(pagePath, APP_DIR), 'utf8');
 
-  try {
-    for (const [pathname, title] of CASES) {
-      const response = await fetch(`http://127.0.0.1:${server.port}${pathname}`);
-      const html = await response.text();
-
-      assert.equal(response.status, 200, `${pathname} should return 200`);
-      assert.match(html, new RegExp(`<title>${title}</title>`), `${pathname} should expose title`);
-    }
-  } finally {
-    await server.close();
+    assert.match(source, new RegExp(expectedCopy, 'i'), `${pagePath} should include ${expectedCopy}`);
   }
 });

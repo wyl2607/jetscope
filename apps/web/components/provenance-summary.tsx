@@ -1,0 +1,67 @@
+import { InfoCard } from '@/components/cards';
+import type { SourcesReadModel } from '@/lib/sources-read-model';
+import type { Route } from 'next';
+import Link from 'next/link';
+
+type Props = {
+  summary: SourcesReadModel['summary'];
+  completeness: number;
+  generatedAt: string;
+  href?: Route;
+};
+
+function formatGeneratedAt(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'unknown';
+  return date.toLocaleString();
+}
+
+function trustTone(summary: SourcesReadModel['summary']): string {
+  if (summary.fallbackCount > 0 || summary.degradedCount > 0) return 'text-amber-300';
+  if (summary.proxyCount > 0) return 'text-sky-300';
+  return 'text-emerald-300';
+}
+
+export function ProvenanceSummary({ summary, completeness, generatedAt, href }: Props) {
+  const content = (
+    <InfoCard title="Source provenance" subtitle="Trust posture for the current market snapshot">
+      <div className="grid gap-3 text-sm md:grid-cols-4">
+        <p className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-slate-300">
+          <span className="block text-xs uppercase tracking-[0.14em] text-slate-500">Live</span>
+          <span className="mt-1 block text-lg font-semibold text-emerald-300">{summary.liveCount}</span>
+        </p>
+        <p className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-slate-300">
+          <span className="block text-xs uppercase tracking-[0.14em] text-slate-500">Proxy</span>
+          <span className="mt-1 block text-lg font-semibold text-sky-300">{summary.proxyCount}</span>
+        </p>
+        <p className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-slate-300">
+          <span className="block text-xs uppercase tracking-[0.14em] text-slate-500">Fallback</span>
+          <span className="mt-1 block text-lg font-semibold text-amber-300">{summary.fallbackCount}</span>
+        </p>
+        <p className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-slate-300">
+          <span className="block text-xs uppercase tracking-[0.14em] text-slate-500">Confidence</span>
+          <span className="mt-1 block text-lg font-semibold text-white">{Math.round(summary.averageConfidence * 100)}%</span>
+        </p>
+      </div>
+
+      <div className="mt-5 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+        <p className={`text-sm font-semibold ${trustTone(summary)}`}>{summary.trustLabel}</p>
+        <p className="mt-2 text-sm leading-6 text-slate-300">{summary.degradedReason}</p>
+        <p className="mt-2 text-xs text-slate-500">
+          completeness {Math.round(completeness * 100)}% · {summary.freshnessLabel} · generated {formatGeneratedAt(generatedAt)}
+        </p>
+      </div>
+    </InfoCard>
+  );
+
+  if (!href) return content;
+
+  return (
+    <div className="relative">
+      {content}
+      <Link href={href} className="absolute right-5 top-5 text-xs font-semibold text-sky-300 underline decoration-sky-500/40 hover:text-sky-200">
+        Inspect sources
+      </Link>
+    </div>
+  );
+}

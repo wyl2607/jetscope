@@ -1,6 +1,8 @@
 import { Shell } from '@/components/shell';
+import { ResearchDecisionBriefCard } from '@/components/research-decision-brief';
 import {
   AI_RESEARCH_ENABLED,
+  buildResearchDecisionBrief,
   getEuReserveCoverage,
   getResearchSignals,
   getTippingPointEvents
@@ -72,6 +74,7 @@ export default async function HomePage() {
 
   const latestEvent = events[0] ?? null;
   const signalCount = signalsResult.signals.length;
+  const researchBrief = buildResearchDecisionBrief(signalsResult);
 
   return (
     <Shell
@@ -134,6 +137,10 @@ export default async function HomePage() {
                 : 'AI_RESEARCH_ENABLED=false: research page renders empty-state by design.'}
           </p>
         </article>
+      </section>
+
+      <section className="mt-8">
+        <ResearchDecisionBriefCard brief={researchBrief} compact />
       </section>
 
       <section className="mt-8 grid gap-4 md:grid-cols-3">

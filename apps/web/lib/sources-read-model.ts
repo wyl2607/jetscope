@@ -29,14 +29,29 @@ export type SourcesReadModel = {
   generatedAt: string;
   overallStatus: string;
   coverageMetrics: SourceCoverageMetric[];
+  summary: {
+    liveCount: number;
+    proxyCount: number;
+    fallbackCount: number;
+    degradedCount: number;
+    averageConfidence: number;
+    freshnessLabel: string;
+    trustLabel: string;
+    degradedReason: string;
+  };
   rows: Array<{
     surface: string;
     metricKey: string;
     source: string;
+    sourceType: string;
     scope: string;
     confidence: string;
+    confidenceScore: number;
     lag: string;
+    lagMinutes: number | null;
     status: string;
+    trustState: 'live' | 'proxy' | 'fallback' | 'degraded';
+    degradedReason: string;
     value: string;
     change1d: string;
     change7d: string;
@@ -111,6 +126,23 @@ function surfaceLabel(metricKey: string) {
 function statusLabel(raw?: string) {
   if (!raw) return "unknown";
   return raw;
+}
+
+function sourceTypeLabel(raw?: string): string {
+  if (!raw) return 'unknown';
+  if (raw === 'market_primary') return 'market primary';
+  if (raw === 'public_proxy') return 'public proxy';
+  if (raw === 'regulatory_proxy') return 'regulatory proxy';
+  if (raw === 'derived') return 'derived proxy';
+  if (raw === 'official') return 'official';
+  return raw.replaceAll('_', ' ');
+}
+
+function trustStateFor(metric: SourceCoverageMetric): SourcesReadModel['rows'][number]['trustState'] {
+  if (metric.fallback_used || metric.status === 'seed') return 'fallback';
+  if (metric.status !== 'ok') return 'degraded';
+  if (metric.source_type.includes('proxy') || metric.source_type === 'derived') return 'proxy';
+  return 'live';
 }
 
 function formatLagMinutes(value?: number | null) {
@@ -222,6 +254,54 @@ function buildMetricNote(metric: SourceCoverageMetric, supplement?: DisplaySuppl
   return parts.join(' | ') || 'live';
 }
 
+function degradedReasonFor(metric: SourceCoverageMetric, supplement?: DisplaySupplement | null): string {
+  if (supplement?.error) return supplement.error;
+  if (metric.fallback_used && metric.status === 'seed') return 'seed fallback used because live coverage is not available';
+  if (metric.fallback_used) return 'fallback path used for this metric';
+  if (metric.status !== 'ok') return `source status is ${metric.status}`;
+  if (metric.source_type.includes('proxy') || metric.source_type === 'derived') return 'derived or proxy metric; validate before high-stakes decisions';
+  return 'live primary or official source with no degraded flag';
+}
+
+function buildSummary(rows: SourcesReadModel['rows'], completeness: number, degraded: boolean): SourcesReadModel['summary'] {
+  const liveCount = rows.filter((row) => row.trustState === 'live').length;
+  const proxyCount = rows.filter((row) => row.trustState === 'proxy').length;
+  const fallbackCount = rows.filter((row) => row.trustState === 'fallback').length;
+  const degradedCount = rows.filter((row) => row.trustState === 'degraded').length;
+  const confidenceScores = rows.map((row) => row.confidenceScore).filter((value) => Number.isFinite(value));
+  const averageConfidence = confidenceScores.length
+    ? confidenceScores.reduce((sum, value) => sum + value, 0) / confidenceScores.length
+    : 0;
+  const lagMinutes = rows
+    .map((row) => row.lagMinutes)
+    .filter((value): value is number => Number.isFinite(value));
+  const freshestLag = lagMinutes.length ? Math.min(...lagMinutes) : null;
+  const freshnessLabel = freshestLag == null ? 'freshness unknown' : `freshest source ${formatLagMinutes(freshestLag)}`;
+  const trustLabel = degraded || fallbackCount > 0 || degradedCount > 0
+    ? 'decision support: verify degraded inputs'
+    : proxyCount > 0
+      ? 'decision support: proxy-aware'
+      : 'decision support: live-source ready';
+  const degradedReason = degraded
+    ? `coverage completeness ${Math.round(completeness * 100)}%; ${fallbackCount} fallback, ${degradedCount} degraded`
+    : fallbackCount > 0
+      ? `${fallbackCount} metric${fallbackCount === 1 ? '' : 's'} use fallback values`
+      : proxyCount > 0
+        ? `${proxyCount} metric${proxyCount === 1 ? '' : 's'} are proxy or derived estimates`
+        : 'all metrics are live primary or official sources';
+
+  return {
+    liveCount,
+    proxyCount,
+    fallbackCount,
+    degradedCount,
+    averageConfidence,
+    freshnessLabel,
+    trustLabel,
+    degradedReason
+  };
+}
+
 function sortCoverageMetrics(metrics: SourceCoverageMetric[]): SourceCoverageMetric[] {
   const order = new Map<string, number>(PRIMARY_METRIC_ORDER.map((metricKey, index) => [metricKey, index]));
   return [...metrics].sort((left, right) => {
@@ -245,10 +325,15 @@ function buildRows(
       surface: surfaceLabel(metric.metric_key),
       metricKey: metric.metric_key,
       source: sourceLabel(metric.source_name),
+      sourceType: sourceTypeLabel(metric.source_type),
       scope: `${metric.region} · ${metric.market_scope}`,
       confidence: Number.isFinite(metric.confidence_score) ? metric.confidence_score.toFixed(2) : 'n/a',
+      confidenceScore: Number.isFinite(metric.confidence_score) ? metric.confidence_score : 0,
       lag: formatLagMinutes(metric.lag_minutes),
+      lagMinutes: Number.isFinite(metric.lag_minutes ?? NaN) ? Number(metric.lag_minutes) : null,
       status: statusLabel(metric.status),
+      trustState: trustStateFor(metric),
+      degradedReason: degradedReasonFor(metric, supplement),
       value: formatMetricValue(metric.metric_key, snapshotValue),
       change1d: formatChange(historyMetric?.change_pct_1d),
       change7d: formatChange(historyMetric?.change_pct_7d),
@@ -289,11 +374,13 @@ function fallback(
   history: MarketHistory | null = null
 ): SourcesReadModel {
   const coverageMetrics = buildGenericFallbackCoverageMetrics();
+  const rows = buildRows(snapshot, history, coverageMetrics);
   return {
     generatedAt: snapshot.generated_at,
     overallStatus: snapshot.source_status?.overall ?? 'degraded',
     coverageMetrics,
-    rows: buildRows(snapshot, history, coverageMetrics),
+    summary: buildSummary(rows, 0, true),
+    rows,
     isFallback: true,
     error: error instanceof Error ? error.message : "unknown error",
     completeness: 0.0,
@@ -339,15 +426,18 @@ export async function getSourcesReadModel(): Promise<SourcesReadModel> {
     const coverageMetrics = sortCoverageMetrics(coveragePayload.metrics);
 
     const completeness = coveragePayload?.completeness ?? (coverageMetrics.length / PRIMARY_METRIC_ORDER.length);
+    const rows = buildRows(snapshotPayload, historyPayload, coverageMetrics);
+    const degraded = coveragePayload?.degraded ?? completeness < 1.0;
     return {
       generatedAt: coveragePayload?.generated_at ?? snapshotPayload.generated_at,
       overallStatus: snapshotPayload.source_status?.overall ?? "unknown",
       coverageMetrics,
-      rows: buildRows(snapshotPayload, historyPayload, coverageMetrics),
+      summary: buildSummary(rows, completeness, degraded),
+      rows,
       isFallback: false,
       error: null,
       completeness,
-      degraded: coveragePayload?.degraded ?? completeness < 1.0
+      degraded
     };
   } catch (error) {
     return fallback(error, snapshotPayload, historyPayload);

@@ -37,11 +37,14 @@ source scripts/safenv
 - `apps/web`: Next.js 前端
 - `apps/api`: FastAPI 后端
 - `packages/core`: 共享领域逻辑
-- `tools/workspace-data-bus`: 跨项目 JSONL 事件总线
-- `tools/script-core`: 通用脚本工具入口
+- `docs/`: 产品、API、数据合同、AI 流水线与部署文档
+- `scripts/`: 发布、预检、同步和部署脚本
 
-## 追踪规则
+## 仓库规则
 
+- 不得提交 `.env*`、密钥、本地数据库、日志、构建产物、`node_modules/` 或内部交付归档
+- 新增文档应面向公开仓库，避免写入私人机器路径、内部节点名或不可复现的本地流程
+- 发布和部署规则以 `OPERATIONS.md` 为准
 - 非琐碎任务开始前，先查 `/Users/yumei/tools/automation/runtime/ai-trace/*.jsonl`
 - 新的稳定解法必须写回 ledger
 

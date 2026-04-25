@@ -15,8 +15,8 @@ from app.services.bootstrap import utcnow
 from app.services.reserves import refresh_reserves_coverage
 from app.services.ai_research import run_daily_pipeline
 
-logger = logging.getLogger("safvsoil.market_refresh")
-tipping_logger = logging.getLogger("safvsoil.tipping_point")
+logger = logging.getLogger("jetscope.market_refresh")
+tipping_logger = logging.getLogger("jetscope.tipping_point")
 reserves_logger = logging.getLogger("jetscope.reserves_refresh")
 
 TIPPING_EVALUATION_INTERVAL = timedelta(minutes=15)

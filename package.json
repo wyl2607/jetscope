@@ -17,20 +17,27 @@
     "web:typecheck": "npm --prefix apps/web run typecheck",
     "web:gate": "npm --prefix apps/web run gate",
     "api:dev": "cd apps/api && .venv/bin/uvicorn app.main:app --reload --port 8000",
-    "api:check": "cd apps/api && python3 -m compileall app",
+    "api:check": "node scripts/api-check.mjs",
     "api:test": "cd apps/api && .venv/bin/python -m pytest tests",
+    "api:openapi": "cd apps/api && .venv/bin/python generate_openapi.py",
+    "api:openapi:check": "node scripts/openapi-check.mjs",
+    "api:full-check": "node scripts/api-check.mjs",
     "api:migrate": "cd apps/api && alembic upgrade head",
-    "test": "node --experimental-strip-types --test test/admin-validation.test.mjs test/product-read-model.test.mjs test/sources-read-model.test.mjs test/portfolio-read-model.test.mjs",
+    "automation:plan:check": "node scripts/automation-plan-check.mjs",
+    "automation:scope:check": "node scripts/automation-scope-check.mjs",
+    "test": "node --experimental-strip-types --test test/admin-validation.test.mjs test/automation-scope-check.test.mjs test/product-read-model.test.mjs test/sources-read-model.test.mjs test/portfolio-read-model.test.mjs test/routing.test.mjs test/tipping-point-workbench-contract.test.mjs",
     "sync:check": "bash ./scripts/sync-check.sh",
-    "preflight": "npm run web:gate && npm run api:check && npm run api:test && npm test && npm run preflight:product && npm run preflight:e2e",
+    "preflight": "npm run web:gate && npm run api:check && npm run api:test && npm run api:openapi:check && npm test && npm run preflight:product && npm run preflight:e2e",
     "preflight:product": "node scripts/preflight-product-smoke.mjs",
     "preflight:e2e": "node scripts/preflight-ui-e2e.mjs",
     "docker:up": "cd infra && docker-compose up -d",
-    "docker:down": "cd infra && docker-compose down"
+    "docker:down": "cd infra && docker-compose down",
+    "audit:security": "npm audit --audit-level=high",
+    "audit:python": "python -m pip_audit -r apps/api/requirements.txt"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
-    "concurrently": "^8.2.2"
+    "concurrently": "^9.2.1"
   },
   "engines": {
     "node": ">=22.0.0",

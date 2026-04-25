@@ -19,21 +19,17 @@ This directory contains JetScope project automation scripts.
 - `preflight-ui-e2e.mjs`: UI end-to-end verification
 - `preflight-load-test.mjs`: load verification
 - `preflight-load-test-v1.mjs`: v1 API load verification
+- `automation-plan-check.mjs`: local validation for bounded parallel-development task specs
+- `automation-scope-check.mjs`: compare changed files with an automation task spec's allowed and forbidden paths
 
 ## Data Bus Integration
 
-JetScope now writes operational events to:
+Some private deployments can write operational events to an external workspace data bus:
 
 - `tools/workspace-data-bus/topics/publish-event.jsonl`
 - `tools/workspace-data-bus/topics/node-sync-event.jsonl`
 
-Useful commands:
-
-```bash
-/Users/yumei/tools/script-core/bin/sc-bus-list publish-event --tail 20
-/Users/yumei/tools/script-core/bin/sc-bus-list node-sync-event --tail 20
-/Users/yumei/tools/script-core/bin/sc-bus-read publish-event --latest --key jetscope-main
-```
+Those tools are optional and are not required for a standard local checkout.
 
 ## Push Gates
 
@@ -113,3 +109,4 @@ Release and deploy behavior is also pinned in `../OPERATIONS.md`; treat that as 
 - Unix worker sync performs a blocked-path readback after rsync. If historical excluded remnants remain on a node, sync fails instead of reporting a clean success.
 - Windows opt-in sync is an overlay handoff sync, not a clean mirror. It performs a blocked-path readback after extraction, but it is not a full historical cleanup of every excluded file.
 - Release fails closed before publishing when required push gates `scripts/security_check.sh` and `scripts/review_push_guard.sh` are missing or not executable.
+- Private deployment wrappers may add extra observability around these scripts, but the checked-in scripts should remain runnable from this repository alone.

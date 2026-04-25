@@ -1,4 +1,5 @@
 import { FuelVsSafPriceChart } from '@/components/fuel-vs-saf-price-chart';
+import { ResearchDecisionBriefCard } from '@/components/research-decision-brief';
 import { ReservesCoverageStrip } from '@/components/reserves-coverage-strip';
 import { Shell } from '@/components/shell';
 import { TippingEventTimeline } from '@/components/tipping-event-timeline';
@@ -8,7 +9,7 @@ import {
   toDecisionReadModel,
   toTippingPointReadModel
 } from '@/lib/product-read-model';
-import { getEuReserveCoverage, getTippingPointEvents } from '@/lib/portfolio-read-model';
+import { buildResearchDecisionBrief, getEuReserveCoverage, getResearchSignals, getTippingPointEvents } from '@/lib/portfolio-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata, Route } from 'next';
 import Link from 'next/link';
@@ -40,16 +41,18 @@ const CRISIS_LINKS: Array<{ title: string; description: string; href: Route }> =
 ];
 
 export default async function CrisisPage() {
-  const [dashboardReadModel, reserve, events] = await Promise.all([
+  const [dashboardReadModel, reserve, events, researchSignals] = await Promise.all([
     getDashboardReadModel(),
     getEuReserveCoverage(),
-    getTippingPointEvents({ since: isoDaysAgo(42), limit: 50 })
+    getTippingPointEvents({ since: isoDaysAgo(42), limit: 50 }),
+    getResearchSignals()
   ]);
 
   const tippingPoint = toTippingPointReadModel(dashboardReadModel.tippingPoint);
   const decision = toDecisionReadModel(dashboardReadModel.airlineDecision);
 
   const fallbackFossil = dashboardReadModel.market.values.jet_eu_proxy_usd_per_l ?? dashboardReadModel.market.values.jet_usd_per_l ?? 0.99;
+  const researchBrief = buildResearchDecisionBrief(researchSignals);
 
   return (
     <Shell
@@ -75,6 +78,8 @@ export default async function CrisisPage() {
         <ReservesCoverageStrip reserve={reserve} />
 
         <TippingEventTimeline events={events} />
+
+        <ResearchDecisionBriefCard brief={researchBrief} compact />
 
         <FuelVsSafPriceChart
           fossilJetUsdPerL={tippingPoint?.inputs.fossilJetUsdPerL ?? fallbackFossil}

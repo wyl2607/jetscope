@@ -56,7 +56,7 @@ export default async function GermanDashboardPage() {
   return (
     <Shell
       eyebrow="Produkt-Dashboard (DE)"
-      title="SAF vs Oil Entscheidungscockpit"
+      title="JetScope Entscheidungscockpit"
       description="Deutsche Einstiegsseite fuer SAF-vs-Kerosin Entscheidungen auf Basis von FastAPI + PostgreSQL Snapshot und Szenario-Registry."
     >
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

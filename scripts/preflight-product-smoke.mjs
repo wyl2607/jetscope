@@ -7,9 +7,15 @@ import { fileURLToPath } from 'node:url';
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(scriptDir, '..');
 const adminToken = 'smoke-admin-token';
-const apiPython = existsSync(join(rootDir, 'apps/api/.venv/bin/python'))
-  ? join(rootDir, 'apps/api/.venv/bin/python')
-  : 'python3';
+const apiPython = process.env.JETSCOPE_PYTHON_BIN
+  ?? process.env.PYTHON_BIN
+  ?? (existsSync(join(rootDir, 'apps/api/.venv/Scripts/python.exe'))
+    ? join(rootDir, 'apps/api/.venv/Scripts/python.exe')
+    : existsSync(join(rootDir, 'apps/api/.venv/bin/python'))
+      ? join(rootDir, 'apps/api/.venv/bin/python')
+      : process.platform === 'win32'
+        ? 'python'
+        : 'python3');
 
 function assert(condition, message) {
   if (!condition) {
@@ -154,9 +160,9 @@ async function run() {
         cwd: rootDir,
         env: {
           ...process.env,
-          SAFVSOIL_API_BASE_URL: `http://127.0.0.1:${apiPort}`,
-          SAFVSOIL_API_PREFIX: '/v1',
-          SAFVSOIL_WORKSPACE_SLUG: 'default'
+          JETSCOPE_API_BASE_URL: `http://127.0.0.1:${apiPort}`,
+          JETSCOPE_API_PREFIX: '/v1',
+          JETSCOPE_WORKSPACE_SLUG: 'default'
         }
       }
     );

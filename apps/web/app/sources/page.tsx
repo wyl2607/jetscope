@@ -1,4 +1,5 @@
 import { InfoCard } from '@/components/cards';
+import { ProvenanceSummary } from '@/components/provenance-summary';
 import { SourceCoveragePanel } from '@/components/source-coverage-panel';
 import { Shell } from '@/components/shell';
 import { getSourcesReadModel } from '@/lib/sources-read-model';
@@ -62,6 +63,13 @@ export default async function SourcesPage({
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   };
 
+  const trustClass = (state: string) => {
+    if (state === 'live') return 'border-emerald-600/40 bg-emerald-500/10 text-emerald-200';
+    if (state === 'proxy') return 'border-sky-600/40 bg-sky-500/10 text-sky-200';
+    if (state === 'fallback') return 'border-amber-600/40 bg-amber-500/10 text-amber-200';
+    return 'border-rose-600/40 bg-rose-500/10 text-rose-200';
+  };
+
   return (
     <Shell
       eyebrow="Source catalog"
@@ -69,6 +77,13 @@ export default async function SourcesPage({
       description="该页已接通 FastAPI market snapshot 来源状态。显示每个关键来源的状态、数值与错误信息。"
     >
       <FocusScroll focusMetricKey={focusMetricKey} />
+      <div className="mb-6">
+        <ProvenanceSummary
+          summary={readModel.summary}
+          completeness={readModel.completeness}
+          generatedAt={readModel.generatedAt}
+        />
+      </div>
       <div className="mb-6">
         <SourceCoveragePanel
           metrics={readModel.coverageMetrics}
@@ -97,6 +112,7 @@ export default async function SourcesPage({
               <tr className="border-b border-slate-800 text-slate-400">
                 <th className="py-3 pr-4">Surface</th>
                 <th className="py-3 pr-4">Source</th>
+                <th className="py-3 pr-4">Trust</th>
                 <th className="py-3 pr-4">Scope</th>
                 <th className="py-3 pr-4">Confidence</th>
                 <th className="py-3 pr-4">Lag</th>
@@ -107,7 +123,7 @@ export default async function SourcesPage({
                 <th className="py-3 pr-4">30d</th>
                 <th className="py-3 pr-4">Volatility</th>
                 <th className="py-3 pr-4">Trend</th>
-                <th className="py-3">Note</th>
+                <th className="py-3">Why trust / why degraded</th>
               </tr>
             </thead>
             <tbody>
@@ -127,6 +143,12 @@ export default async function SourcesPage({
                 >
                   <td className="py-3 pr-4 font-medium text-white">{row.surface}</td>
                   <td className="py-3 pr-4">{row.source}</td>
+                  <td className="py-3 pr-4">
+                    <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] ${trustClass(row.trustState)}`}>
+                      {row.trustState}
+                    </span>
+                    <span className="mt-1 block text-xs text-slate-500">{row.sourceType}</span>
+                  </td>
                   <td className="py-3 pr-4">{row.scope}</td>
                   <td className="py-3 pr-4">{row.confidence}</td>
                   <td className="py-3 pr-4">{row.lag}</td>
@@ -150,7 +172,10 @@ export default async function SourcesPage({
                       <span className="text-slate-500">n/a</span>
                     )}
                   </td>
-                  <td className="py-3">{row.note}</td>
+                  <td className="py-3">
+                    <span className="block text-slate-300">{row.degradedReason}</span>
+                    {row.note !== row.degradedReason ? <span className="mt-1 block text-xs text-slate-500">{row.note}</span> : null}
+                  </td>
                 </tr>
               ))}
             </tbody>

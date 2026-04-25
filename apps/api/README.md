@@ -1,17 +1,26 @@
-# SAFvsOil API
+# JetScope API
 
-FastAPI backend for SAFvsOil product surfaces (`/v1/*`), including:
+FastAPI backend for JetScope product surfaces (`/v1/*`), including:
 
 - market snapshot persistence and refresh status tracking
 - workspace preferences and scenario CRUD
 - pathway and policy admin upsert routes
 - health capability reporting for phase migration visibility
+- EU reserve stress, tipping point, and AI research signal routes
 
 ## Local setup
 
 ```bash
 python3.13 -m venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+On Windows PowerShell:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
@@ -24,19 +33,25 @@ uvicorn app.main:app --reload
 Defaults:
 
 - API prefix: `/v1`
-- DB: `postgresql+psycopg://postgres:postgres@localhost:5432/safvsoil`
-- admin token: `dev-admin-token-change-me`
+- DB: `sqlite:///./data/market.db`
+- admin token: empty by default; must be configured before using protected write routes
 - schema bootstrap mode: `alembic`
 
 ## Key environment variables
 
-- `SAFVSOIL_DATABASE_URL`
-- `SAFVSOIL_API_PREFIX`
-- `SAFVSOIL_ADMIN_TOKEN`
-- `SAFVSOIL_MARKET_REFRESH_INTERVAL_SECONDS`
-- `SAFVSOIL_ENABLE_SQLITE_ROUTES` (`false` by default; opt-in for local SQLite integration routes)
-- `SAFVSOIL_SCHEMA_BOOTSTRAP_MODE` (`alembic` or `create_all`)
-- `SAFVSOIL_PHASE0_DEPRECATION_GATE`
+- `JETSCOPE_DATABASE_URL`
+- `JETSCOPE_API_PREFIX`
+- `JETSCOPE_ADMIN_TOKEN`
+- `JETSCOPE_MARKET_REFRESH_INTERVAL_SECONDS`
+- `JETSCOPE_ENABLE_SQLITE_ROUTES` (`false` by default; opt-in for local SQLite integration routes)
+- `JETSCOPE_SCHEMA_BOOTSTRAP_MODE` (`alembic` or `create_all`)
+- `JETSCOPE_PHASE0_DEPRECATION_GATE`
+- `JETSCOPE_AI_RESEARCH_ENABLED` (`false` by default)
+- `JETSCOPE_AI_RESEARCH_MOCK_MODE` (`true` by default)
+- `JETSCOPE_ANTHROPIC_API_KEY`
+- `JETSCOPE_NEWSAPI_KEY`
+
+Selected legacy `SAFVSOIL_*` variables may still be accepted by older compatibility code. New deployments should prefer `JETSCOPE_*` names.
 
 ## Migrations
 
@@ -53,7 +68,7 @@ npm run api:migrate
 
 ## Auth behavior (write routes)
 
-These routes require header `x-admin-token` matching `SAFVSOIL_ADMIN_TOKEN`:
+These routes require header `x-admin-token` matching `JETSCOPE_ADMIN_TOKEN`:
 
 - `POST /v1/market/refresh`
 - `PUT /v1/pathways`
@@ -63,5 +78,4 @@ These routes require header `x-admin-token` matching `SAFVSOIL_ADMIN_TOKEN`:
 
 ## Runtime note
 
-On this machine, use the project venv (`apps/api/.venv/bin/python`) for API commands.
-System Python 3.14 may not include required packages for this stack.
+Use the project virtual environment for API commands. The root `npm run api:check` wrapper auto-detects `JETSCOPE_PYTHON_BIN`, `PYTHON_BIN`, `.venv/Scripts/python.exe`, `.venv/bin/python`, or the platform default interpreter.

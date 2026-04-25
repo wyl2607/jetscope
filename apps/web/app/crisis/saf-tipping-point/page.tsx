@@ -1,13 +1,9 @@
 import { Shell } from '@/components/shell';
-import { FuelVsSafPriceChart } from '@/components/fuel-vs-saf-price-chart';
-import { TippingPointSimulator } from '@/components/tipping-point-simulator';
-import { AirlineDecisionMatrix } from '@/components/airline-decision-matrix';
-import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
-import { ScenarioCostStackChart } from '@/components/scenario-cost-stack-chart';
 import { getDashboardReadModel, toDecisionReadModel, toTippingPointReadModel } from '@/lib/product-read-model';
-import type { Metadata, Route } from 'next';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { buildPageMetadata } from '@/lib/seo';
+import { TippingPointWorkbench } from '@/components/tipping-point-workbench';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,8 +18,8 @@ export default async function SafTippingPointPage() {
   const readModel = await getDashboardReadModel();
   const tippingPoint = toTippingPointReadModel(readModel.tippingPoint);
   const airlineDecision = toDecisionReadModel(readModel.airlineDecision);
-  const pathways = tippingPoint?.pathways ?? [];
-  const selectedPathwayKey = tippingPoint?.pathways?.[0]?.pathway_key ?? 'hefa';
+  const liveFuel = readModel.market.values?.jet_eu_proxy_usd_per_l ?? readModel.market.values?.jet_usd_per_l ?? 1.3;
+  const liveCarbonUsd = readModel.market.values?.carbon_proxy_usd_per_t ?? 102.6;
 
   return (
     <Shell
@@ -61,48 +57,19 @@ export default async function SafTippingPointPage() {
         </p>
       </section>
 
-      {/* Fuel vs SAF Price Chart */}
-      <section className="mb-8">
-        <FuelVsSafPriceChart
-          fossilJetUsdPerL={tippingPoint?.inputs.fossilJetUsdPerL ?? readModel.market.values?.jet_eu_proxy_usd_per_l ?? 0.99}
-          effectiveFossilJetUsdPerL={tippingPoint?.effectiveFossilJetUsdPerL ?? readModel.market.values?.jet_eu_proxy_usd_per_l ?? 0.99}
-          pathways={pathways}
-        />
-      </section>
-
-      {/* Tipping Point Simulator */}
-      <section className="mb-8">
-        <TippingPointSimulator
-          tippingPoint={tippingPoint}
-          decision={airlineDecision}
-          reserveWeeks={readModel.reserve?.coverage_weeks ?? 3.0}
-        />
-      </section>
-
-      {/* Airline Decision Matrix */}
-      <section className="mb-8">
-        <AirlineDecisionMatrix
-          decision={airlineDecision}
-          reserveWeeks={readModel.reserve?.coverage_weeks ?? 3.0}
-          pathwayKey={selectedPathwayKey}
-        />
-      </section>
-
-        {/* SAF Pathway Comparison Table */}
-      <section className="mb-8">
-        <SafPathwayComparisonTable
-          pathways={pathways}
-          selectedPathwayKey={selectedPathwayKey}
-        />
-      </section>
-
-      {/* Scenario Cost Stack Chart */}
-      <section className="mb-8">
-        <ScenarioCostStackChart
-          tippingPoint={tippingPoint}
-          selectedPathwayKey={selectedPathwayKey}
-        />
-      </section>
+      <TippingPointWorkbench
+        initialTippingPoint={tippingPoint}
+        initialDecision={airlineDecision}
+        initialReserveWeeks={readModel.reserve?.coverage_weeks ?? 3.0}
+        liveDefaults={{
+          fossilJetUsdPerL: liveFuel,
+          carbonPriceEurPerT: Number((liveCarbonUsd / 1.08).toFixed(2)),
+          subsidyUsdPerL: 0,
+          blendRatePct: 6,
+          reserveWeeks: readModel.reserve?.coverage_weeks ?? 3.0,
+          pathwayKey: 'hefa'
+        }}
+      />
 
       {/* Source Coverage */}
       <section className="rounded-2xl border border-slate-800 bg-slate-950 p-8">

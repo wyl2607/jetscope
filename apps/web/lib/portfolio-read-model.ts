@@ -51,6 +51,18 @@ export type ResearchSignalsResult =
       message: string;
     };
 
+export type ResearchDecisionBrief = {
+  status: ResearchSignalsResult['status'] | 'empty';
+  headline: string;
+  whyMatters: string;
+  action: string;
+  activeCount: number;
+  positiveCount: number;
+  negativeCount: number;
+  neutralCount: number;
+  topSignals: ResearchSignal[];
+};
+
 export const AI_RESEARCH_ENABLED =
   String(process.env.JETSCOPE_AI_RESEARCH_ENABLED ?? process.env.AI_RESEARCH_ENABLED ?? '').toLowerCase() === 'true';
 
@@ -227,4 +239,81 @@ export async function getResearchSignals(): Promise<ResearchSignalsResult> {
       message: error instanceof Error ? error.message : 'failed to load research signals'
     };
   }
+}
+
+export function buildResearchDecisionBrief(result: ResearchSignalsResult): ResearchDecisionBrief {
+  if (result.status === 'error') {
+    return {
+      status: 'error',
+      headline: 'Research feed degraded',
+      whyMatters: `The AI research layer is not available right now: ${result.message}`,
+      action: 'Keep market and reserve models visible, but do not explain probability changes with research signals until the feed recovers.',
+      activeCount: 0,
+      positiveCount: 0,
+      negativeCount: 0,
+      neutralCount: 0,
+      topSignals: []
+    };
+  }
+
+  if (result.status === 'not_found') {
+    return {
+      status: 'not_found',
+      headline: 'Research API not deployed',
+      whyMatters: 'The portfolio can render without Phase B, but it cannot yet attach article-level evidence to SAF crossover moves.',
+      action: 'Deploy the research API before using AI signals in crisis or report narratives.',
+      activeCount: 0,
+      positiveCount: 0,
+      negativeCount: 0,
+      neutralCount: 0,
+      topSignals: []
+    };
+  }
+
+  const topSignals = [...result.signals]
+    .sort((left, right) => right.confidence - left.confidence || Date.parse(right.published_at) - Date.parse(left.published_at))
+    .slice(0, 3);
+  const positiveCount = result.signals.filter((signal) => signal.impact_direction === 'positive').length;
+  const negativeCount = result.signals.filter((signal) => signal.impact_direction === 'negative').length;
+  const neutralCount = result.signals.filter((signal) => signal.impact_direction === 'neutral').length;
+
+  if (result.signals.length === 0) {
+    return {
+      status: 'empty',
+      headline: AI_RESEARCH_ENABLED ? 'No active research signals' : 'Research pipeline disabled',
+      whyMatters: AI_RESEARCH_ENABLED
+        ? 'The daily research job has not persisted signals in the current lookback window.'
+        : 'The product surface is ready, but AI_RESEARCH_ENABLED is false so the decision layer stays empty by design.',
+      action: AI_RESEARCH_ENABLED
+        ? 'Run or inspect the research ingestion job before relying on article-derived explanations.'
+        : 'Set JETSCOPE_AI_RESEARCH_ENABLED=true after the backend job is deployed.',
+      activeCount: 0,
+      positiveCount: 0,
+      negativeCount: 0,
+      neutralCount: 0,
+      topSignals: []
+    };
+  }
+
+  const leadingSignal = topSignals[0];
+  const headline = negativeCount > positiveCount
+    ? 'Research signals show SAF adoption headwinds'
+    : positiveCount > negativeCount
+      ? 'Research signals support SAF adoption pressure'
+      : 'Research signals are mixed';
+  const whyMatters = leadingSignal
+    ? `${leadingSignal.title}: ${leadingSignal.summary_en}`
+    : 'Signals are present but no summary was available.';
+
+  return {
+    status: 'ok',
+    headline,
+    whyMatters,
+    action: 'Use these signals to explain why SAF switching probability, reserve stress, or procurement timing changed since the last review.',
+    activeCount: result.signals.length,
+    positiveCount,
+    negativeCount,
+    neutralCount,
+    topSignals
+  };
 }

@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "SAFvsOil API",
-    "description": "Product scaffold for SAF vs Oil data, scenarios, and assumptions.",
+    "title": "JetScope API",
+    "description": "Aviation fuel transition intelligence API",
     "version": "0.1.0"
   },
   "paths": {
@@ -22,6 +22,262 @@
                   "additionalProperties": true,
                   "type": "object",
                   "title": "Response Get Health V1 Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/readiness": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Get Readiness",
+        "operationId": "get_readiness_v1_readiness_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analysis/tipping-point": {
+      "get": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Get Tipping Point Analysis",
+        "operationId": "get_tipping_point_analysis_v1_analysis_tipping_point_get",
+        "parameters": [
+          {
+            "name": "fossil_jet_usd_per_l",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Current fossil jet fuel price in USD/L",
+              "title": "Fossil Jet Usd Per L"
+            },
+            "description": "Current fossil jet fuel price in USD/L"
+          },
+          {
+            "name": "carbon_price_eur_per_t",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Carbon price in EUR per metric ton",
+              "default": 0.0,
+              "title": "Carbon Price Eur Per T"
+            },
+            "description": "Carbon price in EUR per metric ton"
+          },
+          {
+            "name": "subsidy_usd_per_l",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Per-liter SAF subsidy in USD",
+              "default": 0.0,
+              "title": "Subsidy Usd Per L"
+            },
+            "description": "Per-liter SAF subsidy in USD"
+          },
+          {
+            "name": "blend_rate_pct",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 100,
+              "minimum": 0,
+              "description": "Blend rate as percent of total fuel burn",
+              "default": 0.0,
+              "title": "Blend Rate Pct"
+            },
+            "description": "Blend rate as percent of total fuel burn"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TippingPointResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analysis/airline-decision": {
+      "get": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Get Airline Decision Analysis",
+        "operationId": "get_airline_decision_analysis_v1_analysis_airline_decision_get",
+        "parameters": [
+          {
+            "name": "fossil_jet_usd_per_l",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Current fossil jet fuel price in USD/L",
+              "title": "Fossil Jet Usd Per L"
+            },
+            "description": "Current fossil jet fuel price in USD/L"
+          },
+          {
+            "name": "reserve_weeks",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Estimated reserve coverage in weeks",
+              "title": "Reserve Weeks"
+            },
+            "description": "Estimated reserve coverage in weeks"
+          },
+          {
+            "name": "carbon_price_eur_per_t",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Carbon price in EUR per metric ton",
+              "default": 0.0,
+              "title": "Carbon Price Eur Per T"
+            },
+            "description": "Carbon price in EUR per metric ton"
+          },
+          {
+            "name": "pathway_key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "SAF pathway key",
+              "default": "hefa",
+              "title": "Pathway Key"
+            },
+            "description": "SAF pathway key"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AirlineDecisionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analysis/tipping-point/events": {
+      "get": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "List Tipping Point Events",
+        "operationId": "list_tipping_point_events_v1_analysis_tipping_point_events_get",
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter events observed at or after this ISO8601 timestamp",
+              "title": "Since"
+            },
+            "description": "Filter events observed at or after this ISO8601 timestamp"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TippingEventResponse"
+                  },
+                  "title": "Response List Tipping Point Events V1 Analysis Tipping Point Events Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -293,6 +549,139 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/reserves/eu": {
+      "get": {
+        "tags": [
+          "reserves"
+        ],
+        "summary": "Get Eu Reserve Signal",
+        "operationId": "get_eu_reserve_signal_v1_reserves_eu_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReserveSignalResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/research/signals": {
+      "get": {
+        "tags": [
+          "research"
+        ],
+        "summary": "List Research Signals",
+        "operationId": "list_research_signals_v1_research_signals_get",
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter records created at or after this ISO8601 timestamp. Defaults to the last 30 days.",
+              "title": "Since"
+            },
+            "description": "Filter records created at or after this ISO8601 timestamp. Defaults to the last 30 days."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "signal_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "SUPPLY_DISRUPTION",
+                    "POLICY_CHANGE",
+                    "PRICE_SHOCK",
+                    "CAPACITY_ANNOUNCEMENT",
+                    "OTHER"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Signal Type"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ResearchSignalResponse"
+                  },
+                  "title": "Response List Research Signals V1 Research Signals Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sources/coverage": {
+      "get": {
+        "tags": [
+          "sources"
+        ],
+        "summary": "Get Source Coverage",
+        "operationId": "get_source_coverage_v1_sources_coverage_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceCoverageResponse"
                 }
               }
             }
@@ -721,1076 +1110,116 @@
           }
         }
       }
-    },
-    "/v1/sqlite/market-prices": {
-      "get": {
-        "tags": [
-          "sqlite-markets",
-          "market-prices"
-        ],
-        "summary": "List Market Prices",
-        "description": "List market prices with optional filtering.\n\nQuery parameters:\n- start_date: ISO format datetime\n- end_date: ISO format datetime\n- market_type: Market type filter",
-        "operationId": "list_market_prices_v1_sqlite_market_prices_get",
-        "parameters": [
-          {
-            "name": "start_date",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Start date for price range",
-              "title": "Start Date"
-            },
-            "description": "Start date for price range"
-          },
-          {
-            "name": "end_date",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "End date for price range",
-              "title": "End Date"
-            },
-            "description": "End date for price range"
-          },
-          {
-            "name": "market_type",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by market type (ARA, US_Gulf, EU_ETS)",
-              "title": "Market Type"
-            },
-            "description": "Filter by market type (ARA, US_Gulf, EU_ETS)"
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/opt/safvsoil/data/market.db",
-              "title": "Db Path"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MarketPriceRead"
-                  },
-                  "title": "Response List Market Prices V1 Sqlite Market Prices Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "sqlite-markets",
-          "market-prices"
-        ],
-        "summary": "Create Market Price",
-        "description": "Create new market price entry.",
-        "operationId": "create_market_price_v1_sqlite_market_prices_post",
-        "parameters": [
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/opt/safvsoil/data/market.db",
-              "title": "Db Path"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MarketPriceCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MarketPriceRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/sqlite/market-prices/{price_id}": {
-      "get": {
-        "tags": [
-          "sqlite-markets",
-          "market-prices"
-        ],
-        "summary": "Get Market Price",
-        "description": "Get specific market price by ID.",
-        "operationId": "get_market_price_v1_sqlite_market_prices__price_id__get",
-        "parameters": [
-          {
-            "name": "price_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Price Id"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/opt/safvsoil/data/market.db",
-              "title": "Db Path"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MarketPriceRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "sqlite-markets",
-          "market-prices"
-        ],
-        "summary": "Update Market Price",
-        "description": "Update market price.",
-        "operationId": "update_market_price_v1_sqlite_market_prices__price_id__put",
-        "parameters": [
-          {
-            "name": "price_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Price Id"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/opt/safvsoil/data/market.db",
-              "title": "Db Path"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MarketPriceUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MarketPriceRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "sqlite-markets",
-          "market-prices"
-        ],
-        "summary": "Delete Market Price",
-        "description": "Delete market price.",
-        "operationId": "delete_market_price_v1_sqlite_market_prices__price_id__delete",
-        "parameters": [
-          {
-            "name": "price_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Price Id"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/opt/safvsoil/data/market.db",
-              "title": "Db Path"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/sqlite/market-prices/latest/{market_type}": {
-      "get": {
-        "tags": [
-          "sqlite-markets",
-          "market-prices"
-        ],
-        "summary": "Get Latest Price",
-        "description": "Get latest price for market type (uses cache if available).",
-        "operationId": "get_latest_price_v1_sqlite_market_prices_latest__market_type__get",
-        "parameters": [
-          {
-            "name": "market_type",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Market Type"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/opt/safvsoil/data/market.db",
-              "title": "Db Path"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/MarketPriceRead"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "title": "Response Get Latest Price V1 Sqlite Market Prices Latest  Market Type  Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/sqlite/user-scenarios": {
-      "get": {
-        "tags": [
-          "sqlite-scenarios",
-          "user-scenarios-sqlite"
-        ],
-        "summary": "List User Scenarios",
-        "description": "List all scenarios for a user.",
-        "operationId": "list_user_scenarios_v1_sqlite_user_scenarios_get",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "User ID to filter scenarios",
-              "title": "User Id"
-            },
-            "description": "User ID to filter scenarios"
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/opt/safvsoil/data/market.db",
-              "title": "Db Path"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/UserScenarioRead"
-                  },
-                  "title": "Response List User Scenarios V1 Sqlite User Scenarios Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "sqlite-scenarios",
-          "user-scenarios-sqlite"
-        ],
-        "summary": "Create User Scenario",
-        "description": "Create new user scenario.",
-        "operationId": "create_user_scenario_v1_sqlite_user_scenarios_post",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "User ID",
-              "title": "User Id"
-            },
-            "description": "User ID"
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/opt/safvsoil/data/market.db",
-              "title": "Db Path"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserScenarioCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserScenarioRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "sqlite-scenarios",
-          "user-scenarios-sqlite"
-        ],
-        "summary": "Delete User Scenarios",
-        "description": "Delete all scenarios for a user.",
-        "operationId": "delete_user_scenarios_v1_sqlite_user_scenarios_delete",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "User ID",
-              "title": "User Id"
-            },
-            "description": "User ID"
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/opt/safvsoil/data/market.db",
-              "title": "Db Path"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/sqlite/user-scenarios/{scenario_id}": {
-      "get": {
-        "tags": [
-          "sqlite-scenarios",
-          "user-scenarios-sqlite"
-        ],
-        "summary": "Get User Scenario",
-        "description": "Get specific user scenario by ID.",
-        "operationId": "get_user_scenario_v1_sqlite_user_scenarios__scenario_id__get",
-        "parameters": [
-          {
-            "name": "scenario_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Scenario Id"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/opt/safvsoil/data/market.db",
-              "title": "Db Path"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserScenarioRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "sqlite-scenarios",
-          "user-scenarios-sqlite"
-        ],
-        "summary": "Update User Scenario",
-        "description": "Update user scenario.",
-        "operationId": "update_user_scenario_v1_sqlite_user_scenarios__scenario_id__put",
-        "parameters": [
-          {
-            "name": "scenario_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Scenario Id"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/opt/safvsoil/data/market.db",
-              "title": "Db Path"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserScenarioUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserScenarioRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "sqlite-scenarios",
-          "user-scenarios-sqlite"
-        ],
-        "summary": "Delete User Scenario",
-        "description": "Delete user scenario.",
-        "operationId": "delete_user_scenario_v1_sqlite_user_scenarios__scenario_id__delete",
-        "parameters": [
-          {
-            "name": "scenario_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Scenario Id"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/opt/safvsoil/data/market.db",
-              "title": "Db Path"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/sqlite/market-alerts": {
-      "get": {
-        "tags": [
-          "sqlite-alerts",
-          "market-alerts-sqlite"
-        ],
-        "summary": "List Market Alerts",
-        "description": "List market alerts with optional filtering.",
-        "operationId": "list_market_alerts_v1_sqlite_market_alerts_get",
-        "parameters": [
-          {
-            "name": "market_type",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by market type",
-              "title": "Market Type"
-            },
-            "description": "Filter by market type"
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by status (active/inactive)",
-              "title": "Status"
-            },
-            "description": "Filter by status (active/inactive)"
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/opt/safvsoil/data/market.db",
-              "title": "Db Path"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MarketAlertRead"
-                  },
-                  "title": "Response List Market Alerts V1 Sqlite Market Alerts Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "sqlite-alerts",
-          "market-alerts-sqlite"
-        ],
-        "summary": "Create Market Alert",
-        "description": "Create new market alert.",
-        "operationId": "create_market_alert_v1_sqlite_market_alerts_post",
-        "parameters": [
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/opt/safvsoil/data/market.db",
-              "title": "Db Path"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MarketAlertCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MarketAlertRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/sqlite/market-alerts/{alert_id}": {
-      "get": {
-        "tags": [
-          "sqlite-alerts",
-          "market-alerts-sqlite"
-        ],
-        "summary": "Get Market Alert",
-        "description": "Get specific market alert by ID.",
-        "operationId": "get_market_alert_v1_sqlite_market_alerts__alert_id__get",
-        "parameters": [
-          {
-            "name": "alert_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Alert Id"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/opt/safvsoil/data/market.db",
-              "title": "Db Path"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MarketAlertRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "sqlite-alerts",
-          "market-alerts-sqlite"
-        ],
-        "summary": "Update Market Alert",
-        "description": "Update market alert.",
-        "operationId": "update_market_alert_v1_sqlite_market_alerts__alert_id__put",
-        "parameters": [
-          {
-            "name": "alert_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Alert Id"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/opt/safvsoil/data/market.db",
-              "title": "Db Path"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MarketAlertUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MarketAlertRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "sqlite-alerts",
-          "market-alerts-sqlite"
-        ],
-        "summary": "Delete Market Alert",
-        "description": "Delete market alert.",
-        "operationId": "delete_market_alert_v1_sqlite_market_alerts__alert_id__delete",
-        "parameters": [
-          {
-            "name": "alert_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Alert Id"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/opt/safvsoil/data/market.db",
-              "title": "Db Path"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/sqlite/market-alerts/{alert_id}/trigger": {
-      "put": {
-        "tags": [
-          "sqlite-alerts",
-          "market-alerts-sqlite"
-        ],
-        "summary": "Trigger Market Alert",
-        "description": "Mark alert as triggered with current timestamp.",
-        "operationId": "trigger_market_alert_v1_sqlite_market_alerts__alert_id__trigger_put",
-        "parameters": [
-          {
-            "name": "alert_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Alert Id"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "/opt/safvsoil/data/market.db",
-              "title": "Db Path"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MarketAlertRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
     }
   },
   "components": {
     "schemas": {
+      "AirlineDecisionInputs": {
+        "properties": {
+          "fossil_jet_usd_per_l": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Fossil Jet Usd Per L"
+          },
+          "reserve_weeks": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Reserve Weeks"
+          },
+          "carbon_price_eur_per_t": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Carbon Price Eur Per T"
+          },
+          "pathway_key": {
+            "type": "string",
+            "title": "Pathway Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fossil_jet_usd_per_l",
+          "reserve_weeks",
+          "carbon_price_eur_per_t",
+          "pathway_key"
+        ],
+        "title": "AirlineDecisionInputs"
+      },
+      "AirlineDecisionProbabilities": {
+        "properties": {
+          "raise_fares": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Raise Fares"
+          },
+          "cut_capacity": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Cut Capacity"
+          },
+          "buy_spot_saf": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Buy Spot Saf"
+          },
+          "sign_long_term_offtake": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Sign Long Term Offtake"
+          },
+          "ground_routes": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Ground Routes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "raise_fares",
+          "cut_capacity",
+          "buy_spot_saf",
+          "sign_long_term_offtake",
+          "ground_routes"
+        ],
+        "title": "AirlineDecisionProbabilities"
+      },
+      "AirlineDecisionResponse": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/AirlineDecisionInputs"
+          },
+          "probabilities": {
+            "$ref": "#/components/schemas/AirlineDecisionProbabilities"
+          },
+          "signal": {
+            "type": "string",
+            "enum": [
+              "switch_window_opening",
+              "capacity_stress_dominant",
+              "incremental_adjustment"
+            ],
+            "title": "Signal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at",
+          "inputs",
+          "probabilities",
+          "signal"
+        ],
+        "title": "AirlineDecisionResponse"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1803,140 +1232,6 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
-      },
-      "MarketAlertCreate": {
-        "properties": {
-          "market_type": {
-            "type": "string",
-            "title": "Market Type",
-            "description": "Market type: ARA, US_Gulf, EU_ETS"
-          },
-          "threshold_type": {
-            "type": "string",
-            "title": "Threshold Type",
-            "description": "Type: 'above' or 'below'"
-          },
-          "threshold_value": {
-            "type": "number",
-            "title": "Threshold Value"
-          },
-          "status": {
-            "type": "string",
-            "title": "Status",
-            "description": "Status: active or inactive",
-            "default": "active"
-          }
-        },
-        "type": "object",
-        "required": [
-          "market_type",
-          "threshold_type",
-          "threshold_value"
-        ],
-        "title": "MarketAlertCreate",
-        "description": "Schema for creating market alert."
-      },
-      "MarketAlertRead": {
-        "properties": {
-          "market_type": {
-            "type": "string",
-            "title": "Market Type",
-            "description": "Market type: ARA, US_Gulf, EU_ETS"
-          },
-          "threshold_type": {
-            "type": "string",
-            "title": "Threshold Type",
-            "description": "Type: 'above' or 'below'"
-          },
-          "threshold_value": {
-            "type": "number",
-            "title": "Threshold Value"
-          },
-          "status": {
-            "type": "string",
-            "title": "Status",
-            "description": "Status: active or inactive",
-            "default": "active"
-          },
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "last_triggered": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Last Triggered"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "market_type",
-          "threshold_type",
-          "threshold_value",
-          "id",
-          "last_triggered",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "MarketAlertRead",
-        "description": "Schema for reading market alert."
-      },
-      "MarketAlertUpdate": {
-        "properties": {
-          "threshold_type": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Threshold Type"
-          },
-          "threshold_value": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Threshold Value"
-          },
-          "status": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Status"
-          }
-        },
-        "type": "object",
-        "title": "MarketAlertUpdate",
-        "description": "Schema for updating market alert."
       },
       "MarketHistoryPoint": {
         "properties": {
@@ -2053,133 +1348,6 @@
           "latest_as_of"
         ],
         "title": "MarketMetricHistory"
-      },
-      "MarketPriceCreate": {
-        "properties": {
-          "market_type": {
-            "type": "string",
-            "title": "Market Type",
-            "description": "Market type: ARA, US_Gulf, EU_ETS"
-          },
-          "price": {
-            "type": "number",
-            "title": "Price",
-            "description": "Price value"
-          },
-          "unit": {
-            "type": "string",
-            "title": "Unit",
-            "description": "Unit of price (USD/bbl, EUR/tonne, etc.)"
-          },
-          "source": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source"
-          },
-          "timestamp": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Timestamp"
-          }
-        },
-        "type": "object",
-        "required": [
-          "market_type",
-          "price",
-          "unit"
-        ],
-        "title": "MarketPriceCreate",
-        "description": "Schema for creating market price."
-      },
-      "MarketPriceRead": {
-        "properties": {
-          "market_type": {
-            "type": "string",
-            "title": "Market Type",
-            "description": "Market type: ARA, US_Gulf, EU_ETS"
-          },
-          "price": {
-            "type": "number",
-            "title": "Price",
-            "description": "Price value"
-          },
-          "unit": {
-            "type": "string",
-            "title": "Unit",
-            "description": "Unit of price (USD/bbl, EUR/tonne, etc.)"
-          },
-          "source": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source"
-          },
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "timestamp": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Timestamp"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "market_type",
-          "price",
-          "unit",
-          "id",
-          "timestamp",
-          "created_at"
-        ],
-        "title": "MarketPriceRead",
-        "description": "Schema for reading market price."
-      },
-      "MarketPriceUpdate": {
-        "properties": {
-          "price": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Price"
-          },
-          "unit": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Unit"
-          }
-        },
-        "type": "object",
-        "title": "MarketPriceUpdate",
-        "description": "Schema for updating market price."
       },
       "MarketRefreshResponse": {
         "properties": {
@@ -2399,6 +1567,56 @@
         ],
         "title": "PathwaySummary"
       },
+      "PathwayTippingPoint": {
+        "properties": {
+          "pathway_key": {
+            "type": "string",
+            "title": "Pathway Key"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "net_cost_low_usd_per_l": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Net Cost Low Usd Per L"
+          },
+          "net_cost_high_usd_per_l": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Net Cost High Usd Per L"
+          },
+          "spread_low_pct": {
+            "type": "number",
+            "title": "Spread Low Pct"
+          },
+          "spread_high_pct": {
+            "type": "number",
+            "title": "Spread High Pct"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "competitive",
+              "inflection",
+              "premium"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pathway_key",
+          "display_name",
+          "net_cost_low_usd_per_l",
+          "net_cost_high_usd_per_l",
+          "spread_low_pct",
+          "spread_high_pct",
+          "status"
+        ],
+        "title": "PathwayTippingPoint"
+      },
       "PathwayUpsert": {
         "properties": {
           "pathway_id": {
@@ -2599,6 +1817,258 @@
         "type": "object",
         "title": "PreferencesPayload"
       },
+      "ReadinessCheck": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "status"
+        ],
+        "title": "ReadinessCheck"
+      },
+      "ReadinessResponse": {
+        "properties": {
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "service": {
+            "type": "string",
+            "title": "Service",
+            "default": "api"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "default": "0.1.0"
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment"
+          },
+          "api_prefix": {
+            "type": "string",
+            "title": "Api Prefix"
+          },
+          "schema_bootstrap_mode": {
+            "type": "string",
+            "title": "Schema Bootstrap Mode"
+          },
+          "degraded": {
+            "type": "boolean",
+            "title": "Degraded",
+            "default": false
+          },
+          "checks": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ReadinessCheck"
+            },
+            "type": "object",
+            "title": "Checks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ready",
+          "status",
+          "generated_at",
+          "environment",
+          "api_prefix",
+          "schema_bootstrap_mode"
+        ],
+        "title": "ReadinessResponse"
+      },
+      "ResearchSignalResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "signal_type": {
+            "type": "string",
+            "enum": [
+              "SUPPLY_DISRUPTION",
+              "POLICY_CHANGE",
+              "PRICE_SHOCK",
+              "CAPACITY_ANNOUNCEMENT",
+              "OTHER"
+            ],
+            "title": "Signal Type"
+          },
+          "entities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Entities"
+          },
+          "impact_direction": {
+            "type": "string",
+            "enum": [
+              "BEARISH_SAF",
+              "BULLISH_SAF",
+              "NEUTRAL"
+            ],
+            "title": "Impact Direction"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence"
+          },
+          "summary_en": {
+            "type": "string",
+            "title": "Summary En"
+          },
+          "summary_cn": {
+            "type": "string",
+            "title": "Summary Cn"
+          },
+          "raw_title": {
+            "type": "string",
+            "title": "Raw Title"
+          },
+          "raw_excerpt": {
+            "type": "string",
+            "title": "Raw Excerpt"
+          },
+          "published_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Published At"
+          },
+          "claude_model": {
+            "type": "string",
+            "title": "Claude Model"
+          },
+          "prompt_cache_hit": {
+            "type": "boolean",
+            "title": "Prompt Cache Hit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "source_url",
+          "signal_type",
+          "impact_direction",
+          "confidence",
+          "summary_en",
+          "summary_cn",
+          "raw_title",
+          "raw_excerpt",
+          "published_at",
+          "claude_model",
+          "prompt_cache_hit"
+        ],
+        "title": "ResearchSignalResponse"
+      },
+      "ReserveSignalResponse": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region"
+          },
+          "coverage_days": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Coverage Days"
+          },
+          "coverage_weeks": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Coverage Weeks"
+          },
+          "stress_level": {
+            "type": "string",
+            "title": "Stress Level"
+          },
+          "estimated_supply_gap_pct": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Estimated Supply Gap Pct"
+          },
+          "source_type": {
+            "type": "string",
+            "title": "Source Type"
+          },
+          "source_name": {
+            "type": "string",
+            "title": "Source Name"
+          },
+          "confidence_score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence Score"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at",
+          "region",
+          "coverage_days",
+          "coverage_weeks",
+          "stress_level",
+          "estimated_supply_gap_pct",
+          "source_type",
+          "source_name",
+          "confidence_score"
+        ],
+        "title": "ReserveSignalResponse"
+      },
       "RouteEditPayload": {
         "properties": {
           "baseCostUsdPerLiter": {
@@ -2712,11 +2182,154 @@
         ],
         "title": "ScenarioRecord"
       },
+      "SourceCoverageMetric": {
+        "properties": {
+          "metric_key": {
+            "type": "string",
+            "title": "Metric Key"
+          },
+          "source_name": {
+            "type": "string",
+            "title": "Source Name"
+          },
+          "source_type": {
+            "type": "string",
+            "title": "Source Type"
+          },
+          "confidence_score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence Score"
+          },
+          "lag_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lag Minutes"
+          },
+          "fallback_used": {
+            "type": "boolean",
+            "title": "Fallback Used",
+            "default": false
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region"
+          },
+          "market_scope": {
+            "type": "string",
+            "title": "Market Scope"
+          }
+        },
+        "type": "object",
+        "required": [
+          "metric_key",
+          "source_name",
+          "source_type",
+          "confidence_score",
+          "status",
+          "region",
+          "market_scope"
+        ],
+        "title": "SourceCoverageMetric"
+      },
+      "SourceCoverageResponse": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/SourceCoverageMetric"
+            },
+            "type": "array",
+            "title": "Metrics"
+          },
+          "completeness": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Completeness",
+            "default": 1.0
+          },
+          "degraded": {
+            "type": "boolean",
+            "title": "Degraded",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at",
+          "metrics"
+        ],
+        "title": "SourceCoverageResponse"
+      },
       "SourceStatus": {
         "properties": {
           "overall": {
             "type": "string",
             "title": "Overall"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "freshness_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Freshness Minutes"
+          },
+          "fallback_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallback Rate"
+          },
+          "is_fallback": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Fallback"
           }
         },
         "type": "object",
@@ -2725,136 +2338,136 @@
         ],
         "title": "SourceStatus"
       },
-      "UserScenarioCreate": {
+      "TippingEventResponse": {
         "properties": {
-          "scenario_name": {
-            "type": "string",
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Scenario Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "parameters": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Parameters",
-            "description": "JSON parameters for scenario"
-          }
-        },
-        "type": "object",
-        "required": [
-          "scenario_name",
-          "parameters"
-        ],
-        "title": "UserScenarioCreate",
-        "description": "Schema for creating user scenario."
-      },
-      "UserScenarioRead": {
-        "properties": {
-          "scenario_name": {
-            "type": "string",
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Scenario Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "parameters": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Parameters",
-            "description": "JSON parameters for scenario"
-          },
           "id": {
             "type": "string",
             "title": "Id"
           },
-          "user_id": {
+          "event_type": {
             "type": "string",
-            "title": "User Id"
+            "enum": [
+              "CRITICAL",
+              "ALERT",
+              "CROSSOVER"
+            ],
+            "title": "Event Type"
           },
-          "created_at": {
+          "saf_pathway": {
+            "type": "string",
+            "title": "Saf Pathway"
+          },
+          "fossil_price_usd_per_l": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Fossil Price Usd Per L"
+          },
+          "saf_effective_cost_usd_per_l": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Saf Effective Cost Usd Per L"
+          },
+          "gap_usd_per_l": {
+            "type": "number",
+            "title": "Gap Usd Per L"
+          },
+          "observed_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Observed At"
           },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At"
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
           }
         },
         "type": "object",
         "required": [
-          "scenario_name",
-          "parameters",
           "id",
-          "user_id",
-          "created_at",
-          "updated_at"
+          "event_type",
+          "saf_pathway",
+          "fossil_price_usd_per_l",
+          "saf_effective_cost_usd_per_l",
+          "gap_usd_per_l",
+          "observed_at"
         ],
-        "title": "UserScenarioRead",
-        "description": "Schema for reading user scenario."
+        "title": "TippingEventResponse"
       },
-      "UserScenarioUpdate": {
+      "TippingPointInputs": {
         "properties": {
-          "scenario_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Scenario Name"
+          "fossil_jet_usd_per_l": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Fossil Jet Usd Per L"
           },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
+          "carbon_price_eur_per_t": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Carbon Price Eur Per T"
           },
-          "parameters": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Parameters"
+          "subsidy_usd_per_l": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Subsidy Usd Per L"
+          },
+          "blend_rate_pct": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Blend Rate Pct"
           }
         },
         "type": "object",
-        "title": "UserScenarioUpdate",
-        "description": "Schema for updating user scenario."
+        "required": [
+          "fossil_jet_usd_per_l",
+          "carbon_price_eur_per_t",
+          "subsidy_usd_per_l",
+          "blend_rate_pct"
+        ],
+        "title": "TippingPointInputs"
+      },
+      "TippingPointResponse": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/TippingPointInputs"
+          },
+          "effective_fossil_jet_usd_per_l": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Effective Fossil Jet Usd Per L"
+          },
+          "pathways": {
+            "items": {
+              "$ref": "#/components/schemas/PathwayTippingPoint"
+            },
+            "type": "array",
+            "title": "Pathways"
+          },
+          "signal": {
+            "type": "string",
+            "enum": [
+              "saf_cost_advantaged",
+              "switch_window_opening",
+              "fossil_still_advantaged"
+            ],
+            "title": "Signal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at",
+          "inputs",
+          "effective_fossil_jet_usd_per_l",
+          "pathways",
+          "signal"
+        ],
+        "title": "TippingPointResponse"
       },
       "ValidationError": {
         "properties": {

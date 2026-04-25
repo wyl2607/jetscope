@@ -28,4 +28,4 @@ def apply_schema_bootstrap(engine: Engine) -> str:
         command.upgrade(_alembic_config(), "head")
         return "alembic"
 
-    raise RuntimeError(f"Unsupported SAFVSOIL_SCHEMA_BOOTSTRAP_MODE: {settings.schema_bootstrap_mode}")
+    raise RuntimeError(f"Unsupported JETSCOPE_SCHEMA_BOOTSTRAP_MODE: {settings.schema_bootstrap_mode}")

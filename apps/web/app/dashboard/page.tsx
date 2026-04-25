@@ -1,9 +1,11 @@
 import { InfoCard, MetricCard } from '@/components/cards';
+import { ProvenanceSummary } from '@/components/provenance-summary';
 import { Shell } from '@/components/shell';
 import { PolicyTimelineWithMarketTime } from '@/components/policy-timeline-with-market-time';
 import { PriceTrendsChart } from '@/components/price-trends-chart';
 import { computeDashboardAlertBanners } from '@/lib/market-signals';
 import { getDashboardReadModel, getPriceTrendChartReadModel, type DashboardReadModel } from '@/lib/product-read-model';
+import { getSourcesReadModel } from '@/lib/sources-read-model';
 import type { Metadata } from 'next';
 import { buildPageMetadata } from '@/lib/seo';
 
@@ -40,7 +42,10 @@ function formatAsOf(value: string | null) {
 
 export default async function DashboardPage() {
   const readModel = await getDashboardReadModel();
-  const priceChartData = await getPriceTrendChartReadModel();
+  const [priceChartData, sourcesReadModel] = await Promise.all([
+    getPriceTrendChartReadModel(),
+    getSourcesReadModel()
+  ]);
   const market = readModel.market.values;
   const risk = readModel.topRiskSignal;
   const freshness = readModel.freshnessSignal;
@@ -62,7 +67,7 @@ export default async function DashboardPage() {
   return (
     <Shell
       eyebrow="Market Intelligence"
-      title="SAF vs Oil Decision Cockpit"
+      title="JetScope Decision Cockpit"
       description="Live market snapshot, scenario modelling, and transition risk signals for sustainable aviation fuel decisions."
     >
       {alertBanners.length > 0 && (
@@ -142,6 +147,15 @@ export default async function DashboardPage() {
       </section>
 
       <section className="mt-8">
+        <ProvenanceSummary
+          summary={sourcesReadModel.summary}
+          completeness={sourcesReadModel.completeness}
+          generatedAt={sourcesReadModel.generatedAt}
+          href="/sources"
+        />
+      </section>
+
+      <section className="mt-8">
         <PriceTrendsChart
           metrics={priceChartData.metrics}
           isLoading={false}
@@ -160,10 +174,10 @@ export default async function DashboardPage() {
 
         <InfoCard title="Data sources" subtitle="Market coverage">
           <div className="space-y-3 text-sm leading-7 text-slate-300">
-            <p>• Brent Crude: Yahoo Finance (real-time)</p>
-            <p>• EU ETS Carbon: Market proxy (real-time)</p>
-            <p>• Jet Fuel / SAF: Modelled from Brent + crack spread + premium</p>
-            <p>• Fallback values ensure the dashboard never shows a blank page.</p>
+            <p>• Live metrics use primary or official sources when coverage is healthy.</p>
+            <p>• Proxy metrics are labelled separately from fallback values.</p>
+            <p>• Confidence, lag, and degraded reasons are visible on the Sources page.</p>
+            <p>• Fallback values keep the dashboard available but are not hidden from decision users.</p>
           </div>
         </InfoCard>
       </section>

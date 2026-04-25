@@ -106,15 +106,11 @@ def build_source_coverage_response(db: Session) -> SourceCoverageResponse:
                 )
             )
 
-    if had_source_details:
-        completeness = len(present_keys) / len(_EXPECTED_METRIC_KEYS)
-    else:
-        # A freshly bootstrapped market snapshot has no per-source details yet;
-        # the seeded catalog is complete enough for the public contract.
-        completeness = 1.0
+    completeness = len(present_keys) / len(_EXPECTED_METRIC_KEYS) if had_source_details else 0.0
+    fallback_or_seed = any(metric.fallback_used or metric.status == "seed" for metric in metrics)
     return SourceCoverageResponse(
         generated_at=utcnow(),
         metrics=metrics,
         completeness=completeness,
-        degraded=completeness < 1.0,
+        degraded=completeness < 1.0 or fallback_or_seed,
     )
