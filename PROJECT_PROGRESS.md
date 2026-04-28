@@ -2,9 +2,31 @@
 
 ## Current Status
 
-- Status: release/sync hardening is committed locally; backend pytest is restored as a local gate.
-- Scope: JetScope web/API workspace, local data ignores, traceability entrypoint, release-path documentation, and worker/VPS sync boundaries.
+- Status: PR #39 release approval hardening is merged and deployed to production at `234d589e`; backend pytest is restored as a local gate.
+- Scope: JetScope web/API workspace, local data ignores, traceability entrypoint, release approval gates, token replay protection, and worker/VPS sync boundaries.
 - Release entrypoint: `APPROVE_JETSCOPE_RELEASE=<token> npm run release -- --approval-token <token>` after `source scripts/jetscope-env`; development worker sync is opt-in.
+
+## 2026-04-28 PR #39 Release Approval Hardening Deploy
+
+### Completed
+
+- Merged PR #39 as `234d589e Harden release approval gates (#39)` after CI and CodeQL passed.
+- Added approval-gated release, publish, deploy, rollback, sync, PR merge, and health restart flows.
+- Added approval token replay protection through `scripts/approval-token-ledger.sh`, including derived child tokens for release side effects.
+- Released `234d589e` to `usa-vps:/opt/jetscope` with commit-pinned deploy.
+
+### Verification
+
+- `npm run release` preflight passed: web gate, API compile, 85 backend pytest tests, OpenAPI check, 53 Node tests, product smoke, and UI E2E.
+- Direct publish path found no new commits after PR #39 merge and push gates passed.
+- VPS deploy fast-forwarded `/opt/jetscope` to `234d589e`.
+- Final production checks passed: local API health `200`, public web `200 text/html`, public API proxy `200`, `jetscope-web.service` active, `jetscope-api` container up.
+
+### Notes
+
+- The first deploy attempt failed closed because the VPS production checkout had uncommitted copies of earlier `infra/server/health-check.sh` and `scripts/auto-deploy.sh` hardening changes.
+- The dirty VPS diff was backed up to `usa-vps:/root/jetscope-deploy-backups/20260428T202130Z-pre-pr39-dirty`, then the production checkout was reset to clean `HEAD` before retrying deploy.
+- No development node sync was executed.
 
 ## 2026-04-25 Safe-Local Automation Trial Prep
 
@@ -187,10 +209,9 @@
 
 ### Open Items
 
-- Full backend pytest is not yet the canonical local API gate in this environment; `npm run api:check` is compile-only.
-- Publishing and VPS deploy remain high-risk operations and require explicit user approval.
-- If repository-local `scripts/security_check.sh` or `scripts/review_push_guard.sh` are added later, wire them into push/release gates.
-- Windows `tar+scp` sync prevents newly excluded files from being packaged, but it does not delete historical excluded remnants on the Windows target; add a cleanup/readback step before relying on Windows as a clean mirror.
+- Publishing, VPS deploy, sync, rollback, and PR merge remain high-risk operations and require explicit approval tokens.
+- Windows `tar+scp` sync prevents newly excluded files from being packaged, but it does not delete every historical excluded remnant on the Windows target; keep readback checks and use explicit cleanup before relying on Windows as a clean mirror.
+- `scripts/rollback.sh` remains a `HEAD~1` recovery tool; a future last-good/artifact-first rollback would be safer for production.
 
 ## 2026-04-25 Release/Sync Boundary Close-Out
 
