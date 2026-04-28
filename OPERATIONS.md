@@ -43,7 +43,7 @@ Development worker sync is now opt-in. It is not part of the default production 
 - `infra/server/health-check.sh` is observe-only by default. Service restart requires `JETSCOPE_HEALTH_ALLOW_RESTART=1`, `JETSCOPE_HEALTH_RESTART_TOKEN`, and matching `APPROVE_JETSCOPE_HEALTH_RESTART` as an explicit operational exception.
 - `.gitignore` is not a node-sync safety boundary; changes to local-only or sensitive ignore rules must be mirrored in `scripts/sync-excludes.sh`.
 - The VPS deploy must target the exact commit that was just published from local.
-- Approval tokens are operator-supplied action nonces. Generate them per action, keep them short-lived, and do not reuse a release, deploy, rollback, sync, publish, or PR merge token for another action; the scripts verify token equality but do not persist a used-token ledger.
+- Approval tokens are operator-supplied action nonces. Generate them per action, keep them short-lived, and do not reuse a release, deploy, rollback, sync, publish, or PR merge token for another action. Side-effect scripts record token hashes through `scripts/approval-token-ledger.sh` and reject replay on the same machine; cross-machine one-time behavior depends on the target machine ledger.
 - The VPS deploy fails closed unless `APPROVE_JETSCOPE_DEPLOY` matches `--approval-token` and `JETSCOPE_EXPECT_COMMIT` is set to the approved commit. PR merge approval is not deploy approval.
 - The VPS deploy fetches `origin/main` into `refs/remotes/origin/main` first and only advances the production checkout with `git merge --ff-only origin/main`.
 - The production API owner is the `jetscope-api` Docker container from `docker-compose.prod.yml`; legacy `jetscope-api.service` must stay inactive. The production web owner is `jetscope-web.service`.

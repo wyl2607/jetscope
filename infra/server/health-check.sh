@@ -18,9 +18,26 @@ BUS_WRITE="/Users/yumei/tools/script-core/bin/sc-bus-write"
 PRODUCER="infra/server/health-check.sh"
 ALLOW_RESTART="${JETSCOPE_HEALTH_ALLOW_RESTART:-0}"
 RESTART_TOKEN="${JETSCOPE_HEALTH_RESTART_TOKEN:-}"
+LEDGER_HELPER="/opt/jetscope/scripts/approval-token-ledger.sh"
+RESTART_APPROVED=0
+
+if [ -f "$LEDGER_HELPER" ]; then
+    # shellcheck source=/dev/null
+    source "$LEDGER_HELPER"
+fi
 
 restart_allowed() {
-    [ "$ALLOW_RESTART" = "1" ] && [ -n "$RESTART_TOKEN" ] && [ "${APPROVE_JETSCOPE_HEALTH_RESTART:-}" = "$RESTART_TOKEN" ]
+    [ "$ALLOW_RESTART" = "1" ] && [ -n "$RESTART_TOKEN" ] && [ "${APPROVE_JETSCOPE_HEALTH_RESTART:-}" = "$RESTART_TOKEN" ] || return 1
+    if [ "$RESTART_APPROVED" = "1" ]; then
+        return 0
+    fi
+    if ! type approval_token_record_once >/dev/null 2>&1; then
+        log "Restart token matched, but approval token ledger is unavailable; refusing restart."
+        emit_event "failed" "health restart ledger unavailable" "helper=$LEDGER_HELPER"
+        return 1
+    fi
+    approval_token_record_once "health-restart" "$RESTART_TOKEN" "$(date -u +%Y-%m-%dT%H:%MZ)" || return 1
+    RESTART_APPROVED=1
 }
 
 log() {

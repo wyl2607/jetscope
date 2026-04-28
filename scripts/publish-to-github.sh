@@ -11,6 +11,8 @@ SECURITY_CHECK="$ROOT/scripts/security_check.sh"
 REVIEW_PUSH_GUARD="$ROOT/scripts/review_push_guard.sh"
 APPROVAL_TOKEN=""
 
+source "$ROOT/scripts/approval-token-ledger.sh"
+
 while (($# > 0)); do
   case "$1" in
     --approval-token)
@@ -149,6 +151,8 @@ if [ "$LOCAL_COMMIT" = "$REMOTE_COMMIT" ]; then
   echo "No new commits to publish"
   exit 0
 fi
+
+approval_token_record_once "publish" "$APPROVAL_TOKEN" "$BRANCH_NAME:$LOCAL_COMMIT"
 
 git push "$REMOTE_NAME" "$LOCAL_COMMIT:refs/heads/$BRANCH_NAME"
 

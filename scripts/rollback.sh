@@ -11,6 +11,8 @@ BUS_WRITE="/Users/yumei/tools/script-core/bin/sc-bus-write"
 PRODUCER="jetscope/scripts/rollback.sh"
 APPROVAL_TOKEN=""
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/approval-token-ledger.sh"
+
 while (($# > 0)); do
     case "$1" in
         --approval-token)
@@ -88,6 +90,8 @@ echo "[$(date -Iseconds)] ROLLBACK initiated..." | tee -a "$LOG"
 # Show current and previous commit
 echo "Current commit: $(git log --oneline -1)" | tee -a "$LOG"
 echo "Rolling back to: $(git log --oneline -2 | tail -1)" | tee -a "$LOG"
+
+approval_token_record_once "rollback" "$APPROVAL_TOKEN" "$COMMIT_BEFORE->$ROLLBACK_TARGET"
 
 # Roll back one commit
 git reset --hard HEAD~1 >> "$LOG" 2>&1

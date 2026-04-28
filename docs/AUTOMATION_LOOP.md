@@ -163,7 +163,7 @@ APPROVE_JETSCOPE_PR_MERGE=<approval-token> \
 
 Do not provide the approval token until the controller report says the PR is ready, the human approver has reviewed the PR, and the repository gates required by `AGENTS.md` are satisfied. The gate blocks draft PRs, non-`main` base branches, unapproved reviews, missing local preflight evidence, non-mergeable or not-clean PRs, failed/pending/skipped checks, high-risk file changes, and missing local push gates. Merge execution pins the reviewed PR head with `--match-head-commit`.
 
-Publishing and release are separate approval-gated actions. `npm run release` and `./scripts/publish-to-github.sh` fail closed unless the caller supplies a one-time approval token through both CLI and environment:
+Publishing and release are separate approval-gated actions. `npm run release` and `./scripts/publish-to-github.sh` fail closed unless the caller supplies a fresh approval token through both CLI and environment. Side-effect scripts record token hashes and reject replay on the same machine:
 
 ```bash
 APPROVE_JETSCOPE_RELEASE=<approval-token> \

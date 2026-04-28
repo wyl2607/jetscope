@@ -7,6 +7,7 @@ VPS_HOST="${JETSCOPE_VPS_HOST:-usa-vps}"
 VPS_DEPLOY_DIR="${JETSCOPE_VPS_DEPLOY_DIR:-/opt/jetscope}"
 EXPECTED_COMMIT=""
 APPROVAL_TOKEN=""
+RELEASE_RECORDED=0
 
 RUN_PREFLIGHT=1
 RUN_SYNC_WORKERS=0
@@ -14,6 +15,8 @@ RUN_SYNC_WINDOWS=0
 RUN_SYNC_VPS_WORKDIR=0
 RUN_PUBLISH=1
 RUN_VPS_DEPLOY=1
+
+source "$ROOT/scripts/approval-token-ledger.sh"
 
 assert_skip_publish_deploy_safe() {
   local current_branch
@@ -87,6 +90,14 @@ assert_release_approval() {
     echo "ERROR: APPROVE_JETSCOPE_RELEASE must match --approval-token." >&2
     exit 1
   fi
+}
+
+record_release_approval_once() {
+  if [[ "$RELEASE_RECORDED" -eq 1 ]]; then
+    return
+  fi
+  approval_token_record_once "release" "$APPROVAL_TOKEN" "publish=$RUN_PUBLISH sync_workers=$RUN_SYNC_WORKERS sync_windows=$RUN_SYNC_WINDOWS sync_vps=$RUN_SYNC_VPS_WORKDIR deploy=$RUN_VPS_DEPLOY head=$(git rev-parse HEAD)"
+  RELEASE_RECORDED=1
 }
 
 assert_safe_remote_arg() {
@@ -185,24 +196,30 @@ if [[ "$RUN_SYNC_WORKERS" -eq 1 || "$RUN_SYNC_WINDOWS" -eq 1 || "$RUN_SYNC_VPS_W
   if [[ "$RUN_SYNC_VPS_WORKDIR" -eq 1 ]]; then
     SYNC_ARGS+=(--include-vps)
   fi
-  APPROVE_JETSCOPE_SYNC="$APPROVAL_TOKEN" ./scripts/sync-to-nodes.sh --approval-token "$APPROVAL_TOKEN" "${SYNC_ARGS[@]}"
-fi
-
-if [[ "$RUN_PUBLISH" -eq 1 ]]; then
-  echo
-  echo ">>> Step 2/3: publish to GitHub"
-  APPROVE_JETSCOPE_PUBLISH="$APPROVAL_TOKEN" ./scripts/publish-to-github.sh --approval-token "$APPROVAL_TOKEN"
+  record_release_approval_once
+  SYNC_TOKEN=$(approval_token_derive "$APPROVAL_TOKEN" "sync" "workers=$RUN_SYNC_WORKERS windows=$RUN_SYNC_WINDOWS vps=$RUN_SYNC_VPS_WORKDIR head=$(git rev-parse HEAD)")
+  APPROVE_JETSCOPE_SYNC="$SYNC_TOKEN" ./scripts/sync-to-nodes.sh --approval-token "$SYNC_TOKEN" "${SYNC_ARGS[@]}"
 fi
 
 EXPECTED_COMMIT="$(git rev-parse HEAD)"
 
+if [[ "$RUN_PUBLISH" -eq 1 ]]; then
+  echo
+  echo ">>> Step 2/3: publish to GitHub"
+  record_release_approval_once
+  PUBLISH_TOKEN=$(approval_token_derive "$APPROVAL_TOKEN" "publish" "main:$EXPECTED_COMMIT")
+  APPROVE_JETSCOPE_PUBLISH="$PUBLISH_TOKEN" ./scripts/publish-to-github.sh --approval-token "$PUBLISH_TOKEN"
+fi
+
 if [[ "$RUN_VPS_DEPLOY" -eq 1 ]]; then
   echo
   echo ">>> Step 3/3: trigger VPS deploy"
+  record_release_approval_once
+  DEPLOY_TOKEN=$(approval_token_derive "$APPROVAL_TOKEN" "deploy" "${VPS_HOST}:${VPS_DEPLOY_DIR}:${EXPECTED_COMMIT}")
   assert_safe_ssh_host "$VPS_HOST"
   assert_safe_remote_arg "JETSCOPE_VPS_DEPLOY_DIR" "$VPS_DEPLOY_DIR"
-  assert_safe_remote_arg "approval token" "$APPROVAL_TOKEN"
-  ssh "$VPS_HOST" "cd '$VPS_DEPLOY_DIR' && JETSCOPE_FORCE_DEPLOY=1 JETSCOPE_EXPECT_COMMIT='$EXPECTED_COMMIT' APPROVE_JETSCOPE_DEPLOY='$APPROVAL_TOKEN' ./scripts/auto-deploy.sh --approval-token '$APPROVAL_TOKEN'"
+  assert_safe_remote_arg "deploy approval token" "$DEPLOY_TOKEN"
+  ssh "$VPS_HOST" "cd '$VPS_DEPLOY_DIR' && JETSCOPE_FORCE_DEPLOY=1 JETSCOPE_EXPECT_COMMIT='$EXPECTED_COMMIT' APPROVE_JETSCOPE_DEPLOY='$DEPLOY_TOKEN' ./scripts/auto-deploy.sh --approval-token '$DEPLOY_TOKEN'"
 fi
 
 echo

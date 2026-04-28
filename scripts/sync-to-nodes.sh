@@ -12,6 +12,8 @@ RUN_WINDOWS=0
 INCLUDE_VPS=0
 APPROVAL_TOKEN=""
 
+source "$SCRIPT_DIR/approval-token-ledger.sh"
+
 usage() {
   cat <<'EOF'
 Usage: ./scripts/sync-to-nodes.sh [options]
@@ -165,6 +167,10 @@ fi
 RSYNC_ARGS=(-avz --delete)
 if [ "$DRY_RUN" -eq 1 ]; then
   RSYNC_ARGS+=(--dry-run)
+fi
+
+if [ "$DRY_RUN" -eq 0 ] && { [ "${#UNIX_NODES[@]}" -gt 0 ] || [ "$RUN_WINDOWS" -eq 1 ]; }; then
+  approval_token_record_once "sync-push" "$APPROVAL_TOKEN" "workers=$RUN_WORKERS windows=$RUN_WINDOWS vps=$INCLUDE_VPS"
 fi
 
 if [ "${#UNIX_NODES[@]}" -gt 0 ]; then

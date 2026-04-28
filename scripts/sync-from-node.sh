@@ -74,6 +74,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUS_WRITE="/Users/yumei/tools/script-core/bin/sc-bus-write"
 PRODUCER="jetscope/scripts/sync-from-node.sh"
 
+source "$SCRIPT_DIR/approval-token-ledger.sh"
+
 emit_sync() {
   local node="$1"
   local status="$2"
@@ -100,6 +102,7 @@ cleanup_windows_pull_tar() {
 }
 
 start=$(date +%s)
+approval_token_record_once "sync-pull" "$APPROVAL_TOKEN" "$NODE"
 
 if [[ "$NODE" == "windows-pc" ]]; then
   emit_sync "$NODE" "started" "pull" "tar+scp" 0 ""

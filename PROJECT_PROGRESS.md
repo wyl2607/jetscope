@@ -41,7 +41,8 @@
 - Added deploy approval gate with `APPROVE_JETSCOPE_DEPLOY` to `auto-deploy.sh`, and strengthened health-check restart opt-in so it also requires matching `JETSCOPE_HEALTH_RESTART_TOKEN` and `APPROVE_JETSCOPE_HEALTH_RESTART`.
 - Restricted the release SSH target to the approved production host alias `usa-vps` before invoking remote deploy.
 - Hardened rollback to require the production checkout to be on `main`, require a clean production checkout, and removed stash/pop reapplication of local state.
-- Documented approval tokens as operator-supplied action nonces to avoid cross-action reuse, while noting scripts do not persist a used-token ledger.
+- Added `scripts/approval-token-ledger.sh` so side-effect scripts hash-record approval tokens and reject replay on the same machine.
+- Derived publish, sync, and deploy child tokens from the release approval token so a release token is not directly reused across action types.
 
 ### Verification
 

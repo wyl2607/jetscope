@@ -28,6 +28,7 @@ API_STATUS="000"
 WEB_STATUS="000"
 WEB_CT=""
 SHOULD_RECORD_FAILURE=1
+LEDGER_HELPER=""
 
 while (($# > 0)); do
     case "$1" in
@@ -259,6 +260,18 @@ wait_for_web_health() {
     return 1
 }
 
+load_approval_token_ledger() {
+    LEDGER_HELPER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/approval-token-ledger.sh"
+    if [ ! -f "$LEDGER_HELPER" ]; then
+        fail_deploy "approval token ledger helper missing" "$LEDGER_HELPER"
+    fi
+    # shellcheck source=/dev/null
+    source "$LEDGER_HELPER"
+    if ! type approval_token_record_once >/dev/null 2>&1; then
+        fail_deploy "approval token ledger unavailable" "$LEDGER_HELPER"
+    fi
+}
+
 cd "$DEPLOY_DIR"
 
 acquire_deploy_lock
@@ -342,6 +355,9 @@ DEPLOYED_COMMIT=$(git rev-parse HEAD)
 if [ "$DEPLOYED_COMMIT" != "$REMOTE_COMMIT" ]; then
     fail_deploy "deploy tree did not advance to requested commit" "head $DEPLOYED_COMMIT remote $REMOTE_COMMIT"
 fi
+
+load_approval_token_ledger
+approval_token_record_once "deploy" "$APPROVAL_TOKEN" "$REMOTE_COMMIT"
 
 # Build API (Docker) - force recreate to avoid ContainerConfig bug
 echo "[$(date -Iseconds)] Building API..." | tee -a "$LOG"

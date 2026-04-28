@@ -110,7 +110,7 @@ Release and deploy behavior is also pinned in `../OPERATIONS.md`; treat that as 
 - Windows opt-in sync is an overlay handoff sync, not a clean mirror. It performs a blocked-path readback after extraction, but it is not a full historical cleanup of every excluded file.
 - Direct publish and release fail closed before pushing when required push gates `scripts/security_check.sh` and `scripts/review_push_guard.sh` are missing, not executable, or fail.
 - Release only permits the approved production SSH host alias `usa-vps`; do not override `JETSCOPE_VPS_HOST` for production release.
-- Approval tokens are operator-supplied action nonces. Generate a fresh token per publish, release, deploy, rollback, sync, or PR merge action and do not reuse it across action types; scripts verify token equality but do not persist a used-token ledger.
+- Approval tokens are operator-supplied action nonces. Generate a fresh token per publish, release, deploy, rollback, sync, or PR merge action and do not reuse it across action types. Side-effect scripts record token hashes through `approval-token-ledger.sh` and reject replay on the same machine.
 - Direct production deploy requires `APPROVE_JETSCOPE_DEPLOY=<approval-token> JETSCOPE_EXPECT_COMMIT=<approved-sha> ./scripts/auto-deploy.sh --approval-token <approval-token>`.
 - Production rollback requires `APPROVE_JETSCOPE_ROLLBACK=<approval-token> ./scripts/rollback.sh --approval-token <approval-token>`.
 - Private deployment wrappers may add extra observability around these scripts, but the checked-in scripts should remain runnable from this repository alone.
