@@ -14,6 +14,7 @@ const syncFromScript = readFileSync(join(process.cwd(), 'scripts/sync-from-node.
 const rollbackScript = readFileSync(join(process.cwd(), 'scripts/rollback.sh'), 'utf8');
 const healthCheckScript = readFileSync(join(process.cwd(), 'infra/server/health-check.sh'), 'utf8');
 const tokenLedgerScript = readFileSync(join(process.cwd(), 'scripts/approval-token-ledger.sh'), 'utf8');
+const reviewPushGuardScript = readFileSync(join(process.cwd(), 'scripts/review_push_guard.sh'), 'utf8');
 const packageJson = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8'));
 
 const uniqueToken = (prefix) => `${prefix}-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -64,6 +65,7 @@ test('approval token ledger records tokens once by hash', () => {
   assert.match(tokenLedgerScript, /approval_token_derive\(\)/);
   assert.match(tokenLedgerScript, /mkdir "\$path"/);
   assert.match(tokenLedgerScript, /approval token was already used/);
+  assert.match(reviewPushGuardScript, /scripts\/approval-token-ledger\.sh/);
 });
 
 test('auto deploy requires an approved expected commit', () => {

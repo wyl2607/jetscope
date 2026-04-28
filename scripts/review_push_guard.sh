@@ -52,6 +52,8 @@ for path in "${changed_files[@]}"; do
   case "$path" in
     .env.example|*/.env.example|.env.*.example|*/.env.*.example)
       ;;
+    scripts/approval-token-ledger.sh)
+      ;;
     */.env|.env|*/.env.*|.env.*|*credentials*|*secret*|*token*|*private-key*)
       credential_named+=("$path")
       ;;
