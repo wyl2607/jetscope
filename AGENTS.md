@@ -25,7 +25,7 @@ source scripts/jetscope-env
 
 ## 关键命令
 
-- `npm run release`（默认发布入口；会串联 preflight、GitHub 发布、VPS 部署；节点同步为显式 opt-in）
+- `APPROVE_JETSCOPE_RELEASE=<token> npm run release -- --approval-token <token>`（默认发布入口；会串联 preflight、GitHub 发布、VPS 部署；节点同步为显式 opt-in）
 - `npm run preflight`
 - `npm run web:gate`
 - `npm run api:check`

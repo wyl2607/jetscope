@@ -4,9 +4,11 @@ set -euo pipefail
 
 NODE="${1:-}"
 ALLOW_VPS=0
+APPROVAL_TOKEN=""
 
 usage() {
-  echo "Usage: $0 [mac-mini|coco|windows-pc|usa-vps] [--allow-vps-workdir]"
+  echo "Usage: $0 [mac-mini|coco|windows-pc|usa-vps] --approval-token <token> [--allow-vps-workdir]"
+  echo "Requires APPROVE_JETSCOPE_SYNC to match --approval-token before pulling from a node."
 }
 
 [[ -n "$NODE" ]] || { usage; exit 1; }
@@ -18,6 +20,14 @@ shift || true
 
 while (($# > 0)); do
   case "$1" in
+    --approval-token)
+      APPROVAL_TOKEN="${2:-}"
+      if [[ -z "$APPROVAL_TOKEN" ]]; then
+        echo "ERROR: --approval-token requires a non-empty value" >&2
+        exit 1
+      fi
+      shift
+      ;;
     --allow-vps-workdir)
       ALLOW_VPS=1
       ;;
@@ -33,6 +43,15 @@ while (($# > 0)); do
   esac
   shift
 done
+
+if [[ -z "$APPROVAL_TOKEN" ]]; then
+  echo "ERROR: pull sync requires --approval-token and matching APPROVE_JETSCOPE_SYNC." >&2
+  exit 1
+fi
+if [[ "${APPROVE_JETSCOPE_SYNC:-}" != "$APPROVAL_TOKEN" ]]; then
+  echo "ERROR: APPROVE_JETSCOPE_SYNC must match --approval-token." >&2
+  exit 1
+fi
 
 case "$NODE" in
   mac-mini|coco|windows-pc|usa-vps)

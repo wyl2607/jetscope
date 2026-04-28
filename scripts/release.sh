@@ -51,7 +51,7 @@ Usage: ./scripts/release.sh [options]
 Default flow:
   1. npm run preflight
   2. ./scripts/publish-to-github.sh
-  3. ssh usa-vps "cd /opt/jetscope && JETSCOPE_FORCE_DEPLOY=1 JETSCOPE_EXPECT_COMMIT=<HEAD> ./scripts/auto-deploy.sh"
+  3. ssh usa-vps "cd /opt/jetscope && JETSCOPE_FORCE_DEPLOY=1 JETSCOPE_EXPECT_COMMIT=<HEAD> APPROVE_JETSCOPE_DEPLOY=<token> ./scripts/auto-deploy.sh --approval-token <token>"
 
 Options:
   --approval-token  Required for publish, sync, or VPS deploy side effects
@@ -85,6 +85,23 @@ assert_release_approval() {
   fi
   if [[ "${APPROVE_JETSCOPE_RELEASE:-}" != "$APPROVAL_TOKEN" ]]; then
     echo "ERROR: APPROVE_JETSCOPE_RELEASE must match --approval-token." >&2
+    exit 1
+  fi
+}
+
+assert_safe_remote_arg() {
+  local name="$1"
+  local value="$2"
+  if [[ ! "$value" =~ ^[A-Za-z0-9._/@:=,+-]+$ ]]; then
+    echo "ERROR: $name contains unsupported characters for remote release command." >&2
+    exit 1
+  fi
+}
+
+assert_safe_ssh_host() {
+  local value="$1"
+  if [[ "$value" != "usa-vps" ]]; then
+    echo "ERROR: JETSCOPE_VPS_HOST must be the approved production host alias: usa-vps." >&2
     exit 1
   fi
 }
@@ -168,7 +185,7 @@ if [[ "$RUN_SYNC_WORKERS" -eq 1 || "$RUN_SYNC_WINDOWS" -eq 1 || "$RUN_SYNC_VPS_W
   if [[ "$RUN_SYNC_VPS_WORKDIR" -eq 1 ]]; then
     SYNC_ARGS+=(--include-vps)
   fi
-  ./scripts/sync-to-nodes.sh "${SYNC_ARGS[@]}"
+  APPROVE_JETSCOPE_SYNC="$APPROVAL_TOKEN" ./scripts/sync-to-nodes.sh --approval-token "$APPROVAL_TOKEN" "${SYNC_ARGS[@]}"
 fi
 
 if [[ "$RUN_PUBLISH" -eq 1 ]]; then
@@ -182,7 +199,10 @@ EXPECTED_COMMIT="$(git rev-parse HEAD)"
 if [[ "$RUN_VPS_DEPLOY" -eq 1 ]]; then
   echo
   echo ">>> Step 3/3: trigger VPS deploy"
-  ssh "$VPS_HOST" "cd '$VPS_DEPLOY_DIR' && JETSCOPE_FORCE_DEPLOY=1 JETSCOPE_EXPECT_COMMIT='$EXPECTED_COMMIT' ./scripts/auto-deploy.sh"
+  assert_safe_ssh_host "$VPS_HOST"
+  assert_safe_remote_arg "JETSCOPE_VPS_DEPLOY_DIR" "$VPS_DEPLOY_DIR"
+  assert_safe_remote_arg "approval token" "$APPROVAL_TOKEN"
+  ssh "$VPS_HOST" "cd '$VPS_DEPLOY_DIR' && JETSCOPE_FORCE_DEPLOY=1 JETSCOPE_EXPECT_COMMIT='$EXPECTED_COMMIT' APPROVE_JETSCOPE_DEPLOY='$APPROVAL_TOKEN' ./scripts/auto-deploy.sh --approval-token '$APPROVAL_TOKEN'"
 fi
 
 echo

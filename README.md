@@ -176,7 +176,7 @@ The canonical release path is documented in `OPERATIONS.md`:
 ```bash
 cd ~/projects/jetscope
 source scripts/jetscope-env
-npm run release
+APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token>
 ```
 
 This release entrypoint now standardizes the expected sequence after a successful improvement:

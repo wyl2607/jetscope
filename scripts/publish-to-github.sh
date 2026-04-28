@@ -123,6 +123,8 @@ if [ "$DIRTY_TRACKED" -eq 1 ] || [ "$DIRTY_STAGED" -eq 1 ] || [ "$DIRTY_UNTRACKE
   exit 1
 fi
 
+GATED_COMMIT="$(git rev-parse HEAD)"
+
 echo "Fetching latest $REMOTE_NAME/$BRANCH_NAME before push gates..."
 git fetch "$REMOTE_NAME" "$BRANCH_NAME:refs/remotes/$REMOTE_NAME/$BRANCH_NAME"
 
@@ -130,8 +132,16 @@ check_push_gates_exist
 npm run web:gate
 run_push_gates
 
+# Verify local is still the same commit that passed push gates.
+LOCAL_COMMIT="$GATED_COMMIT"
+if [ "$(git rev-parse HEAD)" != "$LOCAL_COMMIT" ]; then
+  CURRENT_HEAD="$(git rev-parse HEAD)"
+  echo "ERROR: HEAD changed after push gates; aborting publish." >&2
+  emit_event "failed" "head changed after gates" "expected $LOCAL_COMMIT got $CURRENT_HEAD" "$COMMIT_BEFORE" "$COMMIT_BEFORE"
+  exit 1
+fi
+
 # Verify local is ahead of remote (something to push)
-LOCAL_COMMIT="$(git rev-parse HEAD)"
 REMOTE_COMMIT="$(git rev-parse "$REMOTE_NAME/$BRANCH_NAME" 2>/dev/null || echo "")"
 
 if [ "$LOCAL_COMMIT" = "$REMOTE_COMMIT" ]; then
@@ -140,10 +150,10 @@ if [ "$LOCAL_COMMIT" = "$REMOTE_COMMIT" ]; then
   exit 0
 fi
 
-git push "$REMOTE_NAME" "HEAD:refs/heads/$BRANCH_NAME"
+git push "$REMOTE_NAME" "$LOCAL_COMMIT:refs/heads/$BRANCH_NAME"
 
 # Verify remote now matches what we intended to push
-PUSHED_COMMIT="$(git rev-parse HEAD)"
+PUSHED_COMMIT="$LOCAL_COMMIT"
 REMOTE_NOW="$(git ls-remote "$REMOTE_NAME" "$BRANCH_NAME" | awk '{print $1}')"
 
 if [ "$PUSHED_COMMIT" != "$REMOTE_NOW" ]; then

@@ -9,6 +9,43 @@ LOG="/var/log/jetscope-deploy.log"
 BUILD_LOG="/var/log/jetscope-build.log"
 BUS_WRITE="/Users/yumei/tools/script-core/bin/sc-bus-write"
 PRODUCER="jetscope/scripts/rollback.sh"
+APPROVAL_TOKEN=""
+
+while (($# > 0)); do
+    case "$1" in
+        --approval-token)
+            APPROVAL_TOKEN="${2:-}"
+            if [[ -z "$APPROVAL_TOKEN" ]]; then
+                echo "ERROR: --approval-token requires a non-empty value" >&2
+                exit 1
+            fi
+            shift
+            ;;
+        --help|-h)
+            cat <<'EOF'
+Usage: ./scripts/rollback.sh --approval-token <token>
+
+Requires APPROVE_JETSCOPE_ROLLBACK to match --approval-token before mutating production.
+Production checkout must already be clean. Rollback never stashes or reapplies local state.
+EOF
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+if [[ -z "$APPROVAL_TOKEN" ]]; then
+    echo "ERROR: rollback requires --approval-token and matching APPROVE_JETSCOPE_ROLLBACK." >&2
+    exit 1
+fi
+if [[ "${APPROVE_JETSCOPE_ROLLBACK:-}" != "$APPROVAL_TOKEN" ]]; then
+    echo "ERROR: APPROVE_JETSCOPE_ROLLBACK must match --approval-token." >&2
+    exit 1
+fi
 
 emit_publish_event() {
     local status="$1"
@@ -28,8 +65,21 @@ emit_publish_event() {
 
 cd "$DEPLOY_DIR"
 
+CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || true)
+if [ "$CURRENT_BRANCH" != "main" ]; then
+    echo "ERROR: rollback requires production checkout on main; current branch is ${CURRENT_BRANCH:-detached HEAD}." >&2
+    exit 1
+fi
+
 COMMIT_BEFORE=$(git rev-parse HEAD)
 ROLLBACK_TARGET=$(git rev-parse HEAD~1)
+
+if [ -n "$(git status --porcelain)" ]; then
+    echo "ERROR: rollback requires a clean production checkout; refusing to stash or reapply local state." >&2
+    git status --short >&2
+    emit_publish_event "failed" "rollback checkout dirty" "local modifications detected" "$COMMIT_BEFORE" "$COMMIT_BEFORE"
+    exit 1
+fi
 
 emit_publish_event "started" "rollback initiated" "" "$COMMIT_BEFORE" "$ROLLBACK_TARGET"
 
@@ -39,14 +89,8 @@ echo "[$(date -Iseconds)] ROLLBACK initiated..." | tee -a "$LOG"
 echo "Current commit: $(git log --oneline -1)" | tee -a "$LOG"
 echo "Rolling back to: $(git log --oneline -2 | tail -1)" | tee -a "$LOG"
 
-# Stash local state
-git stash push -m "rollback-stash-$(date +%Y%m%d_%H%M%S)" --include-untracked >> "$LOG" 2>&1 || true
-
 # Roll back one commit
 git reset --hard HEAD~1 >> "$LOG" 2>&1
-
-# Restore local state
-git stash pop >> "$LOG" 2>&1 || true
 
 # Rebuild API
 echo "[$(date -Iseconds)] Rebuilding API..." | tee -a "$LOG"

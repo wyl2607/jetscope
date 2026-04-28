@@ -1,7 +1,7 @@
 #!/bin/bash
 # JetScope Auto-Deploy Script
-# Runs on production server (usa-vps) via cron every minute
-# Pulls latest code from GitHub, builds, and restarts services
+# Runs on production server (usa-vps) only through an approved release path.
+# Fetches the approved commit from GitHub, builds, and restarts services.
 
 set -euo pipefail
 
@@ -16,6 +16,7 @@ BUS_WRITE="/Users/yumei/tools/script-core/bin/sc-bus-write"
 PRODUCER="jetscope/scripts/auto-deploy.sh"
 FORCE_DEPLOY="${JETSCOPE_FORCE_DEPLOY:-0}"
 EXPECTED_COMMIT="${JETSCOPE_EXPECT_COMMIT:-}"
+APPROVAL_TOKEN=""
 API_HEALTH_URL="${JETSCOPE_API_HEALTH_URL:-http://127.0.0.1:8000/v1/health}"
 WEB_HEALTH_URL="${JETSCOPE_WEB_HEALTH_URL:-https://saf.meichen.beauty/}"
 HEALTH_TIMEOUT_SECONDS="${JETSCOPE_HEALTH_TIMEOUT_SECONDS:-120}"
@@ -27,6 +28,41 @@ API_STATUS="000"
 WEB_STATUS="000"
 WEB_CT=""
 SHOULD_RECORD_FAILURE=1
+
+while (($# > 0)); do
+    case "$1" in
+        --approval-token)
+            APPROVAL_TOKEN="${2:-}"
+            if [[ -z "$APPROVAL_TOKEN" ]]; then
+                echo "ERROR: --approval-token requires a non-empty value" >&2
+                exit 1
+            fi
+            shift
+            ;;
+        --help|-h)
+            cat <<'EOF'
+Usage: ./scripts/auto-deploy.sh --approval-token <token>
+
+Requires APPROVE_JETSCOPE_DEPLOY to match --approval-token and JETSCOPE_EXPECT_COMMIT to pin the approved commit.
+EOF
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+if [[ -z "$APPROVAL_TOKEN" ]]; then
+    echo "ERROR: deploy requires --approval-token and matching APPROVE_JETSCOPE_DEPLOY." >&2
+    exit 1
+fi
+if [[ "${APPROVE_JETSCOPE_DEPLOY:-}" != "$APPROVAL_TOKEN" ]]; then
+    echo "ERROR: APPROVE_JETSCOPE_DEPLOY must match --approval-token." >&2
+    exit 1
+fi
 
 ensure_deploy_state_dir() {
     if ! mkdir -p "$DEPLOY_STATE_DIR"; then
@@ -242,6 +278,11 @@ if ! git fetch origin main:refs/remotes/origin/main >> "$LOG" 2>&1; then
 fi
 REMOTE_COMMIT=$(resolve_origin_main)
 
+if [ -z "$EXPECTED_COMMIT" ]; then
+    SHOULD_RECORD_FAILURE=0
+    fail_deploy "expected commit required for deploy" "set JETSCOPE_EXPECT_COMMIT to the approved commit before deploying"
+fi
+
 if [ -n "$EXPECTED_COMMIT" ] && [ "$REMOTE_COMMIT" != "$EXPECTED_COMMIT" ]; then
     SHOULD_RECORD_FAILURE=0
     fail_deploy "expected commit not yet visible on origin/main" "expected $EXPECTED_COMMIT got $REMOTE_COMMIT"
@@ -256,14 +297,27 @@ if [ -f "$LAST_FAILURE_FILE" ]; then
     LAST_FAILURE=$(cat "$LAST_FAILURE_FILE" 2>/dev/null || true)
 fi
 
-if [ "$FORCE_DEPLOY" != "1" ] && [ "$LOCAL_COMMIT" = "$REMOTE_COMMIT" ] && [ "$LAST_SUCCESS" = "$REMOTE_COMMIT" ] && [ "$LAST_FAILURE" != "$REMOTE_COMMIT" ] && current_deploy_is_healthy; then
-    # No changes, exit silently (unless it's the 10-minute mark for a heartbeat)
-    MINUTE=$(date +%M)
-    if [ "${MINUTE:1:1}" = "0" ]; then
-        echo "[$(date -Iseconds)] No changes. Local: ${LOCAL_COMMIT:0:8} = Remote: ${REMOTE_COMMIT:0:8}" >> "$LOG"
+if [ "$FORCE_DEPLOY" != "1" ] && [ "$LOCAL_COMMIT" = "$REMOTE_COMMIT" ]; then
+    if current_deploy_is_healthy; then
+        if [ "$LAST_SUCCESS" != "$REMOTE_COMMIT" ] || [ "$LAST_FAILURE" = "$REMOTE_COMMIT" ]; then
+            if write_state_file "$LAST_SUCCESS_FILE" "$REMOTE_COMMIT"; then
+                LAST_SUCCESS="$REMOTE_COMMIT"
+                LAST_FAILURE=""
+                rm -f "$LAST_FAILURE_FILE" 2>/dev/null || true
+                echo "[$(date -Iseconds)] Existing healthy deploy recorded as success for ${REMOTE_COMMIT:0:8}." >> "$LOG"
+            else
+                fail_deploy "failed to reconcile healthy deploy state" "could not write $LAST_SUCCESS_FILE"
+            fi
+        fi
+
+        # No changes, exit silently (unless it's the 10-minute mark for a heartbeat)
+        MINUTE=$(date +%M)
+        if [ "${MINUTE:1:1}" = "0" ]; then
+            echo "[$(date -Iseconds)] No changes. Local: ${LOCAL_COMMIT:0:8} = Remote: ${REMOTE_COMMIT:0:8}" >> "$LOG"
+        fi
+        emit_publish_event "skipped" "auto-deploy found no upstream changes" "" "$LOCAL_COMMIT" "$REMOTE_COMMIT"
+        exit 0
     fi
-    emit_publish_event "skipped" "auto-deploy found no upstream changes" "" "$LOCAL_COMMIT" "$REMOTE_COMMIT"
-    exit 0
 fi
 
 emit_publish_event "started" "auto-deploy detected new upstream commit" "" "$LOCAL_COMMIT" "$REMOTE_COMMIT"
