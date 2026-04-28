@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-ROOT="/Users/yumei/projects/jetscope"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VPS_HOST="${JETSCOPE_VPS_HOST:-usa-vps}"
 VPS_DEPLOY_DIR="${JETSCOPE_VPS_DEPLOY_DIR:-/opt/jetscope}"
 EXPECTED_COMMIT=""

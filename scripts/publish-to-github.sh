@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-ROOT="/Users/yumei/projects/jetscope"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUS_WRITE="/Users/yumei/tools/script-core/bin/sc-bus-write"
 PRODUCER="jetscope/scripts/publish-to-github.sh"
 REMOTE_NAME="origin"

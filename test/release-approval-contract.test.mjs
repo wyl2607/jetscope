@@ -28,6 +28,7 @@ function runScript(scriptPath, args = [], env = {}) {
 }
 
 test('release side effects require matching approval token', () => {
+  assert.match(releaseScript, /ROOT="\$\(cd "\$\(dirname "\$\{BASH_SOURCE\[0\]\}"\)\/\.\." && pwd\)"/);
   assert.match(releaseScript, /--approval-token\)\n\s+APPROVAL_TOKEN=/);
   assert.match(releaseScript, /APPROVE_JETSCOPE_RELEASE:-/);
   assert.match(releaseScript, /publish, sync, or deploy requires --approval-token/);
@@ -41,6 +42,7 @@ test('release side effects require matching approval token', () => {
 });
 
 test('publish side effects require matching publish approval token', () => {
+  assert.match(publishScript, /ROOT="\$\(cd "\$\(dirname "\$\{BASH_SOURCE\[0\]\}"\)\/\.\." && pwd\)"/);
   assert.match(publishScript, /--approval-token\)\n\s+APPROVAL_TOKEN=/);
   assert.match(publishScript, /APPROVE_JETSCOPE_PUBLISH:-/);
   assert.match(publishScript, /publish requires --approval-token and matching APPROVE_JETSCOPE_PUBLISH/);
