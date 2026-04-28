@@ -21,8 +21,8 @@ personal home-directory paths, internal node aliases, webhook URLs, or secrets t
 
 ## Phase 0: Reference Checklist
 
-This checklist is informational only. The canonical release gate is `npm run release`
-as documented in `../OPERATIONS.md`.
+This checklist is informational only. The canonical release gate is the
+approval-gated release command documented in `../OPERATIONS.md`.
 
 - [ ] Public API contract reviewed: `docs/API_CONTRACT_V1.md`
 - [ ] Local quality gate passes where applicable: `npm run preflight`
@@ -121,7 +121,7 @@ Use:
 ```bash
 cd <jetscope-repo>
 source scripts/jetscope-env
-npm run release
+APPROVE_JETSCOPE_RELEASE=<approval-token> npm run release -- --approval-token <approval-token>
 ```
 
 Do not duplicate private SSH configuration, personal usernames, host aliases, IPs,

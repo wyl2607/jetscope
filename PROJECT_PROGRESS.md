@@ -4,7 +4,7 @@
 
 - Status: release/sync hardening is committed locally; backend pytest is restored as a local gate.
 - Scope: JetScope web/API workspace, local data ignores, traceability entrypoint, release-path documentation, and worker/VPS sync boundaries.
-- Release entrypoint: `npm run release` after `source scripts/jetscope-env`; development worker sync is opt-in.
+- Release entrypoint: `APPROVE_JETSCOPE_RELEASE=<token> npm run release -- --approval-token <token>` after `source scripts/jetscope-env`; development worker sync is opt-in.
 
 ## 2026-04-25 Safe-Local Automation Trial Prep
 
@@ -31,11 +31,29 @@
 - Added `scripts/pr-approval-gate.mjs` as a fail-closed PR readiness and merge approval gate.
 - Added `npm run pr:approval:gate` as the default read-only command for PR merge readiness reports.
 - Documented explicit merge approval: actual merge requires `--execute`, `--approval-token`, and matching `APPROVE_JETSCOPE_PR_MERGE`.
+- Added `pr:approval:gate` to `package.json` so the documented command resolves.
+- Hardened direct publish against post-gate HEAD drift by pushing the gated `LOCAL_COMMIT` SHA and aborting if HEAD changes after gates.
+- Hardened production auto-deploy so `JETSCOPE_EXPECT_COMMIT` is mandatory, keeping PR merge approval separate from deploy approval.
+- Updated release, publish, and sync examples to include explicit approval tokens.
+- Added direct sync approval gates to `sync-to-nodes.sh` and `sync-from-node.sh`, while preserving `sync-to-nodes.sh --dry-run` as approval-free preview.
+- Updated PR approval gate to run local push gates when `--local-preflight-ok` is provided, instead of only checking that gate files exist.
+- Added rollback approval gate with `APPROVE_JETSCOPE_ROLLBACK`, and made health-check service restart observe-only unless `JETSCOPE_HEALTH_ALLOW_RESTART=1` is explicitly set.
+- Added deploy approval gate with `APPROVE_JETSCOPE_DEPLOY` to `auto-deploy.sh`, and strengthened health-check restart opt-in so it also requires matching `JETSCOPE_HEALTH_RESTART_TOKEN` and `APPROVE_JETSCOPE_HEALTH_RESTART`.
+- Restricted the release SSH target to the approved production host alias `usa-vps` before invoking remote deploy.
+- Hardened rollback to require the production checkout to be on `main`, require a clean production checkout, and removed stash/pop reapplication of local state.
+- Added `scripts/approval-token-ledger.sh` so side-effect scripts hash-record approval tokens and reject replay on the same machine.
+- Derived publish, sync, and deploy child tokens from the release approval token so a release token is not directly reused across action types.
 
 ### Verification
 
 - `node scripts/pr-approval-gate.mjs --help`
 - `bash -n` is not applicable to the Node script; syntax is checked by Node help execution.
+- `git diff --check` passed.
+- `bash -n scripts/release.sh scripts/publish-to-github.sh scripts/auto-deploy.sh scripts/rollback.sh scripts/sync-to-nodes.sh scripts/sync-from-node.sh infra/server/health-check.sh` passed.
+- `npm test` passed: 45 Node tests.
+- `npm run preflight` passed: web gate, API compile, 85 backend pytest tests, OpenAPI check, Node tests, product smoke, and UI E2E.
+- `./scripts/security_check.sh` passed using the built-in fallback scan because `gitleaks` is not installed.
+- `./scripts/review_push_guard.sh origin/main` failed as expected while this approval-gate change remains uncommitted in the dirty worktree.
 
 ### Impact
 

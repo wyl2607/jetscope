@@ -14,7 +14,7 @@ This directory contains JetScope project automation scripts.
 - `sync-from-node.sh`: pull changes from a remote node back to local machine, writing `node-sync-event` records
 - `release.sh`: unified release entrypoint that runs preflight, publishes to GitHub, then triggers commit-pinned VPS deploy
 - `auto-deploy.sh`: production-side auto-deploy script, now also emitting `publish-event` records
-- `rollback.sh`: production rollback script, now also emitting `publish-event` records
+- `rollback.sh`: production rollback script, approval-gated with `APPROVE_JETSCOPE_ROLLBACK`, now also emitting `publish-event` records
 - `preflight-product-smoke.mjs`: product smoke verification
 - `preflight-ui-e2e.mjs`: UI end-to-end verification
 - `preflight-load-test.mjs`: load verification
@@ -47,54 +47,54 @@ The gates fail closed when the worktree is dirty, blocked local/generated paths 
 ```bash
 cd ~/projects/jetscope
 source scripts/jetscope-env
-npm run release
+APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token>
 ```
 
 ### Release Variants
 
 ```bash
 # Full local + VPS release; worker sync is not part of the default path
-npm run release
+APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token>
 
 # Skip remote VPS trigger when you only want to publish
-./scripts/release.sh --skip-vps-deploy
+APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token> --skip-vps-deploy
 
 # Re-run publish + VPS deploy without repeating preflight
-./scripts/release.sh --skip-preflight
+APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token> --skip-preflight
 
 # Re-run VPS deploy only after confirming current HEAD is already on origin/main
-./scripts/release.sh --skip-preflight --skip-publish
+APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token> --skip-preflight --skip-publish
 
 # Sync development workers before publishing
-./scripts/release.sh --sync-workers
+APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token> --sync-workers
 
 # Sync workers and Windows handoff before publishing
-./scripts/release.sh --sync-workers --sync-windows
+APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token> --sync-workers --sync-windows
 
 # Explicitly sync usa-vps:~/jetscope, which is not the production deploy path
-./scripts/release.sh --sync-vps-workdir
+APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token> --sync-vps-workdir
 ```
 
 ### Node Sync Variants
 
 ```bash
 # Default: sync mac-mini and coco only
-./scripts/sync-to-nodes.sh
+APPROVE_JETSCOPE_SYNC=<approval-token> ./scripts/sync-to-nodes.sh --approval-token <approval-token>
 
 # Include Windows handoff sync
-./scripts/sync-to-nodes.sh --windows
+APPROVE_JETSCOPE_SYNC=<approval-token> ./scripts/sync-to-nodes.sh --approval-token <approval-token> --windows
 
 # Preview Unix worker changes without writing them
 ./scripts/sync-to-nodes.sh --dry-run
 
 # Explicitly sync the non-production USA VPS workdir
-./scripts/sync-to-nodes.sh --include-vps
+APPROVE_JETSCOPE_SYNC=<approval-token> ./scripts/sync-to-nodes.sh --approval-token <approval-token> --include-vps
 
 # Pull back from a selected node using the shared excludes
-./scripts/sync-from-node.sh mac-mini
+APPROVE_JETSCOPE_SYNC=<approval-token> ./scripts/sync-from-node.sh mac-mini --approval-token <approval-token>
 
 # Pull back from the non-production USA VPS workdir only with explicit opt-in
-./scripts/sync-from-node.sh usa-vps --allow-vps-workdir
+APPROVE_JETSCOPE_SYNC=<approval-token> ./scripts/sync-from-node.sh usa-vps --approval-token <approval-token> --allow-vps-workdir
 ```
 
 Release and deploy behavior is also pinned in `../OPERATIONS.md`; treat that as the durable project memory for future sessions.
@@ -108,5 +108,9 @@ Release and deploy behavior is also pinned in `../OPERATIONS.md`; treat that as 
 - `scripts/sync-excludes.sh` is the single sync exclude source. Update it whenever `.gitignore` or local-only path policy changes.
 - Unix worker sync performs a blocked-path readback after rsync. If historical excluded remnants remain on a node, sync fails instead of reporting a clean success.
 - Windows opt-in sync is an overlay handoff sync, not a clean mirror. It performs a blocked-path readback after extraction, but it is not a full historical cleanup of every excluded file.
-- Release fails closed before publishing when required push gates `scripts/security_check.sh` and `scripts/review_push_guard.sh` are missing or not executable.
+- Direct publish and release fail closed before pushing when required push gates `scripts/security_check.sh` and `scripts/review_push_guard.sh` are missing, not executable, or fail.
+- Release only permits the approved production SSH host alias `usa-vps`; do not override `JETSCOPE_VPS_HOST` for production release.
+- Approval tokens are operator-supplied action nonces. Generate a fresh token per publish, release, deploy, rollback, sync, or PR merge action and do not reuse it across action types. Side-effect scripts record token hashes through `approval-token-ledger.sh` and reject replay on the same machine.
+- Direct production deploy requires `APPROVE_JETSCOPE_DEPLOY=<approval-token> JETSCOPE_EXPECT_COMMIT=<approved-sha> ./scripts/auto-deploy.sh --approval-token <approval-token>`.
+- Production rollback requires `APPROVE_JETSCOPE_ROLLBACK=<approval-token> ./scripts/rollback.sh --approval-token <approval-token>`.
 - Private deployment wrappers may add extra observability around these scripts, but the checked-in scripts should remain runnable from this repository alone.

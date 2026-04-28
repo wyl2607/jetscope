@@ -8,9 +8,14 @@ const SAFE_CHECK_STATES = new Set(['SUCCESS', 'NEUTRAL', 'PASS']);
 const FAIL_CHECK_STATES = new Set(['FAILURE', 'ERROR', 'ACTION_REQUIRED', 'TIMED_OUT', 'CANCELLED', 'FAIL']);
 const HIGH_RISK_PATTERNS = [
   /^\.github\//,
+  /^AGENTS\.md$/,
+  /^OPERATIONS\.md$/,
+  /^README\.md$/,
   /^PROJECT_PROGRESS\.md$/,
   /^docs\/AUTOMATION_/,
   /^docs\/automation-/,
+  /^docs\/SECURITY_NOTES\.md$/,
+  /^scripts\/README\.md$/,
   /^scripts\/(release|publish|sync|auto-deploy|rollback|review_push_guard|security_check|pr-approval-gate|automation-)/,
   /^scripts\/(deploy|ssh|rsync|install|uninstall|cleanup)/,
   /^infra\//,
@@ -70,6 +75,23 @@ function run(command, args) {
   return execFileSync(command, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 }
 
+function runLocalPushGates() {
+  run('bash', ['scripts/security_check.sh']);
+  run('bash', ['scripts/review_push_guard.sh', 'origin/main']);
+}
+
+function localHead() {
+  return run('git', ['rev-parse', 'HEAD']);
+}
+
+function assertLocalHeadMatchesPr(args, pr) {
+  if (!args.localPreflightOk && !args.execute) return;
+  const head = localHead();
+  if (head !== pr.headRefOid) {
+    throw new Error(`local HEAD ${head} does not match PR head ${pr.headRefOid}`);
+  }
+}
+
 function classifyChecks(checks) {
   const failed = [];
   const pending = [];
@@ -96,6 +118,14 @@ function readiness(args, pr, checks) {
   if (!['CLEAN', 'HAS_HOOKS'].includes(String(pr.mergeStateStatus ?? '').toUpperCase())) blockers.push(`mergeStateStatus is ${pr.mergeStateStatus || 'missing'}`);
   if (String(pr.reviewDecision ?? '').toUpperCase() !== 'APPROVED') blockers.push(`reviewDecision is ${pr.reviewDecision || 'missing'}`);
   if (!args.localPreflightOk) blockers.push('missing local preflight evidence: run npm run preflight and pass --local-preflight-ok');
+  if (args.localPreflightOk) {
+    try {
+      assertLocalHeadMatchesPr(args, pr);
+      runLocalPushGates();
+    } catch (error) {
+      blockers.push(`local push gates failed: ${error.stderr?.toString?.('utf8') || error.message || error}`);
+    }
+  }
   if (checkState.failed.length) blockers.push(`failed checks: ${checkState.failed.map((item) => item.name).join(', ')}`);
   if (checkState.pending.length) blockers.push(`pending/unknown checks: ${checkState.pending.map((item) => item.name).join(', ')}`);
   if (highRiskFiles.length) blockers.push(`high-risk files changed: ${highRiskFiles.join(', ')}`);
@@ -129,6 +159,7 @@ function main() {
   mkdirSync(dirname(reportPath), { recursive: true });
   const pr = runJson('gh', ['pr', 'view', String(args.pr), '--json', PR_FIELDS]);
   const checks = runJson('gh', ['pr', 'checks', String(args.pr), '--json', CHECK_FIELDS]);
+  assertLocalHeadMatchesPr(args, pr);
   const gate = readiness(args, pr, Array.isArray(checks) ? checks : []);
   const report = { generated_at: new Date().toISOString(), mode: args.execute ? 'execute' : 'read-only', pr: { number: pr.number, title: pr.title, url: pr.url, baseRefName: pr.baseRefName, headRefName: pr.headRefName, headRefOid: pr.headRefOid, mergeStateStatus: pr.mergeStateStatus, mergeable: pr.mergeable, reviewDecision: pr.reviewDecision, isDraft: pr.isDraft }, gate, blocked_actions_without_approval: ['merge', 'push', 'publish', 'deploy', 'sync'], next_step: gate.ready ? 'await explicit approval token before merge' : 'fix blockers before requesting merge approval' };
   if (args.execute) {

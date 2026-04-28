@@ -10,6 +10,9 @@ DRY_RUN=0
 RUN_WORKERS=1
 RUN_WINDOWS=0
 INCLUDE_VPS=0
+APPROVAL_TOKEN=""
+
+source "$SCRIPT_DIR/approval-token-ledger.sh"
 
 usage() {
   cat <<'EOF'
@@ -19,6 +22,7 @@ Default:
   Sync JetScope to development workers only: mac-mini and coco.
 
 Options:
+  --approval-token  Required for any non-dry-run node sync side effect
   --workers      Sync development workers mac-mini and coco (default)
   --no-workers   Do not sync mac-mini/coco; use with --windows or --include-vps
   --windows      Also sync windows-pc via tar+scp
@@ -28,6 +32,7 @@ Options:
   --help         Show this help
 
 Notes:
+  APPROVE_JETSCOPE_SYNC must match --approval-token for non-dry-run sync.
   Production deploy uses usa-vps:/opt/jetscope through scripts/auto-deploy.sh.
   Do not use usa-vps:~/jetscope as the production source of truth.
 EOF
@@ -35,6 +40,14 @@ EOF
 
 while (($# > 0)); do
   case "$1" in
+    --approval-token)
+      APPROVAL_TOKEN="${2:-}"
+      if [[ -z "$APPROVAL_TOKEN" ]]; then
+        echo "ERROR: --approval-token requires a non-empty value" >&2
+        exit 1
+      fi
+      shift
+      ;;
     --workers)
       RUN_WORKERS=1
       ;;
@@ -67,6 +80,22 @@ while (($# > 0)); do
   esac
   shift
 done
+
+assert_sync_approval() {
+  if [ "$DRY_RUN" -eq 1 ]; then
+    return
+  fi
+  if [[ -z "$APPROVAL_TOKEN" ]]; then
+    echo "ERROR: sync requires --approval-token and matching APPROVE_JETSCOPE_SYNC." >&2
+    exit 1
+  fi
+  if [[ "${APPROVE_JETSCOPE_SYNC:-}" != "$APPROVAL_TOKEN" ]]; then
+    echo "ERROR: APPROVE_JETSCOPE_SYNC must match --approval-token." >&2
+    exit 1
+  fi
+}
+
+assert_sync_approval
 
 emit_sync() {
   local node="$1"
@@ -140,6 +169,10 @@ if [ "$DRY_RUN" -eq 1 ]; then
   RSYNC_ARGS+=(--dry-run)
 fi
 
+if [ "$DRY_RUN" -eq 0 ] && { [ "${#UNIX_NODES[@]}" -gt 0 ] || [ "$RUN_WINDOWS" -eq 1 ]; }; then
+  approval_token_record_once "sync-push" "$APPROVAL_TOKEN" "workers=$RUN_WORKERS windows=$RUN_WINDOWS vps=$INCLUDE_VPS"
+fi
+
 if [ "${#UNIX_NODES[@]}" -gt 0 ]; then
   for node in "${UNIX_NODES[@]}"; do
     start=$(date +%s)
@@ -168,7 +201,7 @@ if [ "$RUN_WINDOWS" -eq 1 ]; then
     tar -czf "$TAR_FILE" "${SYNC_EXCLUDES[@]}" .
     if scp "$TAR_FILE" windows-pc:C:/Users/wyl26/jetscope/ \
       && ssh windows-pc "cd C:\Users\wyl26\jetscope; tar -xzf jetscope-windows.tar.gz; Remove-Item jetscope-windows.tar.gz" \
-      && ssh windows-pc "\$root = 'C:\Users\wyl26\jetscope'; \$blocked = @('.env','.env.local','.envrc','.omx','.automation','apps\\api\\data','data\\local-preferences.json','data\\market.db','infra\\postgres-data','logs','webhook-logs','.guard'); \$hits = @(); foreach (\$item in \$blocked) { if (Test-Path (Join-Path \$root \$item)) { \$hits += \$item } }; \$envHits = @(Get-ChildItem -LiteralPath \$root -Force -File -Filter '.env.*' -ErrorAction SilentlyContinue | ForEach-Object { \$_.Name }); \$hits += \$envHits; if (\$hits.Count -gt 0) { Write-Error ('Blocked paths remain after sync: ' + ((\$hits | Sort-Object -Unique) -join ', ')); exit 1 }"; then
+      && ssh windows-pc "\$root = 'C:\Users\wyl26\jetscope'; \$blocked = @('.env','.env.local','.envrc','.omx','.automation','apps\\api\\data','data\\local-preferences.json','data\\market.db','infra\\postgres-data','logs','webhook-logs','.guard'); \$hits = @(); foreach (\$item in \$blocked) { if (Test-Path (Join-Path \$root \$item)) { \$hits += \$item } }; \$envHits = @(Get-ChildItem -LiteralPath \$root -Force -Recurse -File -Filter '.env.*' -ErrorAction SilentlyContinue | Where-Object { \$_.Name -ne '.env.example' -and \$_.Name -notlike '*.example' } | ForEach-Object { \$_.FullName.Substring(\$root.Length).TrimStart('\\') }); \$hits += \$envHits; if (\$hits.Count -gt 0) { Write-Error ('Blocked paths remain after sync: ' + ((\$hits | Sort-Object -Unique) -join ', ')); exit 1 }"; then
       rm -f "$TAR_FILE"
       trap - EXIT
       end=$(date +%s)

@@ -150,17 +150,32 @@ Default outcome is `AWAIT_HUMAN_MERGE`. Auto-merge is reserved for pre-approved 
 Use `scripts/pr-approval-gate.mjs` to produce a fail-closed merge readiness report. Default mode is read-only and must not merge:
 
 ```bash
-npm run pr:approval:gate -- --pr <number>
+npm run preflight
+npm run pr:approval:gate -- --pr <number> --local-preflight-ok
 ```
 
 Actual merge is approval-gated and requires both `--execute` and a matching one-time `APPROVE_JETSCOPE_PR_MERGE` token:
 
 ```bash
 APPROVE_JETSCOPE_PR_MERGE=<approval-token> \
-  npm run pr:approval:gate -- --pr <number> --execute --approval-token <approval-token>
+  npm run pr:approval:gate -- --pr <number> --local-preflight-ok --execute --approval-token <approval-token>
 ```
 
-Do not provide the approval token until the controller report says the PR is ready, the human approver has reviewed the PR, and the repository gates required by `AGENTS.md` are satisfied. The gate blocks draft PRs, non-`main` base branches, unapproved reviews, non-mergeable PRs, failed or pending checks, high-risk file changes, and missing local push gates.
+Do not provide the approval token until the controller report says the PR is ready, the human approver has reviewed the PR, and the repository gates required by `AGENTS.md` are satisfied. The gate blocks draft PRs, non-`main` base branches, unapproved reviews, missing local preflight evidence, non-mergeable or not-clean PRs, failed/pending/skipped checks, high-risk file changes, and missing local push gates. Merge execution pins the reviewed PR head with `--match-head-commit`.
+
+Publishing and release are separate approval-gated actions. `npm run release` and `./scripts/publish-to-github.sh` fail closed unless the caller supplies a fresh approval token through both CLI and environment. Side-effect scripts record token hashes and reject replay on the same machine:
+
+```bash
+APPROVE_JETSCOPE_RELEASE=<approval-token> \
+  ./scripts/release.sh --approval-token <approval-token>
+
+APPROVE_JETSCOPE_PUBLISH=<approval-token> \
+  ./scripts/publish-to-github.sh --approval-token <approval-token>
+```
+
+Production deploy also requires `APPROVE_JETSCOPE_DEPLOY` to match `--approval-token` and `JETSCOPE_EXPECT_COMMIT` to match the approved commit. PR merge approval is not deploy approval.
+
+Direct node sync and pullback are also approval-gated. Non-dry-run `sync-to-nodes.sh` and all `sync-from-node.sh` invocations require `APPROVE_JETSCOPE_SYNC` to match `--approval-token`.
 
 ## Stop Conditions
 

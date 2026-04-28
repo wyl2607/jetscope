@@ -16,6 +16,29 @@ API_URL="http://127.0.0.1:8000/v1/health"
 LOG="/var/log/jetscope-health.log"
 BUS_WRITE="/Users/yumei/tools/script-core/bin/sc-bus-write"
 PRODUCER="infra/server/health-check.sh"
+ALLOW_RESTART="${JETSCOPE_HEALTH_ALLOW_RESTART:-0}"
+RESTART_TOKEN="${JETSCOPE_HEALTH_RESTART_TOKEN:-}"
+LEDGER_HELPER="/opt/jetscope/scripts/approval-token-ledger.sh"
+RESTART_APPROVED=0
+
+if [ -f "$LEDGER_HELPER" ]; then
+    # shellcheck source=/dev/null
+    source "$LEDGER_HELPER"
+fi
+
+restart_allowed() {
+    [ "$ALLOW_RESTART" = "1" ] && [ -n "$RESTART_TOKEN" ] && [ "${APPROVE_JETSCOPE_HEALTH_RESTART:-}" = "$RESTART_TOKEN" ] || return 1
+    if [ "$RESTART_APPROVED" = "1" ]; then
+        return 0
+    fi
+    if ! type approval_token_record_once >/dev/null 2>&1; then
+        log "Restart token matched, but approval token ledger is unavailable; refusing restart."
+        emit_event "failed" "health restart ledger unavailable" "helper=$LEDGER_HELPER"
+        return 1
+    fi
+    approval_token_record_once "health-restart" "$RESTART_TOKEN" "$(date -u +%Y-%m-%dT%H:%MZ)" || return 1
+    RESTART_APPROVED=1
+}
 
 log() {
     echo "[$(date -Iseconds)] $1" | tee -a "$LOG"
@@ -42,6 +65,10 @@ api_status() {
 
 API_STATUS=$(api_status)
 if [ "$API_STATUS" != "200" ]; then
+    if ! restart_allowed; then
+        log "API unhealthy (status: $API_STATUS). Restart disabled or unapproved; emitting failure only."
+        emit_event "failed" "api unhealthy, restart disabled" "status=$API_STATUS"
+    else
     log "API unhealthy (status: $API_STATUS). Restarting..."
     emit_event "recovering" "api unhealthy, restarting" "status=$API_STATUS"
     cd /opt/jetscope && docker-compose -f docker-compose.prod.yml restart api >> "$LOG" 2>&1
@@ -53,6 +80,7 @@ if [ "$API_STATUS" != "200" ]; then
     else
         log "API recovered after restart."
         emit_event "recovered" "api recovered after restart" ""
+    fi
     fi
 fi
 
@@ -68,6 +96,10 @@ web_content_type() {
 WEB_STATUS=$(web_status)
 WEB_CT=$(web_content_type)
 if [ "$WEB_STATUS" != "200" ] || ! echo "$WEB_CT" | grep -qi "text/html"; then
+    if ! restart_allowed; then
+        log "Web unhealthy (status: $WEB_STATUS, content-type: $WEB_CT). Restart disabled or unapproved; emitting failure only."
+        emit_event "failed" "web unhealthy, restart disabled" "status=$WEB_STATUS ct=$WEB_CT"
+    else
     log "Web unhealthy (status: $WEB_STATUS, content-type: $WEB_CT). Restarting..."
     emit_event "recovering" "web unhealthy, restarting" "status=$WEB_STATUS ct=$WEB_CT"
     systemctl restart jetscope-web.service
@@ -80,6 +112,7 @@ if [ "$WEB_STATUS" != "200" ] || ! echo "$WEB_CT" | grep -qi "text/html"; then
     else
         log "Web recovered after restart."
         emit_event "recovered" "web recovered after restart" ""
+    fi
     fi
 fi
 
