@@ -65,6 +65,7 @@ def seeded_refresh_run(db_path: Path):
                         "market_scope": "statistical_series",
                         "confidence_score": 0.78,
                         "fallback_used": False,
+                        "error": "FRED delayed",
                     },
                     "carbon": {
                         "source": "cbam+ecb",
@@ -73,6 +74,9 @@ def seeded_refresh_run(db_path: Path):
                         "market_scope": "regulatory_proxy",
                         "confidence_score": 0.7,
                         "fallback_used": True,
+                        "note": "CBAM refreshed with ECB FX",
+                        "cbam_eur": 88.0,
+                        "usd_per_eur": 1.0923,
                     },
                     "jet_eu_proxy": {
                         "source": "brent-derived",
@@ -129,3 +133,19 @@ def test_snapshot_source_details_has_fallback_flag(client: TestClient, seeded_re
     fallback_flags = [bool(detail.get("fallback_used")) for detail in source_details.values() if isinstance(detail, dict)]
     assert fallback_flags, "expected non-empty fallback flags from source_details"
     assert all(isinstance(flag, bool) for flag in fallback_flags)
+
+
+def test_source_coverage_carries_display_supplements(client: TestClient, seeded_refresh_run):
+    response = client.get("/v1/sources/coverage")
+    assert response.status_code == 200
+    payload = response.json()
+
+    metrics = {metric["metric_key"]: metric for metric in payload["metrics"]}
+    carbon = metrics["carbon_proxy_usd_per_t"]
+
+    assert carbon["note"] == "CBAM refreshed with ECB FX"
+    assert carbon["cbam_eur"] == 88.0
+    assert carbon["usd_per_eur"] == 1.0923
+
+    jet = metrics["jet_usd_per_l"]
+    assert jet["error"] == "FRED delayed"

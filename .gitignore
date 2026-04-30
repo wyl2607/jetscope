@@ -80,3 +80,15 @@ CLAUDE.md
 GEMINI.md
 graphify-out/
 reports/pr-approval-gate/
+
+# Obsidian vaults and local-only bridge artifacts
+Obsidian/
+Documents/Obsidian*/
+.obsidian/
+obsidian-*.md
+obsidian-*.json
+obsidian-*.log
+obsidian-*.txt
+Obsidian_*.md
+30-AI-Ingest/
+workspace-project-index.md

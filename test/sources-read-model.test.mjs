@@ -169,7 +169,9 @@ test('getSourcesReadModel maps live coverage, volatility levels, and notes for t
                 fallback_used: true,
                 status: 'ok',
                 region: 'eu',
-                market_scope: 'regulatory_proxy'
+                market_scope: 'regulatory_proxy',
+                cbam_eur: 88,
+                usd_per_eur: 1.0923
               },
               {
                 metric_key: 'brent_usd_per_bbl',
@@ -191,7 +193,8 @@ test('getSourcesReadModel maps live coverage, volatility levels, and notes for t
                 fallback_used: false,
                 status: 'ok',
                 region: 'eu',
-                market_scope: 'physical_spot_rotterdam'
+                market_scope: 'physical_spot_rotterdam',
+                note: 'ARA direct quote'
               },
               // Backfilled by backend because upstream source_details is partial
               {
@@ -526,7 +529,7 @@ test('getSourcesReadModel backfills missing metrics when coverage is partial (5 
   assert.equal(germany?.fallback_used, true);
 });
 
-test('getSourcesReadModel treats source_details as display-only supplement', async (t) => {
+test('getSourcesReadModel uses coverage metric supplements instead of snapshot source_details', async (t) => {
   installEnv(t);
   installFetchStub(
     t,
@@ -549,7 +552,8 @@ test('getSourcesReadModel treats source_details as display-only supplement', asy
                 lag_minutes: 9999,
                 confidence_score: 0.01,
                 fallback_used: true,
-                note: 'Display note only'
+                note: 'Ignored snapshot note',
+                error: 'Ignored snapshot error'
               }
             }
           })
@@ -575,7 +579,9 @@ test('getSourcesReadModel treats source_details as display-only supplement', asy
                 fallback_used: false,
                 status: 'ok',
                 region: 'global',
-                market_scope: 'benchmark'
+                market_scope: 'benchmark',
+                note: 'Coverage note only',
+                error: 'Coverage error only'
               }
             ]
           })
@@ -592,5 +598,6 @@ test('getSourcesReadModel treats source_details as display-only supplement', asy
   assert.equal(readModel.rows[0].confidence, '0.95');
   assert.equal(readModel.rows[0].lag, '45m');
   assert.equal(readModel.rows[0].status, 'ok');
-  assert.equal(readModel.rows[0].note, 'Display note only');
+  assert.equal(readModel.rows[0].note, 'Coverage error only');
+  assert.equal(readModel.rows[0].degradedReason, 'Coverage error only');
 });

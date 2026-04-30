@@ -62,6 +62,10 @@ def build_source_coverage_response(db: Session) -> SourceCoverageResponse:
                 status=detail.status,
                 region=detail.region,
                 market_scope=detail.market_scope,
+                error=detail.error,
+                note=detail.note,
+                cbam_eur=detail.cbam_eur,
+                usd_per_eur=detail.usd_per_eur,
             )
         )
 
