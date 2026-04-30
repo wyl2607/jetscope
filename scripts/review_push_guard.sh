@@ -38,7 +38,7 @@ blocked=()
 credential_named=()
 for path in "${changed_files[@]}"; do
   case "$path" in
-    .env|*/.env|.env.local|*/.env.local|.envrc|*/.envrc|.env.*|*/.env.*|.automation/*|.omx/*|.guard/*|.next/*|apps/web/.next/*|apps/web/dist/*|*.tsbuildinfo|__pycache__/*|*/__pycache__/*|*.pyc|*.pyo|*.egg-info/*|.venv/*|apps/api/.venv/*|.pytest_cache/*|.ruff_cache/*|apps/api/data/*|data/local-preferences.json|data/market.db|infra/postgres-data/*|logs/*|webhook-logs/*|test-results/*|playwright-report/*|coverage/*|htmlcov/*|archive/*|docs/archive/*|*.log|*.tar.gz|*.zip)
+    .env|*/.env|.env.local|*/.env.local|.envrc|*/.envrc|.env.*|*/.env.*|.automation/*|.harness/*|.omx/*|.guard/*|.next/*|apps/web/.next/*|apps/web/dist/*|*.tsbuildinfo|__pycache__/*|*/__pycache__/*|*.pyc|*.pyo|*.egg-info/*|.venv/*|apps/api/.venv/*|.pytest_cache/*|.ruff_cache/*|apps/api/data/*|data/local-preferences.json|data/market.db|infra/postgres-data/*|logs/*|webhook-logs/*|test-results/*|playwright-report/*|coverage/*|htmlcov/*|archive/*|docs/archive/*|obsidian-audit-output/*|*.log|*.tar.gz|*.zip)
       case "$path" in
         .env.example|*/.env.example|.env.*.example|*/.env.*.example)
           ;;
