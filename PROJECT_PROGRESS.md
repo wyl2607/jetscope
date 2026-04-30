@@ -5,7 +5,7 @@
 
 ## Current State
 
-The workspace is moving from a powerful but drifting multi-AI development area toward a safer, traceable, handoff-ready local workstation. JetScope is now clean and aligned with `origin/main` after PR #41 and PR #42, while root governance/source history is being reconciled on top of the JetScope repository baseline.
+The workspace is moving from a powerful but drifting multi-AI development area toward a safer, traceable, handoff-ready local workstation. JetScope is clean and aligned with `origin/main` after PR #41 and PR #42. Root governance/source history is being reconciled on top of the JetScope repository baseline, with root pushes blocked until an explicit branch/PR decision.
 
 ## Project Dashboard
 
@@ -31,12 +31,10 @@ The workspace is moving from a powerful but drifting multi-AI development area t
 - Closed the tools/automation Phase F dry-run loop for OpenCode-discovered work: four discovery drafts were imported into dev-control, advanced to `planned` with `plan` approval only, and validated through the full-chain dry-run path. No push, PR, merge, deploy, remote mutation, or real execute-local approval was performed.
 - Added Phase F Telegram preview-only control surfaces in tools/automation: `/bug_discovery_preview`, `/task_loop_plan`, `phasef:bug`, and `phasef:processor`. No import/apply/execute-local/Git/remote mutation was performed.
 - Created and extended `/Users/yumei/PLANS.md` as the optimization plan and backlog.
-- Created `/Users/yumei/PROJECT_PROGRESS.md` as the root workspace dashboard.
 - Closed JetScope local baseline: strengthened ignore rules, aligned release entrypoint documentation, aligned node-sync excludes with local/sensitive ignore rules, added project progress/incident entrypoints, and verified API compile, node tests, web typecheck, script syntax, traceability coverage, and independent reviews.
 - Classified ESG Toolkit local-only artifacts and updated guard policy for git-ignored scratch routers.
-- Wrote session trace entries for JetScope and ESG Toolkit cleanup work.
 - Refreshed AI systems registry and created Windows/OpenCode handoff guides for parallel development.
-- Restored the daily AI tools check chain by recreating `/Users/yumei/scripts/daily_ai_tools_update_check.py` and `/Users/yumei/scripts/ops_hub.sh`.
+- Restored the daily AI tools check chain by recreating `/Users/yumei/scripts/daily_ai_tools_update_check.py` and `/Users/yumei/scripts/ops_hub.sh`; `ops_hub.sh run-profile daily` refreshes the registry, regenerates the AI tools report, and writes an ops daily journal.
 - Fixed project traceability coverage across `projects/*` and classified `machine-label-ocr` as a standalone nested Git project outside `projects/`.
 
 ## Root Source/Runtime Classification Update
@@ -56,8 +54,8 @@ Do not commit/push Obsidian reports or vault-derived outputs. Do not run Obsidia
 
 - Root `/Users/yumei` shares the JetScope Git remote but also carries local workspace governance commits. Root reconciliation must preserve local-only boundaries and must not push blindly.
 - Root remote history contains many JetScope application commits; root local commits add governance/source files on top. Treat pushes from root as blocked unless a separate branch/PR plan is approved.
-- Root `/Users/yumei` is still a Git repo, but `.gitignore` now hides home/config/runtime project surfaces such as `projects/`, `tools/automation/runtime/`, `.Trash/`, `.cc-switch*`, `.gitconfig`, `.viminfo`, AI runtime state, and deploy config. Treat remaining visible files as explicit governance/source candidates only.
-- Root `scripts/README.md` now describes root workspace operations instead of stale JetScope project scripts.
+- Root `.gitignore` hides home/config/runtime project surfaces such as `projects/`, `machine-label-ocr/`, `tools/automation/runtime/`, `.Trash/`, `.cc-switch*`, `.gitconfig`, `.viminfo`, AI runtime state, and deploy config. Treat remaining visible files as explicit governance/source candidates only.
+- Root `scripts/README.md` describes root workspace operations instead of JetScope project scripts.
 - AI tools daily report refreshes locally, accepts local-file-only alerting by policy, writes a local-file fallback alert, and can send external alerts through HTTPS webhook or Telegram when env vars are configured.
 - Windows daily inventory uses a native PowerShell SSH probe and reports Windows tool versions plus disk/memory data.
 - `/Users/yumei/scripts/ai_cluster_preflight.py` is still missing; `daily-runner.sh` logs this and continues with the existing `.omx/cluster/ai-cluster-status.json` snapshot.
@@ -90,6 +88,27 @@ Do not commit/push Obsidian reports or vault-derived outputs. Do not run Obsidia
 - `python3 -m py_compile /Users/yumei/scripts/internal_device_update_orchestrator.py` passed.
 - `bash -n /Users/yumei/scripts/ops_hub.sh` passed.
 - `python3 /Users/yumei/scripts/internal_device_update_orchestrator.py --targets local --dry-run --print-json` passed without executing updates.
+
+## 2026-04-30 Obsidian Local Bridge
+
+### Completed
+
+- Added a local-only Obsidian bridge policy at `docs/obsidian-local-bridge.md`.
+- Added `scripts/obsidian_workspace_bridge.py`, a one-way project-index generator for the local vault.
+- Extended root ignore rules so Obsidian vaults, generated ingest notes, diagnostics, logs, and bridge output stay out of GitHub and remote sync surfaces.
+
+### Boundary
+
+- The bridge writes only workspace/project metadata into `/Users/yumei/Obsidian/MyKnowledgeVault/30-AI-Ingest/workspace-project-index.md`.
+- No vault note bodies, `.obsidian/` config, env files, logs, or generated ingest state should be copied into project source.
+- Project-level `.gitignore` files keep their own Obsidian/vault exclusions where those projects have independent Git repositories.
+
+### Source/Local Classification
+
+- Source candidates: `docs/obsidian-local-bridge.md`, `scripts/obsidian_workspace_bridge.py`, `scripts/obsidian_vault_audit.py`, and `scripts/obsidian_vault_repair_plan.py`.
+- Generated/local-only: `obsidian-audit-output/`, Obsidian vault paths, generated ingest notes, vault diagnostics, and bridge output.
+- `scripts/opencode-model-resolver.py` is a root source candidate only if the root workspace keeps shared OpenCode helpers here; otherwise move it into `tools/automation/scripts/` in a later bounded task.
+- Do not publish or sync vault-derived reports before privacy review; audit reports may contain note titles, paths, tags, links, and excerpts.
 
 ## Next Queue
 

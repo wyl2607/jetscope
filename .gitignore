@@ -104,6 +104,9 @@ tools/automation/scripts/*
 !tools/automation/scripts/next-action-recommender.py
 tools/automation/runtime/
 yumei/
+tools/automation/runtime/task-board/
+tools/automation/runtime/task-board-validation/
+tools/automation/runtime/task-board-validation-telegram/
 
 # Obsidian vaults and local-only bridge artifacts
 Obsidian/

@@ -14,6 +14,8 @@ This directory contains `/Users/yumei` workspace-level governance and operations
 - `daily_ai_tools_update_check.py`: read-only AI tool and node health report generator. It probes local/remote tool versions, applies VPS policy checks, writes local runtime reports under `tools/automation/runtime/`, and does not remediate state.
 - `ops_hub.sh`: local orchestration wrapper for daily/weekly profiles. The default daily profile refreshes the AI systems registry, runs the daily AI tools check, and writes an ops journal.
 - `internal_device_update_orchestrator.py`: high-risk AI tool updater for internal devices. Use `--dry-run` for review; real update runs can change local or remote tool installations and require explicit approval. VPS targets are blocked unless both `--include-vps` and `ALLOW_VPS_AI_TOOL_INSTALL=1` are set after approval.
+- `opencode-model-resolver.py`: read-only local helper that resolves the first preferred OpenCode model from `~/.config/opencode/opencode.json`; it does not write config or contact providers.
+- `obsidian_workspace_bridge.py`: local-only one-way bridge that writes a workspace project index into the local Obsidian vault. It does not read vault note contents or copy vault files into repositories.
 - `probe-gpt55-authenticity.sh`: relay anti-spoof probe for `gpt-5.5` using Responses API behavior, negative controls, sampling, and optional official OpenAI A/B comparison.
 - Obsidian helper scripts are local/private source candidates. They default to dry-run and must not be run with `--apply` without explicit approval.
 
@@ -23,6 +25,8 @@ This directory contains `/Users/yumei` workspace-level governance and operations
 python3 /Users/yumei/scripts/daily_ai_tools_update_check.py
 bash /Users/yumei/scripts/ops_hub.sh run-profile daily
 python3 /Users/yumei/scripts/internal_device_update_orchestrator.py --targets local --dry-run --print-json
+python3 /Users/yumei/scripts/opencode-model-resolver.py --self-test
+python3 /Users/yumei/scripts/obsidian_workspace_bridge.py --dry-run
 bash /Users/yumei/scripts/probe-gpt55-authenticity.sh --help
 ```
 
@@ -45,6 +49,7 @@ Run them only after confirming the intended target set and approval boundary.
 - AI tools reports: `tools/automation/runtime/ai-tools-update-check/`
 - Internal device update reports: `tools/automation/runtime/internal-device-updates/`
 - Ops daily journal: `tools/automation/runtime/ops-daily-journal/`
+- Obsidian project index: `/Users/yumei/Obsidian/MyKnowledgeVault/30-AI-Ingest/workspace-project-index.md`
 - GPT probe reports: `gpt55-probe-report-*.json` in the current working directory unless `--out` is provided.
 - Obsidian audit/repair reports: `obsidian-audit-output/`
 
