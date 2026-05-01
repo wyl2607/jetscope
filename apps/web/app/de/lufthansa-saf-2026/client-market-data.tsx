@@ -18,31 +18,42 @@ export default function ClientMarketData() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     fetch('/api/market')
       .then(r => {
         if (!r.ok) throw new Error(`market HTTP ${r.status}`);
         return r.json() as Promise<MarketSnapshot>;
       })
-      .then(async (marketSnapshot) => {
-        const sourceCoverage = await fetch('/api/sources')
+      .then((marketSnapshot) => {
+        if (!isMounted) return;
+        setData(marketSnapshot);
+        setLoading(false);
+
+        fetch('/api/sources')
           .then(r => {
             if (!r.ok) return null;
             return r.json() as Promise<SourceCoverageResponse>;
           })
-          .catch(() => null);
-
-        setData(marketSnapshot);
-        setCoverageByMetric(
-          Object.fromEntries(
-            (sourceCoverage?.metrics ?? []).map((metric) => [metric.metric_key, metric])
-          )
-        );
-        setLoading(false);
+          .then((sourceCoverage) => {
+            if (!isMounted) return;
+            setCoverageByMetric(
+              Object.fromEntries(
+                (sourceCoverage?.metrics ?? []).map((metric) => [metric.metric_key, metric])
+              )
+            );
+          })
+          .catch(() => {});
       })
       .catch(e => {
+        if (!isMounted) return;
         setError(e.message);
         setLoading(false);
       });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   if (loading) {

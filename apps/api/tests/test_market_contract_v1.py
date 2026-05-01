@@ -65,7 +65,7 @@ def seeded_refresh_run(db_path: Path):
                         "market_scope": "statistical_series",
                         "confidence_score": 0.78,
                         "fallback_used": False,
-                        "error": "FRED delayed",
+                        "error": "FRED delayed: https://internal.example/token=secret",
                     },
                     "carbon": {
                         "source": "cbam+ecb",
@@ -135,6 +135,16 @@ def test_snapshot_source_details_has_fallback_flag(client: TestClient, seeded_re
     assert all(isinstance(flag, bool) for flag in fallback_flags)
 
 
+def test_snapshot_source_details_errors_are_public_safe(client: TestClient, seeded_refresh_run):
+    response = client.get("/v1/market/snapshot")
+    assert response.status_code == 200
+    payload = response.json()
+
+    jet = payload["source_details"]["jet"]
+    assert jet["error"] == "source_unavailable"
+    assert "internal.example" not in str(payload["source_details"])
+
+
 def test_source_coverage_carries_display_supplements(client: TestClient, seeded_refresh_run):
     response = client.get("/v1/sources/coverage")
     assert response.status_code == 200
@@ -148,4 +158,5 @@ def test_source_coverage_carries_display_supplements(client: TestClient, seeded_
     assert carbon["usd_per_eur"] == 1.0923
 
     jet = metrics["jet_usd_per_l"]
-    assert jet["error"] == "FRED delayed"
+    assert jet["error"] == "source_unavailable"
+    assert "internal.example" not in str(jet)

@@ -32,6 +32,11 @@ test('German Lufthansa page uses source coverage instead of legacy snapshot sour
     source.includes("fetch('/api/sources')"),
     'Lufthansa DE market cards should read canonical source coverage'
   );
+  assert.match(
+    source,
+    /setData\(marketSnapshot\);\s*setLoading\(false\);\s*fetch\('\/api\/sources'\)/s,
+    'Lufthansa DE market values should render before source coverage finishes'
+  );
   assert.ok(
     source.includes('SourceCoverageMetric'),
     'Lufthansa DE market cards should type provenance details with SourceCoverageMetric'
