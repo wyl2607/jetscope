@@ -6,6 +6,25 @@
 - Scope: JetScope web/API workspace, local data ignores, traceability entrypoint, release approval gates, token replay protection, and worker/VPS sync boundaries.
 - Release entrypoint: `APPROVE_JETSCOPE_RELEASE=<token> npm run release -- --approval-token <token>` after `source scripts/jetscope-env`; development worker sync is opt-in.
 
+## 2026-04-30 German Lufthansa Source Coverage Cleanup
+
+### Completed
+
+- Updated `apps/web/app/de/lufthansa-saf-2026/client-market-data.tsx` so market card provenance comes from canonical `/api/sources` coverage metrics rather than legacy `market_snapshot.source_details`.
+- Kept market values on `/api/market` and made source coverage fetch failure degrade gracefully without hiding the market card values.
+- Added a regression contract in `test/proxy-route-contract.test.mjs` that requires the page to read `/api/sources` and forbids `source_details` dependency.
+
+### Verification
+
+- `node --experimental-strip-types --test test/proxy-route-contract.test.mjs` passed: 2 tests.
+- `npm test` passed: 54 tests.
+- `npm run web:typecheck` passed.
+- `git diff --check -- apps/web/app/de/lufthansa-saf-2026/client-market-data.tsx test/proxy-route-contract.test.mjs PROJECT_PROGRESS.md` passed.
+
+### Boundary
+
+- No push, PR, merge, deploy, worker sync, VPS mutation, launchctl action, or secret access was performed.
+
 ## 2026-04-29 Source Coverage Supplement Review
 
 ### Completed

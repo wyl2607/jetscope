@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const APP_API_DIR = new URL('../apps/web/app/api/', import.meta.url);
+const LUFTHANSA_DE_PAGE = new URL('../apps/web/app/de/lufthansa-saf-2026/client-market-data.tsx', import.meta.url);
 
 const PROXY_ROUTES = [
   ['market/route.ts', "proxyToApi(request, '/market/snapshot')"],
@@ -22,4 +23,22 @@ test('web API proxy routes map to concrete FastAPI endpoints', async () => {
       `${relativePath} should include ${expectedProxyCall}`
     );
   }
+});
+
+test('German Lufthansa page uses source coverage instead of legacy snapshot source_details', async () => {
+  const source = await readFile(LUFTHANSA_DE_PAGE, 'utf8');
+
+  assert.ok(
+    source.includes("fetch('/api/sources')"),
+    'Lufthansa DE market cards should read canonical source coverage'
+  );
+  assert.ok(
+    source.includes('SourceCoverageMetric'),
+    'Lufthansa DE market cards should type provenance details with SourceCoverageMetric'
+  );
+  assert.doesNotMatch(
+    source,
+    /\bsource_details\b/,
+    'Lufthansa DE market cards must not depend on market_snapshot.source_details'
+  );
 });

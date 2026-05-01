@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { SourceCoverageMetric, SourceCoverageResponse } from '@/lib/source-coverage-contract';
 
 interface MarketSnapshot {
   generated_at: string;
@@ -8,28 +9,34 @@ interface MarketSnapshot {
     overall: string;
   };
   values: Record<string, number>;
-  source_details: Record<string, {
-    source: string;
-    status: string;
-    value: number | null;
-    region?: string;
-    confidence_score?: number;
-  }>;
 }
 
 export default function ClientMarketData() {
   const [data, setData] = useState<MarketSnapshot | null>(null);
+  const [coverageByMetric, setCoverageByMetric] = useState<Record<string, SourceCoverageMetric>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/market')
       .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
+        if (!r.ok) throw new Error(`market HTTP ${r.status}`);
+        return r.json() as Promise<MarketSnapshot>;
       })
-      .then((d: MarketSnapshot) => {
-        setData(d);
+      .then(async (marketSnapshot) => {
+        const sourceCoverage = await fetch('/api/sources')
+          .then(r => {
+            if (!r.ok) return null;
+            return r.json() as Promise<SourceCoverageResponse>;
+          })
+          .catch(() => null);
+
+        setData(marketSnapshot);
+        setCoverageByMetric(
+          Object.fromEntries(
+            (sourceCoverage?.metrics ?? []).map((metric) => [metric.metric_key, metric])
+          )
+        );
         setLoading(false);
       })
       .catch(e => {
@@ -86,31 +93,31 @@ export default function ClientMarketData() {
           label="Brent"
           value={`$${brent.toFixed(2)}`}
           unit="USD/bbl"
-          detail={data.source_details.brent}
+          detail={coverageByMetric.brent_usd_per_bbl}
         />
         <MetricCard
           label="Jet EU"
           value={`$${jetEu.toFixed(3)}`}
           unit="USD/L"
-          detail={data.source_details.jet_eu_proxy ?? data.source_details.jet_eu_proxy_usd_per_l}
+          detail={coverageByMetric.jet_eu_proxy_usd_per_l}
         />
         <MetricCard
           label="Rotterdam"
           value={`$${rotterdam.toFixed(3)}`}
           unit="USD/L"
-          detail={data.source_details.rotterdam_jet_fuel}
+          detail={coverageByMetric.rotterdam_jet_fuel_usd_per_l}
         />
         <MetricCard
           label="EU ETS"
           value={`€${euEts.toFixed(2)}`}
           unit="EUR/tCO₂"
-          detail={data.source_details.eu_ets ?? data.source_details.eu_ets_price_eur_per_t}
+          detail={coverageByMetric.eu_ets_price_eur_per_t}
         />
         <MetricCard
           label="DE Premium"
           value={`+${germanyPremium.toFixed(1)}%`}
           unit="auf Jet"
-          detail={data.source_details.germany_premium ?? data.source_details.germany_premium_pct}
+          detail={coverageByMetric.germany_premium_pct}
           highlight
         />
       </div>
@@ -126,11 +133,12 @@ function MetricCard({ label, value, unit, detail, highlight }: {
   label: string;
   value: string;
   unit: string;
-  detail?: { status?: string; confidence_score?: number };
+  detail?: SourceCoverageMetric;
   highlight?: boolean;
 }) {
-  const statusColor = detail?.status === 'ok' ? 'border-green-800/50' :
-    detail?.status === 'fallback' ? 'border-yellow-800/50' :
+  const statusColor = detail?.fallback_used || detail?.status === 'seed' ? 'border-yellow-800/50' :
+    detail?.status === 'ok' ? 'border-green-800/50' :
+    detail ? 'border-red-800/50' :
     'border-slate-800';
 
   return (
