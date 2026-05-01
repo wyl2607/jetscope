@@ -50,21 +50,6 @@ New or currently visible source candidates:
 
 Do not commit/push Obsidian reports or vault-derived outputs. Do not run Obsidian helpers with `--apply` without explicit approval.
 
-## Root Source/Runtime Classification Update
-
-As of the 2026-04-30 classification pass, the root `/Users/yumei` Git boundary remains intentionally narrow. The newly visible untracked root scripts reviewed in that pass were:
-
-- `scripts/obsidian_vault_inbox_stub_cleanup.py`: source candidate for local Obsidian vault cleanup. It defaults to dry-run, writes manifests/summaries under `/Users/yumei/obsidian-audit-output`, and only mutates the vault when `--apply` is explicitly passed. Treat as local/private tooling unless a privacy review approves sharing.
-- `scripts/obsidian_vault_inbox_topic_route.py`: source candidate for local Obsidian 0-INBOX topic routing. It defaults to dry-run, writes manifests/summaries under `/Users/yumei/obsidian-audit-output`, and only moves vault notes when `--apply` is explicitly passed. Treat as local/private tooling unless a privacy review approves sharing.
-
-Current root boundary:
-
-- Root source/governance candidates: tracked JetScope/product files, root `AGENTS.md`, `PLANS.md`, `PROJECT_PROGRESS.md`, `README.md`, `OPERATIONS.md`, `.gitignore`, `docs/obsidian-local-bridge.md`, and reviewed scripts under `scripts/`.
-- Local-only/generated: `obsidian-audit-output/`, Obsidian vault paths, `.env*`, AI tool state (`.codex/`, `.claude/`, `.opencode/`, `.omx/`, `.agents/`), runtime ledgers under `tools/automation/runtime/`, caches, backups, and root `projects/` snapshots.
-- High-risk source candidates: sync/deploy/release scripts, `scripts/internal_device_update_orchestrator.py`, Obsidian vault cleanup/apply scripts, and any script that can move user vault files or mutate remote/shared state.
-
-Do not commit/push the two new Obsidian inbox scripts until their local-only/privacy classification is explicitly accepted and their dry-run behavior is verified. Do not run them with `--apply` without explicit approval.
-
 ## Current Blockers
 
 - Root `/Users/yumei` shares the JetScope Git remote but also carries local workspace governance commits. Root reconciliation must preserve local-only boundaries and must not push blindly.
@@ -99,10 +84,19 @@ Do not commit/push the two new Obsidian inbox scripts until their local-only/pri
 - `python3 /Users/yumei/tools/automation/scripts/task-similar-dedup.py --self-test` passed.
 - `python3 /Users/yumei/tools/automation/scripts/next-action-recommender.py --self-test` passed.
 - `/Users/yumei/tools/automation/scripts/automationctl validate` passed after the local dedup fix.
+- `python3 /Users/yumei/tools/automation/scripts/refresh_ai_systems_registry.py --write` passed.
+- `/Users/yumei/tools/automation/workspace-guides/ai-systems-registry.json` updated to 2026-04-24.
+- `/Users/yumei/scripts/daily_ai_tools_update_check.py`, `/Users/yumei/scripts/internal_device_update_orchestrator.py`, and `/Users/yumei/scripts/ops_hub.sh` are classified as root workspace source candidates.
 - `python3 -m py_compile /Users/yumei/scripts/daily_ai_tools_update_check.py` passed.
 - `python3 -m py_compile /Users/yumei/scripts/internal_device_update_orchestrator.py` passed.
 - `bash -n /Users/yumei/scripts/ops_hub.sh` passed.
 - `python3 /Users/yumei/scripts/internal_device_update_orchestrator.py --targets local --dry-run --print-json` passed without executing updates.
+- `python3 /Users/yumei/scripts/daily_ai_tools_update_check.py` passed with `overall=ok` at `20260425-095130`.
+- `bash /Users/yumei/scripts/probe-gpt55-authenticity.sh --help` passed.
+- `bash /Users/yumei/scripts/ops_hub.sh run-profile daily` passed and generated local runtime reports under `tools/automation/runtime/`.
+- Windows-native PowerShell probe is verified in the latest report: `windows-pc` is online with Windows tool inventory and disk usage.
+- Local-file fallback alert is generated under `tools/automation/runtime/ai-tools-update-check/alerts/`; external alert delivery supports HTTPS webhook or Telegram env vars without persisting tokens.
+- Workspace automation validation covers daily check, ops hub, generated reports, Windows probe, alert policy, ops journal, auto-refactor Python compatibility, high-risk shell syntax, and Windows handbook reachability.
 
 ## 2026-04-30 Obsidian Local Bridge
 
