@@ -50,6 +50,21 @@ New or currently visible source candidates:
 
 Do not commit/push Obsidian reports or vault-derived outputs. Do not run Obsidian helpers with `--apply` without explicit approval.
 
+## Root Source/Runtime Classification Update
+
+As of the 2026-04-30 classification pass, the root `/Users/yumei` Git boundary remains intentionally narrow. The newly visible untracked root scripts reviewed in that pass were:
+
+- `scripts/obsidian_vault_inbox_stub_cleanup.py`: source candidate for local Obsidian vault cleanup. It defaults to dry-run, writes manifests/summaries under `/Users/yumei/obsidian-audit-output`, and only mutates the vault when `--apply` is explicitly passed. Treat as local/private tooling unless a privacy review approves sharing.
+- `scripts/obsidian_vault_inbox_topic_route.py`: source candidate for local Obsidian 0-INBOX topic routing. It defaults to dry-run, writes manifests/summaries under `/Users/yumei/obsidian-audit-output`, and only moves vault notes when `--apply` is explicitly passed. Treat as local/private tooling unless a privacy review approves sharing.
+
+Current root boundary:
+
+- Root source/governance candidates: tracked JetScope/product files, root `AGENTS.md`, `PLANS.md`, `PROJECT_PROGRESS.md`, `README.md`, `OPERATIONS.md`, `.gitignore`, `docs/obsidian-local-bridge.md`, and reviewed scripts under `scripts/`.
+- Local-only/generated: `obsidian-audit-output/`, Obsidian vault paths, `.env*`, AI tool state (`.codex/`, `.claude/`, `.opencode/`, `.omx/`, `.agents/`), runtime ledgers under `tools/automation/runtime/`, caches, backups, and root `projects/` snapshots.
+- High-risk source candidates: sync/deploy/release scripts, `scripts/internal_device_update_orchestrator.py`, Obsidian vault cleanup/apply scripts, and any script that can move user vault files or mutate remote/shared state.
+
+Do not commit/push the two new Obsidian inbox scripts until their local-only/privacy classification is explicitly accepted and their dry-run behavior is verified. Do not run them with `--apply` without explicit approval.
+
 ## Current Blockers
 
 - Root `/Users/yumei` shares the JetScope Git remote but also carries local workspace governance commits. Root reconciliation must preserve local-only boundaries and must not push blindly.

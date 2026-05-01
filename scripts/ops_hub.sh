@@ -11,12 +11,18 @@ usage() {
 Usage:
   bash /Users/yumei/scripts/ops_hub.sh ai-tools check
   bash /Users/yumei/scripts/ops_hub.sh ai-tools update [-- script args]
+  bash /Users/yumei/scripts/ops_hub.sh ai-tools update -- --targets windows-pc
+  bash /Users/yumei/scripts/ops_hub.sh ai-tools update -- --targets coco --install-coco-system-updates
+  bash /Users/yumei/scripts/ops_hub.sh ai-tools update -- --targets mac-mini --install-macos-system-updates
   bash /Users/yumei/scripts/ops_hub.sh run-profile daily
   bash /Users/yumei/scripts/ops_hub.sh run-profile weekly
   bash /Users/yumei/scripts/ops_hub.sh run-profile ai-tools-update
   bash /Users/yumei/scripts/ops_hub.sh run-profile ai-tools-update -- --targets windows-pc --dry-run
 
 Profiles are local orchestration wrappers. They do not remediate remote state.
+Default ai-tools update targets are local, mac-mini, and coco. Windows is opt-in.
+System update flags are non-default and may affect remote availability or require reboot.
+VPS nodes are blocked for AI tool installs by policy.
 EOF
 }
 

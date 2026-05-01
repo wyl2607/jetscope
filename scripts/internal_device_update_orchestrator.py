@@ -14,7 +14,9 @@ Default targets:
 - local
 - mac-mini
 - coco
-- windows-pc
+
+Windows is intentionally opt-in because it is often offline and can otherwise
+turn routine local/mac-mini/coco updates into SSH timeout failures.
 """
 from __future__ import annotations
 
@@ -35,7 +37,7 @@ WORKSPACE_ROOT = Path(os.environ.get("WORKSPACE_ROOT", "/Users/yumei")).expandus
 AUTOMATION = WORKSPACE_ROOT / "tools" / "automation"
 OUT_ROOT = AUTOMATION / "runtime" / "internal-device-updates"
 
-DEFAULT_TARGETS = ["local", "mac-mini", "coco", "windows-pc"]
+DEFAULT_TARGETS = ["local", "mac-mini", "coco"]
 
 NPM_CORE_AI_PACKAGES = [
     "@anthropic-ai/claude-code@latest",
@@ -335,13 +337,13 @@ def truthy_env(name: str) -> bool:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Parallel internal-device AI tool updater")
-    parser.add_argument("--targets", default=",".join(DEFAULT_TARGETS), help="Comma-separated targets (local,mac-mini,coco,windows-pc)")
+    parser.add_argument("--targets", default=",".join(DEFAULT_TARGETS), help="Comma-separated targets. Default: local,mac-mini,coco. Add windows-pc explicitly when it is online.")
     parser.add_argument("--max-workers", type=int, default=3, help="Parallel worker count")
     parser.add_argument("--agent-lanes", type=int, help="Alias of --max-workers (for multi-agent lane wording)")
     parser.add_argument("--dry-run", action="store_true", help="Plan only, execute nothing")
     parser.add_argument("--verify-after", action="store_true", help="Run daily_ai_tools_update_check.py after updates")
-    parser.add_argument("--install-macos-system-updates", action="store_true", help="Install all pending macOS system updates on mac-mini")
-    parser.add_argument("--install-coco-system-updates", action="store_true", help="Run apt full-upgrade on coco (requires passwordless sudo)")
+    parser.add_argument("--install-macos-system-updates", action="store_true", help="Install all pending macOS system updates on mac-mini; system-level, non-default, may require reboot")
+    parser.add_argument("--install-coco-system-updates", action="store_true", help="Run apt update/upgrade/autoremove/autoclean on coco; system-level, non-default, requires passwordless sudo")
     parser.add_argument("--include-vps", action="store_true", help="Reserved safety gate; VPS targets remain unsupported unless ALLOW_VPS_AI_TOOL_INSTALL=1")
     parser.add_argument("--timeout-mac-tools", type=int, default=1800)
     parser.add_argument("--timeout-local-tools", type=int, default=1800)
