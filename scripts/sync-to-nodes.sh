@@ -138,6 +138,10 @@ blocked=(
   "infra/postgres-data"
   "logs"
   "webhook-logs"
+  "Obsidian"
+  ".obsidian"
+  "30-AI-Ingest"
+  "workspace-project-index.md"
 )
 hits=()
 for item in "${blocked[@]}"; do
@@ -148,6 +152,9 @@ done
 while IFS= read -r env_file; do
   [ -n "$env_file" ] && hits+=("${env_file#"$root/"}")
 done < <(find "$root" -type f -name '.env.*' ! -name '.env.example' ! -name '*.example' 2>/dev/null || true)
+while IFS= read -r local_only_path; do
+  [ -n "$local_only_path" ] && hits+=("${local_only_path#"$root/"}")
+done < <(find "$root" \( -path "$root/Documents/Obsidian*" -o -name '.obsidian' -o -name '30-AI-Ingest' -o -name 'obsidian-*.md' -o -name 'obsidian-*.json' -o -name 'obsidian-*.log' -o -name 'obsidian-*.txt' -o -name 'Obsidian_*.md' \) 2>/dev/null || true)
 if [ "${#hits[@]}" -gt 0 ]; then
   printf 'Blocked paths remain after sync:\n' >&2
   printf '  %s\n' "${hits[@]}" >&2
@@ -201,7 +208,7 @@ if [ "$RUN_WINDOWS" -eq 1 ]; then
     tar -czf "$TAR_FILE" "${SYNC_EXCLUDES[@]}" .
     if scp "$TAR_FILE" windows-pc:C:/Users/wyl26/jetscope/ \
       && ssh windows-pc "cd C:\Users\wyl26\jetscope; tar -xzf jetscope-windows.tar.gz; Remove-Item jetscope-windows.tar.gz" \
-      && ssh windows-pc "\$root = 'C:\Users\wyl26\jetscope'; \$blocked = @('.env','.env.local','.envrc','.omx','.automation','apps\\api\\data','data\\local-preferences.json','data\\market.db','infra\\postgres-data','logs','webhook-logs','.guard'); \$hits = @(); foreach (\$item in \$blocked) { if (Test-Path (Join-Path \$root \$item)) { \$hits += \$item } }; \$envHits = @(Get-ChildItem -LiteralPath \$root -Force -Recurse -File -Filter '.env.*' -ErrorAction SilentlyContinue | Where-Object { \$_.Name -ne '.env.example' -and \$_.Name -notlike '*.example' } | ForEach-Object { \$_.FullName.Substring(\$root.Length).TrimStart('\\') }); \$hits += \$envHits; if (\$hits.Count -gt 0) { Write-Error ('Blocked paths remain after sync: ' + ((\$hits | Sort-Object -Unique) -join ', ')); exit 1 }"; then
+      && ssh windows-pc "\$root = 'C:\Users\wyl26\jetscope'; \$blocked = @('.env','.env.local','.envrc','.omx','.automation','apps\\api\\data','data\\local-preferences.json','data\\market.db','infra\\postgres-data','logs','webhook-logs','.guard','Obsidian','.obsidian','30-AI-Ingest','workspace-project-index.md'); \$hits = @(); foreach (\$item in \$blocked) { if (Test-Path (Join-Path \$root \$item)) { \$hits += \$item } }; \$envHits = @(Get-ChildItem -LiteralPath \$root -Force -Recurse -File -Filter '.env.*' -ErrorAction SilentlyContinue | Where-Object { \$_.Name -ne '.env.example' -and \$_.Name -notlike '*.example' } | ForEach-Object { \$_.FullName.Substring(\$root.Length).TrimStart('\\') }); \$localOnlyHits = @(Get-ChildItem -LiteralPath \$root -Force -Recurse -ErrorAction SilentlyContinue | Where-Object { \$_.FullName -like (Join-Path \$root 'Documents\\Obsidian*') -or \$_.Name -eq '.obsidian' -or \$_.Name -eq '30-AI-Ingest' -or \$_.Name -like 'obsidian-*.md' -or \$_.Name -like 'obsidian-*.json' -or \$_.Name -like 'obsidian-*.log' -or \$_.Name -like 'obsidian-*.txt' -or \$_.Name -like 'Obsidian_*.md' } | ForEach-Object { \$_.FullName.Substring(\$root.Length).TrimStart('\\') }); \$hits += \$envHits; \$hits += \$localOnlyHits; if (\$hits.Count -gt 0) { Write-Error ('Blocked paths remain after sync: ' + ((\$hits | Sort-Object -Unique) -join ', ')); exit 1 }"; then
       rm -f "$TAR_FILE"
       trap - EXIT
       end=$(date +%s)

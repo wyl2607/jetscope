@@ -13,6 +13,10 @@ class SourceCoverageMetric(BaseModel):
     status: str
     region: str
     market_scope: str
+    error: str | None = None
+    note: str | None = None
+    cbam_eur: float | None = None
+    usd_per_eur: float | None = None
 
 
 class SourceCoverageResponse(BaseModel):

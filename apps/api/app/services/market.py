@@ -310,6 +310,16 @@ def _set_source_detail(
     details["sources"][metric_name] = source_detail
 
 
+def _public_source_error(status: str, fallback_used: bool, error: object | None) -> str | None:
+    if error is None:
+        return None
+    if fallback_used:
+        return "fallback_used"
+    if status == "seed":
+        return "seed_used"
+    return "source_unavailable"
+
+
 def _ingest_brent_market_value(details: dict[str, object]) -> float | None:
     brent_value = None
     try:
@@ -829,7 +839,11 @@ def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
             source=source_name,
             status=str(raw.get("status", "unknown")),
             value=float(raw["value"]) if raw.get("value") is not None else None,
-            error=str(raw["error"]) if raw.get("error") is not None else None,
+            error=_public_source_error(
+                str(raw.get("status", "unknown")),
+                bool(raw.get("fallback_used", False)),
+                raw.get("error"),
+            ),
             note=str(raw.get("note") or context["note"]),
             region=str(raw.get("region") or context["region"]),
             market_scope=str(raw.get("market_scope") or context["market_scope"]),

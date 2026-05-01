@@ -5,7 +5,6 @@ type MarketSnapshot = {
   generated_at: string;
   source_status: { overall: string };
   values: Record<string, number>;
-  source_details?: Record<string, DisplaySupplement>;
 };
 
 type MarketHistoryMetric = {
@@ -75,22 +74,6 @@ const PRIMARY_METRIC_ORDER = [
   'eu_ets_price_eur_per_t',
   'germany_premium_pct'
 ] as const;
-
-// LEGACY DISPLAY-ONLY BRIDGE — temporary mapping from canonical metric_key
-// to the legacy source_detail key used in MarketSnapshot.source_details.
-// This bridge is DISPLAY-ONLY. It must never be used for source/scope/status/
-// confidence/lag decisions. Those fields come from SourceCoverageMetric.
-// TODO: Remove once backend inlines display supplements (error, cbam_eur,
-// note, etc.) into SourceCoverageMetric.
-const SOURCE_DETAIL_KEY_BY_METRIC: Record<string, string> = {
-  brent_usd_per_bbl: 'brent',
-  jet_usd_per_l: 'jet',
-  carbon_proxy_usd_per_t: 'carbon',
-  jet_eu_proxy_usd_per_l: 'jet_eu_proxy',
-  rotterdam_jet_fuel_usd_per_l: 'rotterdam_jet_fuel',
-  eu_ets_price_eur_per_t: 'eu_ets',
-  germany_premium_pct: 'germany_premium'
-};
 
 const SURFACE_LABELS: Record<string, string> = {
   brent_usd_per_bbl: 'Brent',
@@ -214,39 +197,16 @@ function formatMetricValue(metricKey: string, value: number | undefined): string
   return `${formatNumber(Number(value), 3)} USD/L`;
 }
 
-// DISPLAY-ONLY SUPPLEMENT — fields that backend does not yet inline into
-// SourceCoverageMetric but are useful for note rendering only.
-// This type must never expand to include source/scope/status/confidence/lag.
-type DisplaySupplement = {
-  error?: string;
-  note?: string;
-  cbam_eur?: number;
-  usd_per_eur?: number;
-};
-
-function extractDisplaySupplement(snapshot: MarketSnapshot, metricKey: string): DisplaySupplement | null {
-  const detail = snapshot.source_details?.[metricKey] ?? snapshot.source_details?.[SOURCE_DETAIL_KEY_BY_METRIC[metricKey] ?? ''];
-  if (!detail) {
-    return null;
+function buildMetricNote(metric: SourceCoverageMetric): string {
+  if (metric.error) {
+    return metric.error;
   }
-  return {
-    error: detail.error,
-    note: detail.note,
-    cbam_eur: detail.cbam_eur,
-    usd_per_eur: detail.usd_per_eur
-  };
-}
-
-function buildMetricNote(metric: SourceCoverageMetric, supplement?: DisplaySupplement | null): string {
-  if (supplement?.error) {
-    return supplement.error;
-  }
-  if (typeof supplement?.cbam_eur === 'number' && typeof supplement.usd_per_eur === 'number') {
-    return `CBAM ${formatNumber(supplement.cbam_eur)} EUR × FX ${formatNumber(supplement.usd_per_eur, 4)}`;
+  if (typeof metric.cbam_eur === 'number' && typeof metric.usd_per_eur === 'number') {
+    return `CBAM ${formatNumber(metric.cbam_eur)} EUR × FX ${formatNumber(metric.usd_per_eur, 4)}`;
   }
   const parts: string[] = [];
-  if (supplement?.note) {
-    parts.push(supplement.note);
+  if (metric.note) {
+    parts.push(metric.note);
   }
   if (metric.fallback_used) {
     parts.push('fallback');
@@ -254,8 +214,8 @@ function buildMetricNote(metric: SourceCoverageMetric, supplement?: DisplaySuppl
   return parts.join(' | ') || 'live';
 }
 
-function degradedReasonFor(metric: SourceCoverageMetric, supplement?: DisplaySupplement | null): string {
-  if (supplement?.error) return supplement.error;
+function degradedReasonFor(metric: SourceCoverageMetric): string {
+  if (metric.error) return metric.error;
   if (metric.fallback_used && metric.status === 'seed') return 'seed fallback used because live coverage is not available';
   if (metric.fallback_used) return 'fallback path used for this metric';
   if (metric.status !== 'ok') return `source status is ${metric.status}`;
@@ -318,7 +278,6 @@ function buildRows(
 ): SourcesReadModel['rows'] {
   return coverageMetrics.map((metric) => {
     const historyMetric = metricHistoryFor(history, metric.metric_key);
-    const supplement = extractDisplaySupplement(snapshot, metric.metric_key);
     const snapshotValue = snapshot.values[metric.metric_key];
 
     return {
@@ -333,14 +292,14 @@ function buildRows(
       lagMinutes: Number.isFinite(metric.lag_minutes ?? NaN) ? Number(metric.lag_minutes) : null,
       status: statusLabel(metric.status),
       trustState: trustStateFor(metric),
-      degradedReason: degradedReasonFor(metric, supplement),
+      degradedReason: degradedReasonFor(metric),
       value: formatMetricValue(metric.metric_key, snapshotValue),
       change1d: formatChange(historyMetric?.change_pct_1d),
       change7d: formatChange(historyMetric?.change_pct_7d),
       change30d: formatChange(historyMetric?.change_pct_30d),
       alertLevel: computeAlertLevel(historyMetric),
       sparkline: encodeSparklinePoints(historyMetric?.points ?? []),
-      note: buildMetricNote(metric, supplement)
+      note: buildMetricNote(metric)
     };
   });
 }
@@ -363,8 +322,7 @@ function emptySnapshot(): MarketSnapshot {
   return {
     generated_at: new Date().toISOString(),
     source_status: { overall: 'degraded' },
-    values: {},
-    source_details: {}
+    values: {}
   };
 }
 

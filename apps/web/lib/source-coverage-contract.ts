@@ -8,6 +8,10 @@ export type SourceCoverageMetric = {
   status: string;
   region: string;
   market_scope: string;
+  error?: string | null;
+  note?: string | null;
+  cbam_eur?: number | null;
+  usd_per_eur?: number | null;
 };
 
 export type SourceCoverageResponse = {

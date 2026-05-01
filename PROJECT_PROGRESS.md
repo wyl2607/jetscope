@@ -6,6 +6,49 @@
 - Scope: JetScope web/API workspace, local data ignores, traceability entrypoint, release approval gates, token replay protection, and worker/VPS sync boundaries.
 - Release entrypoint: `APPROVE_JETSCOPE_RELEASE=<token> npm run release -- --approval-token <token>` after `source scripts/jetscope-env`; development worker sync is opt-in.
 
+## 2026-04-30 German Lufthansa Source Coverage Cleanup
+
+### Completed
+
+- Updated `apps/web/app/de/lufthansa-saf-2026/client-market-data.tsx` so market card provenance comes from canonical `/api/sources` coverage metrics rather than legacy `market_snapshot.source_details`.
+- Kept market values on `/api/market` and made source coverage fetch failure degrade gracefully without hiding the market card values.
+- Added a regression contract in `test/proxy-route-contract.test.mjs` that requires the page to read `/api/sources` and forbids `source_details` dependency.
+
+### Verification
+
+- `node --experimental-strip-types --test test/proxy-route-contract.test.mjs` passed: 2 tests.
+- `npm test` passed: 54 tests.
+- `npm run web:typecheck` passed.
+- `git diff --check -- apps/web/app/de/lufthansa-saf-2026/client-market-data.tsx test/proxy-route-contract.test.mjs PROJECT_PROGRESS.md` passed.
+
+### Boundary
+
+- No push, PR, merge, deploy, worker sync, VPS mutation, launchctl action, or secret access was performed.
+
+## 2026-04-29 Source Coverage Supplement Review
+
+### Completed
+
+- Reviewed the current dirty source/test set for source coverage display supplements.
+- The API now inlines `error`, `note`, `cbam_eur`, and `usd_per_eur` on `/v1/sources/coverage` metrics instead of requiring the web read model to bridge from snapshot `source_details`.
+- The web read model now treats `/sources/coverage` as the canonical source for display supplements and no longer reads snapshot `source_details` for notes or degraded reasons.
+- Obsidian/local-only bridge artifacts are ignored locally, excluded from node sync packages, and included in post-sync blocked-path readback so historical node remnants fail closed.
+- Added API and web regression coverage for coverage-metric `error` propagation and highest-priority display over snapshot `source_details` supplements.
+
+### Verification
+
+- `npm test -- --test-name-pattern=sources-read-model` passed: 53 tests.
+- `cd apps/api && .venv/bin/python -m pytest tests/test_market_contract_v1.py -q` passed: 3 tests.
+- `npm run web:typecheck` passed.
+- `npm run api:check` passed.
+- `git diff --check` passed.
+- `bash -n scripts/sync-excludes.sh scripts/sync-to-nodes.sh` passed.
+
+### Boundary
+
+- No publish, push, PR, deploy, node sync, or release action was performed.
+- External Codex review was attempted but tool-side execution failed or timed out; independent read-only review found sync readback and `error` test gaps, both fixed before final focused validation.
+
 ## 2026-04-28 PR #39 Release Approval Hardening Deploy
 
 ### Completed

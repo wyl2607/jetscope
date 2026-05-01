@@ -29,7 +29,6 @@ _SEED_FALLBACKS: dict[str, tuple[str, str, float, str, str]] = {
     "germany_premium_pct": ("Derived comparison", "derived", 0.60, "de", "price_differential"),
 }
 
-
 def _classify_source_type(source_name: str, fallback_used: bool) -> str:
     normalized = source_name.lower()
     if fallback_used:
@@ -62,6 +61,10 @@ def build_source_coverage_response(db: Session) -> SourceCoverageResponse:
                 status=detail.status,
                 region=detail.region,
                 market_scope=detail.market_scope,
+                error=detail.error,
+                note=detail.note,
+                cbam_eur=detail.cbam_eur,
+                usd_per_eur=detail.usd_per_eur,
             )
         )
 
