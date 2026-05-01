@@ -56,7 +56,8 @@ def active_tasks(state: dict[str, Any]) -> dict[str, dict[str, Any]]:
     out = {}
     for task in as_list(state.get("tasks")):
         task_id = task_id_of(task)
-        if isinstance(task, dict) and task_id and str(task.get("status") or "") not in TERMINAL:
+        status = str(task.get("status") or "") if isinstance(task, dict) else ""
+        if isinstance(task, dict) and task_id and status and status not in TERMINAL:
             out[task_id] = task
     return out
 
@@ -219,7 +220,7 @@ def self_test() -> None:
             path = root / rel
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(payload), encoding="utf-8")
-        wf("runtime/dev-control/state.json", {"tasks": [{"task_id": "p0", "priority": "P0", "status": "received", "requires_user_decision": True, "goal": "decide"}, {"task_id": "dry", "priority": "P2", "status": "planned", "goal": "dry"}, {"task_id": "skip", "priority": "P1", "status": "planned", "goal": "skip"}]})
+        wf("runtime/dev-control/state.json", {"tasks": [{"task_id": "p0", "priority": "P0", "status": "received", "requires_user_decision": True, "goal": "decide"}, {"task_id": "dry", "priority": "P2", "status": "planned", "goal": "dry"}, {"task_id": "skip", "priority": "P1", "status": "planned", "goal": "skip"}, {"task_id": "done", "priority": "P1", "status": "completed", "goal": "done"}, {"task_id": "missing", "priority": "P1", "goal": "missing status"}]})
         wf("runtime/task-board/enriched-board.json", {"tasks": [{"task_id": "dry", "value_score": 7}]})
         wf("runtime/task-board/auto-dry-run-plan.json", {"candidates": [{"task_id": "dry", "value_score": 7}, {"task_id": "skip"}]})
         wf("runtime/task-board/triage-recommendations.json", {"recommendations": []})
@@ -231,6 +232,7 @@ def self_test() -> None:
         assert data["recommendations"][0]["task_id"] == "p0"
         assert any(item["task_id"] == "dry" for item in data["recommendations"])
         assert not any(item["task_id"] == "skip" for item in data["recommendations"])
+        assert not any(item["task_id"] in {"done", "missing"} for item in data["recommendations"])
     print("OK")
 
 

@@ -18,6 +18,7 @@ RUNTIME = AUTOMATION / "runtime"
 DEFAULT_STATE = RUNTIME / "dev-control" / "state.json"
 DEFAULT_BOARD = RUNTIME / "task-board" / "enriched-board.json"
 DEFAULT_OUT = RUNTIME / "multi-agent" / "dedup-cooldown.json"
+TERMINAL_STATUSES = {"completed", "cancelled", "failed"}
 
 
 def utc_now() -> str:
@@ -65,15 +66,13 @@ def jaccard(a: Set[str], b: Set[str]) -> float:
 
 
 def candidate_tasks(state: Dict[str, Any]) -> List[Dict[str, Any]]:
-    terminal = {"completed", "cancelled", "failed"}
     tasks = [t for t in state.get("tasks") or [] if isinstance(t, dict)]
-    return [t for t in tasks if t.get("status") not in terminal]
+    return [t for t in tasks if str(t.get("status") or "") and str(t.get("status") or "") not in TERMINAL_STATUSES]
 
 
 def build_report(state: Dict[str, Any], *, threshold: float) -> Dict[str, Any]:
     tasks = candidate_tasks(state)
-    terminal = {"completed", "cancelled", "failed"}
-    active_count = len([t for t in state.get("tasks") or [] if isinstance(t, dict) and t.get("status") not in terminal])
+    active_count = len(tasks)
     rows = []
     pairs = []
     signatures = {
@@ -123,10 +122,15 @@ def self_test() -> None:
             {"task_id": "a", "project": "tools/automation", "status": "planned", "goal": "dev-control dry-run debounce check"},
             {"task_id": "b", "project": "tools/automation", "status": "received", "goal": "dev control dry run debounce checks"},
             {"task_id": "c", "project": "jetscope", "status": "planned", "goal": "source coverage test"},
+            {"task_id": "d", "project": "tools/automation", "status": "completed", "goal": "dev control dry run debounce checks"},
+            {"task_id": "e", "project": "tools/automation", "goal": "dev control dry run debounce checks"},
         ]
     }
     report = build_report(state, threshold=0.45)
     assert report["summary"]["suggestion_count"] >= 1
+    assert report["summary"]["active_task_count"] == 3
+    assert "cancel d" not in "\n".join(report["cancel_suggestions"])
+    assert "cancel e" not in "\n".join(report["cancel_suggestions"])
     assert report["pairs"] and {"a", "b", "score", "suggested_cancel"}.issubset(report["pairs"][0])
     assert report["cancel_suggestions"]
     assert "cancel b" in report["suggestions"][0]["suggested_command"]
