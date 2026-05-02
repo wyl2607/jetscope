@@ -28,6 +28,26 @@
 - Changed only automation check scripts, their Node tests, and this progress record.
 - Did not run release, publish, push, deploy, node sync, Docker, SSH, rsync, or approval-token flows.
 
+## 2026-05-02 Refactoring Strategy Baseline
+
+### Completed
+
+- Added `docs/REFACTORING_STRATEGY.md` as the recurring JetScope refactoring policy.
+- Captured the default rhythm: weekly or biweekly structural audits, one subsystem per change, and evidence-ranked candidates instead of date-driven file merges.
+- Documented merge, split, deletion, and validation rules for API services, web read models, UI components, compatibility layers, release scripts, and sync scripts.
+- Linked the strategy from `docs/product-architecture.md` and `README.md` so future product and architecture work can discover it.
+- Aligned the README release sequence with the current `scripts/release.sh` behavior: production deploy is triggered from `/opt/jetscope` through `bash ./scripts/auto-deploy.sh`, so the procedure does not depend on the remote executable bit.
+
+### Verification
+
+- `git diff --check -- docs/REFACTORING_STRATEGY.md docs/product-architecture.md README.md PROJECT_PROGRESS.md` passed.
+- `npm test -- test/automation-plan-check.test.mjs test/automation-scope-check.test.mjs` passed: 56 Node tests.
+
+### Boundary
+
+- Documentation/process change only.
+- No runtime code, tests, release scripts, sync scripts, publish, push, deploy, or node sync was changed or executed.
+
 ## 2026-05-01 Source Coverage Release
 
 ### Completed
