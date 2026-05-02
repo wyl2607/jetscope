@@ -6,6 +6,28 @@
 - Scope: JetScope web/API workspace, local data ignores, traceability entrypoint, release approval gates, token replay protection, and worker/VPS sync boundaries.
 - Release entrypoint: `APPROVE_JETSCOPE_RELEASE=<token> npm run release -- --approval-token <token>` after `source scripts/jetscope-env`; development worker sync is opt-in.
 
+## 2026-05-02 Release Safety Gate Sweep
+
+### Completed
+
+- Fixed `npm run automation:plan:check` so the no-argument package gate validates the checked-in safe-local automation task example instead of exiting with usage.
+- Fixed `npm run automation:scope:check` so the no-argument package gate performs a non-mutating command smoke check against the same example and `HEAD`.
+- Aligned `automation-scope-check` task loading with `automation-plan-check` so both accept a single task object, an array, or `{ "tasks": [...] }`.
+- Added regression coverage for both no-argument automation gate entrypoints.
+
+### Verification
+
+- `node --experimental-strip-types --test test/automation-plan-check.test.mjs test/automation-scope-check.test.mjs` passed: 8 tests.
+- `npm run automation:plan:check` passed.
+- `npm run automation:scope:check` passed.
+- `npm run api:openapi:check` passed.
+- `npm test` passed: 56 tests.
+
+### Boundary
+
+- Changed only automation check scripts, their Node tests, and this progress record.
+- Did not run release, publish, push, deploy, node sync, Docker, SSH, rsync, or approval-token flows.
+
 ## 2026-05-01 Source Coverage Release
 
 ### Completed
