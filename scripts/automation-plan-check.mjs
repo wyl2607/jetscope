@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
 
+const defaultPlanPath = 'docs/automation-safe-local-task-example.json';
+
 const requiredFields = [
   'task_id',
   'project',
@@ -84,11 +86,7 @@ function checkTask(task, index) {
 }
 
 function main() {
-  const planPath = process.argv[2];
-  if (!planPath) {
-    console.error('Usage: node scripts/automation-plan-check.mjs <task-plan.json>');
-    process.exit(2);
-  }
+  const planPath = process.argv[2] ?? defaultPlanPath;
 
   let parsed;
   try {

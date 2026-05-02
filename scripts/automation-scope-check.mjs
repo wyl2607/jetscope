@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
+const defaultPlanPath = 'docs/automation-safe-local-task-example.json';
+
 function fail(message) {
   console.error(message);
   process.exitCode = 1;
@@ -40,7 +42,7 @@ function matchesAny(filePath, patterns) {
 
 function loadTasks(planPath) {
   const parsed = JSON.parse(readFileSync(planPath, 'utf8'));
-  const tasks = Array.isArray(parsed) ? parsed : parsed.tasks;
+  const tasks = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.tasks) ? parsed.tasks : [parsed]);
   if (!Array.isArray(tasks) || tasks.length === 0) {
     throw new Error('Task plan must be a non-empty array or an object with a non-empty tasks array');
   }
@@ -56,11 +58,9 @@ function changedFiles(baseRef) {
 }
 
 function main() {
-  const [planPath, baseRef = 'origin/main'] = process.argv.slice(2);
-  if (!planPath) {
-    console.error('Usage: node scripts/automation-scope-check.mjs <task-plan.json> [base-ref]');
-    process.exit(2);
-  }
+  const [providedPlanPath, providedBaseRef] = process.argv.slice(2);
+  const planPath = providedPlanPath ?? defaultPlanPath;
+  const baseRef = providedBaseRef ?? (providedPlanPath ? 'origin/main' : 'HEAD');
 
   let tasks;
   let files;
