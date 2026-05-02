@@ -4,6 +4,14 @@
 > **角色**: AI 并行开发系统入口
 > **版本**: v2.1
 
+## 仓库角色边界（B 阶段，2026-05-02 起）
+
+- 本仓 (`/Users/yumei`) 已声明为**双重身份**：workspace 治理层（活）+ jetscope 产品镜像（只读）。
+- **jetscope 产品类改动**（`apps/`、`infra/`、`packages/`、`test/`、产品类 `scripts/*`）的唯一开发口：`~/projects/jetscope`。
+- **workspace 治理类改动**（`tools/automation/`、`scripts/obsidian_*`、`scripts/ops_hub.sh` 等）继续在本仓维护，C 阶段会迁出。
+- 详细分类与不可触碰路径见 `/Users/yumei/NOTICE.md`。
+- 决策方案见 `~/.claude/plans/jetscope-dual-repo-convergence.md`。
+
 ## 快速开始
 
 ```bash
