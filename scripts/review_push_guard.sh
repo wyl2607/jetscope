@@ -16,7 +16,21 @@ if ! git rev-parse --verify --quiet "$BASE_REF" >/dev/null; then
   fail "base ref not found: $BASE_REF"
 fi
 
-if [ -n "$(git diff --name-only --cached)" ]; then
+staged_files="$(git diff --name-only --cached)"
+if [ -n "$staged_files" ]; then
+  staged_blocked=()
+  while IFS= read -r path; do
+    case "$path" in
+      .claude/projects/*/dev-harness/*|*/.claude/projects/*/dev-harness/*)
+        staged_blocked+=("$path")
+        ;;
+    esac
+  done <<< "$staged_files"
+  if [ "${#staged_blocked[@]}" -gt 0 ]; then
+    printf 'review_push_guard: blocked staged dev-harness files:\n' >&2
+    printf '  %s\n' "${staged_blocked[@]}" | sort -u >&2
+    exit 1
+  fi
   fail "staged changes present; review and unstage or commit intentionally before push"
 fi
 
@@ -46,6 +60,12 @@ for path in "${changed_files[@]}"; do
           blocked+=("$path")
           ;;
       esac
+      ;;
+  esac
+
+  case "$path" in
+    .claude/projects/*/dev-harness/*|*/.claude/projects/*/dev-harness/*)
+      blocked+=("$path")
       ;;
   esac
 

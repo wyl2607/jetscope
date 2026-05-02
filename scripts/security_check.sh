@@ -66,6 +66,8 @@ tracked_blocked_patterns=(
   '*.log'
   '*.tar.gz'
   '*.zip'
+  '.claude/projects/*/dev-harness/*'
+  '**/.claude/projects/*/dev-harness/*'
 )
 
 tracked_env_files=()
@@ -106,6 +108,9 @@ while IFS= read -r path; do
     .env|*/.env|.env.local|*/.env.local|.envrc|*/.envrc|.env.*|*/.env.*|*.log|*.tar.gz|*.zip|apps/api/data/*|data/market.db|data/local-preferences.json|.automation/*|.omx/*|.guard/*)
       untracked_sensitive+=("$path")
       ;;
+    .claude/projects/*/dev-harness/*|*/.claude/projects/*/dev-harness/*)
+      untracked_sensitive+=("$path")
+      ;;
   esac
 done < <(git ls-files --others --exclude-standard)
 
@@ -121,6 +126,9 @@ while IFS= read -r path; do
     .env.example|*/.env.example|.env.*.example|*/.env.*.example)
       ;;
     */.env|.env|*/.env.*|.env.*|*credentials*|*secret*|*token*|*private-key*)
+      credential_named+=("$path")
+      ;;
+    .claude/projects/*/dev-harness/*|*/.claude/projects/*/dev-harness/*)
       credential_named+=("$path")
       ;;
   esac

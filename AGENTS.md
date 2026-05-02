@@ -79,11 +79,50 @@ bash /Users/yumei/tools/automation/scripts/ai-trace.sh solution "<scope>" "<prob
 bash /Users/yumei/tools/automation/scripts/ai-trace.sh session "<scope>" "<summary>" "<next_step>" "<linked_issue>"
 ```
 
+## Dev-Harness Continuation Index
+
+- 开始或恢复任一 `/Users/yumei/projects/*` 项目工作前，先读 `/Users/yumei/.claude/projects/-Users-yumei/dev-harness/INDEX.md`。
+- 进入具体项目后，再读对应 `/Users/yumei/.claude/projects/-Users-yumei/dev-harness/projects/<project>.md`，用其中的 `Resume Hint`、风险、未完成项和 guard 约束决定下一步。
+- `dev-harness/` 是私有本机开发台账，只能由 harness 脚本更新；不得提交、推送、同步、复制到公开仓库或写入项目源码目录。
+
 ## Harness Engineering
 
 - Codex/OpenCode 可用 skills: `repo-onboarding`, `test-harness`, `pr-review-guard`, `migration-safety`, `browser-qa`, `harness-engineering-orchestrator`。
 - 非琐碎实现任务先压成 `Goal / Context / Constraints / Done criteria`，再进入代码修改。
+- Codex CLI 已启用 `/goal` 时，默认把它作为单任务执行模式：Claude/OpenCode 负责任务切分、边界、并发安全和最终验收；Codex `/goal` 负责按任务包闭环执行。
+- Codex goal 任务包必须包含：目标、上下文、允许修改范围、禁止事项、验证命令、完成标准、交付摘要；默认 CLI-first，优先用文件、日志、测试和构建命令，不默认使用 Computer Use。
+- 多个 Codex goal 只能并行处理文件范围不重叠的任务；涉及同一核心文件、数据模型、迁移、发布、节点同步或安全边界时，必须串行并由主控复审。
 - 需要从 PRD 到架构、里程碑、任务、验证的完整开发流时，使用 `harness-engineering-orchestrator`；普通小修复优先使用 `repo-onboarding` + `test-harness`。
 - 不要在 `/Users/yumei` 根目录随意运行 Harness setup。只在目标项目目录明确执行，常用形式：`bun /Users/yumei/.agents/skills/harness-engineering-orchestrator/scripts/harness-setup.ts --isGreenfield=false --skipGithub=true`。
 - Harness 产生的规划、架构、进度、状态必须写回项目文件或 trace ledger，不能只留在聊天里。
 - 修改代码后报告实际验证证据：运行过的命令、通过/失败结果、未运行原因、剩余风险。
+
+## Codex Goal Task Packet
+
+```text
+/goal 完成 <任务名>
+
+目标：
+<一句话说明要完成什么>
+
+上下文：
+<项目、当前状态、相关文件或文档>
+
+允许修改：
+<文件/目录白名单>
+
+禁止修改：
+<不能触碰的路径、不能执行的操作>
+
+执行方式：
+默认 CLI-first：优先读取文件、运行测试/构建/日志命令；不要使用 Computer Use，除非本任务明确要求 GUI/视觉验证。
+
+验证：
+<必须运行的命令>
+
+完成标准：
+<通过条件>
+
+交付：
+最后报告改动文件、验证结果、剩余风险和建议下一步。
+```
