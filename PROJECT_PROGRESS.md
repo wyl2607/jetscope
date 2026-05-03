@@ -21,6 +21,14 @@
 - Scope: `packages/core/industry/readiness.ts` and `packages/core/industry/__tests__/readiness.test.mjs`; adjacent `.governance/` and `GOAL.md` remained separate.
 - Validation: `node --experimental-strip-types --test packages/core/industry/__tests__/*.test.mjs test/tipping-point-workbench-contract.test.mjs` passed: 9 tests.
 
+## 2026-05-03 Source Coverage Helper Refactor Gate
+
+- Purpose: continue the bounded refactor loop by moving duplicated source coverage trust-state and lag-format rules into the shared frontend coverage contract.
+- Intent: keep `/sources/coverage` UI/read-model behavior unchanged while preventing `sources-read-model.ts` and `source-coverage-panel.tsx` from owning separate copies of the same trust/lag rules.
+- Scope: `apps/web/lib/source-coverage-contract.ts`, `apps/web/lib/sources-read-model.ts`, `apps/web/components/source-coverage-panel.tsx`, and `test/sources-read-model.test.mjs`; `.governance/` and `GOAL.md` remained separate.
+- Initial gate: `npm test -- test/sources-read-model.test.mjs` failed as expected because `source-coverage-contract.ts` did not export `getSourceCoverageTrustState` or `formatSourceCoverageLag`.
+- Validation: `npm test -- test/sources-read-model.test.mjs` passed: 59 tests. `npm run web:typecheck` passed. `git diff --check -- apps/web/lib/sources-read-model.ts apps/web/components/source-coverage-panel.tsx apps/web/lib/source-coverage-contract.ts test/sources-read-model.test.mjs PROJECT_PROGRESS.md` passed.
+
 ## 2026-05-02 Release Safety Gate Sweep
 
 ### Completed
