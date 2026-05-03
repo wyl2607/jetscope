@@ -6,6 +6,21 @@
 - Scope: JetScope web/API workspace, local data ignores, traceability entrypoint, release approval gates, token replay protection, and worker/VPS sync boundaries.
 - Release entrypoint: `APPROVE_JETSCOPE_RELEASE=<token> npm run release -- --approval-token <token>` after `source scripts/jetscope-env`; development worker sync is opt-in.
 
+## 2026-05-03 Workspace Consolidation Boundary
+
+- JetScope remains the canonical aviation fuel-transition / SAF intelligence product.
+- Do not revive `SAF-signal`; it is an archive/delete candidate after migration coverage review.
+- Do not route workspace governance, home-lab control, ESG Toolkit, SustainOS, or Career-Ops work into this repo.
+- Product work belongs here only when it touches JetScope web/API/core/docs/infra/release surfaces.
+- Validation: documentation-only boundary update; `git diff --check -- PROJECT_PROGRESS.md` passed.
+
+## 2026-05-03 Industry Readiness Refactor Gate
+
+- Purpose: start the JetScope refactor loop with one bounded core slice, keeping SAF/industry readiness behavior unchanged.
+- Intent: replace the chained industry-signal threshold branch with an ordered threshold table and enforce the structure through a focused quality gate.
+- Scope: `packages/core/industry/readiness.ts` and `packages/core/industry/__tests__/readiness.test.mjs`; adjacent `.governance/` and `GOAL.md` remained separate.
+- Validation: `node --experimental-strip-types --test packages/core/industry/__tests__/*.test.mjs test/tipping-point-workbench-contract.test.mjs` passed: 9 tests.
+
 ## 2026-05-02 Release Safety Gate Sweep
 
 ### Completed
