@@ -2,9 +2,53 @@
 
 ## Current Status
 
-- Status: PR #39 release approval hardening is merged and deployed to production at `234d589e`; backend pytest is restored as a local gate.
+- Status: PR #42 source coverage hardening and PR #41 PostCSS patch update are merged and deployed to production at `ee908f233f8d40cf8cef144971cdf8e4aa7743b7`; backend pytest is restored as a local gate.
 - Scope: JetScope web/API workspace, local data ignores, traceability entrypoint, release approval gates, token replay protection, and worker/VPS sync boundaries.
 - Release entrypoint: `APPROVE_JETSCOPE_RELEASE=<token> npm run release -- --approval-token <token>` after `source scripts/jetscope-env`; development worker sync is opt-in.
+
+## 2026-05-02 Release Safety Gate Sweep
+
+### Completed
+
+- Fixed `npm run automation:plan:check` so the no-argument package gate validates the checked-in safe-local automation task example instead of exiting with usage.
+- Fixed `npm run automation:scope:check` so the no-argument package gate performs a non-mutating command smoke check against the same example and `HEAD`.
+- Aligned `automation-scope-check` task loading with `automation-plan-check` so both accept a single task object, an array, or `{ "tasks": [...] }`.
+- Added regression coverage for both no-argument automation gate entrypoints.
+
+### Verification
+
+- `node --experimental-strip-types --test test/automation-plan-check.test.mjs test/automation-scope-check.test.mjs` passed: 8 tests.
+- `npm run automation:plan:check` passed.
+- `npm run automation:scope:check` passed.
+- `npm run api:openapi:check` passed.
+- `npm test` passed: 56 tests.
+
+### Boundary
+
+- Changed only automation check scripts, their Node tests, and this progress record.
+- Did not run release, publish, push, deploy, node sync, Docker, SSH, rsync, or approval-token flows.
+
+## 2026-05-01 Source Coverage Release
+
+### Completed
+
+- Merged PR #42 with the German Lufthansa market provenance moved to canonical `/api/sources` coverage metrics, source coverage fetch decoupled from market value rendering, and public-safe source error codes on market/source coverage APIs.
+- Merged PR #41 with the Dependabot PostCSS patch update from `8.5.10` to `8.5.12`.
+- Released `ee908f233f8d40cf8cef144971cdf8e4aa7743b7` to `usa-vps:/opt/jetscope` with commit-pinned deploy.
+- Updated `scripts/release.sh` to invoke the remote deploy script through `bash ./scripts/auto-deploy.sh` so release does not depend on the production checkout executable bit for `scripts/auto-deploy.sh`.
+
+### Verification
+
+- PR #42 and PR #41 GitHub CI and CodeQL checks passed before merge.
+- `npm run preflight` passed locally after installing the missing Playwright Chromium browser cache.
+- Release preflight passed during `npm run release`.
+- VPS deploy fast-forwarded `/opt/jetscope` from `234d589e` to `ee908f23`.
+- Final production checks passed: VPS local API health `200`, public web `200 text/html`, public API proxy `200 application/json`, `jetscope-web.service` active, and `jetscope-api` container up.
+
+### Notes
+
+- The first release deploy trigger failed because the production checkout had `scripts/auto-deploy.sh` without an executable bit; the same approval-gated deploy was completed by invoking the script through `bash`.
+- No development worker sync was executed.
 
 ## 2026-04-30 German Lufthansa Source Coverage Cleanup
 

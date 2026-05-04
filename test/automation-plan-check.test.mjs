@@ -58,6 +58,14 @@ test('automation plan check accepts the safe-local example contract', () => {
   assert.match(output, /Automation task plan OK: 1 task/);
 });
 
+test('automation plan check defaults to the checked-in safe-local example', () => {
+  const output = execFileSync('node', [scriptPath], {
+    encoding: 'utf8'
+  });
+
+  assert.match(output, /Automation task plan OK: 1 task/);
+});
+
 test('automation plan check rejects allowed forbidden paths', () => {
   assertFails(validPlan({ allowed_paths: ['.automation/run.json'] }), /includes forbidden fragment \.automation/);
 });

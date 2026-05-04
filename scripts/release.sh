@@ -54,7 +54,7 @@ Usage: ./scripts/release.sh [options]
 Default flow:
   1. npm run preflight
   2. ./scripts/publish-to-github.sh
-  3. ssh usa-vps "cd /opt/jetscope && JETSCOPE_FORCE_DEPLOY=1 JETSCOPE_EXPECT_COMMIT=<HEAD> APPROVE_JETSCOPE_DEPLOY=<token> ./scripts/auto-deploy.sh --approval-token <token>"
+  3. ssh usa-vps "cd /opt/jetscope && JETSCOPE_FORCE_DEPLOY=1 JETSCOPE_EXPECT_COMMIT=<HEAD> APPROVE_JETSCOPE_DEPLOY=<token> bash ./scripts/auto-deploy.sh --approval-token <token>"
 
 Options:
   --approval-token  Required for publish, sync, or VPS deploy side effects
@@ -219,7 +219,7 @@ if [[ "$RUN_VPS_DEPLOY" -eq 1 ]]; then
   assert_safe_ssh_host "$VPS_HOST"
   assert_safe_remote_arg "JETSCOPE_VPS_DEPLOY_DIR" "$VPS_DEPLOY_DIR"
   assert_safe_remote_arg "deploy approval token" "$DEPLOY_TOKEN"
-  ssh "$VPS_HOST" "cd '$VPS_DEPLOY_DIR' && JETSCOPE_FORCE_DEPLOY=1 JETSCOPE_EXPECT_COMMIT='$EXPECTED_COMMIT' APPROVE_JETSCOPE_DEPLOY='$DEPLOY_TOKEN' ./scripts/auto-deploy.sh --approval-token '$DEPLOY_TOKEN'"
+  ssh "$VPS_HOST" "cd '$VPS_DEPLOY_DIR' && JETSCOPE_FORCE_DEPLOY=1 JETSCOPE_EXPECT_COMMIT='$EXPECTED_COMMIT' APPROVE_JETSCOPE_DEPLOY='$DEPLOY_TOKEN' bash ./scripts/auto-deploy.sh --approval-token '$DEPLOY_TOKEN'"
 fi
 
 echo
