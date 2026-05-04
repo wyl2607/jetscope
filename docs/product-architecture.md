@@ -94,6 +94,7 @@ Current implemented source posture includes:
 3. New UI modules should consume read models rather than embedding transport logic directly in pages.
 4. New write operations should remain admin-token protected unless a full auth model is introduced.
 5. Local-only outputs, logs, databases, node modules, private automation ledgers, and internal handoff archives should not be tracked.
+6. Refactors should follow `docs/REFACTORING_STRATEGY.md`: evidence-ranked, one subsystem at a time, and validated against the affected contract boundary.
 
 ## Compatibility Boundary
 
