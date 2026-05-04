@@ -12,3 +12,10 @@ export function percentDelta(base: number, next: number): number {
   }
   return ((next - base) / base) * 100;
 }
+
+export function safeDivide(a: number, b: number, fallback = 0): number {
+  if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) {
+    return fallback;
+  }
+  return a / b;
+}
