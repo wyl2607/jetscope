@@ -38,7 +38,7 @@ test('release side effects require matching approval token', () => {
   assert.match(releaseScript, /head=\$\(git rev-parse HEAD\)/);
   assert.match(releaseScript, /DEPLOY_TOKEN=\$\(approval_token_derive "\$APPROVAL_TOKEN" "deploy" "\$\{VPS_HOST\}:\$\{VPS_DEPLOY_DIR\}:\$\{EXPECTED_COMMIT\}"\)/);
   assert.match(releaseScript, /APPROVE_JETSCOPE_PUBLISH="\$PUBLISH_TOKEN" \.\/scripts\/publish-to-github\.sh --approval-token "\$PUBLISH_TOKEN"/);
-  assert.match(releaseScript, /APPROVE_JETSCOPE_DEPLOY='\$DEPLOY_TOKEN' \.\/scripts\/auto-deploy\.sh --approval-token '\$DEPLOY_TOKEN'/);
+  assert.match(releaseScript, /APPROVE_JETSCOPE_DEPLOY='\$DEPLOY_TOKEN' bash \.\/scripts\/auto-deploy\.sh --approval-token '\$DEPLOY_TOKEN'/);
 });
 
 test('publish side effects require matching publish approval token', () => {
