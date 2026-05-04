@@ -29,6 +29,15 @@
 - Initial gate: `npm test -- test/sources-read-model.test.mjs` failed as expected because `source-coverage-contract.ts` did not export `getSourceCoverageTrustState` or `formatSourceCoverageLag`.
 - Validation: `npm test -- test/sources-read-model.test.mjs` passed: 59 tests. `npm run web:typecheck` passed. `git diff --check -- apps/web/lib/sources-read-model.ts apps/web/components/source-coverage-panel.tsx apps/web/lib/source-coverage-contract.ts test/sources-read-model.test.mjs PROJECT_PROGRESS.md` passed.
 
+## 2026-05-04 Source Coverage Summary Refactor Gate
+
+- Purpose: continue the source coverage/read-model cleanup with one adjacent slice by centralizing summary aggregation inside `apps/web/lib/sources-read-model.ts`.
+- Intent: keep UI/API behavior unchanged while extracting trust counts, finite confidence averaging, and freshest lag selection out of `buildSummary`.
+- Scope: `apps/web/lib/sources-read-model.ts`, `test/sources-read-model.test.mjs`, and `PROJECT_PROGRESS.md`.
+- Initial gate: `npm test -- test/sources-read-model.test.mjs` failed as expected because `summarizeCoverageTrust`, `averageFinite`, and `freshestLagMinutes` were absent and summary aggregation still filtered/reduced inline.
+- Validation: `npm test -- test/sources-read-model.test.mjs` passed: 60 tests. `npm run web:typecheck` passed.
+- Risk: low behavior risk; existing read-model tests still cover source ordering, fallback summaries, note/error priority, volatility labels, and coverage supplement precedence. No release, deploy, sync, push, PR, API, package, infra, or lockfile changes were made.
+
 ## 2026-05-02 Release Safety Gate Sweep
 
 ### Completed

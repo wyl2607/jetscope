@@ -107,6 +107,16 @@ test('source coverage contract owns trust-state and lag formatting helpers', asy
   assert.doesNotMatch(panelSource, /function formatLag\(/);
 });
 
+test('sources read model keeps summary aggregation centralized', async () => {
+  const readModelSource = await readFile(new URL('../apps/web/lib/sources-read-model.ts', import.meta.url), 'utf8');
+
+  assert.match(readModelSource, /function summarizeCoverageTrust\(/);
+  assert.match(readModelSource, /function averageFinite\(/);
+  assert.match(readModelSource, /function freshestLagMinutes\(/);
+  assert.doesNotMatch(readModelSource, /rows\.filter\(\(row\) => row\.trustState === /);
+  assert.doesNotMatch(readModelSource, /confidenceScores\.reduce\(/);
+});
+
 test('getSourcesReadModel maps live coverage, volatility levels, and notes for the sources page', async (t) => {
   installEnv(t);
   installFetchStub(

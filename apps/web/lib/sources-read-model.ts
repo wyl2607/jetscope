@@ -214,19 +214,45 @@ function degradedReasonFor(metric: SourceCoverageMetric): string {
   return 'live primary or official source with no degraded flag';
 }
 
-function buildSummary(rows: SourcesReadModel['rows'], completeness: number, degraded: boolean): SourcesReadModel['summary'] {
-  const liveCount = rows.filter((row) => row.trustState === 'live').length;
-  const proxyCount = rows.filter((row) => row.trustState === 'proxy').length;
-  const fallbackCount = rows.filter((row) => row.trustState === 'fallback').length;
-  const degradedCount = rows.filter((row) => row.trustState === 'degraded').length;
-  const confidenceScores = rows.map((row) => row.confidenceScore).filter((value) => Number.isFinite(value));
-  const averageConfidence = confidenceScores.length
-    ? confidenceScores.reduce((sum, value) => sum + value, 0) / confidenceScores.length
+function averageFinite(values: number[]): number {
+  const finiteValues = values.filter((value) => Number.isFinite(value));
+  return finiteValues.length
+    ? finiteValues.reduce((sum, value) => sum + value, 0) / finiteValues.length
     : 0;
+}
+
+function freshestLagMinutes(rows: SourcesReadModel['rows']): number | null {
   const lagMinutes = rows
     .map((row) => row.lagMinutes)
     .filter((value): value is number => Number.isFinite(value));
-  const freshestLag = lagMinutes.length ? Math.min(...lagMinutes) : null;
+  return lagMinutes.length ? Math.min(...lagMinutes) : null;
+}
+
+function summarizeCoverageTrust(rows: SourcesReadModel['rows']): Pick<
+  SourcesReadModel['summary'],
+  'liveCount' | 'proxyCount' | 'fallbackCount' | 'degradedCount'
+> {
+  const counts = {
+    liveCount: 0,
+    proxyCount: 0,
+    fallbackCount: 0,
+    degradedCount: 0
+  };
+
+  for (const row of rows) {
+    if (row.trustState === 'live') counts.liveCount += 1;
+    if (row.trustState === 'proxy') counts.proxyCount += 1;
+    if (row.trustState === 'fallback') counts.fallbackCount += 1;
+    if (row.trustState === 'degraded') counts.degradedCount += 1;
+  }
+
+  return counts;
+}
+
+function buildSummary(rows: SourcesReadModel['rows'], completeness: number, degraded: boolean): SourcesReadModel['summary'] {
+  const { liveCount, proxyCount, fallbackCount, degradedCount } = summarizeCoverageTrust(rows);
+  const averageConfidence = averageFinite(rows.map((row) => row.confidenceScore));
+  const freshestLag = freshestLagMinutes(rows);
   const freshnessLabel = freshestLag == null ? 'freshness unknown' : `freshest source ${formatSourceCoverageLag(freshestLag)}`;
   const trustLabel = degraded || fallbackCount > 0 || degradedCount > 0
     ? 'decision support: verify degraded inputs'
