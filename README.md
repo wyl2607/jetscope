@@ -69,7 +69,7 @@ jetscope/
 | `/v1/sources/coverage` | GET | Source coverage, quality, and provenance status. |
 | `/v1/workspaces/{workspace_slug}/scenarios` | GET/POST | Scenario list and creation. Write operations require an admin token. |
 
-More detail lives in `docs/API_CONTRACT_V1.md`, `docs/DATA_CONTRACT_V1.md`, and `docs/AI_PIPELINE.md`.
+More detail lives in `docs/API_CONTRACT_V1.md`, `docs/DATA_CONTRACT_V1.md`, `docs/AI_PIPELINE.md`, and `docs/REFACTORING_STRATEGY.md`.
 
 ### Prerequisites
 
@@ -182,7 +182,7 @@ APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token 
 This release entrypoint now standardizes the expected sequence after a successful improvement:
 - run full local `preflight`
 - publish `main` to GitHub
-- trigger `usa-vps` deployment via `/opt/jetscope/scripts/auto-deploy.sh`
+- trigger `usa-vps` deployment from `/opt/jetscope` via `bash ./scripts/auto-deploy.sh`
 - require the VPS to deploy the exact local `HEAD` commit, not just “latest when checked”
 
 Development worker sync is opt-in and is not part of the default release path.

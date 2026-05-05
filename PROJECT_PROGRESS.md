@@ -2,7 +2,7 @@
 
 ## Current Status
 
-- Status: PR #39 release approval hardening is merged and deployed to production at `234d589e`; backend pytest is restored as a local gate.
+- Status: PR #42 source coverage hardening and PR #41 PostCSS patch update are merged and deployed to production at `ee908f233f8d40cf8cef144971cdf8e4aa7743b7`; backend pytest is restored as a local gate.
 - Scope: JetScope web/API workspace, local data ignores, traceability entrypoint, release approval gates, token replay protection, and worker/VPS sync boundaries.
 - Release entrypoint: `APPROVE_JETSCOPE_RELEASE=<token> npm run release -- --approval-token <token>` after `source scripts/jetscope-env`; development worker sync is opt-in.
 
