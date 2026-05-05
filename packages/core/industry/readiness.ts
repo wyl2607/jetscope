@@ -7,23 +7,26 @@ const SIGNAL_LABEL_KEYS: Record<IndustrySignalStatus, string> = {
   far: 'industry.signal.far'
 };
 
+const SIGNAL_THRESHOLDS: Array<{
+  status: IndustrySignalStatus;
+  maxGapUsdPerLiter: number;
+  inclusiveMax?: boolean;
+}> = [
+  { status: 'viable', maxGapUsdPerLiter: 0, inclusiveMax: true },
+  { status: 'threshold', maxGapUsdPerLiter: 0.3 },
+  { status: 'watching', maxGapUsdPerLiter: 0.7 }
+];
+
 export function computeIndustrySignal(bestSafEffective: number, jetBenchmark: number): {
   status: IndustrySignalStatus;
   gapUsdPerLiter: number;
   labelKey: string;
 } {
   const gapUsdPerLiter = bestSafEffective - jetBenchmark;
-  let status: IndustrySignalStatus;
-
-  if (gapUsdPerLiter <= 0) {
-    status = 'viable';
-  } else if (gapUsdPerLiter < 0.3) {
-    status = 'threshold';
-  } else if (gapUsdPerLiter < 0.7) {
-    status = 'watching';
-  } else {
-    status = 'far';
-  }
+  const status = SIGNAL_THRESHOLDS.find(
+    ({ inclusiveMax, maxGapUsdPerLiter }) =>
+      gapUsdPerLiter < maxGapUsdPerLiter || (inclusiveMax === true && gapUsdPerLiter === maxGapUsdPerLiter)
+  )?.status ?? 'far';
 
   return {
     status,

@@ -1,5 +1,11 @@
 import { buildApiUrl } from '@/lib/api-config';
-import type { SourceCoverageMetric, SourceCoverageResponse } from '@/lib/source-coverage-contract';
+import {
+  formatSourceCoverageLag,
+  getSourceCoverageTrustState,
+  type SourceCoverageMetric,
+  type SourceCoverageResponse,
+  type SourceCoverageTrustState
+} from './source-coverage-contract';
 
 type MarketSnapshot = {
   generated_at: string;
@@ -49,7 +55,7 @@ export type SourcesReadModel = {
     lag: string;
     lagMinutes: number | null;
     status: string;
-    trustState: 'live' | 'proxy' | 'fallback' | 'degraded';
+    trustState: SourceCoverageTrustState;
     degradedReason: string;
     value: string;
     change1d: string;
@@ -119,21 +125,6 @@ function sourceTypeLabel(raw?: string): string {
   if (raw === 'derived') return 'derived proxy';
   if (raw === 'official') return 'official';
   return raw.replaceAll('_', ' ');
-}
-
-function trustStateFor(metric: SourceCoverageMetric): SourcesReadModel['rows'][number]['trustState'] {
-  if (metric.fallback_used || metric.status === 'seed') return 'fallback';
-  if (metric.status !== 'ok') return 'degraded';
-  if (metric.source_type.includes('proxy') || metric.source_type === 'derived') return 'proxy';
-  return 'live';
-}
-
-function formatLagMinutes(value?: number | null) {
-  if (!Number.isFinite(value ?? NaN)) return "n/a";
-  const minutes = Number(value);
-  if (minutes < 60) return `${minutes}m`;
-  if (minutes < 1440) return `${Math.round(minutes / 60)}h`;
-  return `${Math.round(minutes / 1440)}d`;
 }
 
 function formatChange(value?: number | null) {
@@ -223,20 +214,46 @@ function degradedReasonFor(metric: SourceCoverageMetric): string {
   return 'live primary or official source with no degraded flag';
 }
 
-function buildSummary(rows: SourcesReadModel['rows'], completeness: number, degraded: boolean): SourcesReadModel['summary'] {
-  const liveCount = rows.filter((row) => row.trustState === 'live').length;
-  const proxyCount = rows.filter((row) => row.trustState === 'proxy').length;
-  const fallbackCount = rows.filter((row) => row.trustState === 'fallback').length;
-  const degradedCount = rows.filter((row) => row.trustState === 'degraded').length;
-  const confidenceScores = rows.map((row) => row.confidenceScore).filter((value) => Number.isFinite(value));
-  const averageConfidence = confidenceScores.length
-    ? confidenceScores.reduce((sum, value) => sum + value, 0) / confidenceScores.length
+function averageFinite(values: number[]): number {
+  const finiteValues = values.filter((value) => Number.isFinite(value));
+  return finiteValues.length
+    ? finiteValues.reduce((sum, value) => sum + value, 0) / finiteValues.length
     : 0;
+}
+
+function freshestLagMinutes(rows: SourcesReadModel['rows']): number | null {
   const lagMinutes = rows
     .map((row) => row.lagMinutes)
     .filter((value): value is number => Number.isFinite(value));
-  const freshestLag = lagMinutes.length ? Math.min(...lagMinutes) : null;
-  const freshnessLabel = freshestLag == null ? 'freshness unknown' : `freshest source ${formatLagMinutes(freshestLag)}`;
+  return lagMinutes.length ? Math.min(...lagMinutes) : null;
+}
+
+function summarizeCoverageTrust(rows: SourcesReadModel['rows']): Pick<
+  SourcesReadModel['summary'],
+  'liveCount' | 'proxyCount' | 'fallbackCount' | 'degradedCount'
+> {
+  const counts = {
+    liveCount: 0,
+    proxyCount: 0,
+    fallbackCount: 0,
+    degradedCount: 0
+  };
+
+  for (const row of rows) {
+    if (row.trustState === 'live') counts.liveCount += 1;
+    if (row.trustState === 'proxy') counts.proxyCount += 1;
+    if (row.trustState === 'fallback') counts.fallbackCount += 1;
+    if (row.trustState === 'degraded') counts.degradedCount += 1;
+  }
+
+  return counts;
+}
+
+function buildSummary(rows: SourcesReadModel['rows'], completeness: number, degraded: boolean): SourcesReadModel['summary'] {
+  const { liveCount, proxyCount, fallbackCount, degradedCount } = summarizeCoverageTrust(rows);
+  const averageConfidence = averageFinite(rows.map((row) => row.confidenceScore));
+  const freshestLag = freshestLagMinutes(rows);
+  const freshnessLabel = freshestLag == null ? 'freshness unknown' : `freshest source ${formatSourceCoverageLag(freshestLag)}`;
   const trustLabel = degraded || fallbackCount > 0 || degradedCount > 0
     ? 'decision support: verify degraded inputs'
     : proxyCount > 0
@@ -288,10 +305,10 @@ function buildRows(
       scope: `${metric.region} · ${metric.market_scope}`,
       confidence: Number.isFinite(metric.confidence_score) ? metric.confidence_score.toFixed(2) : 'n/a',
       confidenceScore: Number.isFinite(metric.confidence_score) ? metric.confidence_score : 0,
-      lag: formatLagMinutes(metric.lag_minutes),
+      lag: formatSourceCoverageLag(metric.lag_minutes),
       lagMinutes: Number.isFinite(metric.lag_minutes ?? NaN) ? Number(metric.lag_minutes) : null,
       status: statusLabel(metric.status),
-      trustState: trustStateFor(metric),
+      trustState: getSourceCoverageTrustState(metric),
       degradedReason: degradedReasonFor(metric),
       value: formatMetricValue(metric.metric_key, snapshotValue),
       change1d: formatChange(historyMetric?.change_pct_1d),

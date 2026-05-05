@@ -6,6 +6,38 @@
 - Scope: JetScope web/API workspace, local data ignores, traceability entrypoint, release approval gates, token replay protection, and worker/VPS sync boundaries.
 - Release entrypoint: `APPROVE_JETSCOPE_RELEASE=<token> npm run release -- --approval-token <token>` after `source scripts/jetscope-env`; development worker sync is opt-in.
 
+## 2026-05-03 Workspace Consolidation Boundary
+
+- JetScope remains the canonical aviation fuel-transition / SAF intelligence product.
+- Do not revive `SAF-signal`; it is an archive/delete candidate after migration coverage review.
+- Do not route workspace governance, home-lab control, ESG Toolkit, SustainOS, or Career-Ops work into this repo.
+- Product work belongs here only when it touches JetScope web/API/core/docs/infra/release surfaces.
+- Validation: documentation-only boundary update; `git diff --check -- PROJECT_PROGRESS.md` passed.
+
+## 2026-05-03 Industry Readiness Refactor Gate
+
+- Purpose: start the JetScope refactor loop with one bounded core slice, keeping SAF/industry readiness behavior unchanged.
+- Intent: replace the chained industry-signal threshold branch with an ordered threshold table and enforce the structure through a focused quality gate.
+- Scope: `packages/core/industry/readiness.ts` and `packages/core/industry/__tests__/readiness.test.mjs`; adjacent `.governance/` and `GOAL.md` remained separate.
+- Validation: `node --experimental-strip-types --test packages/core/industry/__tests__/*.test.mjs test/tipping-point-workbench-contract.test.mjs` passed: 9 tests.
+
+## 2026-05-03 Source Coverage Helper Refactor Gate
+
+- Purpose: continue the bounded refactor loop by moving duplicated source coverage trust-state and lag-format rules into the shared frontend coverage contract.
+- Intent: keep `/sources/coverage` UI/read-model behavior unchanged while preventing `sources-read-model.ts` and `source-coverage-panel.tsx` from owning separate copies of the same trust/lag rules.
+- Scope: `apps/web/lib/source-coverage-contract.ts`, `apps/web/lib/sources-read-model.ts`, `apps/web/components/source-coverage-panel.tsx`, and `test/sources-read-model.test.mjs`; `.governance/` and `GOAL.md` remained separate.
+- Initial gate: `npm test -- test/sources-read-model.test.mjs` failed as expected because `source-coverage-contract.ts` did not export `getSourceCoverageTrustState` or `formatSourceCoverageLag`.
+- Validation: `npm test -- test/sources-read-model.test.mjs` passed: 59 tests. `npm run web:typecheck` passed. `git diff --check -- apps/web/lib/sources-read-model.ts apps/web/components/source-coverage-panel.tsx apps/web/lib/source-coverage-contract.ts test/sources-read-model.test.mjs PROJECT_PROGRESS.md` passed.
+
+## 2026-05-04 Source Coverage Summary Refactor Gate
+
+- Purpose: continue the source coverage/read-model cleanup with one adjacent slice by centralizing summary aggregation inside `apps/web/lib/sources-read-model.ts`.
+- Intent: keep UI/API behavior unchanged while extracting trust counts, finite confidence averaging, and freshest lag selection out of `buildSummary`.
+- Scope: `apps/web/lib/sources-read-model.ts`, `test/sources-read-model.test.mjs`, and `PROJECT_PROGRESS.md`.
+- Initial gate: `npm test -- test/sources-read-model.test.mjs` failed as expected because `summarizeCoverageTrust`, `averageFinite`, and `freshestLagMinutes` were absent and summary aggregation still filtered/reduced inline.
+- Validation: `npm test -- test/sources-read-model.test.mjs` passed: 60 tests. `npm run web:typecheck` passed.
+- Risk: low behavior risk; existing read-model tests still cover source ordering, fallback summaries, note/error priority, volatility labels, and coverage supplement precedence. No release, deploy, sync, push, PR, API, package, infra, or lockfile changes were made.
+
 ## 2026-05-02 Release Safety Gate Sweep
 
 ### Completed
