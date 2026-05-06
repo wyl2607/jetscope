@@ -278,7 +278,7 @@ test('getGermanyJetFuelReadModel falls back from EU proxy history to global jet 
     ])
   );
 
-  const { getGermanyJetFuelReadModel } = await importWebLib('apps/web/lib/product-read-model.ts');
+  const { getGermanyJetFuelReadModel } = await importWebLib('apps/web/lib/germany-jet-fuel-read-model.ts');
   const readModel = await getGermanyJetFuelReadModel();
   const euProxyMetric = readModel.metrics.find((metric) => metric.metricKey === 'jet_eu_proxy_usd_per_l');
 

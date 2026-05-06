@@ -1,7 +1,8 @@
 import { InfoCard } from '@/components/cards';
 import { Shell } from '@/components/shell';
 import { PriceTrendsChart } from '@/components/price-trends-chart';
-import { getGermanyJetFuelReadModel, getPriceTrendChartReadModel } from '@/lib/product-read-model';
+import { getGermanyJetFuelReadModel } from '@/lib/germany-jet-fuel-read-model';
+import { getPriceTrendChartReadModel } from '@/lib/product-read-model';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { buildPageMetadata } from '@/lib/seo';

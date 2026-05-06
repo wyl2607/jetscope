@@ -1,7 +1,7 @@
 import { WORKSPACE_SLUG, buildApiUrl } from '@/lib/api-config';
 import type { SourceCoverageResponse } from '@/lib/source-coverage-contract';
 
-type MarketSnapshot = {
+export type MarketSnapshot = {
   generated_at: string;
   source_status: {
     overall: string;
@@ -92,7 +92,7 @@ export type AirlineDecisionResponse = {
   };
 };
 
-type MarketHistoryMetric = {
+export type MarketHistoryMetric = {
   metric_key: string;
   unit: string;
   latest_value?: number;
@@ -103,7 +103,7 @@ type MarketHistoryMetric = {
   points?: Array<{ as_of: string; value: number }>;
 };
 
-type MarketHistory = {
+export type MarketHistory = {
   generated_at?: string;
   metrics: Record<string, MarketHistoryMetric>;
 };
@@ -141,35 +141,7 @@ export type DashboardReadModel = {
   error: string | null;
 };
 
-export type GermanyJetFuelMetricKey =
-  | 'brent_usd_per_bbl'
-  | 'jet_usd_per_l'
-  | 'jet_eu_proxy_usd_per_l'
-  | 'carbon_proxy_usd_per_t';
-
-export type GermanyJetFuelMetric = {
-  metricKey: GermanyJetFuelMetricKey;
-  label: string;
-  unit: string;
-  value: number | null;
-  digits: number;
-  sourceMetricKey: string;
-  latestAsOf: string | null;
-  changePct1d: number | null;
-  changePct7d: number | null;
-  changePct30d: number | null;
-  note: string | null;
-};
-
-export type GermanyJetFuelReadModel = {
-  generatedAt: string;
-  overallStatus: string;
-  metrics: GermanyJetFuelMetric[];
-  isFallback: boolean;
-  error: string | null;
-};
-
-const FALLBACK_VALUES = {
+export const FALLBACK_VALUES = {
   brent_usd_per_bbl: 114.93,
   jet_usd_per_l: 0.99,
   jet_eu_proxy_usd_per_l: 0.99,
@@ -222,7 +194,7 @@ function computeFreshnessSignal(generatedAt: string): DashboardReadModel['freshn
   };
 }
 
-async function fetchJson<T>(path: string): Promise<T> {
+export async function fetchJson<T>(path: string): Promise<T> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5000);
   try {
@@ -319,7 +291,7 @@ function computeTopRiskSignal(history: MarketHistory | null): DashboardReadModel
   };
 }
 
-function metricLabel(metric: string): string {
+export function metricLabel(metric: string): string {
   if (metric === 'brent_usd_per_bbl') return 'Brent';
   if (metric === 'jet_usd_per_l') return 'Jet fuel';
   if (metric === 'jet_eu_proxy_usd_per_l') return 'Jet fuel (EU proxy)';
@@ -327,12 +299,12 @@ function metricLabel(metric: string): string {
   return metric;
 }
 
-function finiteNumberOrNull(value: unknown): number | null {
+export function finiteNumberOrNull(value: unknown): number | null {
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
 }
 
-function resolveSnapshotMetric(
+export function resolveSnapshotMetric(
   values: Record<string, number>,
   key: string,
   fallbackKey?: string
@@ -356,7 +328,7 @@ function resolveSnapshotMetric(
   return { value: null, sourceMetricKey: key, usedFallback: false };
 }
 
-function resolveHistoryMetric(
+export function resolveHistoryMetric(
   history: MarketHistory | null,
   key: string,
   fallbackKey?: string
@@ -380,105 +352,8 @@ function resolveHistoryMetric(
   return { metric: null, sourceMetricKey: key, usedFallback: false };
 }
 
-function finiteChangeOrNull(value?: number | null): number | null {
+export function finiteChangeOrNull(value?: number | null): number | null {
   return finiteNumberOrNull(value);
-}
-
-function buildGermanyMetric(
-  metricKey: GermanyJetFuelMetricKey,
-  unit: string,
-  digits: number,
-  snapshot: {
-    value: number | null;
-    sourceMetricKey: string;
-    usedFallback: boolean;
-  },
-  history: {
-    metric: MarketHistoryMetric | null;
-    sourceMetricKey: string;
-    usedFallback: boolean;
-  }
-): GermanyJetFuelMetric {
-  const sourceMetricKey = history.metric ? history.sourceMetricKey : snapshot.sourceMetricKey;
-  const usedFallback = snapshot.usedFallback || history.usedFallback;
-  const fallbackNote = usedFallback && sourceMetricKey !== metricKey ? `Fallback from ${metricLabel(sourceMetricKey)}` : null;
-
-  return {
-    metricKey,
-    label: metricLabel(metricKey),
-    unit,
-    value: snapshot.value,
-    digits,
-    sourceMetricKey,
-    latestAsOf: history.metric?.latest_as_of ?? null,
-    changePct1d: finiteChangeOrNull(history.metric?.change_pct_1d),
-    changePct7d: finiteChangeOrNull(history.metric?.change_pct_7d),
-    changePct30d: finiteChangeOrNull(history.metric?.change_pct_30d),
-    note: fallbackNote
-  };
-}
-
-function fallbackGermanyJetFuelReadModel(error: unknown): GermanyJetFuelReadModel {
-  return {
-    generatedAt: new Date().toISOString(),
-    overallStatus: 'degraded',
-    metrics: [
-      {
-        metricKey: 'brent_usd_per_bbl',
-        label: metricLabel('brent_usd_per_bbl'),
-        unit: 'USD/bbl',
-        value: FALLBACK_VALUES.brent_usd_per_bbl,
-        digits: 2,
-        sourceMetricKey: 'brent_usd_per_bbl',
-        latestAsOf: null,
-        changePct1d: null,
-        changePct7d: null,
-        changePct30d: null,
-        note: null
-      },
-      {
-        metricKey: 'jet_usd_per_l',
-        label: metricLabel('jet_usd_per_l'),
-        unit: 'USD/L',
-        value: FALLBACK_VALUES.jet_usd_per_l,
-        digits: 3,
-        sourceMetricKey: 'jet_usd_per_l',
-        latestAsOf: null,
-        changePct1d: null,
-        changePct7d: null,
-        changePct30d: null,
-        note: null
-      },
-      {
-        metricKey: 'jet_eu_proxy_usd_per_l',
-        label: metricLabel('jet_eu_proxy_usd_per_l'),
-        unit: 'USD/L',
-        value: FALLBACK_VALUES.jet_eu_proxy_usd_per_l,
-        digits: 3,
-        sourceMetricKey: 'jet_usd_per_l',
-        latestAsOf: null,
-        changePct1d: null,
-        changePct7d: null,
-        changePct30d: null,
-        note: 'Fallback from Jet fuel'
-      },
-      {
-        metricKey: 'carbon_proxy_usd_per_t',
-        label: metricLabel('carbon_proxy_usd_per_t'),
-        unit: 'USD/tCO2',
-        value: FALLBACK_VALUES.carbon_proxy_usd_per_t,
-        digits: 2,
-        sourceMetricKey: 'carbon_proxy_usd_per_t',
-        latestAsOf: null,
-        changePct1d: null,
-        changePct7d: null,
-        changePct30d: null,
-        note: null
-      }
-    ],
-    isFallback: true,
-    error: error instanceof Error ? error.message : 'unknown error'
-  };
 }
 
 export async function getDashboardReadModel(): Promise<DashboardReadModel> {
@@ -516,56 +391,6 @@ export async function getDashboardReadModel(): Promise<DashboardReadModel> {
     };
   } catch (error) {
     return fallbackReadModel(error);
-  }
-}
-
-export async function getGermanyJetFuelReadModel(): Promise<GermanyJetFuelReadModel> {
-  try {
-    const [market, history] = await Promise.all([
-      fetchJson<MarketSnapshot>('/market/snapshot'),
-      fetchJson<MarketHistory>('/market/history').catch(() => ({ metrics: {} }))
-    ]);
-
-    const metrics = [
-      buildGermanyMetric(
-        'brent_usd_per_bbl',
-        'USD/bbl',
-        2,
-        resolveSnapshotMetric(market.values, 'brent_usd_per_bbl'),
-        resolveHistoryMetric(history, 'brent_usd_per_bbl')
-      ),
-      buildGermanyMetric(
-        'jet_usd_per_l',
-        'USD/L',
-        3,
-        resolveSnapshotMetric(market.values, 'jet_usd_per_l'),
-        resolveHistoryMetric(history, 'jet_usd_per_l')
-      ),
-      buildGermanyMetric(
-        'jet_eu_proxy_usd_per_l',
-        'USD/L',
-        3,
-        resolveSnapshotMetric(market.values, 'jet_eu_proxy_usd_per_l', 'jet_usd_per_l'),
-        resolveHistoryMetric(history, 'jet_eu_proxy_usd_per_l', 'jet_usd_per_l')
-      ),
-      buildGermanyMetric(
-        'carbon_proxy_usd_per_t',
-        'USD/tCO2',
-        2,
-        resolveSnapshotMetric(market.values, 'carbon_proxy_usd_per_t'),
-        resolveHistoryMetric(history, 'carbon_proxy_usd_per_t')
-      )
-    ];
-
-    return {
-      generatedAt: market.generated_at,
-      overallStatus: market.source_status?.overall ?? 'unknown',
-      metrics,
-      isFallback: false,
-      error: null
-    };
-  } catch (error) {
-    return fallbackGermanyJetFuelReadModel(error);
   }
 }
 
