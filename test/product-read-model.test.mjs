@@ -382,6 +382,11 @@ test('crisis page uses light semantic data cards instead of gray dark boxes', as
   assert.match(crisisSource, /sourceTypeLabel/);
   assert.match(crisisSource, /confidenceTone/);
   assert.match(crisisSource, /marketConfidence/);
+  assert.match(crisisSource, /buildSafWorkbenchHref/);
+  assert.match(crisisSource, /reviewSourcesHref/);
+  assert.match(crisisSource, /sources\?filter=review/);
+  assert.match(crisisSource, /fuel: fallbackFossil\.toFixed\(3\)/);
+  assert.match(crisisSource, /reserve: reserveWeeks\?\.toFixed\(2\)/);
   assert.match(crisisSource, /border-emerald-200 bg-emerald-50/);
   assert.match(crisisSource, /border-amber-200 bg-amber-50/);
   assert.match(crisisSource, /border-sky-200 bg-sky-50/);

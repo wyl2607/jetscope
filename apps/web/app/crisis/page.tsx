@@ -27,18 +27,61 @@ function isoDaysAgo(days: number): string {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 }
 
-const CRISIS_LINKS: Array<{ title: string; description: string; href: Route }> = [
-  {
-    title: '打开储备详情',
-    description: '先检查覆盖周数、来源类型、置信度和供应缺口，再调整采购判断。',
-    href: '/crisis/eu-jet-reserves' as Route
-  },
-  {
-    title: '打开 SAF 工作台',
-    description: '测试燃油、碳价、掺混比例、储备压力与 SAF 路径敏感性。',
-    href: '/crisis/saf-tipping-point' as Route
-  }
-];
+const REVIEW_SOURCES_ROUTE = '/sources?filter=review' as Route;
+
+type CrisisActionLink = {
+  title: string;
+  description: string;
+  href: Route;
+  tone: string;
+  eyebrow: string;
+};
+
+function buildSafWorkbenchHref({
+  fallbackFossil,
+  carbonPriceEurPerT,
+  reserveWeeks
+}: {
+  fallbackFossil: number;
+  carbonPriceEurPerT: number;
+  reserveWeeks: number | null;
+}): Route {
+  const params = new URLSearchParams({
+    fuel: fallbackFossil.toFixed(3),
+    carbon: carbonPriceEurPerT.toFixed(2),
+    subsidy: '0.000',
+    blend: '6.00',
+    reserve: reserveWeeks?.toFixed(2) ?? '3.00',
+    pathway: 'hefa'
+  });
+  return `/crisis/saf-tipping-point?${params.toString()}` as Route;
+}
+
+function buildCrisisLinks(safWorkbenchHref: Route, reviewSourcesHref: Route): CrisisActionLink[] {
+  return [
+    {
+      title: '打开储备详情',
+      description: '先检查覆盖周数、来源类型、置信度和供应缺口，再调整采购判断。',
+      href: '/crisis/eu-jet-reserves' as Route,
+      tone: 'border-sky-200 bg-white hover:border-sky-400 hover:bg-sky-50',
+      eyebrow: '储备'
+    },
+    {
+      title: '打开 SAF 工作台',
+      description: '带入当前燃油、碳价和储备读数，直接测试 SAF 路径敏感性。',
+      href: safWorkbenchHref,
+      tone: 'border-emerald-200 bg-emerald-50 hover:border-emerald-400 hover:bg-emerald-100',
+      eyebrow: '模拟'
+    },
+    {
+      title: '复核数据来源',
+      description: '查看需要复核的市场输入，确认实时、代理、回退和降级状态。',
+      href: reviewSourcesHref,
+      tone: 'border-amber-200 bg-amber-50 hover:border-amber-400 hover:bg-amber-100',
+      eyebrow: '来源'
+    }
+  ];
+}
 
 function stressLabel(level?: string): string {
   if (level === 'critical') return '紧急';
@@ -131,6 +174,14 @@ export default async function CrisisPage() {
   const marketConfidenceText = typeof marketConfidence === 'number'
     ? `${Math.round(marketConfidence * 100)}%`
     : '暂不可用';
+  const carbonPriceEurPerT = Number(((dashboardReadModel.market.values.carbon_proxy_usd_per_t ?? 102.6) / 1.08).toFixed(2));
+  const safWorkbenchHref = buildSafWorkbenchHref({
+    fallbackFossil,
+    carbonPriceEurPerT,
+    reserveWeeks
+  });
+  const reviewSourcesHref = REVIEW_SOURCES_ROUTE;
+  const crisisLinks = buildCrisisLinks(safWorkbenchHref, reviewSourcesHref);
 
   return (
     <Shell
@@ -189,14 +240,14 @@ export default async function CrisisPage() {
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2">
-          {CRISIS_LINKS.map((item) => (
+        <section className="grid gap-4 md:grid-cols-3">
+          {crisisLinks.map((item) => (
             <a
               key={item.href}
               href={item.href}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-sky-300 hover:bg-sky-50"
+              className={`rounded-2xl border p-5 shadow-sm transition ${item.tone}`}
             >
-              <p className="text-xs uppercase tracking-[0.16em] text-sky-700">从这里开始</p>
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-600">{item.eyebrow}</p>
               <h3 className="mt-2 text-xl font-semibold text-slate-950">{item.title}</h3>
               <p className="mt-3 text-sm leading-6 text-slate-600">{item.description}</p>
             </a>

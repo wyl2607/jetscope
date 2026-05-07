@@ -1,5 +1,13 @@
 # JetScope Project Progress
 
+## 2026-05-07 Crisis Action Routing Gate
+
+- Purpose: make `/crisis` behave like an operational branching surface, not a static explainer, by carrying current market/reserve context into follow-up actions.
+- Changes: replaced the static crisis action links with three dynamic action cards: reserve detail, SAF workbench with current fuel/carbon/reserve/pathway query state, and source review at `/sources?filter=review`.
+- Browser evidence: Browser Use loaded `/crisis`, confirmed the three action cards, clicked `打开 SAF 工作台` and landed on `/crisis/saf-tipping-point?fuel=0.864&carbon=82.21&subsidy=0.000&blend=6.00&reserve=2.86&pathway=hefa`, then clicked `复核数据来源` and landed on `/sources?filter=review`.
+- Validation: `npm test -- test/product-read-model.test.mjs` passed all 69 Node tests; `npm run web:typecheck` passed; targeted `git diff --check` passed.
+- Boundary: no push, PR, release, deploy, node sync, SSH, rsync, lockfile, env, or production database changes were made.
+
 ## 2026-05-07 SAF Source Credibility Workbench Gate
 
 - Purpose: make `/crisis/saf-tipping-point` explain whether each SAF calculation input is live, proxy, fallback, or degraded before users tune the workbench.
