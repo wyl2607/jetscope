@@ -1,5 +1,14 @@
 # JetScope Project Progress
 
+## 2026-05-07 SAF Tipping Point Light UI Gate
+
+- Purpose: remove the remaining dark-shell regression on `/crisis/saf-tipping-point` and verify the interactive SAF analysis page against real browser behavior.
+- Changes: added a focused light-theme contract covering the Shell and SAF workbench surfaces, converted the SAF page, workbench cards, charts, pathway table, simulator, and airline decision matrix to a light reading theme, and replaced raw recompute/save errors with user-facing fallback copy.
+- Front/back-end alignment: started the local FastAPI dev service with an isolated SQLite database and disabled background refresh, then verified Next `/api/analysis/tipping-point` and `/api/analysis/airline-decision` proxy requests return HTTP 200 with live analysis payloads.
+- Browser evidence: Browser Use reloaded the current page, confirmed no `fetch failed` or raw `分析失败`, showed a light Shell/header/hero, clicked `使用实时值`, and manually changed fuel/blend inputs; URL state and analysis results updated through the FastAPI-backed proxy.
+- Validation: `npm test -- test/tipping-point-workbench-contract.test.mjs` passed all 64 tests; `npm run web:typecheck` passed; targeted `git diff --check` passed.
+- Boundary: no push, PR, release, deploy, node sync, SSH, rsync, lockfile, env, or database artifact changes were made.
+
 ## 2026-05-07 AI UI Verification Chain
 
 - Purpose: make the browser-led UI optimization loop durable instead of leaving it as chat-only practice.

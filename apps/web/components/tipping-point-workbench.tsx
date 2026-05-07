@@ -148,8 +148,8 @@ export function TippingPointWorkbench({
         setStatus('分析已更新');
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
-        setError(err instanceof Error ? err.message : '重新计算分析失败');
-        setStatus('分析失败');
+        setError('分析服务暂时不可用，当前结果保留为本地情景基线。请确认 API 已启动后再重新计算。');
+        setStatus('使用情景基线');
       }
     }, 350);
 
@@ -227,46 +227,46 @@ export function TippingPointWorkbench({
       }
       setStatus(`已保存情景“${body.name}”`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '保存情景失败');
+      setError('情景暂时无法保存。请确认管理令牌和 API 服务可用后再试。');
       setStatus('保存失败');
     }
   }
 
   return (
     <>
-      <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-950 p-6">
+      <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold text-white">交互式拐点工作台</h2>
-            <p className="mt-2 text-sm text-slate-400">
+            <h2 className="text-xl font-bold text-slate-950">交互式拐点工作台</h2>
+            <p className="mt-2 text-sm text-slate-600">
               调整市场与政策假设。结果通过现有 FastAPI 分析合约重新计算，URL 会保持可分享。
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              className="rounded-lg border border-sky-500/40 bg-sky-500/20 px-3 py-2 text-xs font-semibold text-sky-200"
+              className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800 transition hover:border-sky-500 hover:bg-sky-100"
               onClick={useLiveValues}
             >
               使用实时值
             </button>
-            <span className="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300" aria-live="polite">
+            <span className="rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-700" aria-live="polite">
               {isPending ? '正在更新 URL...' : status}
             </span>
           </div>
         </div>
 
         {error ? (
-          <p className="mb-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+          <p className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
             {error}
           </p>
         ) : null}
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
+          <label className="text-xs uppercase tracking-[0.14em] text-slate-600">
             化石航油 USD/L
             <input
-              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
               type="number"
               min="0.1"
               step="0.01"
@@ -274,10 +274,10 @@ export function TippingPointWorkbench({
               onChange={(event) => setFossilJetUsdPerL((current) => boundedNumber(event.target.value, current, 0.1))}
             />
           </label>
-          <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
+          <label className="text-xs uppercase tracking-[0.14em] text-slate-600">
             碳价 EUR/t
             <input
-              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
               type="number"
               min="0"
               step="1"
@@ -285,10 +285,10 @@ export function TippingPointWorkbench({
               onChange={(event) => setCarbonPriceEurPerT((current) => boundedNumber(event.target.value, current, 0))}
             />
           </label>
-          <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
+          <label className="text-xs uppercase tracking-[0.14em] text-slate-600">
             补贴 USD/L
             <input
-              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
               type="number"
               min="0"
               step="0.01"
@@ -296,10 +296,10 @@ export function TippingPointWorkbench({
               onChange={(event) => setSubsidyUsdPerL((current) => boundedNumber(event.target.value, current, 0))}
             />
           </label>
-          <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
+          <label className="text-xs uppercase tracking-[0.14em] text-slate-600">
             掺混比例 %
             <input
-              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
               type="number"
               min="0"
               max="100"
@@ -308,10 +308,10 @@ export function TippingPointWorkbench({
               onChange={(event) => setBlendRatePct((current) => boundedNumber(event.target.value, current, 0, 100))}
             />
           </label>
-          <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
+          <label className="text-xs uppercase tracking-[0.14em] text-slate-600">
             储备周数
             <input
-              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
               type="number"
               min="0.1"
               step="0.1"
@@ -319,10 +319,10 @@ export function TippingPointWorkbench({
               onChange={(event) => setReserveWeeks((current) => boundedNumber(event.target.value, current, 0.1))}
             />
           </label>
-          <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
+          <label className="text-xs uppercase tracking-[0.14em] text-slate-600">
             已选路径
             <select
-              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
               value={selectedPathwayKey}
               onChange={(event) => setPathwayKey(event.target.value)}
             >
@@ -334,18 +334,18 @@ export function TippingPointWorkbench({
         </div>
 
         <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_0.7fr_auto]">
-          <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
+          <label className="text-xs uppercase tracking-[0.14em] text-slate-600">
             情景名称
             <input
-              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
               value={scenarioName}
               onChange={(event) => setScenarioName(event.target.value)}
             />
           </label>
-          <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
+          <label className="text-xs uppercase tracking-[0.14em] text-slate-600">
             管理令牌
             <input
-              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
               type="password"
               value={adminToken}
               onChange={(event) => handleAdminTokenChange(event.target.value)}
@@ -354,7 +354,7 @@ export function TippingPointWorkbench({
           </label>
           <button
             type="button"
-            className="self-end rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-4 py-2 text-xs font-semibold text-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
+            className="self-end rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-800 transition hover:border-emerald-500 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
             onClick={postScenario}
             disabled={!adminToken}
           >

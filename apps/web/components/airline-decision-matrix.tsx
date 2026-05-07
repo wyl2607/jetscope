@@ -40,10 +40,10 @@ function probabilityLabel(value: number): string {
 export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Props) {
   if (!decision) {
     return (
-      <section className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
+      <section className="rounded-2xl border border-slate-200 bg-white/90 p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
+            <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
               航司决策矩阵
             </h4>
             <p className="mt-2 text-sm text-slate-500">
@@ -51,7 +51,7 @@ export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Pr
             </p>
           </div>
         </div>
-        <p className="text-sm text-slate-400">决策模型暂不可用。</p>
+        <p className="text-sm text-slate-600">决策模型暂不可用。</p>
       </section>
     );
   }
@@ -61,17 +61,17 @@ export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Pr
   >;
 
   return (
-    <section className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
+    <section className="rounded-2xl border border-slate-200 bg-white/90 p-5">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
+          <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
             航司决策矩阵
           </h4>
           <p className="mt-2 text-sm text-slate-500">
             储备压力 {reserveWeeks.toFixed(1)} 周 · 已选路径 {pathwayKey.toUpperCase()}
           </p>
         </div>
-        <span className="rounded-full border border-sky-900/60 bg-sky-950/30 px-3 py-1 text-xs uppercase tracking-[0.18em] text-sky-200">
+        <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs uppercase tracking-[0.18em] text-sky-800">
           {getAirlineDecisionSignalLabel(decision.signal)}
         </span>
       </div>
@@ -80,15 +80,15 @@ export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Pr
         {rows.map(([key, value]) => {
           const copy = DECISION_COPY[key];
           return (
-            <article key={String(key)} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+            <article key={String(key)} className="rounded-2xl border border-slate-200 bg-white/90 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h5 className="text-sm font-medium text-white">{copy.title}</h5>
-                  <p className="mt-2 text-xs leading-6 text-slate-400">{copy.body}</p>
+                  <h5 className="text-sm font-medium text-slate-950">{copy.title}</h5>
+                  <p className="mt-2 text-xs leading-6 text-slate-600">{copy.body}</p>
                 </div>
-                <span className="text-sm font-semibold text-white">{probabilityLabel(value)}</span>
+                <span className="text-sm font-semibold text-slate-950">{probabilityLabel(value)}</span>
               </div>
-              <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-800">
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-300"
                   style={{ width: `${Math.max(4, value * 100)}%` }}

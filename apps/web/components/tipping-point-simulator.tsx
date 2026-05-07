@@ -51,33 +51,33 @@ export function TippingPointSimulator({ tippingPoint, decision, reserveWeeks }: 
   ] : [];
 
   return (
-    <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+    <article className="rounded-2xl border border-slate-200 bg-white/90 p-6">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h3 className="text-lg font-medium text-white">拐点模拟器</h3>
-          <p className="mt-1 text-sm text-slate-400">
+          <h3 className="text-lg font-medium text-slate-950">拐点模拟器</h3>
+          <p className="mt-1 text-sm text-slate-600">
             基于 API 的模型，综合燃油价格、碳价、储备压力和路径经济性。
           </p>
         </div>
         <div className="text-right">
           <p className="text-xs text-slate-500 uppercase tracking-wider">储备</p>
-          <p className="text-sm font-semibold text-slate-200">{reserveWeeks.toFixed(1)}w</p>
+          <p className="text-sm font-semibold text-slate-800">{reserveWeeks.toFixed(1)}w</p>
         </div>
       </div>
 
       {tippingRows.length > 0 && (
         <div className="mb-6 overflow-x-auto">
-          <h4 className="mb-2 text-sm font-medium text-slate-300 uppercase tracking-wider">SAF 路径状态</h4>
-          <table className="w-full text-sm text-slate-300">
+          <h4 className="mb-2 text-sm font-medium text-slate-700 uppercase tracking-wider">SAF 路径状态</h4>
+          <table className="w-full text-sm text-slate-700">
             <thead>
-              <tr className="border-b border-slate-700">
+              <tr className="border-b border-slate-300">
                 <th className="py-2 pr-4 text-left">指标</th>
                 <th className="py-2 pr-4 text-right">数值</th>
               </tr>
             </thead>
             <tbody>
               {tippingRows.map((row) => (
-                <tr key={row.key} className="border-b border-slate-800">
+                <tr key={row.key} className="border-b border-slate-200">
                   <td className="py-2 pr-4">{row.label}</td>
                   <td className="py-2 pr-4 text-right font-mono">
                     {row.format ? row.format(row.value) : row.value}
@@ -90,12 +90,12 @@ export function TippingPointSimulator({ tippingPoint, decision, reserveWeeks }: 
       )}
 
       <div>
-        <h4 className="mb-2 text-sm font-medium text-slate-300 uppercase tracking-wider">航司响应概率</h4>
+        <h4 className="mb-2 text-sm font-medium text-slate-700 uppercase tracking-wider">航司响应概率</h4>
         <div className="grid grid-cols-2 gap-3">
           {rows.map((row) => (
-            <div key={row.key} className="rounded-lg border border-slate-700 bg-slate-950 p-3">
+            <div key={row.key} className="rounded-lg border border-slate-300 bg-white p-3">
               <p className="text-xs text-slate-500 uppercase tracking-wider">{row.label}</p>
-              <p className="mt-1 text-lg font-semibold text-white">{probabilityLabel(row.value)}</p>
+              <p className="mt-1 text-lg font-semibold text-slate-950">{probabilityLabel(row.value)}</p>
             </div>
           ))}
         </div>
