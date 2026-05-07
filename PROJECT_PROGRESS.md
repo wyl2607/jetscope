@@ -1,5 +1,14 @@
 # JetScope Project Progress
 
+## 2026-05-07 EU Reserve SAF Breakpoint Chart Gate
+
+- Purpose: fix `/crisis/eu-jet-reserves` where the current SAF breakpoint row was visually underweighted and the price-trend SVG could emit `Received NaN for cy`.
+- Changes: highlighted the `$115/bbl（当前）` SAF competitiveness row as `当前拐点`, converted the key reserve/detail/trend sections to a light reading theme, clarified that 1d/7d/30d history comes from the local `market_snapshots` history store, and hardened `PriceTrendsChart` to filter invalid points and use a safe y-axis range for single-point or flat series.
+- Data path: no new local database was invented; the page continues to use the existing FastAPI `/market/history` read path backed by `market_snapshots`, with the API refresh loop configured by `market_refresh_interval_seconds` and admin refresh evidence already writing `market_snapshots` rows.
+- Browser evidence: Browser Use loaded `/crisis/eu-jet-reserves`, confirmed `当前拐点`, `历史价格趋势`, and `本地 market_snapshots 历史库`; then clicked Brent, carbon, EU ETS, Germany premium, EU/global/Rotterdam jet fuel trend buttons with no NaN/cy console messages.
+- Validation: `npm test -- test/product-read-model.test.mjs` passed all 70 Node tests; `npm run web:typecheck` passed; targeted `git diff --check` passed.
+- Boundary: no push, PR, release, deploy, node sync, SSH, rsync, lockfile, env, migration, or production database changes were made.
+
 ## 2026-05-07 Crisis Action Routing Gate
 
 - Purpose: make `/crisis` behave like an operational branching surface, not a static explainer, by carrying current market/reserve context into follow-up actions.

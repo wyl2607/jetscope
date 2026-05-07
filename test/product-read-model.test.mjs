@@ -391,3 +391,19 @@ test('crisis page uses light semantic data cards instead of gray dark boxes', as
   assert.match(crisisSource, /border-amber-200 bg-amber-50/);
   assert.match(crisisSource, /border-sky-200 bg-sky-50/);
 });
+
+test('reserve price trends guard finite chart coordinates and highlight the current SAF breakpoint', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const reserveSource = await readFile(new URL('../apps/web/app/crisis/eu-jet-reserves/page.tsx', import.meta.url), 'utf8');
+  const chartSource = await readFile(new URL('../apps/web/components/price-trends-chart.tsx', import.meta.url), 'utf8');
+
+  assert.match(reserveSource, /CurrentSafBreakpointRow/);
+  assert.match(reserveSource, /当前拐点/);
+  assert.match(reserveSource, /ring-2 ring-amber-300/);
+  assert.match(reserveSource, /历史价格趋势/);
+  assert.match(reserveSource, /本地 market_snapshots 历史库/);
+  assert.match(chartSource, /finitePoints/);
+  assert.match(chartSource, /Number\.isFinite\(point\.value\)/);
+  assert.match(chartSource, /safeYRange/);
+  assert.doesNotMatch(chartSource, /const yRange = yMax - yMin;/);
+});
