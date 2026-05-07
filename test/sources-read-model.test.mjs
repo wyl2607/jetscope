@@ -124,6 +124,21 @@ test('sources page keeps a light data-review theme', async () => {
   }
 });
 
+test('sources page exposes click-through filters and row focus actions', async () => {
+  const source = await readFile(new URL('../apps/web/app/sources/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /filterRaw/);
+  assert.match(source, /rowMatchesSourceFilter/);
+  assert.match(source, /visibleRows/);
+  assert.match(source, /key: 'review', label: '需复核'/);
+  assert.match(source, /key: 'fallback', label: '回退'/);
+  assert.match(source, /key: 'proxy', label: '代理'/);
+  assert.match(source, /key: 'live', label: '实时'/);
+  assert.match(source, /href=\{sourceFilterHref\(filter\.key\)\}/);
+  assert.match(source, /href=\{sourceFocusHref\(row\.metricKey\)\}/);
+  assert.ok(source.includes('正在显示 {visibleRows.length} / {readModel.rows.length}'));
+});
+
 test('sources read model keeps summary aggregation centralized', async () => {
   const readModelSource = await readFile(new URL('../apps/web/lib/sources-read-model.ts', import.meta.url), 'utf8');
 

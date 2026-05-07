@@ -2,8 +2,8 @@ import { InfoCard } from '@/components/cards';
 import { ProvenanceSummary } from '@/components/provenance-summary';
 import { SourceCoveragePanel } from '@/components/source-coverage-panel';
 import { Shell } from '@/components/shell';
-import { getSourcesReadModel } from '@/lib/sources-read-model';
-import type { Metadata } from 'next';
+import { getSourcesReadModel, type SourcesReadModel } from '@/lib/sources-read-model';
+import type { Metadata, Route } from 'next';
 import { buildPageMetadata } from '@/lib/seo';
 import Link from 'next/link';
 import { FocusScroll } from './focus-scroll';
@@ -17,6 +17,34 @@ export const metadata: Metadata = buildPageMetadata({
   path: '/sources'
 });
 
+type SourceRow = SourcesReadModel['rows'][number];
+type SourceFilter = 'all' | 'review' | 'fallback' | 'proxy' | 'live';
+
+const SOURCE_FILTERS: Array<{ key: SourceFilter; label: string; hint: string }> = [
+  { key: 'all', label: '全部', hint: '完整矩阵' },
+  { key: 'review', label: '需复核', hint: '回退、降级、代理或波动警报' },
+  { key: 'fallback', label: '回退', hint: '当前依赖回退路径' },
+  { key: 'proxy', label: '代理', hint: '代理或派生估算' },
+  { key: 'live', label: '实时', hint: '实时主来源或官方来源' }
+];
+
+function normalizeSourceFilter(filter: string | undefined): SourceFilter {
+  if (filter === 'review' || filter === 'fallback' || filter === 'proxy' || filter === 'live') {
+    return filter;
+  }
+  return 'all';
+}
+
+function rowMatchesSourceFilter(row: SourceRow, filter: SourceFilter) {
+  if (filter === 'all') return true;
+  if (filter === 'review') {
+    return row.trustState !== 'live' || row.alertLevel !== 'normal' || row.status !== 'ok';
+  }
+  if (filter === 'fallback') return row.trustState === 'fallback' || row.status === 'seed' || row.status === 'fallback';
+  if (filter === 'proxy') return row.trustState === 'proxy' || row.sourceType.includes('代理') || row.sourceType.includes('派生');
+  return row.trustState === 'live';
+}
+
 export default async function SourcesPage({
   searchParams
 }: {
@@ -24,8 +52,25 @@ export default async function SourcesPage({
 }) {
   const resolvedParams = searchParams ? await searchParams : {};
   const focusRaw = resolvedParams?.focus;
+  const filterRaw = resolvedParams?.filter;
   const focusMetricKey = Array.isArray(focusRaw) ? focusRaw[0] : focusRaw;
+  const activeFilter = normalizeSourceFilter(Array.isArray(filterRaw) ? filterRaw[0] : filterRaw);
   const readModel = await getSourcesReadModel();
+  const visibleRows = readModel.rows.filter((row) => rowMatchesSourceFilter(row, activeFilter));
+  const sourceFilterHref = (filter: SourceFilter) => {
+    const params = new URLSearchParams();
+    if (filter !== 'all') params.set('filter', filter);
+    if (focusMetricKey) params.set('focus', focusMetricKey);
+    const query = params.toString();
+    return (query ? `/sources?${query}` : '/sources') as Route;
+  };
+  const sourceFocusHref = (metricKey: string) => {
+    const params = new URLSearchParams();
+    if (activeFilter !== 'all') params.set('filter', activeFilter);
+    params.set('focus', metricKey);
+    return `/sources?${params.toString()}` as Route;
+  };
+  const clearFocusHref = (activeFilter === 'all' ? '/sources' : `/sources?filter=${activeFilter}`) as Route;
 
   const alertLabel = (level: "normal" | "watch" | "alert") => {
     if (level === "alert") return "警报";
@@ -125,10 +170,33 @@ export default async function SourcesPage({
           生成于 {new Date(readModel.generatedAt).toLocaleString()}
           {readModel.isFallback ? ' · 实时来源覆盖不可用时显示回退估算' : ''}
         </p>
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          {SOURCE_FILTERS.map((filter) => {
+            const count = readModel.rows.filter((row) => rowMatchesSourceFilter(row, filter.key)).length;
+            const isActive = activeFilter === filter.key;
+            return (
+              <Link
+                key={filter.key}
+                href={sourceFilterHref(filter.key)}
+                className={`rounded-md border px-3 py-2 text-xs font-semibold transition ${
+                  isActive
+                    ? 'border-sky-500 bg-sky-50 text-sky-800'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50'
+                }`}
+                title={filter.hint}
+              >
+                {filter.label} <span className="ml-1 text-slate-500">{count}</span>
+              </Link>
+            );
+          })}
+          <span className="text-xs text-slate-500">
+            正在显示 {visibleRows.length} / {readModel.rows.length}
+          </span>
+        </div>
         {focusMetricKey ? (
           <p className="mb-3 text-xs text-sky-700">
             已从驾驶舱风险信号聚焦：<code>{focusMetricKey}</code>{' '}
-            <Link href="/sources" className="underline text-sky-800">
+            <Link href={clearFocusHref} className="underline text-sky-800">
               清除
             </Link>
           </p>
@@ -150,11 +218,12 @@ export default async function SourcesPage({
                 <th className="py-3 pr-4">30d</th>
                 <th className="py-3 pr-4">波动</th>
                 <th className="py-3 pr-4">趋势</th>
+                <th className="py-3 pr-4">操作</th>
                 <th className="py-3">可信原因 / 降级原因</th>
               </tr>
             </thead>
             <tbody>
-              {readModel.rows.map((row) => (
+              {visibleRows.map((row) => (
                 <tr
                   key={row.surface}
                   id={`metric-${row.metricKey}`}
@@ -199,12 +268,27 @@ export default async function SourcesPage({
                       <span className="text-slate-500">n/a</span>
                     )}
                   </td>
+                  <td className="py-3 pr-4">
+                    <Link
+                      href={sourceFocusHref(row.metricKey)}
+                      className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-sky-800 hover:border-sky-300 hover:bg-sky-50"
+                    >
+                      聚焦
+                    </Link>
+                  </td>
                   <td className="py-3">
                     <span className="block text-slate-700">{row.degradedReason}</span>
                     {row.note !== row.degradedReason ? <span className="mt-1 block text-xs text-slate-500">{row.note}</span> : null}
                   </td>
                 </tr>
               ))}
+              {visibleRows.length === 0 ? (
+                <tr>
+                  <td colSpan={15} className="py-6 text-center text-sm text-slate-500">
+                    当前筛选没有匹配来源。
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>

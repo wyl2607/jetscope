@@ -445,3 +445,18 @@
 - `scripts/sync-excludes.sh` is the shared exclude source for push/pull sync, aligned with local-only and sensitive ignore rules.
 - Default `sync-to-nodes.sh` targets only `mac-mini` and `coco`; Windows and `usa-vps:~/jetscope` require explicit flags.
 - Verification passed: shell syntax for release/sync scripts, sync dry-run empty paths, API compile, 16 node tests, web typecheck, and web gate.
+## 2026-05-07 Sources Interaction QA
+
+### Completed
+
+- Browser Use clicked `/sources`, `focus=carbon_proxy_usd_per_t`, and the existing clear-focus flow; the focus flow worked but the matrix had no row-level next action.
+- Added server-rendered source filters for `全部`, `需复核`, `回退`, `代理`, and `实时`, with counts and URL-backed state.
+- Added a row-level `聚焦` action that preserves the active filter, so reviewers can narrow the matrix and then isolate one metric.
+- Fixed the review-filter predicate after Browser Use exposed that read-model status is raw `ok` while page rendering localizes it to `正常`.
+
+### Verification
+
+- `npm test -- test/sources-read-model.test.mjs` passed: 68 tests.
+- `npm run web:typecheck` passed.
+- Browser Use verified `/sources -> /sources?filter=review` shows `需复核 5` and `正在显示 5 / 7`.
+- Browser Use clicked carbon source `聚焦` under the review filter and verified clearing focus returns to `/sources?filter=review`.
