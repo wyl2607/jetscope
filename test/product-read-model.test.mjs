@@ -417,6 +417,12 @@ test('reserve price trends guard finite chart coordinates and highlight the curr
   assert.match(chartSource, /横轴/);
   assert.match(chartSource, /当前窗口/);
   assert.match(chartSource, /欧盟航油代理价/);
+  assert.match(chartSource, /coverageDaysFor/);
+  assert.match(chartSource, /formatCoverageDays/);
+  assert.match(chartSource, /数据覆盖/);
+  assert.match(chartSource, /积累中/);
+  assert.match(chartSource, /未用模拟数据补齐/);
+  assert.match(chartSource, /localCoverageDays < item\.days/);
   assert.doesNotMatch(chartSource, /Brent Crude/);
   assert.doesNotMatch(chartSource, /eu_ets_price_eur_per_t/);
   assert.doesNotMatch(chartSource, /const yRange = yMax - yMin;/);

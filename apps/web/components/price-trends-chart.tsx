@@ -121,10 +121,29 @@ function metricMetaFor(metricKey: string, unit?: string): MetricMeta {
   };
 }
 
+function finiteSortedPoints(points: PricePoint[]): PricePoint[] {
+  return (points ?? [])
+    .filter((point) => Number.isFinite(point.value) && !Number.isNaN(new Date(point.as_of).getTime()))
+    .sort((a, b) => new Date(a.as_of).getTime() - new Date(b.as_of).getTime());
+}
+
+function coverageDaysFor(points: PricePoint[]): number {
+  const finitePoints = finiteSortedPoints(points);
+  if (finitePoints.length <= 1) return 0;
+
+  const startTime = new Date(finitePoints[0].as_of).getTime();
+  const endTime = new Date(finitePoints[finitePoints.length - 1].as_of).getTime();
+  return Math.max(0, (endTime - startTime) / (24 * 60 * 60 * 1000));
+}
+
+function formatCoverageDays(days: number): string {
+  if (days >= 1) return `${days.toFixed(1)} 天`;
+  if (days > 0) return `${Math.max(1, Math.round(days * 24 * 60))} 分钟`;
+  return '不足 1 分钟';
+}
+
 function filterPointsByWindow(points: PricePoint[], timeWindow: TimeWindow): PricePoint[] {
-  const finitePoints = (points ?? []).filter(
-    (point) => Number.isFinite(point.value) && !Number.isNaN(new Date(point.as_of).getTime())
-  );
+  const finitePoints = finiteSortedPoints(points);
   const windowConfig = TIME_WINDOWS.find((item) => item.key === timeWindow);
   if (!windowConfig?.days || finitePoints.length <= 1) return finitePoints;
 
@@ -156,9 +175,7 @@ function LineChart({
   events?: MarketEvent[];
 }) {
   const metricMeta = metricMetaFor(metricKey);
-  const finitePoints = (points ?? []).filter(
-    (point) => Number.isFinite(point.value) && !Number.isNaN(new Date(point.as_of).getTime())
-  );
+  const finitePoints = finiteSortedPoints(points);
 
   if (finitePoints.length === 0) {
     return (
@@ -364,12 +381,15 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
 
   const selectedMeta = metricMetaFor(selectedMetric, data.unit);
   const windowPoints = filterPointsByWindow(data.points || [], timeWindow);
+  const localCoverageDays = coverageDaysFor(data.points || []);
   const firstPoint = windowPoints[0] ?? null;
   const lastPoint = windowPoints[windowPoints.length - 1] ?? null;
   const windowChange = firstPoint && lastPoint && Math.abs(firstPoint.value) > 1e-9
     ? ((lastPoint.value - firstPoint.value) / firstPoint.value) * 100
     : null;
-  const activeWindowLabel = TIME_WINDOWS.find((item) => item.key === timeWindow)?.label ?? '当前窗口';
+  const activeWindow = TIME_WINDOWS.find((item) => item.key === timeWindow);
+  const activeWindowLabel = activeWindow?.label ?? '当前窗口';
+  const activeWindowNeedsMoreHistory = Boolean(activeWindow?.days && localCoverageDays < activeWindow.days);
 
   const getChangeClass = (value: number | null) => {
     if (value == null) return 'text-slate-500';
@@ -426,6 +446,7 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
       <div className="mb-6 flex flex-wrap gap-2" aria-label="时间窗口">
         {TIME_WINDOWS.map((item) => {
           const isSelected = item.key === timeWindow;
+          const isAccumulating = Boolean(item.days && localCoverageDays < item.days);
           return (
             <button
               key={item.key}
@@ -436,7 +457,8 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
                 isSelected ? 'bg-slate-950 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:border-slate-500'
               }`}
             >
-              {item.label}
+              <span>{item.label}</span>
+              {isAccumulating ? <span className="ml-1 opacity-75">积累中</span> : null}
             </button>
           );
         })}
@@ -452,6 +474,11 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
         <p className="mt-1">
           样本 {windowPoints.length} 个，日期 {formatDateLabel(firstPoint?.as_of)} 至 {formatDateLabel(lastPoint?.as_of)}。
           窗口内变化 {formatChange(windowChange)}。
+        </p>
+        <p className={activeWindowNeedsMoreHistory ? 'mt-2 text-sm font-medium text-amber-800' : 'mt-2 text-sm font-medium text-emerald-700'}>
+          数据覆盖：本地历史约 {formatCoverageDays(localCoverageDays)}
+          {activeWindow?.days ? ` / 目标 ${activeWindow.days} 天` : ''}。
+          {activeWindowNeedsMoreHistory ? ' 该窗口仍在积累中，未用模拟数据补齐。' : ' 当前窗口已有足够本地覆盖。'}
         </p>
         <p className="mt-1 text-xs text-slate-500">
           左轴：{selectedMeta.axisUnit}；横轴：本地历史日期。若某个窗口样本不足，图表会保留可用历史点而不伪造数据。

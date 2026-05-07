@@ -1,5 +1,14 @@
 # JetScope Project Progress
 
+## 2026-05-07 Reserve Trend Coverage Truthfulness
+
+- Purpose: make the reserve page honest when the local `market_snapshots` store has not yet accumulated 7/30 days of real history.
+- Evidence: local API `http://127.0.0.1:8000/v1/market/history` currently returns 6 points per tracked metric, spanning about 0.01 days from `2026-05-07T12:01:02` to `2026-05-07T12:15:23`, so the 30-day window is not actually collected yet.
+- Changes: `PriceTrendsChart` now sorts valid historical points, computes actual local coverage days, marks 7/30-day window buttons as `积累中` when coverage is short, and displays `数据覆盖` with `未用模拟数据补齐` in the active-window summary.
+- Browser evidence: Browser Use reloaded `/crisis/eu-jet-reserves`, confirmed `近30天积累中` and `数据覆盖：本地历史约 14 分钟 / 目标 30 天`; clicked `近7天`, `EU ETS`, and `近30天`, confirming the coverage warning follows the selected window with no console errors.
+- Validation: `npm test -- test/product-read-model.test.mjs` failed first on the new coverage assertions, then passed all 70 Node tests after implementation; `npm run web:typecheck` passed.
+- Boundary: no historical data was fabricated, no production database or migration changes were made, and no push, PR, release, deploy, node sync, SSH, rsync, lockfile, or env changes were made.
+
 ## 2026-05-07 Localized Trading-Style Trend Controls
 
 - Purpose: make the reserve page history chart truthfully behave like a time-windowed market chart instead of merely labeling 1d/7d/30d summary cards.
