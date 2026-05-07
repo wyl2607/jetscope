@@ -250,7 +250,7 @@ export function TippingPointWorkbench({
             >
               使用实时值
             </button>
-            <span className="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300">
+            <span className="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300" aria-live="polite">
               {isPending ? '正在更新 URL...' : status}
             </span>
           </div>
@@ -346,6 +346,7 @@ export function TippingPointWorkbench({
             管理令牌
             <input
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+              type="password"
               value={adminToken}
               onChange={(event) => handleAdminTokenChange(event.target.value)}
               placeholder="x-admin-token"

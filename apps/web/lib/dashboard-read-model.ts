@@ -196,7 +196,7 @@ export async function getDashboardReadModel(): Promise<DashboardReadModel> {
   try {
     const [market, scenarios, history, reserve, tippingPoint, airlineDecision, sourceCoverage] = await Promise.all([
       fetchJson<MarketSnapshot>('/market/snapshot'),
-      fetchJson<ScenarioRecord[]>(`/workspaces/${WORKSPACE_SLUG}/scenarios`),
+      fetchJson<ScenarioRecord[]>(`/workspaces/${WORKSPACE_SLUG}/scenarios`).catch(() => []),
       fetchJson<MarketHistory>('/market/history').catch(() => ({ metrics: {} })),
       fetchJson<ReserveSignal>('/reserves/eu').catch(() => null),
       fetchJson<TippingPointResponse>('/analysis/tipping-point?fossil_jet_usd_per_l=1.30&carbon_price_eur_per_t=95&subsidy_usd_per_l=0&blend_rate_pct=6').catch(() => null),

@@ -55,7 +55,7 @@ export function ReservesCoverageStrip({ reserve }: Props) {
         <p className="text-xs uppercase tracking-[0.18em] text-slate-400">储备信号</p>
         <h3 className="mt-2 text-xl font-semibold text-white">欧盟储备数据暂不可用</h3>
         <p className="mt-2 text-sm text-slate-300">
-          无法加载 <code>/v1/reserves/eu</code>。危机视图会继续展示回退图形。
+          当前会话未连上实时储备服务。危机流程仍可浏览，但储备判断会标记为情景基线。
         </p>
       </section>
     );

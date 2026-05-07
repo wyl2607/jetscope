@@ -231,10 +231,10 @@ export function buildResearchDecisionBrief(result: ResearchSignalsResult): Resea
       headline: AI_RESEARCH_ENABLED ? '暂无活跃研究信号' : '研究流水线已关闭',
       whyMatters: AI_RESEARCH_ENABLED
         ? '每日研究任务在当前回看窗口内尚未持久化信号。'
-        : '产品界面已就绪，但 AI_RESEARCH_ENABLED 为 false，因此决策层按设计保持为空。',
+        : '研究信号层未在当前环境启用，所以这里不会影响储备或 SAF 模型判断。',
       action: AI_RESEARCH_ENABLED
         ? '依赖文章派生解释前，请运行或检查研究摄取任务。'
-        : '后端任务部署后，将 JETSCOPE_AI_RESEARCH_ENABLED=true。',
+        : '继续使用市场、储备和情景模型；需要文章证据时再开启研究任务。',
       activeCount: 0,
       positiveCount: 0,
       negativeCount: 0,

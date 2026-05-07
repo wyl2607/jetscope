@@ -45,7 +45,7 @@ export function TippingEventTimeline({ events }: Props) {
 
       {events.length === 0 ? (
         <p className="mt-6 rounded-xl border border-dashed border-slate-700 bg-slate-950/60 p-5 text-sm text-slate-300">
-          <code>/v1/analysis/tipping-point/events</code> 暂无近期拐点事件。
+          最近窗口内没有返回新的 SAF 成本交叉事件。若 API 未连接，这里会保持空状态，避免把情景基线误读成真实事件。
         </p>
       ) : (
         <div className="mt-6 space-y-3">

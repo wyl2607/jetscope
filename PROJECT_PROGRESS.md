@@ -322,6 +322,31 @@
 - `./scripts/release.sh --skip-preflight --skip-vps-deploy` failed closed before publish because the worktree is dirty; push gates are also enforced inside `scripts/publish-to-github.sh` before any push can run.
 - `./scripts/release.sh --skip-preflight --skip-publish --skip-vps-deploy` passed as a local-only no-op verification path.
 
+## 2026-05-07 Crisis Briefing UX Pass
+
+### Completed
+
+- Reframed `/crisis` from a dense control-room page into a lighter risk briefing with current read, fallback/source/confidence signals, decision signal, and two primary actions.
+- Replaced user-facing internal API path errors with plain fallback language for reserve and tipping-event empty states.
+- Converted the two `/crisis` primary action cards from Next `Link` to plain anchors after Browser Use clicks showed the cards did not navigate reliably in the in-app browser.
+- Hardened dashboard read-model fallback so scenario-list failure no longer collapses the full dashboard/crisis model.
+- Improved SAF workbench accessibility and security posture with `aria-live="polite"` status and password-style admin token input.
+- Updated research-disabled copy so it explains model impact instead of exposing env-var implementation details.
+
+### Verification
+
+- Browser Use verified `/crisis` reload with no console errors and confirmed both primary action clicks navigate:
+  - `/crisis` -> `/crisis/eu-jet-reserves`
+  - `/crisis` -> `/crisis/saf-tipping-point`
+- `npm run web:typecheck` passed.
+- `npm test -- test/product-read-model.test.mjs test/portfolio-read-model.test.mjs test/tipping-point-workbench-contract.test.mjs test/proxy-route-contract.test.mjs` ran the project test command and passed 62 tests.
+- `git diff --check -- apps/web/app/crisis/page.tsx apps/web/components/reserves-coverage-strip.tsx apps/web/components/tipping-event-timeline.tsx apps/web/lib/research-signals-read-model.ts apps/web/lib/dashboard-read-model.ts apps/web/components/tipping-point-workbench.tsx` passed.
+
+### Follow-Up
+
+- Browser/API evidence showed local `127.0.0.1:8000` was unavailable or half-started during the session, so `/crisis` correctly displayed fallback mode. Next backend pass should fix local API startup/data availability before claiming live crisis data.
+- Deeper contract work remains: derive tipping/airline analysis params from live market/reserve values instead of fixed baselines, and split reserve `observed_at` from response `generated_at`.
+
 ## 2026-04-25 Sync/Release Boundary Update
 
 ### Completed
