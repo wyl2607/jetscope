@@ -48,6 +48,20 @@ source scripts/jetscope-env
 - 非琐碎任务开始前，先查 `/Users/yumei/tools/automation/runtime/ai-trace/*.jsonl`
 - 新的稳定解法必须写回 ledger
 
+## Browser Use UI 验证闭环
+
+- 任何影响前端 UI、导航、可读性、交互、fallback/error 文案或人因流程的任务，不能只靠截图或 CLI 测试宣称完成；必须用 Codex in-app Browser Use 做真实页面操作。
+- Browser Use 证据至少包含：入口 URL、点击/输入/导航路径、预期 UI 结果、当前 URL 或 DOM 断言、console error 状态，以及残余风险。
+- 如果 Browser Use 发现 Next `Link`、按钮、表单、滚动、焦点、移动端布局或 fallback 状态与 CLI 测试不一致，以浏览器证据为准，先修用户真实路径。
+- 页面不要回退成重黑背景作为默认阅读体验；危机/风险语义应通过 badge、层级、文案和局部强调表达，而不是整页低对比暗色。
+
+## 本地提交闭环
+
+- 验证通过的非琐碎本地改动默认不长期留在脏树：先检查 `git status --short`、`git diff --stat`、`git diff --check`，按目的切分后本地 commit。
+- 不允许在混合脏树里直接 `git add .`；必须先把改动分类为本轮任务、既有用户/worker 改动、文档记录、生成/runtime/private、高风险 ops 表面。
+- 只提交本轮 allowlist 内且验证覆盖到的文件。若存在无关脏文件，保持未暂存并在交付中说明。
+- push、PR、release、deploy、sync 和 auto-merge 不是自动闭环的一部分，仍然需要显式用户批准和发布/推送 guard。
+
 ## 发布安全边界
 
 - 推送或发布前必须遵守 `/Users/yumei/.codex/memories/UNIVERSAL_AI_DEV_POLICY.md`

@@ -1,5 +1,14 @@
 # JetScope Project Progress
 
+## 2026-05-07 AI UI Verification Chain
+
+- Purpose: make the browser-led UI optimization loop durable instead of leaving it as chat-only practice.
+- Changes: added a plan-first execution file at `docs/exec-plans/2026-05-07-ai-ui-verification-chain.md`, added JetScope `AGENTS.md` rules for Browser Use UI evidence and verified local commit closure, and updated workspace skill-chain guidance to require browser evidence for frontend/UI work.
+- Commit policy: verified current-task source/docs changes should be committed locally by default after dirty-tree classification and gates pass; mixed dirty trees must be sliced by purpose and never staged wholesale.
+- Validation: plan-first validation passed, JSON validation passed, JetScope diff-check passed, and workspace skill-chain diff-check passed. ai-trace solution/session write-back completed.
+- Boundary: workspace skill-chain files live under locally ignored `/Users/yumei/tools/automation/*`, so they were updated as local AI operating guidance and not force-added into the root repo.
+- Next: commit the JetScope docs-only guidance slice locally; remote push/PR/release remain unapproved.
+
 ## 2026-05-07 Interactive UI / Human Factors Pass
 
 - Purpose: start an interactive browser-led UI optimization loop for JetScope rather than relying only on command-line gates.
