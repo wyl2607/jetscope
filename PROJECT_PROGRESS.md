@@ -1,5 +1,15 @@
 # JetScope Project Progress
 
+## 2026-05-07 Admin UI And Data Persistence Gate
+
+- Purpose: verify `/admin` as a real operations surface, not placeholder UI, while keeping the page readable in the light workbench theme.
+- Changes: converted admin cards/forms from dark panels to light, high-contrast controls; changed the admin copy to state the real write/read contract; added a market-refresh evidence panel that reports `market_snapshots` rows written, backend source status, refresh timestamp, and `/api/market` readback timestamp.
+- Backend alignment: extended `MarketRefreshResponse` with `refreshed_at`, `source_status`, `persisted_metric_count`, and `ingest`, with the refresh route counting rows persisted into `market_snapshots`.
+- Browser evidence: Browser Use opened `/admin`, filled `smoke-admin-token`, clicked `触发市场刷新`, and confirmed the page displayed `market_snapshots +7`, `degraded`, and `/api/market generated_at=...`; a real interaction bug where array API responses were converted to `{}` was found and fixed.
+- Database evidence: local SQLite `/tmp/jetscope-dev-api.db` advanced from `market_refresh_runs=3 / market_snapshots=21` to `5 / 35`, then to `6 / 42` after the final browser click; latest metric rows share the browser-triggered refresh timestamp.
+- Validation: `npm test -- test/admin-validation.test.mjs` passed all 66 Node tests; `npm run web:typecheck` passed; `cd apps/api && .venv/bin/python -m pytest tests/test_market_contract_v1.py -q` passed; targeted browser DOM verification passed.
+- Boundary: local dev API was restarted with isolated SQLite and `JETSCOPE_ADMIN_TOKEN=smoke-admin-token`; no push, PR, release, deploy, node sync, SSH, rsync, lockfile, env file, or production database changes were made.
+
 ## 2026-05-07 SAF Tipping Point Light UI Gate
 
 - Purpose: remove the remaining dark-shell regression on `/crisis/saf-tipping-point` and verify the interactive SAF analysis page against real browser behavior.

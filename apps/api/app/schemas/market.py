@@ -61,3 +61,7 @@ class MarketHistoryResponse(BaseModel):
 class MarketRefreshResponse(BaseModel):
     accepted: bool
     message: str
+    refreshed_at: datetime | None = None
+    source_status: str | None = None
+    persisted_metric_count: int | None = None
+    ingest: str | None = None

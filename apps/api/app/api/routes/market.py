@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.models.tables import MarketSnapshot
 from app.schemas.market import (
     MarketHistoryResponse,
     MarketRefreshResponse,
@@ -32,7 +34,14 @@ def refresh_market_snapshot(
     _auth: None = Depends(require_admin_token), db: Session = Depends(get_db)
 ) -> MarketRefreshResponse:
     refreshed_at, source_status = refresh_market_snapshot_set(db)
+    persisted_metric_count = db.scalar(
+        select(func.count()).select_from(MarketSnapshot).where(MarketSnapshot.as_of == refreshed_at)
+    )
     return MarketRefreshResponse(
         accepted=True,
         message=f"Market snapshot refreshed at {refreshed_at.isoformat()} (status={source_status})",
+        refreshed_at=refreshed_at,
+        source_status=source_status,
+        persisted_metric_count=int(persisted_metric_count or 0),
+        ingest="live-refresh" if source_status != "skipped-lock" else "skipped-lock",
     )
