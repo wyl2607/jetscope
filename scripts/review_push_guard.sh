@@ -12,6 +12,8 @@ fail() {
   exit 1
 }
 
+python3 "$ROOT/scripts/dirty_tree_guard.py" --repo "$ROOT" --mode publish
+
 if ! git rev-parse --verify --quiet "$BASE_REF" >/dev/null; then
   fail "base ref not found: $BASE_REF"
 fi

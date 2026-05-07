@@ -97,9 +97,17 @@ bash /Users/yumei/tools/automation/scripts/ai-trace.sh session "<scope>" "<summa
 
 - Codex/OpenCode 可用 skills: `repo-onboarding`, `test-harness`, `pr-review-guard`, `migration-safety`, `browser-qa`, `harness-engineering-orchestrator`。
 - 非琐碎实现任务先压成 `Goal / Context / Constraints / Done criteria`，再进入代码修改。
+- 宽泛、高风险、多步、跨仓、AI workflow/skill-chain、夜间/无人值守或 Codex CLI `/goal` 委派任务，先遵守 `/Users/yumei/tools/automation/workspace-guides/skill-chains/plan-first-goal-chain-sop.md`：写 plan 文件，评审到 `approved_for_goal`，再派单个 bounded `/goal`。
 - Codex CLI 已启用 `/goal` 时，默认把它作为单任务执行模式：Claude/OpenCode 负责任务切分、边界、并发安全和最终验收；Codex `/goal` 负责按任务包闭环执行。
 - Codex goal 任务包必须包含：目标、上下文、允许修改范围、禁止事项、验证命令、完成标准、交付摘要；默认 CLI-first，优先用文件、日志、测试和构建命令，不默认使用 Computer Use。
 - 多个 Codex goal 只能并行处理文件范围不重叠的任务；涉及同一核心文件、数据模型、迁移、发布、节点同步或安全边界时，必须串行并由主控复审。
+- 非琐碎实现完成后，默认进入“提交/同步/推送闭环”：先按目的切 commit（既有重构/API/UI、本轮功能/汉化、计划/进度文档分开），再 `git fetch` 检查 `ahead/behind`，必要时先建本地备份分支再 rebase/merge 到最新 `origin/<base>`，解决冲突后重跑验证。
+- `git push`、PR、merge、release、deploy、sync 一律视为 release-readiness 远端动作：必须先完成本地验证、`scripts/security_check.sh`、`scripts/review_push_guard.sh origin/main`、目标仓边界检查和 trace 写回；非 dry-run 远端动作必须等用户显式批准。
+- 若某次闭环产生稳定可复用流程（例如 dirty tree slicing、commit slicing、rebase conflict policy、push guard 顺序），必须写入 `/Users/yumei/tools/automation/runtime/ai-trace/solution-ledger.jsonl` 或相关 SOP，不能只留在聊天记录。
+- AI 生成代码后的默认收口顺序是：清点 `git status --short` -> 分类 tracked/untracked -> 删除或归档仅限明确属于本轮产生的临时产物 -> 合并重复/过时草稿 -> 运行最小验证 -> 按目的本地 commit。不得把 runtime、缓存、日志、工具状态、临时工作区、归档副本或嵌套项目作为“代码成果”提交。
+- 若发现无关脏树，先隔离：本轮 allowlist 内文件继续验证和 commit；无关 tracked 改动保持未暂存并报告；无关 untracked runtime/临时目录优先加入忽略规则或归档清单，不直接删除，除非用户明确批准。
+- 以后创建临时工作区、agent 输出、下载包、归档或实验目录，默认放到 `/private/tmp`、项目内已忽略目录或明确命名的 `*-archive-*`/runtime 目录；任务结束前必须确认这些产物不会污染目标 repo 的 `git status`。
+- 本仓提交/发布前硬门：运行 `python3 scripts/dirty_tree_guard.py --mode pre-commit`；push/readiness 路径由 `scripts/security_check.sh` 和 `scripts/review_push_guard.sh` 调用该 guard。未知 untracked、runtime/cache/log/tool-state/archive/nested repo/secret-like 路径必须先分类处理。
 - 需要从 PRD 到架构、里程碑、任务、验证的完整开发流时，使用 `harness-engineering-orchestrator`；普通小修复优先使用 `repo-onboarding` + `test-harness`。
 - 不要在 `/Users/yumei` 根目录随意运行 Harness setup。只在目标项目目录明确执行，常用形式：`bun /Users/yumei/.agents/skills/harness-engineering-orchestrator/scripts/harness-setup.ts --isGreenfield=false --skipGithub=true`。
 - Harness 产生的规划、架构、进度、状态必须写回项目文件或 trace ledger，不能只留在聊天里。

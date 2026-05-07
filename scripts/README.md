@@ -11,9 +11,10 @@ This directory contains `/Users/yumei` workspace-level governance and operations
 
 ## Current Source Candidates
 
-- `daily_ai_tools_update_check.py`: read-only AI tool and node health report generator. It probes local/remote tool versions, applies VPS policy checks, writes local runtime reports under `tools/automation/runtime/`, and does not remediate state.
+- `daily_ai_tools_update_check.py`: read-only AI tool and node health report generator. It probes local/remote tool versions, Tailscale identity/state, system update availability, and per-node maintenance recommendations; applies VPS policy checks; writes local runtime reports under `tools/automation/runtime/`; and does not remediate state.
+- `dirty_tree_guard.py`: read-only commit/publish guard for AI-produced worktrees. It blocks staged/tracked/untracked runtime, cache, log, tool-state, archive, nested-repo, secret-like, and unknown untracked artifacts before they can enter commit or push flows.
 - `ops_hub.sh`: local orchestration wrapper for daily/weekly profiles. The default daily profile refreshes the AI systems registry, runs the daily AI tools check, and writes an ops journal.
-- `internal_device_update_orchestrator.py`: high-risk AI tool updater for internal devices. Use `--dry-run` for review; real update runs can change local or remote tool installations and require explicit approval. VPS targets are blocked unless both `--include-vps` and `ALLOW_VPS_AI_TOOL_INSTALL=1` are set after approval.
+- `internal_device_update_orchestrator.py`: high-risk AI tool and opt-in package-maintenance updater for internal devices. Use `--dry-run` for review; real update runs can change local or remote tool installations and require explicit approval. Local/mac-mini `opencode` is Homebrew-managed, while npm updates only core AI tools. VPS targets require `--include-vps` and perform OS apt maintenance only; AI tool installs on VPS remain blocked by policy.
 - `opencode-model-resolver.py`: read-only local helper that resolves the first preferred OpenCode model from `~/.config/opencode/opencode.json`; it does not write config or contact providers.
 - `obsidian_workspace_bridge.py`: local-only one-way bridge that writes a workspace project index into the local Obsidian vault. It does not read vault note contents or copy vault files into repositories.
 - `probe-gpt55-authenticity.sh`: relay anti-spoof probe for `gpt-5.5` using Responses API behavior, negative controls, sampling, and optional official OpenAI A/B comparison.
@@ -23,12 +24,21 @@ This directory contains `/Users/yumei` workspace-level governance and operations
 
 ```bash
 python3 /Users/yumei/scripts/daily_ai_tools_update_check.py
+python3 /Users/yumei/scripts/dirty_tree_guard.py --mode pre-commit
 bash /Users/yumei/scripts/ops_hub.sh run-profile daily
 python3 /Users/yumei/scripts/internal_device_update_orchestrator.py --targets local --dry-run --print-json
 python3 /Users/yumei/scripts/opencode-model-resolver.py --self-test
 python3 /Users/yumei/scripts/obsidian_workspace_bridge.py --dry-run
 bash /Users/yumei/scripts/probe-gpt55-authenticity.sh --help
 ```
+
+The latest daily check summary is:
+
+```bash
+sed -n '/## Tailscale/,$p' /Users/yumei/tools/automation/runtime/ai-tools-update-check/latest-report.md
+```
+
+Use that report to decide whether AI tools, system packages, or Tailscale reachability need attention before running any updater.
 
 ## High-Risk Operations
 
@@ -37,6 +47,8 @@ These are not default checks:
 ```bash
 python3 /Users/yumei/scripts/internal_device_update_orchestrator.py --verify-after
 python3 /Users/yumei/scripts/internal_device_update_orchestrator.py --targets mac-mini,coco,windows-pc --verify-after
+python3 /Users/yumei/scripts/internal_device_update_orchestrator.py --targets local --install-local-brew-updates --verify-after
+python3 /Users/yumei/scripts/internal_device_update_orchestrator.py --targets usa-vps,france-vps --include-vps --install-vps-system-updates --verify-after
 python3 /Users/yumei/scripts/obsidian_vault_cleanup_apply.py --apply
 python3 /Users/yumei/scripts/obsidian_vault_inbox_stub_cleanup.py --apply
 python3 /Users/yumei/scripts/obsidian_vault_inbox_topic_route.py --apply

@@ -49,6 +49,9 @@ apps/api/.venv/
 .omx/
 .gemini/
 .kimi/
+.happy/
+.multica/
+multica_workspaces/
 .cline/
 .openclaw/
 .agents/
@@ -147,6 +150,11 @@ archive/
 .omx/
 .guard/
 agents/
+tool-cleanup-archive-*/
+windows-setup-copy/
+tagledger/
+tagledger-signoff-parser/
+tagledger-signoff-parser-clean/
 docs/ai/
 docs/progress/
 docs/PROGRESS.md

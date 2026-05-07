@@ -11,6 +11,8 @@ fail() {
   exit 1
 }
 
+python3 "$ROOT/scripts/dirty_tree_guard.py" --repo "$ROOT" --mode pre-commit
+
 run_secret_scan() {
   if command -v gitleaks >/dev/null 2>&1; then
     gitleaks detect --source . --redact --no-banner
