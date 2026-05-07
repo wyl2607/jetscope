@@ -1,4 +1,5 @@
 import type { Route } from 'next';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import Link from 'next/link';
 import { ReactNode } from 'react';
 
@@ -31,9 +32,12 @@ export function Shell({
       <header className="border-b border-slate-200 bg-white/90 shadow-sm shadow-slate-200/70 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-4 md:flex-row md:items-center md:justify-between">
           <div className="min-w-0">
-            <Link href="/" className="text-xs uppercase tracking-[0.22em] text-sky-700">
-              JetScope
-            </Link>
+            <div className="flex flex-wrap items-center gap-3">
+              <LanguageSwitcher />
+              <Link href="/" className="text-xs uppercase tracking-[0.22em] text-sky-700">
+                JetScope
+              </Link>
+            </div>
             <p className="mt-1 truncate text-lg font-semibold text-slate-950 md:text-xl">{title}</p>
           </div>
           <nav aria-label="主导航" className="-mx-1 flex gap-1 overflow-x-auto pb-1 text-sm text-slate-700 md:mx-0 md:flex-wrap md:justify-end md:overflow-visible md:pb-0">

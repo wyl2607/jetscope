@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFile } from 'node:fs/promises';
 
 import { importWebLib } from './helpers/load-web-lib.mjs';
 
@@ -361,7 +362,6 @@ test('getGermanyJetFuelReadModel falls back from EU proxy history to global jet 
 });
 
 test('crisis page uses light semantic data cards instead of gray dark boxes', async () => {
-  const { readFile } = await import('node:fs/promises');
   const files = [
     'apps/web/app/crisis/page.tsx',
     'apps/web/components/reserves-coverage-strip.tsx',
@@ -393,7 +393,6 @@ test('crisis page uses light semantic data cards instead of gray dark boxes', as
 });
 
 test('reserve price trends guard finite chart coordinates and highlight the current SAF breakpoint', async () => {
-  const { readFile } = await import('node:fs/promises');
   const reserveSource = await readFile(new URL('../apps/web/app/crisis/eu-jet-reserves/page.tsx', import.meta.url), 'utf8');
   const chartSource = await readFile(new URL('../apps/web/components/price-trends-chart.tsx', import.meta.url), 'utf8');
 
@@ -437,4 +436,34 @@ test('reserve price trends guard finite chart coordinates and highlight the curr
   assert.doesNotMatch(chartSource, /Brent Crude/);
   assert.doesNotMatch(chartSource, /eu_ets_price_eur_per_t/);
   assert.doesNotMatch(chartSource, /const yRange = yMax - yMin;/);
+});
+
+test('scenarios workbench exposes a global language switch and stays product-facing', async () => {
+  const shellSource = await readFile(new URL('../apps/web/components/shell.tsx', import.meta.url), 'utf8');
+  const languageSwitcherSource = await readFile(
+    new URL('../apps/web/components/language-switcher.tsx', import.meta.url),
+    'utf8'
+  );
+  const scenariosSource = await readFile(new URL('../apps/web/app/scenarios/page.tsx', import.meta.url), 'utf8');
+  const registrySource = await readFile(new URL('../apps/web/components/scenario-registry.tsx', import.meta.url), 'utf8');
+  const readinessSource = await readFile(
+    new URL('../apps/web/components/transition-readiness-dashboard.tsx', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(shellSource, /LanguageSwitcher/);
+  assert.match(languageSwitcherSource, /aria-label="语言"/);
+  assert.match(languageSwitcherSource, /中文/);
+  assert.match(languageSwitcherSource, /Deutsch/);
+  assert.match(languageSwitcherSource, /English/);
+  assert.match(languageSwitcherSource, /usePathname/);
+  assert.match(scenariosSource, /页面职责/);
+  assert.match(scenariosSource, /实时价格在决策驾驶舱/);
+  assert.match(scenariosSource, /来源复核在数据来源/);
+  assert.match(scenariosSource, /情景工作区/);
+  assert.match(registrySource, /高级 JSON 设置/);
+  assert.doesNotMatch(
+    `${scenariosSource}\n${registrySource}\n${readinessSource}`,
+    /FastAPI \+ PostgreSQL|第二页|第二页面|canonical|contracts|demo route|\/v1\/policies\/refuel-eu|开发分层|后续接真实数据的接口位|text-slate-300|bg-slate-950|border-slate-800|text-white/
+  );
 });

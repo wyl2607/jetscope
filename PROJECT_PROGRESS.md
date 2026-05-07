@@ -1,5 +1,14 @@
 # JetScope Project Progress
 
+## 2026-05-07 Scenario Product Shell Gate
+
+- Purpose: move `/scenarios` toward a product workbench by separating page responsibilities, removing visible implementation copy, and adding a global language entry in the Shell.
+- Changes: added a top-left language selector inherited by Shell pages, rewrote `/scenarios` copy around page ownership and data truth, converted the scenario registry/editor from dark internal panels to light product controls, and folded raw JSON editors behind an advanced section.
+- Local guidance: added `.omx/local-product-ui-guidelines.md` as an ignored local-only UI/data truth rulebook so development rationale and constraints do not leak into product pages or public commits.
+- Browser evidence: Browser Use reloaded `/scenarios`, confirmed the language dropdown, product-facing page responsibility/data truth copy, no visible `第二页/canonical/contracts` dev text, opened `高级 JSON 设置`, clicked `刷新列表`, switched to the German entry and back to Chinese, and observed no console errors.
+- Validation: `npm test -- test/product-read-model.test.mjs` passed all 71 Node tests; `npm run web:typecheck` passed; `git diff --check` passed.
+- Boundary: no backend, database, migration, refresh job, production data, push, PR, release, deploy, node sync, SSH, rsync, env, or lockfile changes were made.
+
 ## 2026-05-07 Reserve Evidence Chain UI
 
 - Purpose: turn `/crisis/eu-jet-reserves` from a persuasive crisis narrative into a more auditable decision surface grounded in first-principles layers.
