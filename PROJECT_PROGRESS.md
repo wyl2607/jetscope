@@ -460,3 +460,21 @@
 - `npm run web:typecheck` passed.
 - Browser Use verified `/sources -> /sources?filter=review` shows `需复核 5` and `正在显示 5 / 7`.
 - Browser Use clicked carbon source `聚焦` under the review filter and verified clearing focus returns to `/sources?filter=review`.
+## 2026-05-07 Crisis Data Confidence And UI Pass
+
+### Completed
+
+- Browser Use inspected `/crisis` and confirmed the page displayed connected reserve data but still used dark gray cards.
+- Reworked the `/crisis` overview into light, semantic data cards for data time, source type, confidence, market confidence, and decision signal.
+- Kept confidence honest: the current reserve signal is still `manual` at 62%, so the UI labels it as `人工估算` and `中等置信` instead of artificially raising trust.
+- Updated reserve API aggregation so DB-backed official/derived reserve signals use the latest observed reserve row timestamp as `generated_at`; naive SQLite datetimes are normalized back to UTC.
+- Lightened the reserve strip, tipping-event timeline, and research-decision card used on the crisis page.
+
+### Verification
+
+- Browser Use verified `/crisis` shows `人工估算`, `中等置信`, and `市场数据置信度：78%`.
+- Browser Use clicked `/crisis -> /crisis/eu-jet-reserves` and `/crisis -> /crisis/saf-tipping-point`.
+- `npm test -- test/product-read-model.test.mjs` passed: 69 tests.
+- `npm run api:test -- tests/test_reserves_service.py` passed the API test suite command: 88 tests.
+- `npm run web:typecheck` passed.
+- `git diff --check` passed for the modified files.

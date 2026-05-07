@@ -359,3 +359,30 @@ test('getGermanyJetFuelReadModel falls back from EU proxy history to global jet 
   assert.equal(euProxyMetric?.changePct7d, 12.1);
   assert.equal(euProxyMetric?.note, 'Fallback from 航煤');
 });
+
+test('crisis page uses light semantic data cards instead of gray dark boxes', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const files = [
+    'apps/web/app/crisis/page.tsx',
+    'apps/web/components/reserves-coverage-strip.tsx',
+    'apps/web/components/tipping-event-timeline.tsx',
+    'apps/web/components/research-decision-brief.tsx'
+  ];
+
+  for (const file of files) {
+    const source = await readFile(new URL(`../${file}`, import.meta.url), 'utf8');
+    assert.doesNotMatch(
+      source,
+      /bg-slate-950|bg-slate-900|border-slate-800|text-white|text-slate-300/,
+      `${file} should stay on the light crisis review theme`
+    );
+  }
+
+  const crisisSource = await readFile(new URL('../apps/web/app/crisis/page.tsx', import.meta.url), 'utf8');
+  assert.match(crisisSource, /sourceTypeLabel/);
+  assert.match(crisisSource, /confidenceTone/);
+  assert.match(crisisSource, /marketConfidence/);
+  assert.match(crisisSource, /border-emerald-200 bg-emerald-50/);
+  assert.match(crisisSource, /border-amber-200 bg-amber-50/);
+  assert.match(crisisSource, /border-sky-200 bg-sky-50/);
+});

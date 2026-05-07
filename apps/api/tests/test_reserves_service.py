@@ -106,6 +106,7 @@ def test_reserve_signal_response_uses_db_backed_official_source(db_session):
     assert resp.coverage_weeks == round(24 / 7, 2)
     assert resp.source_type == "official"
     assert resp.source_name == "IEA Oil Market Report"
+    assert resp.generated_at == now
 
 
 def test_refresh_without_api_key_returns_zero(db_session, monkeypatch):

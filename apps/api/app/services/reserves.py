@@ -67,6 +67,9 @@ def get_eu_reserve_stress_from_db(db: Session) -> Optional[ReserveStressResponse
     avg_confidence = sum(r.confidence for r in rows.values()) / len(rows)
     sources = {r.source for r in rows.values()}
     source_type = "official" if any("iea" in s.lower() for s in sources) else "derived"
+    observed_at = max(r.timestamp for r in rows.values())
+    if observed_at.tzinfo is None:
+        observed_at = observed_at.replace(tzinfo=timezone.utc)
 
     return ReserveStressResponse(
         region="eu",
@@ -75,6 +78,7 @@ def get_eu_reserve_stress_from_db(db: Session) -> Optional[ReserveStressResponse
         supply_gap_pct=_supply_gap_pct(coverage_days),
         source_type=source_type,
         confidence=round(avg_confidence, 2),
+        observed_at=observed_at,
     )
 
 
