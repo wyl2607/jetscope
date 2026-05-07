@@ -22,5 +22,5 @@ test('tipping point workbench keeps API recompute, URL state, and scenario save 
   assert.match(source, /method: 'POST'/);
   assert.match(source, /\/api\/scenarios/);
   assert.match(source, /x-admin-token/);
-  assert.match(source, /Use live values/);
+  assert.match(source, /使用实时值/);
 });

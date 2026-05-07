@@ -177,7 +177,8 @@ test('getDashboardReadModel summarizes live market, scenario, and risk signals f
     ])
   );
 
-  const { getDashboardReadModel } = await importWebLib('apps/web/lib/product-read-model.ts');
+  const { getDashboardReadModel } = await importWebLib('apps/web/lib/dashboard-read-model.ts');
+  assert.equal(typeof getDashboardReadModel, 'function');
   const readModel = await getDashboardReadModel();
 
   assert.equal(readModel.isFallback, false);
@@ -212,13 +213,82 @@ test('getDashboardReadModel falls back to safe dashboard defaults when the marke
     ])
   );
 
-  const { getDashboardReadModel } = await importWebLib('apps/web/lib/product-read-model.ts');
+  const { getDashboardReadModel } = await importWebLib('apps/web/lib/dashboard-read-model.ts');
   const readModel = await getDashboardReadModel();
 
   assert.equal(readModel.isFallback, true);
   assert.equal(readModel.market.source_status.overall, 'degraded');
   assert.equal(readModel.scenarioCount, 0);
   assert.equal(readModel.topRiskSignal, null);
+  assert.match(readModel.error ?? '', /HTTP 503/);
+});
+
+test('getPriceTrendChartReadModel maps live market history into chart-friendly metrics', async (t) => {
+  installEnv(t, {
+    JETSCOPE_API_BASE_URL: 'https://api.example.com',
+    JETSCOPE_API_PREFIX: '/v1'
+  });
+
+  installFetchStub(
+    t,
+    new Map([
+      [
+        'https://api.example.com/v1/market/history',
+        () =>
+          jsonResponse({
+            metrics: {
+              brent_usd_per_bbl: {
+                metric_key: 'brent_usd_per_bbl',
+                unit: 'USD/bbl',
+                latest_value: 82.4,
+                latest_as_of: '2026-04-23T12:00:00Z',
+                change_pct_1d: 1.2,
+                change_pct_7d: 3.4,
+                change_pct_30d: 5.6,
+                points: [{ as_of: '2026-04-22T12:00:00Z', value: 80.1 }]
+              }
+            }
+          })
+      ]
+    ])
+  );
+
+  const { getPriceTrendChartReadModel } = await importWebLib(
+    'apps/web/lib/price-trend-chart-read-model.ts'
+  );
+  const readModel = await getPriceTrendChartReadModel();
+
+  assert.equal(readModel.isFallback, false);
+  assert.equal(readModel.error, null);
+  assert.equal(readModel.metrics.brent_usd_per_bbl.metric_key, 'brent_usd_per_bbl');
+  assert.equal(readModel.metrics.brent_usd_per_bbl.latest_value, 82.4);
+  assert.equal(readModel.metrics.brent_usd_per_bbl.change_pct_7d, 3.4);
+  assert.equal(readModel.metrics.brent_usd_per_bbl.points.length, 1);
+});
+
+test('getPriceTrendChartReadModel falls back when market history is unavailable', async (t) => {
+  installEnv(t, {
+    JETSCOPE_API_BASE_URL: 'https://api.example.com',
+    JETSCOPE_API_PREFIX: '/v1'
+  });
+
+  installFetchStub(
+    t,
+    new Map([
+      [
+        'https://api.example.com/v1/market/history',
+        () => jsonResponse({ error: 'down' }, 503)
+      ]
+    ])
+  );
+
+  const { getPriceTrendChartReadModel } = await importWebLib(
+    'apps/web/lib/price-trend-chart-read-model.ts'
+  );
+  const readModel = await getPriceTrendChartReadModel();
+
+  assert.equal(readModel.isFallback, true);
+  assert.deepEqual(readModel.metrics, {});
   assert.match(readModel.error ?? '', /HTTP 503/);
 });
 
@@ -287,5 +357,5 @@ test('getGermanyJetFuelReadModel falls back from EU proxy history to global jet 
   assert.equal(euProxyMetric?.value, 1.04);
   assert.equal(euProxyMetric?.sourceMetricKey, 'jet_usd_per_l');
   assert.equal(euProxyMetric?.changePct7d, 12.1);
-  assert.equal(euProxyMetric?.note, 'Fallback from Jet fuel');
+  assert.equal(euProxyMetric?.note, 'Fallback from 航煤');
 });

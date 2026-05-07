@@ -1,4 +1,22 @@
 {
+  "shell": {
+    "nav": {
+      "dashboard": "Decision Cockpit",
+      "crisis": "Crisis Monitor",
+      "scenarios": "Scenarios",
+      "research": "Research Signals",
+      "reports": "Reports",
+      "sources": "Sources",
+      "admin": "Admin"
+    }
+  },
+  "home": {
+    "title": "JetScope Aviation Fuel Transition Decision Entry",
+    "description": "A five-minute view of Europe jet fuel stress signals, SAF tipping-point events, EU ETS cost impact, and AI-assisted research workflows.",
+    "primary_cta": "Open decision cockpit",
+    "scenario_cta": "Test a scenario",
+    "sources_cta": "Check source quality"
+  },
   "dashboard": {
     "market_price": "SAF Market Price",
     "carbon_intensity": "Carbon Intensity",

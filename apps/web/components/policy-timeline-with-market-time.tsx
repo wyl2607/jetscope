@@ -26,9 +26,9 @@ export function PolicyTimelineWithMarketTime() {
         setMarketTimestamp(timestamp);
         setError(null);
       } catch (err) {
-        console.error('Failed to fetch market snapshot:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load market data');
-        // Fallback to current time
+        console.warn('Market timeline is using local time because the live market snapshot is unavailable.', err);
+        setError(err instanceof Error ? err.message : '市场数据加载失败');
+        // Fallback to current time.
         setMarketTimestamp(Date.now());
       } finally {
         setIsLoading(false);
@@ -43,8 +43,10 @@ export function PolicyTimelineWithMarketTime() {
 
   if (error) {
     return (
-      <div className="p-4 bg-yellow-500/10 border border-yellow-500/50 rounded-lg">
-        <p className="text-sm text-yellow-300">Note: Using current time instead of market data ({error})</p>
+      <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
+        <p className="text-sm text-amber-200">
+          实时市场快照暂不可用，时间线暂用本地时间。
+        </p>
         <PolicyTimeline currentTimestamp={marketTimestamp} />
       </div>
     );

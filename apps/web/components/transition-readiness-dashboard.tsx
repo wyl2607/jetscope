@@ -145,7 +145,7 @@ export function TransitionReadinessDashboard({
         });
       } catch (nextError) {
         if (!controller.signal.aborted) {
-          setError(nextError instanceof Error ? nextError.message : 'Failed to refresh dashboard inputs');
+          setError(nextError instanceof Error ? nextError.message : '刷新仪表盘输入失败');
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -179,19 +179,19 @@ export function TransitionReadinessDashboard({
     <section className="space-y-6 rounded-[2rem] border border-slate-800 bg-slate-950/80 p-6 shadow-2xl shadow-sky-950/20">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.28em] text-sky-300">Second page · canonical dashboard</p>
+          <p className="text-xs uppercase tracking-[0.28em] text-sky-300">第二页 · 标准仪表盘</p>
           <h3 className="mt-3 text-2xl font-semibold text-white">SAF 行业转型综合仪表盘</h3>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
             这块面板不再使用本地 demo route 公式，而是直接消费 canonical tipping-point、reserve 和 policy contracts，
             作为第二个价格/拐点 dashboard 的承载页。
           </p>
           <p className="mt-3 text-xs text-slate-500">
-            Reserve source: {initialReserve.source_name} · confidence {Math.round(initialReserve.confidence_score * 100)}%
+            储备来源：{initialReserve.source_name} · 置信度 {Math.round(initialReserve.confidence_score * 100)}%
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <SliderCard
-            label="Fossil jet price"
+            label="化石航油价格"
             value={`$${fossilJet.toFixed(2)}/L`}
             min={0.6}
             max={3.0}
@@ -200,7 +200,7 @@ export function TransitionReadinessDashboard({
             onChange={setFossilJet}
           />
           <SliderCard
-            label="Carbon price"
+            label="碳价"
             value={`€${carbon.toFixed(0)}/t`}
             min={0}
             max={250}
@@ -209,7 +209,7 @@ export function TransitionReadinessDashboard({
             onChange={setCarbon}
           />
           <SliderCard
-            label="Reserve weeks"
+            label="储备周数"
             value={`${reserveWeeks.toFixed(1)}w`}
             min={1}
             max={8}
@@ -218,7 +218,7 @@ export function TransitionReadinessDashboard({
             onChange={setReserveWeeks}
           />
           <SliderCard
-            label="Subsidy"
+            label="补贴"
             value={`$${subsidy.toFixed(2)}/L`}
             min={0}
             max={0.6}
@@ -227,7 +227,7 @@ export function TransitionReadinessDashboard({
             onChange={setSubsidy}
           />
           <SelectCard
-            label="Pathway"
+            label="路径"
             value={selectedPathwayKey}
             options={tippingPoint.pathways.map((pathway) => ({
               label: pathway.display_name,
@@ -240,25 +240,25 @@ export function TransitionReadinessDashboard({
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SignalCard
-          label="Fossil jet"
+          label="化石航油"
           value={`$${tippingPoint.inputs.fossil_jet_usd_per_l.toFixed(2)}/L`}
-          sub="Canonical tipping-point input"
+          sub="标准拐点输入"
           tone="amber"
         />
         <SignalCard
-          label="Effective fossil"
+          label="有效化石航油成本"
           value={`$${tippingPoint.effective_fossil_jet_usd_per_l.toFixed(2)}/L`}
-          sub="Spot plus modeled carbon pressure"
+          sub="现货叠加模型化碳成本压力"
           tone="blue"
         />
         <SignalCard
-          label="Best pathway"
-          value={derived.bestPathway?.display_name ?? 'n/a'}
-          sub={derived.bestPathway ? `Spread ${derived.bestPathway.spread_low_pct.toFixed(1)}% to ${derived.bestPathway.spread_high_pct.toFixed(1)}%` : 'Waiting for pathway data'}
+          label="最优路径"
+          value={derived.bestPathway?.display_name ?? '无数据'}
+          sub={derived.bestPathway ? `价差 ${derived.bestPathway.spread_low_pct.toFixed(1)}% 至 ${derived.bestPathway.spread_high_pct.toFixed(1)}%` : '等待路径数据'}
           tone="purple"
         />
         <SignalCard
-          label="Transition signal"
+          label="转型信号"
           value={derived.signal.label}
           sub={derived.signal.sub}
           tone={derived.signal.tone}
@@ -266,8 +266,8 @@ export function TransitionReadinessDashboard({
       </div>
 
       {error ? (
-        <div className="rounded-2xl border border-rose-800 bg-rose-950/30 px-4 py-3 text-sm text-rose-200">
-          Failed to refresh live scenario inputs: {error}
+        <div className="rounded-2xl border border-amber-700/70 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">
+          实时情景引擎暂不可用，模拟器正在显示可编辑的基准输入。
         </div>
       ) : null}
 
@@ -352,7 +352,7 @@ export function TransitionReadinessDashboard({
           </div>
         </Panel>
 
-        <Panel title="关键政策里程碑" subtitle="shared core 里程碑 + live ReFuelEU targets">
+        <Panel title="关键政策里程碑" subtitle="共享核心里程碑 + 实时 ReFuelEU 目标">
           <div className="relative space-y-4 pl-5">
             <div className="absolute bottom-1 left-[5px] top-1 w-px bg-slate-800" />
             {POLICY_MILESTONES.map((item) => {
@@ -389,7 +389,7 @@ export function TransitionReadinessDashboard({
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <Panel title="主要航空公司 SAF 采用率" subtitle="采用 shared core 单源，保留估算标注">
+        <Panel title="主要航空公司 SAF 采用率" subtitle="采用共享核心单源，保留估算标注">
           <div className="mb-3 grid grid-cols-[126px_1fr_58px_58px] gap-2 border-b border-slate-800 pb-2 text-[11px] uppercase tracking-[0.12em] text-slate-500">
             <span>航空公司</span>
             <span>当前 / 目标</span>
@@ -428,34 +428,34 @@ export function TransitionReadinessDashboard({
           </div>
         </Panel>
 
-        <Panel title="研究提醒" subtitle="展示优先：给第二个 dashboard 的 quick take">
+        <Panel title="研究提醒" subtitle="展示优先：第二个仪表盘的速览">
           <div className="space-y-4">
             <InsightRow
               label="政策平均完成度"
               value={`${derived.countryProgressAverage.toFixed(1)}%`}
-              hint="shared core 国家单源仍显示 2030 目标差距较大"
+              hint="共享核心国家单源仍显示 2030 目标差距较大"
               tone="blue"
             />
             <InsightRow
               label="最接近临界点"
-              value={derived.bestPathway?.display_name ?? 'n/a'}
+              value={derived.bestPathway?.display_name ?? '无数据'}
               hint={
                 derived.bestPathway
-                  ? `当前 spread ${derived.bestPathway.spread_low_pct.toFixed(1)}% to ${derived.bestPathway.spread_high_pct.toFixed(1)}%`
-                  : '等待 pathway response'
+                  ? `当前价差 ${derived.bestPathway.spread_low_pct.toFixed(1)}% 至 ${derived.bestPathway.spread_high_pct.toFixed(1)}%`
+                  : '等待路径响应'
               }
               tone={derived.signal.tone}
             />
             <InsightRow
-              label="当前 reserve signal"
+              label="当前储备信号"
               value={reserveSeverity.level}
-              hint={`${reserveWeeks.toFixed(1)} weeks of modeled coverage`}
+              hint={`${reserveWeeks.toFixed(1)} 周模型化覆盖`}
               tone={reserveSeverity.tone}
             />
             <InsightRow
-              label="Refresh status"
-              value={loading ? 'Refreshing' : 'Stable'}
-              hint="Sliders now re-query canonical tipping-point and airline-decision contracts"
+              label="刷新状态"
+              value={loading ? '刷新中' : '稳定'}
+              hint="滑块会重新查询标准拐点与航司决策合约"
               tone={loading ? 'purple' : 'teal'}
             />
           </div>

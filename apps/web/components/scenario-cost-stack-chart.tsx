@@ -24,9 +24,9 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
       <section className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
         <div className="mb-4">
           <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
-            Scenario cost stack
+            情景成本堆栈
           </h4>
-          <p className="mt-2 text-sm text-slate-500">Scenario cost data unavailable.</p>
+          <p className="mt-2 text-sm text-slate-500">情景成本数据暂不可用。</p>
         </div>
       </section>
     );
@@ -45,21 +45,21 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
   const rows = [
     {
       key: 'fossil',
-      label: 'Fossil spot',
+      label: '化石航油现货',
       value: fossilSpot,
-      hint: 'Observed market price',
+      hint: '观察到的市场价格',
     },
     {
       key: 'effective',
-      label: 'Effective fossil',
+      label: '有效化石航油成本',
       value: effectiveFossil,
-      hint: 'Spot plus modeled carbon pressure',
+      hint: '现货价格叠加模型化碳成本压力',
     },
     {
       key: selectedPathway.pathway_key,
-      label: `${selectedPathway.display_name} midpoint`,
+      label: `${selectedPathway.display_name} 中点`,
       value: selectedMidpoint,
-      hint: `Net cost band ${selectedPathway.net_cost_low_usd_per_l.toFixed(2)}–${selectedPathway.net_cost_high_usd_per_l.toFixed(2)}/L`,
+      hint: `净成本区间 ${selectedPathway.net_cost_low_usd_per_l.toFixed(2)}–${selectedPathway.net_cost_high_usd_per_l.toFixed(2)}/L`,
     }
   ];
 
@@ -67,10 +67,10 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
     <section className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
       <div className="mb-4">
         <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
-          Scenario cost stack
+          情景成本堆栈
         </h4>
         <p className="mt-2 text-sm text-slate-500">
-          A compact comparison of spot fossil cost, carbon-adjusted fossil cost, and the selected pathway midpoint.
+          紧凑对比化石航油现货成本、碳调整后成本与已选路径中点。
         </p>
       </div>
 

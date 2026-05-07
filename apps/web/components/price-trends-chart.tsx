@@ -48,7 +48,7 @@ function LineChart({
   if (!points || points.length === 0) {
     return (
       <div className="flex items-center justify-center bg-slate-800/30 p-4 text-slate-400" style={{ width, height }}>
-        No data available
+        暂无数据
       </div>
     );
   }
@@ -203,9 +203,11 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-red-500/50 bg-red-900/20 p-6 text-red-300">
-        <p className="font-medium">Failed to load price trends</p>
-        <p className="text-sm text-red-200">{error}</p>
+      <div className="rounded-2xl border border-amber-500/50 bg-amber-950/20 p-6 text-amber-100">
+        <p className="font-medium">价格趋势历史暂不可用</p>
+        <p className="mt-1 text-sm text-amber-200">
+          上方仍显示当前回退估算。将趋势变化用于决策前，请先复核来源质量。
+        </p>
       </div>
     );
   }
@@ -213,7 +215,7 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
   if (!metricKeys.length) {
     return (
       <div className="rounded-2xl border border-slate-700 bg-slate-800/30 p-6 text-slate-400">
-        <p>No metrics available</p>
+        <p>暂无可用指标</p>
       </div>
     );
   }
@@ -223,7 +225,7 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
   if (!data) {
     return (
       <div className="rounded-2xl border border-slate-700 bg-slate-800/30 p-6 text-slate-400">
-        <p>No data for selected metric</p>
+        <p>所选指标暂无数据</p>
       </div>
     );
   }
@@ -237,23 +239,23 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
   };
 
   const formatChange = (value: number | null) => {
-    if (!value) return 'n/a';
+    if (!value) return '无数据';
     const sign = value > 0 ? '+' : '';
     return `${sign}${value.toFixed(2)}%`;
   };
 
   const metricLabels: Record<string, string> = {
     brent_usd_per_bbl: 'Brent Crude',
-    jet_usd_per_l: 'Jet Fuel (Global)',
-    jet_eu_proxy_usd_per_l: 'Jet Fuel (EU)',
-    carbon_proxy_usd_per_t: 'Carbon (ETS)'
+    jet_usd_per_l: '航煤（全球）',
+    jet_eu_proxy_usd_per_l: '航煤（欧盟）',
+    carbon_proxy_usd_per_t: '碳价（ETS）'
   };
 
   return (
     <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
       <div className="mb-6">
-        <h3 className="text-lg font-medium text-white">Price Trends</h3>
-        <p className="mt-1 text-sm text-slate-400">1D / 7D / 30D historical changes</p>
+        <h3 className="text-lg font-medium text-white">价格趋势</h3>
+        <p className="mt-1 text-sm text-slate-400">1日 / 7日 / 30日历史变化</p>
       </div>
 
       {/* Metric selector */}
@@ -283,25 +285,25 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
       {/* Metrics display */}
       <div className="grid gap-4 md:grid-cols-4">
         <div className="rounded-lg bg-slate-800/30 p-4">
-          <p className="text-sm text-slate-400">Latest Value</p>
+          <p className="text-sm text-slate-400">最新值</p>
           <p className="mt-2 text-2xl font-semibold text-white">
-            {data.latest_value?.toFixed(2) ?? 'n/a'} {data.unit}
+            {data.latest_value?.toFixed(2) ?? '无数据'} {data.unit}
           </p>
-          <p className="mt-1 text-xs text-slate-500">as of {new Date(data.latest_as_of).toLocaleString()}</p>
+          <p className="mt-1 text-xs text-slate-500">截至 {new Date(data.latest_as_of).toLocaleString('zh-CN')}</p>
         </div>
 
         <div className="rounded-lg bg-slate-800/30 p-4">
-          <p className="text-sm text-slate-400">1 Day</p>
+          <p className="text-sm text-slate-400">1日</p>
           <p className={`mt-2 text-xl font-semibold ${getChangeClass(data.change_pct_1d)}`}>{formatChange(data.change_pct_1d)}</p>
         </div>
 
         <div className="rounded-lg bg-slate-800/30 p-4">
-          <p className="text-sm text-slate-400">7 Days</p>
+          <p className="text-sm text-slate-400">7日</p>
           <p className={`mt-2 text-xl font-semibold ${getChangeClass(data.change_pct_7d)}`}>{formatChange(data.change_pct_7d)}</p>
         </div>
 
         <div className="rounded-lg bg-slate-800/30 p-4">
-          <p className="text-sm text-slate-400">30 Days</p>
+          <p className="text-sm text-slate-400">30日</p>
           <p className={`mt-2 text-xl font-semibold ${getChangeClass(data.change_pct_30d)}`}>{formatChange(data.change_pct_30d)}</p>
         </div>
       </div>

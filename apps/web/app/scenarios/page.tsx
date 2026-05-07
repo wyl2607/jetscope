@@ -9,23 +9,23 @@ import { buildPageMetadata } from '@/lib/seo';
 
 const cards = [
   {
-    title: 'Scenario registry',
+    title: '情景库',
     body: '列出所有情景、状态、创建人、更新时间，以及是否为研究快照。'
   },
   {
-    title: 'Scenario compare',
+    title: '情景对比',
     body: '并排比较当前工作态、保存情景、以及默认政策路径。'
   },
   {
-    title: 'Sensitivity sweeps',
+    title: '敏感性扫描',
     body: '下一步将在这里放 crude / carbon / subsidy sweep 结果。'
   }
 ];
 
 export const metadata: Metadata = buildPageMetadata({
-  title: 'Scenarios',
+  title: '情景',
   description:
-    'Manage SAF transition scenarios, compare policy pathways, and monitor readiness signals with persistent registry-backed workflows.',
+    '管理 SAF 转型情景、比较政策路径，并通过持久化情景库工作流监测就绪度信号。',
   path: '/scenarios'
 });
 
@@ -118,8 +118,8 @@ export default async function ScenariosPage() {
 
   return (
     <Shell
-      eyebrow="Scenario workspace"
-      title="Scenario management & transition monitor"
+      eyebrow="情景工作区"
+      title="情景管理与转型监测"
       description="第二页面承接综合研究仪表盘，并已接入真实 scenario registry（FastAPI + PostgreSQL）用于创建、更新、删除与回填。"
     >
       <TransitionReadinessDashboard
@@ -139,7 +139,7 @@ export default async function ScenariosPage() {
       </section>
 
       <section className="mt-6 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-        <InfoCard title="Why this lives on page two" subtitle="开发分层">
+        <InfoCard title="为什么放在第二页" subtitle="开发分层">
           <div className="space-y-3 text-sm leading-7 text-slate-300">
             <p>1. 首页继续承担实时 market snapshot 与 crisis signal 的即时判断任务。</p>
             <p>2. 第二页面聚焦 canonical tipping-point、pathway、policy 与 scenario registry 的联动展示。</p>
@@ -147,7 +147,7 @@ export default async function ScenariosPage() {
           </div>
         </InfoCard>
 
-        <InfoCard title="Next product hooks" subtitle="后续接真实数据的接口位">
+        <InfoCard title="后续产品挂钩" subtitle="后续接真实数据的接口位">
           <ul className="space-y-3 text-sm leading-7 text-slate-300">
             <li>• 国家政策推进：接 `/v1/policies/refuel-eu` 与地区政策 catalog。</li>
             <li>• 航司采用率：接研究数据库或人工维护的 airline adoption registry。</li>

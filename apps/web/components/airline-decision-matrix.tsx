@@ -12,24 +12,24 @@ const DECISION_COPY: Record<
   { title: string; body: string }
 > = {
   raise_fares: {
-    title: 'Raise fares',
-    body: 'Fuel and carbon pressure are passed through to ticket pricing.'
+    title: '提高票价',
+    body: '将燃油与碳成本压力传导到票价。'
   },
   cut_capacity: {
-    title: 'Cut capacity',
-    body: 'Short-haul or low-margin frequencies are reduced to protect margin.'
+    title: '削减运力',
+    body: '减少短途或低利润航班频次以保护利润率。'
   },
   buy_spot_saf: {
-    title: 'Buy spot SAF',
-    body: 'Short-term SAF procurement increases when compliance pressure rises.'
+    title: '现货采购 SAF',
+    body: '合规压力上升时增加短期 SAF 采购。'
   },
   sign_long_term_offtake: {
-    title: 'Sign long-term offtake',
-    body: 'Procurement shifts from opportunistic buying to structured supply agreements.'
+    title: '签署长期承购',
+    body: '采购从机会型买入转向结构化供给协议。'
   },
   ground_routes: {
-    title: 'Ground routes',
-    body: 'The most stressed edge case where route economics stop working.'
+    title: '停飞航线',
+    body: '航线经济性失效时的最高压力边界情形。'
   }
 };
 
@@ -44,14 +44,14 @@ export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Pr
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
-              Airline decision matrix
+              航司决策矩阵
             </h4>
             <p className="mt-2 text-sm text-slate-500">
-              Reserve stress {reserveWeeks.toFixed(1)}w · selected pathway {pathwayKey.toUpperCase()}
+              储备压力 {reserveWeeks.toFixed(1)} 周 · 已选路径 {pathwayKey.toUpperCase()}
             </p>
           </div>
         </div>
-        <p className="text-sm text-slate-400">Decision model unavailable.</p>
+        <p className="text-sm text-slate-400">决策模型暂不可用。</p>
       </section>
     );
   }
@@ -65,10 +65,10 @@ export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Pr
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
-            Airline decision matrix
+            航司决策矩阵
           </h4>
           <p className="mt-2 text-sm text-slate-500">
-            Reserve stress {reserveWeeks.toFixed(1)}w · selected pathway {pathwayKey.toUpperCase()}
+            储备压力 {reserveWeeks.toFixed(1)} 周 · 已选路径 {pathwayKey.toUpperCase()}
           </p>
         </div>
         <span className="rounded-full border border-sky-900/60 bg-sky-950/30 px-3 py-1 text-xs uppercase tracking-[0.18em] text-sky-200">

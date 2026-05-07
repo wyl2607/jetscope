@@ -106,9 +106,9 @@ export function ScenarioRegistry() {
       if (list.length === 0 && !options?.preserveSelection) {
         resetForm();
       }
-      setStatus(`Loaded ${list.length} scenario(s)`);
+      setStatus(`已加载 ${list.length} 个情景`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load scenarios');
+      setError(err instanceof Error ? err.message : '加载情景失败');
     } finally {
       setLoading(false);
     }
@@ -129,14 +129,14 @@ export function ScenarioRegistry() {
     setRouteEditsJson(stringifyJson(item.route_edits));
     const firstRoute = Object.keys(item.route_edits ?? {})[0];
     setPrimaryRouteId(firstRoute || DEFAULT_ROUTE_ID);
-    setStatus(`Loaded scenario "${item.name}" into editor`);
+    setStatus(`已将情景“${item.name}”载入编辑器`);
     setError(null);
   }
 
   async function createScenario() {
     const trimmed = name.trim();
     if (!trimmed) {
-      setError('Scenario name is required');
+      setError('情景名称不能为空');
       return;
     }
 
@@ -157,11 +157,11 @@ export function ScenarioRegistry() {
       if (!response.ok) {
         throw new Error(body?.detail ?? body?.error ?? `HTTP ${response.status}`);
       }
-      setStatus(`Created scenario "${body.name}"`);
+      setStatus(`已创建情景“${body.name}”`);
       await loadScenarios({ preserveSelection: true });
       populateFromScenario(body as ScenarioRecord);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create scenario');
+      setError(err instanceof Error ? err.message : '创建情景失败');
     } finally {
       setSaving(false);
     }
@@ -169,12 +169,12 @@ export function ScenarioRegistry() {
 
   async function updateScenario() {
     if (!selectedId) {
-      setError('Select a scenario first');
+      setError('请先选择一个情景');
       return;
     }
     const trimmed = name.trim();
     if (!trimmed) {
-      setError('Scenario name is required');
+      setError('情景名称不能为空');
       return;
     }
 
@@ -195,11 +195,11 @@ export function ScenarioRegistry() {
       if (!response.ok) {
         throw new Error(body?.detail ?? body?.error ?? `HTTP ${response.status}`);
       }
-      setStatus(`Updated scenario "${body.name}"`);
+      setStatus(`已更新情景“${body.name}”`);
       await loadScenarios({ preserveSelection: true });
       populateFromScenario(body as ScenarioRecord);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update scenario');
+      setError(err instanceof Error ? err.message : '更新情景失败');
     } finally {
       setSaving(false);
     }
@@ -207,7 +207,7 @@ export function ScenarioRegistry() {
 
   async function deleteScenario() {
     if (!selectedId) {
-      setError('Select a scenario first');
+      setError('请先选择一个情景');
       return;
     }
 
@@ -222,11 +222,11 @@ export function ScenarioRegistry() {
       if (!response.ok) {
         throw new Error(body?.detail ?? body?.error ?? `HTTP ${response.status}`);
       }
-      setStatus(`Deleted scenario ${body?.scenario_id ?? selectedId}`);
+      setStatus(`已删除情景 ${body?.scenario_id ?? selectedId}`);
       resetForm();
       await loadScenarios();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete scenario');
+      setError(err instanceof Error ? err.message : '删除情景失败');
     } finally {
       setSaving(false);
     }
@@ -269,7 +269,7 @@ export function ScenarioRegistry() {
 
   return (
     <section className="mt-8 grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
-      <InfoCard title="Live scenario registry" subtitle="FastAPI + PostgreSQL">
+      <InfoCard title="实时情景注册表" subtitle="FastAPI + PostgreSQL">
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2">
             <button
@@ -278,14 +278,14 @@ export function ScenarioRegistry() {
               onClick={() => loadScenarios({ preserveSelection: true })}
               disabled={loading || saving}
             >
-              {loading ? 'Loading...' : 'Refresh list'}
+              {loading ? '加载中...' : '刷新列表'}
             </button>
             <span className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300">
               {status}
             </span>
           </div>
           <label className="block text-xs uppercase tracking-[0.14em] text-slate-400">
-            Admin token (required for create/update/delete)
+            管理令牌（创建/更新/删除必需）
             <input
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
               value={adminToken}
@@ -300,7 +300,7 @@ export function ScenarioRegistry() {
           ) : null}
           <div className="max-h-80 overflow-y-auto rounded-xl border border-slate-800">
             {scenarios.length === 0 ? (
-              <p className="px-3 py-4 text-sm text-slate-400">No scenarios saved yet.</p>
+              <p className="px-3 py-4 text-sm text-slate-400">尚未保存情景。</p>
             ) : (
               <ul>
                 {scenarios.map((item) => (
@@ -326,20 +326,20 @@ export function ScenarioRegistry() {
         </div>
       </InfoCard>
 
-      <InfoCard title="Scenario editor" subtitle="Create / update / delete">
+      <InfoCard title="情景编辑器" subtitle="创建 / 更新 / 删除">
         <div className="space-y-4">
           <label className="block text-xs uppercase tracking-[0.14em] text-slate-400">
-            Name
+            名称
             <input
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Scenario name"
+              placeholder="情景名称"
             />
           </label>
 
           <div className="rounded-xl border border-slate-800 p-3">
-            <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Guided preferences</p>
+            <p className="text-xs uppercase tracking-[0.14em] text-slate-400">引导式偏好设置</p>
             <div className="mt-3 grid gap-3 md:grid-cols-3">
               <label className="text-xs text-slate-400">
                 crudeSource
@@ -448,7 +448,7 @@ export function ScenarioRegistry() {
           </div>
 
           <div className="rounded-xl border border-slate-800 p-3">
-            <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Guided primary route edit</p>
+            <p className="text-xs uppercase tracking-[0.14em] text-slate-400">引导式主航线编辑</p>
             <div className="mt-3 grid gap-3 md:grid-cols-3">
               <label className="text-xs text-slate-400">
                 route id
@@ -492,7 +492,7 @@ export function ScenarioRegistry() {
           </div>
 
           <label className="block text-xs uppercase tracking-[0.14em] text-slate-400">
-            Preferences JSON (advanced)
+            偏好 JSON（高级）
             <textarea
               className="mt-1 h-32 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-xs text-white"
               value={preferencesJson}
@@ -504,7 +504,7 @@ export function ScenarioRegistry() {
           </label>
 
           <label className="block text-xs uppercase tracking-[0.14em] text-slate-400">
-            Route edits JSON (advanced)
+            航线编辑 JSON（高级）
             <textarea
               className="mt-1 h-32 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-xs text-white"
               value={routeEditsJson}
@@ -522,7 +522,7 @@ export function ScenarioRegistry() {
               onClick={createScenario}
               disabled={saving || !adminToken}
             >
-              Create
+              创建
             </button>
             <button
               type="button"
@@ -530,7 +530,7 @@ export function ScenarioRegistry() {
               onClick={updateScenario}
               disabled={saving || !selectedScenario || !adminToken}
             >
-              Update selected
+              更新所选
             </button>
             <button
               type="button"
@@ -538,7 +538,7 @@ export function ScenarioRegistry() {
               onClick={deleteScenario}
               disabled={saving || !selectedScenario || !adminToken}
             >
-              Delete selected
+              删除所选
             </button>
             <button
               type="button"
@@ -546,7 +546,7 @@ export function ScenarioRegistry() {
               onClick={resetForm}
               disabled={saving}
             >
-              Clear editor
+              清空编辑器
             </button>
           </div>
         </div>

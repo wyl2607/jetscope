@@ -6,15 +6,16 @@ import Script from 'next/script';
 const SITE_NAME = 'JetScope';
 const SITE_URL = 'https://saf.meichen.beauty';
 const SITE_DESCRIPTION =
-  'SAF versus fossil jet fuel decision cockpit with market snapshots, scenario comparison, and source provenance.';
+  'JetScope 是面向航空燃料转型的决策驾驶舱，汇总 SAF 与传统 Jet-A 航油市场快照、情景对比、EU ETS 成本信号和来源溯源。';
 const DEFAULT_KEYWORDS = [
   'SAF',
-  'jet fuel',
-  'aviation fuel',
-  'sustainable aviation fuel',
+  'Jet-A',
+  '航油',
+  '航空燃料',
+  '可持续航空燃料',
   'Lufthansa',
   'ReFuelEU',
-  'fuel cost analysis',
+  '航油成本分析',
   'EU ETS'
 ];
 

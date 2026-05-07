@@ -37,15 +37,15 @@ export function TippingEventTimeline({ events }: Props) {
     <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Tipping Events</p>
-          <h3 className="mt-2 text-xl font-semibold text-white">SAF crossover timeline</h3>
+          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">拐点事件</p>
+          <h3 className="mt-2 text-xl font-semibold text-white">SAF 交叉时间线</h3>
         </div>
-        <p className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300">{events.length} events</p>
+        <p className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300">{events.length} 个事件</p>
       </div>
 
       {events.length === 0 ? (
         <p className="mt-6 rounded-xl border border-dashed border-slate-700 bg-slate-950/60 p-5 text-sm text-slate-300">
-          No recent tipping events returned by <code>/v1/analysis/tipping-point/events</code>.
+          <code>/v1/analysis/tipping-point/events</code> 暂无近期拐点事件。
         </p>
       ) : (
         <div className="mt-6 space-y-3">
@@ -62,9 +62,9 @@ export function TippingEventTimeline({ events }: Props) {
                 </div>
 
                 <div className="mt-3 grid gap-3 text-sm text-slate-300 md:grid-cols-3">
-                  <p>Fossil: {event.fossil_price_usd_per_l.toFixed(3)} USD/L</p>
-                  <p>SAF effective: {event.saf_effective_cost_usd_per_l.toFixed(3)} USD/L</p>
-                  <p>Gap: {formatGap(event.gap_usd_per_l)}</p>
+                  <p>化石航油：{event.fossil_price_usd_per_l.toFixed(3)} USD/L</p>
+                  <p>SAF 有效成本：{event.saf_effective_cost_usd_per_l.toFixed(3)} USD/L</p>
+                  <p>价差：{formatGap(event.gap_usd_per_l)}</p>
                 </div>
               </article>
             );

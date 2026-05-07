@@ -11,9 +11,9 @@ import { FocusScroll } from './focus-scroll';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = buildPageMetadata({
-  title: 'Sources',
+  title: '来源',
   description:
-    'Inspect JetScope source provenance with confidence, lag, fallback status, and live market source health details.',
+    '查看 JetScope 来源溯源、置信度、滞后、回退状态与实时市场来源健康度。',
   path: '/sources'
 });
 
@@ -28,9 +28,9 @@ export default async function SourcesPage({
   const readModel = await getSourcesReadModel();
 
   const alertLabel = (level: "normal" | "watch" | "alert") => {
-    if (level === "alert") return "alert";
-    if (level === "watch") return "watch";
-    return "normal";
+    if (level === "alert") return "警报";
+    if (level === "watch") return "观察";
+    return "正常";
   };
 
   const alertColor = (level: "normal" | "watch" | "alert") => {
@@ -70,11 +70,36 @@ export default async function SourcesPage({
     return 'border-rose-600/40 bg-rose-500/10 text-rose-200';
   };
 
+  const trustLabel = (state: string) => {
+    if (state === 'live') return '实时';
+    if (state === 'proxy') return '代理';
+    if (state === 'fallback') return '回退';
+    if (state === 'degraded') return '降级';
+    return state;
+  };
+
+  const sourceTypeLabel = (sourceType: string) => {
+    if (sourceType === 'market primary') return '市场主要来源';
+    if (sourceType === 'public proxy') return '公开代理';
+    if (sourceType === 'regulatory proxy') return '监管代理';
+    if (sourceType === 'derived proxy') return '派生代理';
+    if (sourceType === 'official') return '官方';
+    if (sourceType === 'unknown') return '未知';
+    return sourceType;
+  };
+
+  const statusLabel = (status: string) => {
+    if (status === 'ok') return '正常';
+    if (status === 'seed') return '种子回退';
+    if (status === 'unknown') return '未知';
+    return status;
+  };
+
   return (
     <Shell
-      eyebrow="Source catalog"
-      title="Source and provenance view"
-      description="该页已接通 FastAPI market snapshot 来源状态。显示每个关键来源的状态、数值与错误信息。"
+      eyebrow="来源目录"
+      title="来源与溯源视图"
+      description="在用于决策前，检查每个市场输入是实时、代理还是估算。"
     >
       <FocusScroll focusMetricKey={focusMetricKey} />
       <div className="mb-6">
@@ -89,20 +114,20 @@ export default async function SourcesPage({
           metrics={readModel.coverageMetrics}
           completeness={readModel.completeness}
           degraded={readModel.degraded}
-          title="API source coverage"
-          subtitle={`${readModel.coverageMetrics.length} canonical metrics · last updated ${new Date(readModel.generatedAt).toLocaleString()}`}
+          title="来源覆盖"
+          subtitle={`${readModel.coverageMetrics.length} 个 canonical metrics · 最近更新 ${new Date(readModel.generatedAt).toLocaleString()}`}
         />
       </div>
-      <InfoCard title="Live source matrix" subtitle={`overall=${readModel.overallStatus}`}>
+      <InfoCard title="市场输入矩阵" subtitle={`总体状态：${readModel.overallStatus}`}>
         <p className="mb-3 text-xs text-slate-400">
-          generated_at: {new Date(readModel.generatedAt).toLocaleString()}
-          {readModel.isFallback && readModel.error ? ` | fallback due to ${readModel.error}` : ''}
+          生成于 {new Date(readModel.generatedAt).toLocaleString()}
+          {readModel.isFallback ? ' · 实时来源覆盖不可用时显示回退估算' : ''}
         </p>
         {focusMetricKey ? (
           <p className="mb-3 text-xs text-sky-300">
-            Focused from dashboard risk signal: <code>{focusMetricKey}</code>{' '}
+            已从驾驶舱风险信号聚焦：<code>{focusMetricKey}</code>{' '}
             <Link href="/sources" className="underline text-sky-200">
-              clear
+              清除
             </Link>
           </p>
         ) : null}
@@ -110,20 +135,20 @@ export default async function SourcesPage({
           <table className="min-w-full text-left text-sm text-slate-300">
             <thead>
               <tr className="border-b border-slate-800 text-slate-400">
-                <th className="py-3 pr-4">Surface</th>
-                <th className="py-3 pr-4">Source</th>
-                <th className="py-3 pr-4">Trust</th>
-                <th className="py-3 pr-4">Scope</th>
-                <th className="py-3 pr-4">Confidence</th>
-                <th className="py-3 pr-4">Lag</th>
-                <th className="py-3 pr-4">Status</th>
-                <th className="py-3 pr-4">Value</th>
+                <th className="py-3 pr-4">界面</th>
+                <th className="py-3 pr-4">来源</th>
+                <th className="py-3 pr-4">可信状态</th>
+                <th className="py-3 pr-4">范围</th>
+                <th className="py-3 pr-4">置信度</th>
+                <th className="py-3 pr-4">滞后</th>
+                <th className="py-3 pr-4">状态</th>
+                <th className="py-3 pr-4">数值</th>
                 <th className="py-3 pr-4">1d</th>
                 <th className="py-3 pr-4">7d</th>
                 <th className="py-3 pr-4">30d</th>
-                <th className="py-3 pr-4">Volatility</th>
-                <th className="py-3 pr-4">Trend</th>
-                <th className="py-3">Why trust / why degraded</th>
+                <th className="py-3 pr-4">波动</th>
+                <th className="py-3 pr-4">趋势</th>
+                <th className="py-3">可信原因 / 降级原因</th>
               </tr>
             </thead>
             <tbody>
@@ -145,14 +170,14 @@ export default async function SourcesPage({
                   <td className="py-3 pr-4">{row.source}</td>
                   <td className="py-3 pr-4">
                     <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] ${trustClass(row.trustState)}`}>
-                      {row.trustState}
+                      {trustLabel(row.trustState)}
                     </span>
-                    <span className="mt-1 block text-xs text-slate-500">{row.sourceType}</span>
+                    <span className="mt-1 block text-xs text-slate-500">{sourceTypeLabel(row.sourceType)}</span>
                   </td>
                   <td className="py-3 pr-4">{row.scope}</td>
                   <td className="py-3 pr-4">{row.confidence}</td>
                   <td className="py-3 pr-4">{row.lag}</td>
-                  <td className="py-3 pr-4">{row.status}</td>
+                  <td className="py-3 pr-4">{statusLabel(row.status)}</td>
                   <td className="py-3 pr-4">{row.value}</td>
                   <td className="py-3 pr-4">{row.change1d}</td>
                   <td className="py-3 pr-4">{row.change7d}</td>
@@ -164,7 +189,7 @@ export default async function SourcesPage({
                     {sparklineDataUrl(row.sparkline) ? (
                       <img
                         src={sparklineDataUrl(row.sparkline) ?? ""}
-                        alt={`${row.surface} trend`}
+                        alt={`${row.surface} 趋势`}
                         width={120}
                         height={28}
                       />

@@ -11,6 +11,8 @@ import {
   type MarketSnapshot
 } from '@/lib/product-read-model';
 
+const DEFAULT_FETCH_TIMEOUT_MS = 2000;
+
 export type GermanyJetFuelMetricKey =
   | 'brent_usd_per_bbl'
   | 'jet_usd_per_l'
@@ -55,7 +57,11 @@ const GERMANY_METRIC_CONFIGS: GermanyMetricConfig[] = [
 
 async function fetchJson<T>(path: string): Promise<T> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
+  const timeoutMs = Number(process.env.JETSCOPE_MARKET_FETCH_TIMEOUT_MS ?? DEFAULT_FETCH_TIMEOUT_MS);
+  const timeout = setTimeout(
+    () => controller.abort(),
+    Number.isFinite(timeoutMs) && timeoutMs >= 100 ? timeoutMs : DEFAULT_FETCH_TIMEOUT_MS
+  );
   try {
     const response = await fetch(buildApiUrl(path), {
       cache: 'no-store',

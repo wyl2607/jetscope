@@ -84,7 +84,7 @@ test('portfolio read model normalizes research signal response variants', async 
     Date.now = originalDateNow;
   });
 
-  const { getResearchSignals } = await importWebLib('apps/web/lib/portfolio-read-model.ts');
+  const { getResearchSignals } = await importWebLib('apps/web/lib/research-signals-read-model.ts');
   const result = await getResearchSignals();
 
   assert.equal(result.status, 'ok');
@@ -112,7 +112,7 @@ test('portfolio read model surfaces missing research API as not_found', async (t
     Date.now = originalDateNow;
   });
 
-  const { getResearchSignals } = await importWebLib('apps/web/lib/portfolio-read-model.ts');
+  const { getResearchSignals } = await importWebLib('apps/web/lib/research-signals-read-model.ts');
   const result = await getResearchSignals();
 
   assert.equal(result.status, 'not_found');
@@ -136,11 +136,11 @@ test('portfolio read model reports invalid JSON as degraded error', async (t) =>
     Date.now = originalDateNow;
   });
 
-  const { getResearchSignals } = await importWebLib('apps/web/lib/portfolio-read-model.ts');
+  const { getResearchSignals } = await importWebLib('apps/web/lib/research-signals-read-model.ts');
   const result = await getResearchSignals();
 
   assert.equal(result.status, 'error');
-  assert.match(result.message, /invalid JSON response/);
+  assert.match(result.message, /无效 JSON 响应/);
 });
 
 test('portfolio read model bounds stalled fetches with configurable timeout', async (t) => {
@@ -167,7 +167,7 @@ test('portfolio read model bounds stalled fetches with configurable timeout', as
     Date.now = originalDateNow;
   });
 
-  const { getResearchSignals } = await importWebLib('apps/web/lib/portfolio-read-model.ts');
+  const { getResearchSignals } = await importWebLib('apps/web/lib/research-signals-read-model.ts');
   const result = await getResearchSignals();
 
   assert.equal(result.status, 'error');

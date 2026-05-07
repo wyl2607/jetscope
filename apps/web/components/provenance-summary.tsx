@@ -12,8 +12,8 @@ type Props = {
 
 function formatGeneratedAt(value: string): string {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'unknown';
-  return date.toLocaleString();
+  if (Number.isNaN(date.getTime())) return '未知';
+  return date.toLocaleString('zh-CN');
 }
 
 function trustTone(summary: SourcesReadModel['summary']): string {
@@ -24,22 +24,22 @@ function trustTone(summary: SourcesReadModel['summary']): string {
 
 export function ProvenanceSummary({ summary, completeness, generatedAt, href }: Props) {
   const content = (
-    <InfoCard title="Source provenance" subtitle="Trust posture for the current market snapshot">
+    <InfoCard title="来源溯源" subtitle="当前市场快照的可信状态">
       <div className="grid gap-3 text-sm md:grid-cols-4">
         <p className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-slate-300">
-          <span className="block text-xs uppercase tracking-[0.14em] text-slate-500">Live</span>
+          <span className="block text-xs uppercase tracking-[0.14em] text-slate-500">实时</span>
           <span className="mt-1 block text-lg font-semibold text-emerald-300">{summary.liveCount}</span>
         </p>
         <p className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-slate-300">
-          <span className="block text-xs uppercase tracking-[0.14em] text-slate-500">Proxy</span>
+          <span className="block text-xs uppercase tracking-[0.14em] text-slate-500">代理</span>
           <span className="mt-1 block text-lg font-semibold text-sky-300">{summary.proxyCount}</span>
         </p>
         <p className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-slate-300">
-          <span className="block text-xs uppercase tracking-[0.14em] text-slate-500">Fallback</span>
+          <span className="block text-xs uppercase tracking-[0.14em] text-slate-500">回退</span>
           <span className="mt-1 block text-lg font-semibold text-amber-300">{summary.fallbackCount}</span>
         </p>
         <p className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-slate-300">
-          <span className="block text-xs uppercase tracking-[0.14em] text-slate-500">Confidence</span>
+          <span className="block text-xs uppercase tracking-[0.14em] text-slate-500">置信度</span>
           <span className="mt-1 block text-lg font-semibold text-white">{Math.round(summary.averageConfidence * 100)}%</span>
         </p>
       </div>
@@ -48,7 +48,7 @@ export function ProvenanceSummary({ summary, completeness, generatedAt, href }: 
         <p className={`text-sm font-semibold ${trustTone(summary)}`}>{summary.trustLabel}</p>
         <p className="mt-2 text-sm leading-6 text-slate-300">{summary.degradedReason}</p>
         <p className="mt-2 text-xs text-slate-500">
-          completeness {Math.round(completeness * 100)}% · {summary.freshnessLabel} · generated {formatGeneratedAt(generatedAt)}
+          完整度 {Math.round(completeness * 100)}% · {summary.freshnessLabel} · 生成于 {formatGeneratedAt(generatedAt)}
         </p>
       </div>
     </InfoCard>
@@ -60,7 +60,7 @@ export function ProvenanceSummary({ summary, completeness, generatedAt, href }: 
     <div className="relative">
       {content}
       <Link href={href} className="absolute right-5 top-5 text-xs font-semibold text-sky-300 underline decoration-sky-500/40 hover:text-sky-200">
-        Inspect sources
+        查看来源
       </Link>
     </div>
   );

@@ -54,7 +54,7 @@ export function AdminDataOps() {
   const [policiesJson, setPoliciesJson] = useState(POLICIES_PLACEHOLDER);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState('Ready');
+  const [status, setStatus] = useState('就绪');
   const [error, setError] = useState<string | null>(null);
   const [adminToken, setAdminToken] = useState('');
   const [draftPathwayId, setDraftPathwayId] = useState('new-pathway');
@@ -64,7 +64,7 @@ export function AdminDataOps() {
   const [draftPolicyYear, setDraftPolicyYear] = useState('2040');
   const [draftPolicySaf, setDraftPolicySaf] = useState('30');
   const [draftPolicySynthetic, setDraftPolicySynthetic] = useState('12');
-  const [draftPolicyLabel, setDraftPolicyLabel] = useState('Draft target');
+  const [draftPolicyLabel, setDraftPolicyLabel] = useState('草案目标');
 
   async function loadAll() {
     setLoading(true);
@@ -86,9 +86,9 @@ export function AdminDataOps() {
       }
       setPathwaysJson(stringify(pathwaysPayload));
       setPoliciesJson(stringify(policiesPayload));
-      setStatus('Loaded pathways + policies');
+      setStatus('已加载路径与政策');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load admin data');
+      setError(err instanceof Error ? err.message : '加载管理数据失败');
     } finally {
       setLoading(false);
     }
@@ -112,9 +112,9 @@ export function AdminDataOps() {
         throw new Error(body?.error ?? `HTTP ${response.status}`);
       }
       setPathwaysJson(stringify(body));
-      setStatus('Pathways saved');
+      setStatus('路径已保存');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save pathways');
+      setError(err instanceof Error ? err.message : '保存路径失败');
     } finally {
       setSaving(false);
     }
@@ -138,9 +138,9 @@ export function AdminDataOps() {
         throw new Error(body?.error ?? `HTTP ${response.status}`);
       }
       setPoliciesJson(stringify(body));
-      setStatus('Policies saved');
+      setStatus('政策已保存');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save policies');
+      setError(err instanceof Error ? err.message : '保存政策失败');
     } finally {
       setSaving(false);
     }
@@ -158,9 +158,9 @@ export function AdminDataOps() {
       if (!response.ok) {
         throw new Error(body?.error ?? `HTTP ${response.status}`);
       }
-      setStatus(body?.message ?? 'Market refresh triggered');
+      setStatus(body?.message ?? '已触发市场刷新');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to trigger market refresh');
+      setError(err instanceof Error ? err.message : '触发市场刷新失败');
     } finally {
       setSaving(false);
     }
@@ -187,10 +187,10 @@ export function AdminDataOps() {
       });
       validatePathwaysPayload(JSON.stringify(list));
       setPathwaysJson(stringify(list));
-      setStatus(`Appended pathway row: ${draftPathwayId}`);
+      setStatus(`已追加路径行：${draftPathwayId}`);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to append pathway draft');
+      setError(err instanceof Error ? err.message : '追加路径草案失败');
     }
   }
 
@@ -205,10 +205,10 @@ export function AdminDataOps() {
       });
       validatePoliciesPayload(JSON.stringify(list));
       setPoliciesJson(stringify(list));
-      setStatus(`Appended policy row: ${draftPolicyYear}`);
+      setStatus(`已追加政策行：${draftPolicyYear}`);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to append policy draft');
+      setError(err instanceof Error ? err.message : '追加政策草案失败');
     }
   }
 
@@ -216,10 +216,10 @@ export function AdminDataOps() {
     try {
       const payload = validatePathwaysPayload(pathwaysJson);
       setPathwaysJson(stringify(payload));
-      setStatus('Pathways JSON validated');
+      setStatus('路径 JSON 已校验');
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Pathways validation failed');
+      setError(err instanceof Error ? err.message : '路径校验失败');
     }
   }
 
@@ -227,16 +227,16 @@ export function AdminDataOps() {
     try {
       const payload = validatePoliciesPayload(policiesJson);
       setPoliciesJson(stringify(payload));
-      setStatus('Policies JSON validated');
+      setStatus('政策 JSON 已校验');
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Policies validation failed');
+      setError(err instanceof Error ? err.message : '政策校验失败');
     }
   }
 
   return (
     <section className="mt-8 grid gap-5 lg:grid-cols-[1fr_1fr]">
-      <InfoCard title="Pathways admin" subtitle="DB-backed /v1/pathways">
+      <InfoCard title="路径管理" subtitle="数据库支撑的 /v1/pathways">
         <div className="space-y-3">
           <div className="grid gap-3 rounded-xl border border-slate-800 p-3 md:grid-cols-2">
             <label className="text-xs text-slate-400">
@@ -281,7 +281,7 @@ export function AdminDataOps() {
               onClick={appendDraftPathway}
               disabled={loading || saving}
             >
-              Append draft pathway row
+              追加路径草案行
             </button>
           </div>
           <textarea
@@ -299,7 +299,7 @@ export function AdminDataOps() {
               onClick={formatAndValidatePathways}
               disabled={loading || saving}
             >
-              Validate + format
+              校验并格式化
             </button>
             <button
               type="button"
@@ -307,16 +307,16 @@ export function AdminDataOps() {
               onClick={savePathways}
               disabled={loading || saving || !adminToken}
             >
-              Save pathways
+              保存路径
             </button>
           </div>
         </div>
       </InfoCard>
 
-      <InfoCard title="Policies admin" subtitle="DB-backed /v1/policies/refuel-eu">
+      <InfoCard title="政策管理" subtitle="数据库支撑的 /v1/policies/refuel-eu">
         <div className="space-y-3">
           <label className="block text-xs uppercase tracking-[0.14em] text-slate-400">
-            Admin token (required for write operations)
+            管理令牌（写操作必需）
             <input
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
               value={adminToken}
@@ -368,7 +368,7 @@ export function AdminDataOps() {
               onClick={appendDraftPolicy}
               disabled={loading || saving}
             >
-              Append draft policy row
+              追加政策草案行
             </button>
           </div>
           <textarea
@@ -386,7 +386,7 @@ export function AdminDataOps() {
               onClick={formatAndValidatePolicies}
               disabled={loading || saving}
             >
-              Validate + format
+              校验并格式化
             </button>
             <button
               type="button"
@@ -394,7 +394,7 @@ export function AdminDataOps() {
               onClick={savePolicies}
               disabled={loading || saving || !adminToken}
             >
-              Save policies
+              保存政策
             </button>
             <button
               type="button"
@@ -402,7 +402,7 @@ export function AdminDataOps() {
               onClick={triggerMarketRefresh}
               disabled={loading || saving || !adminToken}
             >
-              Trigger market refresh
+              触发市场刷新
             </button>
             <button
               type="button"
@@ -410,7 +410,7 @@ export function AdminDataOps() {
               onClick={loadAll}
               disabled={loading || saving}
             >
-              Reload
+              重新加载
             </button>
           </div>
           <p className="text-xs text-slate-400">{status}</p>

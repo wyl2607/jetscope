@@ -1,4 +1,4 @@
-import type { ResearchDecisionBrief } from '@/lib/portfolio-read-model';
+import type { ResearchDecisionBrief } from '@/lib/research-signals-read-model';
 import type { Route } from 'next';
 import Link from 'next/link';
 
@@ -20,16 +20,23 @@ function formatConfidence(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
+function impactLabel(value: ResearchDecisionBrief['topSignals'][number]['impact_direction']): string {
+  if (value === 'positive') return '正向';
+  if (value === 'negative') return '负向';
+  if (value === 'neutral') return '中性';
+  return '未知';
+}
+
 export function ResearchDecisionBriefCard({ brief, compact = false }: Props) {
   return (
     <section className={`rounded-2xl border p-6 ${statusTone(brief.status)}`}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] opacity-75">Research decision layer</p>
+          <p className="text-xs uppercase tracking-[0.18em] opacity-75">研究决策层</p>
           <h3 className="mt-2 text-xl font-semibold text-white">{brief.headline}</h3>
         </div>
         <Link href={RESEARCH_ROUTE} className="rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white/90 transition hover:border-white/40">
-          Open signals
+          打开信号
         </Link>
       </div>
 
@@ -38,10 +45,10 @@ export function ResearchDecisionBriefCard({ brief, compact = false }: Props) {
 
       {!compact ? (
         <div className="mt-5 grid gap-3 text-sm md:grid-cols-4">
-          <p className="rounded-xl border border-white/10 bg-slate-950/40 p-3">Active: {brief.activeCount}</p>
-          <p className="rounded-xl border border-white/10 bg-slate-950/40 p-3">Bullish: {brief.positiveCount}</p>
-          <p className="rounded-xl border border-white/10 bg-slate-950/40 p-3">Bearish: {brief.negativeCount}</p>
-          <p className="rounded-xl border border-white/10 bg-slate-950/40 p-3">Neutral: {brief.neutralCount}</p>
+          <p className="rounded-xl border border-white/10 bg-slate-950/40 p-3">活跃：{brief.activeCount}</p>
+          <p className="rounded-xl border border-white/10 bg-slate-950/40 p-3">利多：{brief.positiveCount}</p>
+          <p className="rounded-xl border border-white/10 bg-slate-950/40 p-3">利空：{brief.negativeCount}</p>
+          <p className="rounded-xl border border-white/10 bg-slate-950/40 p-3">中性：{brief.neutralCount}</p>
         </div>
       ) : null}
 
@@ -51,7 +58,7 @@ export function ResearchDecisionBriefCard({ brief, compact = false }: Props) {
             <article key={signal.id} className="rounded-xl border border-white/10 bg-slate-950/50 p-4">
               <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.14em] text-slate-400">
                 <span>{signal.signal_type}</span>
-                <span>{signal.impact_direction}</span>
+                <span>{impactLabel(signal.impact_direction)}</span>
                 <span>{formatConfidence(signal.confidence)}</span>
               </div>
               <p className="mt-2 text-sm font-semibold text-white">{signal.title}</p>

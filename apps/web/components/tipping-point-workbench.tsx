@@ -87,10 +87,10 @@ export function TippingPointWorkbench({
   });
   const [tippingPoint, setTippingPoint] = useState<TippingPointReadModel | null>(initialTippingPoint);
   const [decision, setDecision] = useState<DecisionReadModel | null>(initialDecision);
-  const [status, setStatus] = useState('Ready');
+  const [status, setStatus] = useState('就绪');
   const [error, setError] = useState<string | null>(null);
   const [adminToken, setAdminToken] = useState('');
-  const [scenarioName, setScenarioName] = useState('SAF tipping point scenario');
+  const [scenarioName, setScenarioName] = useState('SAF 拐点情景');
 
   const query = useMemo(() => {
     const params = new URLSearchParams({
@@ -120,7 +120,7 @@ export function TippingPointWorkbench({
   useEffect(() => {
     const controller = new AbortController();
     const timeout = window.setTimeout(async () => {
-      setStatus('Recomputing analysis...');
+      setStatus('正在重新计算分析...');
       setError(null);
       try {
         const analysisParams = new URLSearchParams({
@@ -145,11 +145,11 @@ export function TippingPointWorkbench({
         ]);
         setTippingPoint(toTippingPointReadModel(nextTippingPoint));
         setDecision(toDecisionReadModel(nextDecision));
-        setStatus('Analysis updated');
+        setStatus('分析已更新');
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
-        setError(err instanceof Error ? err.message : 'Failed to recompute analysis');
-        setStatus('Analysis failed');
+        setError(err instanceof Error ? err.message : '重新计算分析失败');
+        setStatus('分析失败');
       }
     }, 350);
 
@@ -166,7 +166,7 @@ export function TippingPointWorkbench({
     setBlendRatePct(liveDefaults.blendRatePct);
     setReserveWeeks(liveDefaults.reserveWeeks);
     setPathwayKey(liveDefaults.pathwayKey);
-    setStatus('Live market defaults applied');
+    setStatus('已应用实时市场默认值');
   }
 
   function handleAdminTokenChange(value: string) {
@@ -176,10 +176,10 @@ export function TippingPointWorkbench({
   async function postScenario() {
     const trimmed = scenarioName.trim();
     if (!trimmed) {
-      setError('Scenario name is required');
+      setError('情景名称不能为空');
       return;
     }
-    setStatus('Saving scenario...');
+    setStatus('正在保存情景...');
     setError(null);
     try {
       const payload = {
@@ -225,10 +225,10 @@ export function TippingPointWorkbench({
       if (!response.ok) {
         throw new Error(body?.detail ?? body?.error ?? `HTTP ${response.status}`);
       }
-      setStatus(`Saved scenario "${body.name}"`);
+      setStatus(`已保存情景“${body.name}”`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save scenario');
-      setStatus('Save failed');
+      setError(err instanceof Error ? err.message : '保存情景失败');
+      setStatus('保存失败');
     }
   }
 
@@ -237,9 +237,9 @@ export function TippingPointWorkbench({
       <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-950 p-6">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold text-white">Interactive tipping point workbench</h2>
+            <h2 className="text-xl font-bold text-white">交互式拐点工作台</h2>
             <p className="mt-2 text-sm text-slate-400">
-              Adjust market and policy assumptions. Results recompute through the existing FastAPI analysis contracts and the URL stays shareable.
+              调整市场与政策假设。结果通过现有 FastAPI 分析合约重新计算，URL 会保持可分享。
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -248,10 +248,10 @@ export function TippingPointWorkbench({
               className="rounded-lg border border-sky-500/40 bg-sky-500/20 px-3 py-2 text-xs font-semibold text-sky-200"
               onClick={useLiveValues}
             >
-              Use live values
+              使用实时值
             </button>
             <span className="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300">
-              {isPending ? 'Updating URL...' : status}
+              {isPending ? '正在更新 URL...' : status}
             </span>
           </div>
         </div>
@@ -264,7 +264,7 @@ export function TippingPointWorkbench({
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
-            fossil jet USD/L
+            化石航油 USD/L
             <input
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
               type="number"
@@ -275,7 +275,7 @@ export function TippingPointWorkbench({
             />
           </label>
           <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
-            carbon EUR/t
+            碳价 EUR/t
             <input
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
               type="number"
@@ -286,7 +286,7 @@ export function TippingPointWorkbench({
             />
           </label>
           <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
-            subsidy USD/L
+            补贴 USD/L
             <input
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
               type="number"
@@ -297,7 +297,7 @@ export function TippingPointWorkbench({
             />
           </label>
           <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
-            blend rate %
+            掺混比例 %
             <input
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
               type="number"
@@ -309,7 +309,7 @@ export function TippingPointWorkbench({
             />
           </label>
           <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
-            reserve weeks
+            储备周数
             <input
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
               type="number"
@@ -320,7 +320,7 @@ export function TippingPointWorkbench({
             />
           </label>
           <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
-            selected pathway
+            已选路径
             <select
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
               value={selectedPathwayKey}
@@ -335,7 +335,7 @@ export function TippingPointWorkbench({
 
         <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_0.7fr_auto]">
           <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
-            scenario name
+            情景名称
             <input
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
               value={scenarioName}
@@ -343,7 +343,7 @@ export function TippingPointWorkbench({
             />
           </label>
           <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
-            admin token
+            管理令牌
             <input
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
               value={adminToken}
@@ -357,7 +357,7 @@ export function TippingPointWorkbench({
             onClick={postScenario}
             disabled={!adminToken}
           >
-            Save scenario
+            保存情景
           </button>
         </div>
       </section>

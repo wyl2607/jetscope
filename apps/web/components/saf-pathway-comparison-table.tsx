@@ -16,10 +16,10 @@ type Props = {
 };
 
 const maturityLabels: Record<string, string> = {
-  commercial: 'Commercial',
-  scaling: 'Scaling',
-  limited: 'Limited',
-  future: 'Future'
+  commercial: '商业化',
+  scaling: '扩规模',
+  limited: '受限',
+  future: '未来路径'
 };
 
 const canonicalByKey = new Map<string, (typeof listCanonicalPathways extends () => (infer T)[] ? T : never)>(
@@ -35,10 +35,10 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey }: Prop
     <section className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
       <div className="mb-4">
         <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
-          SAF pathway comparison
+          SAF 路径对比
         </h4>
         <p className="mt-2 text-sm text-slate-500">
-          Canonical pathway catalog with live net-cost bands from the tipping-point contract.
+          标准路径目录，叠加拐点合约返回的实时净成本区间。
         </p>
       </div>
 
@@ -46,12 +46,12 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey }: Prop
         <table className="min-w-full text-left text-sm text-slate-300">
           <thead>
             <tr className="border-b border-slate-800 text-slate-500">
-              <th className="py-3 pr-4">Pathway</th>
-              <th className="py-3 pr-4">Net cost</th>
-              <th className="py-3 pr-4">CO₂ reduction</th>
-              <th className="py-3 pr-4">Maturity</th>
-              <th className="py-3 pr-4">Status</th>
-              <th className="py-3">Spread</th>
+              <th className="py-3 pr-4">路径</th>
+              <th className="py-3 pr-4">净成本</th>
+              <th className="py-3 pr-4">CO₂ 减排</th>
+              <th className="py-3 pr-4">成熟度</th>
+              <th className="py-3 pr-4">状态</th>
+              <th className="py-3">价差</th>
             </tr>
           </thead>
           <tbody>
@@ -77,14 +77,14 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey }: Prop
                   <td className="py-3 pr-4">
                     {canonical
                       ? `${canonical.carbonReductionLowPct.toFixed(0)}–${canonical.carbonReductionHighPct.toFixed(0)}%`
-                      : 'n/a'}
+                      : '无数据'}
                   </td>
                   <td className="py-3 pr-4">
-                    {canonical ? maturityLabels[canonical.maturityLevel] ?? canonical.maturityLevel : 'n/a'}
+                    {canonical ? maturityLabels[canonical.maturityLevel] ?? canonical.maturityLevel : '无数据'}
                   </td>
                   <td className={`py-3 pr-4 font-medium ${statusColor}`}>{pathway.status}</td>
                   <td className="py-3">
-                    {pathway.spread_low_pct.toFixed(1)}% to {pathway.spread_high_pct.toFixed(1)}%
+                    {pathway.spread_low_pct.toFixed(1)}% 至 {pathway.spread_high_pct.toFixed(1)}%
                   </td>
                 </tr>
               );
