@@ -107,6 +107,7 @@ export function TippingPointWorkbench({
   const pathways = tippingPoint?.pathways ?? [];
   const selectedPathway = pathways.find((item) => item.pathway_key === pathwayKey) ?? pathways[0] ?? null;
   const selectedPathwayKey = selectedPathway?.pathway_key ?? pathwayKey;
+  const saveDisabledReason = !adminToken ? '输入管理令牌后可保存情景' : null;
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -356,11 +357,16 @@ export function TippingPointWorkbench({
             type="button"
             className="self-end rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-800 transition hover:border-emerald-500 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
             onClick={postScenario}
-            disabled={!adminToken}
+            disabled={Boolean(saveDisabledReason)}
+            aria-disabled={Boolean(saveDisabledReason)}
+            title={saveDisabledReason ?? '保存当前情景'}
           >
             保存情景
           </button>
         </div>
+        {saveDisabledReason ? (
+          <p className="mt-2 text-xs text-slate-500">{saveDisabledReason}</p>
+        ) : null}
       </section>
 
       <section className="mb-8">

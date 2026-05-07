@@ -21,6 +21,12 @@ test('tipping point page is wired to interactive workbench', async () => {
   assert.match(page, /TippingPointWorkbench/);
   assert.match(page, /liveDefaults/);
   assert.match(page, /jet_eu_proxy_usd_per_l/);
+  assert.match(page, /本次计算可信度/);
+  assert.match(page, /sourceCoverageItems/);
+  assert.match(page, /sources\?filter=review/);
+  assert.match(page, /getSourceCoverageTrustState/);
+  assert.match(page, /模型边界与使用建议/);
+  assert.doesNotMatch(page, /所有计算使用实时市场数据/);
 });
 
 test('tipping point workbench keeps API recompute, URL state, and scenario save contracts', async () => {
@@ -33,6 +39,9 @@ test('tipping point workbench keeps API recompute, URL state, and scenario save 
   assert.match(source, /\/api\/scenarios/);
   assert.match(source, /x-admin-token/);
   assert.match(source, /使用实时值/);
+  assert.match(source, /saveDisabledReason/);
+  assert.match(source, /输入管理令牌后可保存情景/);
+  assert.match(source, /aria-disabled/);
 });
 
 test('SAF tipping point workflow stays on the light workbench theme', async () => {

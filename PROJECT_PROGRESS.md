@@ -1,5 +1,13 @@
 # JetScope Project Progress
 
+## 2026-05-07 SAF Source Credibility Workbench Gate
+
+- Purpose: make `/crisis/saf-tipping-point` explain whether each SAF calculation input is live, proxy, fallback, or degraded before users tune the workbench.
+- Changes: added a calculation credibility panel with five SAF input source cards, confidence/lag labels, and a direct `/sources?filter=review` review link; clarified the scenario save disabled state with visible copy and a tooltip; replaced the duplicated bottom provenance block with model-boundary guidance; removed the over-strong claim that all calculations use real-time data.
+- Browser evidence: Browser Use loaded the current SAF URL, confirmed `本次计算可信度`, `5 / 5 个计算输入需要复核`, trust labels, and `输入管理令牌后可保存情景`; clicked `查看需复核来源` to `/sources?filter=review`; clicked `使用实时值`; filled the admin-token field and confirmed `保存情景` changed from disabled to enabled.
+- Validation: `npm test -- test/tipping-point-workbench-contract.test.mjs` passed all 69 Node tests; `npm run web:typecheck` passed; targeted `git diff --check` passed.
+- Boundary: no push, PR, release, deploy, node sync, SSH, rsync, lockfile, env, or production database changes were made.
+
 ## 2026-05-07 Sources Flow And Timestamp Gate
 
 - Purpose: verify `/sources` as a real front/back-end provenance surface and remove misleading freshness/UI regressions.

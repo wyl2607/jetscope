@@ -1,6 +1,12 @@
 import { Shell } from '@/components/shell';
 import { getDashboardReadModel, toDecisionReadModel, toTippingPointReadModel } from '@/lib/product-read-model';
-import type { Metadata } from 'next';
+import {
+  formatSourceCoverageLag,
+  getSourceCoverageTrustState,
+  type SourceCoverageMetric,
+  type SourceCoverageTrustState
+} from '@/lib/source-coverage-contract';
+import type { Metadata, Route } from 'next';
 import Link from 'next/link';
 import { buildPageMetadata } from '@/lib/seo';
 import { TippingPointWorkbench } from '@/components/tipping-point-workbench';
@@ -14,12 +20,62 @@ export const metadata: Metadata = buildPageMetadata({
   path: '/crisis/saf-tipping-point'
 });
 
+const SAF_SOURCE_METRICS = [
+  'jet_eu_proxy_usd_per_l',
+  'jet_usd_per_l',
+  'carbon_proxy_usd_per_t',
+  'eu_ets_price_eur_per_t',
+  'rotterdam_jet_fuel_usd_per_l'
+] as const;
+
+const REVIEW_SOURCES_ROUTE = '/sources?filter=review' as Route;
+
+function sourceTrustLabel(state: SourceCoverageTrustState): string {
+  if (state === 'live') return '实时';
+  if (state === 'proxy') return '代理';
+  if (state === 'fallback') return '回退';
+  return '降级';
+}
+
+function sourceTrustTone(state: SourceCoverageTrustState): string {
+  if (state === 'live') return 'border-emerald-200 bg-emerald-50 text-emerald-800';
+  if (state === 'proxy') return 'border-sky-200 bg-sky-50 text-sky-800';
+  if (state === 'fallback') return 'border-amber-200 bg-amber-50 text-amber-800';
+  return 'border-rose-200 bg-rose-50 text-rose-700';
+}
+
+function sourceMetricLabel(metricKey: string): string {
+  if (metricKey === 'jet_eu_proxy_usd_per_l') return 'EU 航煤代理';
+  if (metricKey === 'jet_usd_per_l') return '全球航煤';
+  if (metricKey === 'carbon_proxy_usd_per_t') return '碳价代理';
+  if (metricKey === 'eu_ets_price_eur_per_t') return 'EU ETS';
+  if (metricKey === 'rotterdam_jet_fuel_usd_per_l') return 'Rotterdam 航煤';
+  return metricKey;
+}
+
+function sourceStatusCopy(metric: SourceCoverageMetric): string {
+  if (metric.fallback_used) return '用于计算前请复核回退路径';
+  if (metric.status !== 'ok') return '来源暂不可用或已降级';
+  if (metric.source_type.includes('proxy') || metric.source_type === 'derived') return '代理来源，适合情景分析';
+  return '主来源可用';
+}
+
 export default async function SafTippingPointPage() {
   const readModel = await getDashboardReadModel();
   const tippingPoint = toTippingPointReadModel(readModel.tippingPoint);
   const airlineDecision = toDecisionReadModel(readModel.airlineDecision);
   const liveFuel = readModel.market.values?.jet_eu_proxy_usd_per_l ?? readModel.market.values?.jet_usd_per_l ?? 1.3;
   const liveCarbonUsd = readModel.market.values?.carbon_proxy_usd_per_t ?? 102.6;
+  const sourceCoverageItems = (readModel.sourceCoverage?.metrics ?? [])
+    .filter((metric) => SAF_SOURCE_METRICS.includes(metric.metric_key as (typeof SAF_SOURCE_METRICS)[number]))
+    .map((metric) => ({
+      metric,
+      trustState: getSourceCoverageTrustState(metric)
+    }));
+  const degradedSourceCount = sourceCoverageItems.filter(({ trustState }) => trustState !== 'live').length;
+  const sourceCoverageSummary = readModel.sourceCoverage
+    ? `${degradedSourceCount} / ${sourceCoverageItems.length} 个计算输入需要复核`
+    : '来源覆盖暂不可用，当前计算应视为情景基线';
 
   return (
     <Shell
@@ -53,8 +109,44 @@ export default async function SafTippingPointPage() {
         </p>
         <p className="mt-4 text-sm text-slate-600">
           本页提供交互工具，用于评估航空燃料转型经济性。
-          所有计算使用实时市场数据与最新 SAF 路径成本研究。
+          市场输入优先使用实时来源；当来源降级时，计算会明确标出代理或回退路径。
         </p>
+      </section>
+
+      <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">计算输入</p>
+            <h2 className="mt-2 text-xl font-bold text-slate-950">本次计算可信度</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{sourceCoverageSummary}</p>
+          </div>
+          <Link
+            href={REVIEW_SOURCES_ROUTE}
+            className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800 hover:border-sky-500 hover:bg-sky-100"
+          >
+            查看需复核来源
+          </Link>
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          {sourceCoverageItems.length ? (
+            sourceCoverageItems.map(({ metric, trustState }) => (
+              <article key={metric.metric_key} className={`rounded-xl border p-4 ${sourceTrustTone(trustState)}`}>
+                <p className="text-xs uppercase tracking-[0.14em] opacity-75">{sourceTrustLabel(trustState)}</p>
+                <h3 className="mt-2 text-sm font-semibold">{sourceMetricLabel(metric.metric_key)}</h3>
+                <p className="mt-2 text-xs opacity-80">{metric.source_name}</p>
+                <p className="mt-2 text-xs opacity-80">
+                  置信度 {Math.round(metric.confidence_score * 100)}% · 滞后 {formatSourceCoverageLag(metric.lag_minutes)}
+                </p>
+                <p className="mt-2 text-xs opacity-80">{sourceStatusCopy(metric)}</p>
+              </article>
+            ))
+          ) : (
+            <p className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+              未能读取来源覆盖合约。请先检查 API readiness 和来源页。
+            </p>
+          )}
+        </div>
       </section>
 
       <TippingPointWorkbench
@@ -71,15 +163,15 @@ export default async function SafTippingPointPage() {
         }}
       />
 
-      {/* Source Coverage */}
+      {/* Model Boundaries */}
       <section className="rounded-2xl border border-slate-200 bg-white p-8">
-        <h2 className="text-xl font-bold text-slate-950 mb-4">数据来源与可信度</h2>
+        <h2 className="text-xl font-bold text-slate-950 mb-4">模型边界与使用建议</h2>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-600 mb-2">市场数据</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-600 mb-2">输入解释</h3>
             <p className="text-sm text-slate-700">
-              Brent 原油、航油代理价与 EU ETS 价格来自实时来源或高置信度代理。
-              来源元数据可在数据来源页查看。
+              计算面板优先采用实时市场来源；当实时来源不可用时，会显示代理、回退或降级状态。
+              进入来源页可复核每个输入的来源、滞后与置信度。
             </p>
           </div>
           <div>
