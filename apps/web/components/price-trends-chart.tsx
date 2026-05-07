@@ -31,6 +31,116 @@ type Props = {
   error?: string | null;
 };
 
+type TimeWindow = '7d' | '30d' | 'all';
+
+type MetricMeta = {
+  label: string;
+  shortLabel: string;
+  axisUnit: string;
+  explanation: string;
+  comparison: string;
+};
+
+const TIME_WINDOWS: Array<{ key: TimeWindow; label: string; days: number | null }> = [
+  { key: '7d', label: '近7天', days: 7 },
+  { key: '30d', label: '近30天', days: 30 },
+  { key: 'all', label: '全部历史', days: null }
+];
+
+const METRIC_META: Record<string, MetricMeta> = {
+  brent_usd_per_bbl: {
+    label: '布伦特原油',
+    shortLabel: '布伦特',
+    axisUnit: 'USD/bbl',
+    explanation: '全球原油基准价，用于判断航油成本压力是否由上游原油驱动。',
+    comparison: '适合与全球航油、欧盟航油代理价一起看，确认炼厂价差是否正在扩大。'
+  },
+  jet_usd_per_l: {
+    label: '全球航油均价',
+    shortLabel: '全球航油',
+    axisUnit: 'USD/L',
+    explanation: '全球 Jet-A 价格，用来判断航空燃料的基准成本走势。',
+    comparison: '和欧盟航油代理价对比，可以看欧洲区域是否出现额外供应溢价。'
+  },
+  jet_eu_proxy_usd_per_l: {
+    label: '欧盟航油代理价',
+    shortLabel: '欧盟航油',
+    axisUnit: 'USD/L',
+    explanation: '欧洲航油代理价格，更贴近本页的储备压力和 SAF 替代判断。',
+    comparison: '和全球航油均价对比，可以识别欧洲本地紧张程度；和 SAF 成本对比可判断拐点距离。'
+  },
+  carbon_proxy_usd_per_t: {
+    label: '碳价代理',
+    shortLabel: '碳价',
+    axisUnit: 'USD/tCO2',
+    explanation: '碳成本会推高化石航油的有效成本，因此会提前 SAF 盈亏平衡点。',
+    comparison: '可与欧盟 ETS 配额走势一起看，判断碳成本是否在加速进入燃油决策。'
+  }
+};
+
+function metricMetaFor(metricKey: string, unit?: string): MetricMeta {
+  if (METRIC_META[metricKey]) return METRIC_META[metricKey];
+  if (metricKey.includes('ets')) {
+    return {
+      label: '欧盟 ETS 配额',
+      shortLabel: 'EU ETS',
+      axisUnit: unit || 'EUR/tCO2',
+      explanation: '欧盟排放配额价格，是欧洲航空碳成本压力的重要参考。',
+      comparison: '和碳价代理一起看，可以判断代理值是否偏离实际 ETS 市场。'
+    };
+  }
+  if (metricKey.includes('rotterdam')) {
+    return {
+      label: '鹿特丹航油',
+      shortLabel: '鹿特丹',
+      axisUnit: unit || 'USD/L',
+      explanation: '鹿特丹航油反映欧洲枢纽现货压力，可作为欧盟航油代理价的复核点。',
+      comparison: '和欧盟航油代理价、全球航油均价对比，可以识别欧洲供应紧张是否局部放大。'
+    };
+  }
+  if (metricKey.includes('germany')) {
+    return {
+      label: '德国价格溢价',
+      shortLabel: '德国溢价',
+      axisUnit: unit || '%',
+      explanation: '德国市场溢价用于观察区域燃油成本是否高于全球基准。',
+      comparison: '和欧盟航油代理价一起看，可以判断区域溢价是否和欧洲供应压力同步。'
+    };
+  }
+
+  const humanized = metricKey
+    .replace(/_/g, ' ')
+    .replace(/\busd\b/gi, 'USD')
+    .replace(/\beur\b/gi, 'EUR');
+  return {
+    label: humanized,
+    shortLabel: humanized,
+    axisUnit: unit || 'value',
+    explanation: '该指标来自本地历史库，适合用于辅助判断趋势方向。',
+    comparison: '建议和布伦特原油、全球航油、欧盟航油代理价放在同一决策语境中复核。'
+  };
+}
+
+function filterPointsByWindow(points: PricePoint[], timeWindow: TimeWindow): PricePoint[] {
+  const finitePoints = (points ?? []).filter(
+    (point) => Number.isFinite(point.value) && !Number.isNaN(new Date(point.as_of).getTime())
+  );
+  const windowConfig = TIME_WINDOWS.find((item) => item.key === timeWindow);
+  if (!windowConfig?.days || finitePoints.length <= 1) return finitePoints;
+
+  const latestTime = Math.max(...finitePoints.map((point) => new Date(point.as_of).getTime()));
+  const cutoffTime = latestTime - windowConfig.days * 24 * 60 * 60 * 1000;
+  const windowPoints = finitePoints.filter((point) => new Date(point.as_of).getTime() >= cutoffTime);
+  return windowPoints.length >= 2 ? windowPoints : finitePoints.slice(-Math.min(finitePoints.length, windowConfig.days));
+}
+
+function formatDateLabel(value?: string): string {
+  if (!value) return '暂无';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+}
+
 // LineChart component
 function LineChart({
   points,
@@ -45,6 +155,7 @@ function LineChart({
   metricKey: string;
   events?: MarketEvent[];
 }) {
+  const metricMeta = metricMetaFor(metricKey);
   const finitePoints = (points ?? []).filter(
     (point) => Number.isFinite(point.value) && !Number.isNaN(new Date(point.as_of).getTime())
   );
@@ -81,8 +192,8 @@ function LineChart({
   const getY = (value: number) => padding.top + chartHeight - ((value - yMin) / chartYRange) * chartHeight;
 
   const formatAxisValue = (value: number) => {
-    if (metricKey.includes('pct')) return `${value.toFixed(1)}%`;
-    if (metricKey.includes('_per_l')) return value.toFixed(2);
+    if (metricMeta.axisUnit.includes('%')) return `${value.toFixed(1)}%`;
+    if (metricMeta.axisUnit.includes('/L')) return value.toFixed(2);
     return value.toFixed(0);
   };
 
@@ -135,9 +246,15 @@ function LineChart({
 
       {/* Y-axis */}
       <line x1={padding.left} y1={padding.top} x2={padding.left} y2={padding.top + chartHeight} stroke="#94a3b8" strokeWidth="2" />
+      <text x={padding.left} y={12} fontSize="11" fill="#475569">
+        左轴：{metricMeta.axisUnit}
+      </text>
 
       {/* X-axis */}
       <line x1={padding.left} y1={padding.top + chartHeight} x2={width - padding.right} y2={padding.top + chartHeight} stroke="#94a3b8" strokeWidth="2" />
+      <text x={width - padding.right} y={padding.top + chartHeight - 8} textAnchor="end" fontSize="11" fill="#475569">
+        横轴：日期
+      </text>
 
       {/* Data points */}
       {finitePoints.map((point, index) => (
@@ -185,10 +302,10 @@ function LineChart({
 
       {/* X-axis labels (start and end dates) */}
       <text x={padding.left} y={height - 8} fontSize="12" fill="#64748b">
-        {startDate}
+        {formatDateLabel(startDate)}
       </text>
       <text x={width - padding.right} y={height - 8} textAnchor="end" fontSize="12" fill="#64748b">
-        {endDate}
+        {formatDateLabel(endDate)}
       </text>
     </svg>
   );
@@ -208,6 +325,7 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
   const [selectedMetric, setSelectedMetric] = useState<string>(
     Object.keys(metrics).find((k) => k === 'brent_usd_per_bbl') || Object.keys(metrics)[0] || 'brent_usd_per_bbl'
   );
+  const [timeWindow, setTimeWindow] = useState<TimeWindow>('30d');
 
   const metricKeys = useMemo(() => Object.keys(metrics), [metrics]);
 
@@ -244,6 +362,15 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
     );
   }
 
+  const selectedMeta = metricMetaFor(selectedMetric, data.unit);
+  const windowPoints = filterPointsByWindow(data.points || [], timeWindow);
+  const firstPoint = windowPoints[0] ?? null;
+  const lastPoint = windowPoints[windowPoints.length - 1] ?? null;
+  const windowChange = firstPoint && lastPoint && Math.abs(firstPoint.value) > 1e-9
+    ? ((lastPoint.value - firstPoint.value) / firstPoint.value) * 100
+    : null;
+  const activeWindowLabel = TIME_WINDOWS.find((item) => item.key === timeWindow)?.label ?? '当前窗口';
+
   const getChangeClass = (value: number | null) => {
     if (value == null) return 'text-slate-500';
     const magnitude = Math.abs(value);
@@ -258,34 +385,58 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
     return `${sign}${value.toFixed(2)}%`;
   };
 
-  const metricLabels: Record<string, string> = {
-    brent_usd_per_bbl: 'Brent Crude',
-    jet_usd_per_l: '航煤（全球）',
-    jet_eu_proxy_usd_per_l: '航煤（欧盟）',
-    carbon_proxy_usd_per_t: '碳价（ETS）'
-  };
-
   return (
     <article className="rounded-2xl border border-sky-200 bg-sky-50/70 p-6">
-      <div className="mb-6">
-        <h3 className="text-lg font-medium text-slate-950">价格趋势</h3>
-        <p className="mt-1 text-sm text-slate-600">1日 / 7日 / 30日历史变化；仅绘制有效历史点</p>
+      <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_0.75fr]">
+        <div>
+          <h3 className="text-lg font-medium text-slate-950">价格趋势</h3>
+          <p className="mt-1 text-sm text-slate-600">
+            像交易网站一样切换指标和时间窗口。左轴显示当前指标单位，横轴显示本地历史库日期。
+          </p>
+        </div>
+        <div className="rounded-xl border border-sky-200 bg-white p-4 text-sm text-slate-700">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">当前指标</p>
+          <p className="mt-2 font-semibold text-slate-950">{selectedMeta.label}</p>
+          <p className="mt-2 leading-6">{selectedMeta.explanation}</p>
+          <p className="mt-2 text-xs leading-5 text-slate-500">{selectedMeta.comparison}</p>
+        </div>
       </div>
 
       {/* Metric selector */}
       <div className="mb-6 flex flex-wrap gap-2">
         {metricKeys.map((key) => {
           const metric = metrics[key];
+          const meta = metricMetaFor(key, metric.unit);
           const isSelected = key === selectedMetric;
           return (
             <button
               key={key}
               onClick={() => setSelectedMetric(key)}
+              aria-pressed={isSelected}
               className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
                 isSelected ? 'bg-sky-600 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50'
               }`}
             >
-              {metricLabels[key as keyof typeof metricLabels] || key}
+              {meta.shortLabel}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mb-6 flex flex-wrap gap-2" aria-label="时间窗口">
+        {TIME_WINDOWS.map((item) => {
+          const isSelected = item.key === timeWindow;
+          return (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => setTimeWindow(item.key)}
+              aria-pressed={isSelected}
+              className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                isSelected ? 'bg-slate-950 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:border-slate-500'
+              }`}
+            >
+              {item.label}
             </button>
           );
         })}
@@ -293,7 +444,18 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
 
       {/* Chart */}
       <div className="mb-6 overflow-x-auto">
-        <LineChart points={data.points || []} metricKey={selectedMetric} events={events} width={600} height={300} />
+        <LineChart points={windowPoints} metricKey={selectedMetric} events={events} width={600} height={300} />
+      </div>
+
+      <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
+        <p className="font-semibold text-slate-950">当前窗口：{activeWindowLabel}</p>
+        <p className="mt-1">
+          样本 {windowPoints.length} 个，日期 {formatDateLabel(firstPoint?.as_of)} 至 {formatDateLabel(lastPoint?.as_of)}。
+          窗口内变化 {formatChange(windowChange)}。
+        </p>
+        <p className="mt-1 text-xs text-slate-500">
+          左轴：{selectedMeta.axisUnit}；横轴：本地历史日期。若某个窗口样本不足，图表会保留可用历史点而不伪造数据。
+        </p>
       </div>
 
       {/* Metrics display */}

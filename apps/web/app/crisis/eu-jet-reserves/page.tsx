@@ -193,43 +193,56 @@ export default async function EuJetReserveCrisisPage() {
 
       {/* SAF competitiveness table */}
       <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-8">
-        <h2 className="text-xl font-semibold text-slate-950">当前与压力情景下的 SAF 竞争力</h2>
-        <div className="mt-6 overflow-x-auto">
-          <table className="w-full border-separate border-spacing-y-2 text-sm text-slate-700">
-            <thead>
-              <tr className="text-left text-slate-500">
-                <th className="py-3 pr-4">油价情景</th>
-                <th className="py-3 pr-4">Jet-A 成本</th>
-                <th className="py-3 pr-4">HEFA SAF 成本</th>
-                <th className="py-3 pr-4">SAF 溢价</th>
-                <th className="py-3">信号</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="bg-slate-50">
-                <td className="py-3 pr-4">$80/bbl（2024 基准）</td>
-                <td className="py-3 pr-4">~$0.95/L</td>
-                <td className="py-3 pr-4">$1.60–1.85/L</td>
-                <td className="py-3 pr-4 text-rose-700">+70–95%</td>
-                <td className="py-3 text-rose-700">SAF 经济性不足</td>
-              </tr>
-              <CurrentSafBreakpointRow />
-              <tr className="bg-slate-50">
-                <td className="py-3 pr-4">$130/bbl（压力）</td>
-                <td className="py-3 pr-4">~${formatNumber((130 / 158.987) * 1.20, 2)}/L</td>
-                <td className="py-3 pr-4">$1.60–1.85/L</td>
-                <td className="py-3 pr-4 text-yellow-700">+{formatNumber(((1.60 / ((130 / 158.987) * 1.20)) - 1) * 100, 0)}–{formatNumber(((1.85 / ((130 / 158.987) * 1.20)) - 1) * 100, 0)}%</td>
-                <td className="py-3 text-yellow-700">边际切换</td>
-              </tr>
-              <tr className="bg-slate-50">
-                <td className="py-3 pr-4">$150/bbl（2030 预测）</td>
-                <td className="py-3 pr-4">~${formatNumber((150 / 158.987) * 1.20, 2)}/L</td>
-                <td className="py-3 pr-4">$1.20–1.40/L (scaled)</td>
-                <td className="py-3 pr-4 text-emerald-700">−10 to +15%</td>
-                <td className="py-3 text-emerald-700">SAF 占优</td>
-              </tr>
-            </tbody>
-          </table>
+        <div className="grid gap-6 lg:grid-cols-[1fr_0.38fr]">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-950">当前与压力情景下的 SAF 竞争力</h2>
+            <div className="mt-6 overflow-x-auto">
+              <table className="mx-auto w-full max-w-4xl border-separate border-spacing-y-2 text-sm text-slate-700">
+                <thead>
+                  <tr className="text-left text-slate-500">
+                    <th className="py-3 pr-4">油价情景</th>
+                    <th className="py-3 pr-4">Jet-A 成本</th>
+                    <th className="py-3 pr-4">HEFA SAF 成本</th>
+                    <th className="py-3 pr-4">SAF 溢价</th>
+                    <th className="py-3">信号</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="bg-slate-50">
+                    <td className="py-3 pr-4">$80/bbl（2024 基准）</td>
+                    <td className="py-3 pr-4">~$0.95/L</td>
+                    <td className="py-3 pr-4">$1.60–1.85/L</td>
+                    <td className="py-3 pr-4 text-rose-700">+70–95%</td>
+                    <td className="py-3 text-rose-700">SAF 经济性不足</td>
+                  </tr>
+                  <CurrentSafBreakpointRow />
+                  <tr className="bg-slate-50">
+                    <td className="py-3 pr-4">$130/bbl（压力）</td>
+                    <td className="py-3 pr-4">~${formatNumber((130 / 158.987) * 1.20, 2)}/L</td>
+                    <td className="py-3 pr-4">$1.60–1.85/L</td>
+                    <td className="py-3 pr-4 text-yellow-700">+{formatNumber(((1.60 / ((130 / 158.987) * 1.20)) - 1) * 100, 0)}–{formatNumber(((1.85 / ((130 / 158.987) * 1.20)) - 1) * 100, 0)}%</td>
+                    <td className="py-3 text-yellow-700">边际切换</td>
+                  </tr>
+                  <tr className="bg-slate-50">
+                    <td className="py-3 pr-4">$150/bbl（2030 预测）</td>
+                    <td className="py-3 pr-4">~${formatNumber((150 / 158.987) * 1.20, 2)}/L</td>
+                    <td className="py-3 pr-4">$1.20–1.40/L (scaled)</td>
+                    <td className="py-3 pr-4 text-emerald-700">−10 to +15%</td>
+                    <td className="py-3 text-emerald-700">SAF 占优</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <aside className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">阅读方式</p>
+            <p className="mt-3 leading-6">
+              拐点行不是预测结论，而是把当前油价换算成 Jet-A 每升成本后，与 HEFA SAF 成本区间做距离比较。
+            </p>
+            <p className="mt-3 leading-6">
+              如果 SAF 溢价继续收窄，运营方应优先复核碳价、欧盟航油代理价和储备周数，再进入 SAF 工作台做情景测试。
+            </p>
+          </aside>
         </div>
       </section>
 

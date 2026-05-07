@@ -1,5 +1,13 @@
 # JetScope Project Progress
 
+## 2026-05-07 Localized Trading-Style Trend Controls
+
+- Purpose: make the reserve page history chart truthfully behave like a time-windowed market chart instead of merely labeling 1d/7d/30d summary cards.
+- Changes: localized the price-trend metric buttons, added `近7天` / `近30天` / `全部历史` window controls, added left-axis and x-axis explanatory labels, added current-window sample/date/change copy, added per-metric interpretation text for Brent, carbon, EU ETS, global jet, EU jet, Rotterdam, and Germany premium, and added a reading guide beside the SAF competitiveness table.
+- Browser evidence: Browser Use loaded `/crisis/eu-jet-reserves`, confirmed `阅读方式`, `当前窗口：近30天`, left/right axis copy, and Chinese metric buttons; clicked `近7天`, `碳价`, `欧盟航油`, `EU ETS`, and `近30天`, confirming the window and explanation text changed with no NaN/cy console messages.
+- Validation: `npm test -- test/product-read-model.test.mjs` passed all 70 Node tests; `npm run web:typecheck` passed; targeted `git diff --check` passed.
+- Boundary: no push, PR, release, deploy, node sync, SSH, rsync, lockfile, env, migration, or production database changes were made.
+
 ## 2026-05-07 EU Reserve SAF Breakpoint Chart Gate
 
 - Purpose: fix `/crisis/eu-jet-reserves` where the current SAF breakpoint row was visually underweighted and the price-trend SVG could emit `Received NaN for cy`.
