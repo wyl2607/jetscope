@@ -327,6 +327,55 @@
         }
       }
     },
+    "/v1/market/history/backfill": {
+      "post": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Backfill Market History",
+        "operationId": "backfill_market_history_v1_market_history_backfill_post",
+        "parameters": [
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketHistoryBackfillResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/market/refresh": {
       "post": {
         "tags": [
@@ -1233,6 +1282,41 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "MarketHistoryBackfillResponse": {
+        "properties": {
+          "accepted": {
+            "type": "boolean",
+            "title": "Accepted"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "inserted_metric_count": {
+            "type": "integer",
+            "title": "Inserted Metric Count"
+          },
+          "days_requested": {
+            "type": "integer",
+            "title": "Days Requested"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sources"
+          }
+        },
+        "type": "object",
+        "required": [
+          "accepted",
+          "message",
+          "inserted_metric_count",
+          "days_requested"
+        ],
+        "title": "MarketHistoryBackfillResponse"
+      },
       "MarketHistoryPoint": {
         "properties": {
           "as_of": {
@@ -1358,6 +1442,51 @@
           "message": {
             "type": "string",
             "title": "Message"
+          },
+          "refreshed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refreshed At"
+          },
+          "source_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Status"
+          },
+          "persisted_metric_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persisted Metric Count"
+          },
+          "ingest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingest"
           }
         },
         "type": "object",

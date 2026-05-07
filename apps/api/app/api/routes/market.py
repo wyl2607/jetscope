@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.tables import MarketSnapshot
 from app.schemas.market import (
+    MarketHistoryBackfillResponse,
     MarketHistoryResponse,
     MarketRefreshResponse,
     MarketSnapshotResponse,
@@ -13,6 +14,7 @@ from app.security import require_admin_token
 from app.services.market import (
     build_market_history_response,
     build_market_snapshot_response,
+    backfill_market_history_from_public_sources,
     refresh_market_snapshot_set,
 )
 
@@ -27,6 +29,23 @@ def get_market_snapshot(db: Session = Depends(get_db)) -> MarketSnapshotResponse
 @router.get("/history", response_model=MarketHistoryResponse)
 def get_market_history(db: Session = Depends(get_db)) -> MarketHistoryResponse:
     return build_market_history_response(db)
+
+
+@router.post("/history/backfill", response_model=MarketHistoryBackfillResponse)
+def backfill_market_history(
+    _auth: None = Depends(require_admin_token), db: Session = Depends(get_db)
+) -> MarketHistoryBackfillResponse:
+    result = backfill_market_history_from_public_sources(db, days=45)
+    return MarketHistoryBackfillResponse(
+        accepted=True,
+        message=(
+            f"Backfilled {result['inserted_metric_count']} metric history rows "
+            f"from {', '.join(result['sources'])}"
+        ),
+        inserted_metric_count=int(result["inserted_metric_count"]),
+        days_requested=int(result["days_requested"]),
+        sources=list(result["sources"]),
+    )
 
 
 @router.post("/refresh", response_model=MarketRefreshResponse)

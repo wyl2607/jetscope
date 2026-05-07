@@ -31,7 +31,7 @@ type Props = {
   error?: string | null;
 };
 
-type TimeWindow = '7d' | '30d' | 'all';
+type TimeWindow = '1d' | '7d' | '30d' | 'all';
 
 type MetricMeta = {
   label: string;
@@ -42,6 +42,7 @@ type MetricMeta = {
 };
 
 const TIME_WINDOWS: Array<{ key: TimeWindow; label: string; days: number | null }> = [
+  { key: '1d', label: '近1天', days: 1 },
   { key: '7d', label: '近7天', days: 7 },
   { key: '30d', label: '近30天', days: 30 },
   { key: 'all', label: '全部历史', days: null }

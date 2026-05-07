@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from urllib.parse import quote
 
 import httpx
 from sqlalchemy import select, text
@@ -23,6 +24,7 @@ MARKET_SOURCE_URLS = {
     "cbam_price": "https://taxation-customs.ec.europa.eu/carbon-border-adjustment-mechanism/price-cbam-certificates_en",
     "ecb_eur_usd": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
     "eu_ets_eex": "https://www.eex.com/en/market-data/environmental-markets/spot-market",
+    "yahoo_chart": "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range={range}&interval=1d",
 }
 
 LITERS_PER_US_GALLON = 3.78541
@@ -182,6 +184,17 @@ def _fetch_text(url: str, timeout_s: float = 12.0) -> str:
     return response.text
 
 
+def _fetch_json(url: str, timeout_s: float = 12.0) -> dict:
+    response = httpx.get(
+        url,
+        timeout=timeout_s,
+        headers={"User-Agent": "JetScope API/0.1 (+market-history-backfill)"},
+        follow_redirects=True,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
 def _parse_fred_csv(csv: str) -> tuple[str, float]:
     lines = [line for line in csv.strip().splitlines() if line.strip()]
     rows: list[tuple[str, float]] = []
@@ -199,6 +212,61 @@ def _parse_fred_csv(csv: str) -> tuple[str, float]:
     if not rows:
         raise ValueError("No usable rows in FRED payload")
     return rows[-1]
+
+
+def _parse_fred_csv_history(csv: str, *, cutoff: datetime) -> list[tuple[datetime, float]]:
+    rows: list[tuple[datetime, float]] = []
+    for line in csv.strip().splitlines()[1:]:
+        parts = line.split(",")
+        if len(parts) < 2:
+            continue
+        raw_value = parts[1].strip()
+        if raw_value in {"", "."}:
+            continue
+        try:
+            as_of = datetime.fromisoformat(parts[0].strip()).replace(tzinfo=timezone.utc)
+            value = float(raw_value)
+        except ValueError:
+            continue
+        if as_of >= cutoff:
+            rows.append((as_of, value))
+    return rows
+
+
+def _fetch_fred_history(series_id: str, *, days: int) -> list[tuple[datetime, float]]:
+    csv = _fetch_text(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}")
+    cutoff = utcnow() - timedelta(days=days)
+    return _parse_fred_csv_history(csv, cutoff=cutoff)
+
+
+def _fetch_yahoo_chart_history(symbol: str, *, days: int) -> list[tuple[datetime, float]]:
+    range_value = "1mo" if days <= 31 else "3mo"
+    url = MARKET_SOURCE_URLS["yahoo_chart"].format(symbol=quote(symbol, safe=""), range=range_value)
+    payload = _fetch_json(url)
+    chart = payload.get("chart", {})
+    error = chart.get("error")
+    if error:
+        raise ValueError(str(error.get("description") or error))
+    result = (chart.get("result") or [None])[0]
+    if not result:
+        raise ValueError(f"Yahoo chart returned no result for {symbol}")
+
+    timestamps = result.get("timestamp") or []
+    closes = ((result.get("indicators") or {}).get("quote") or [{}])[0].get("close") or []
+    cutoff = utcnow() - timedelta(days=days)
+    rows: list[tuple[datetime, float]] = []
+    for timestamp, close_value in zip(timestamps, closes, strict=False):
+        if close_value is None:
+            continue
+        as_of = datetime.fromtimestamp(int(timestamp), tz=timezone.utc)
+        if as_of < cutoff:
+            continue
+        try:
+            value = float(close_value)
+        except (TypeError, ValueError):
+            continue
+        rows.append((as_of, value))
+    return rows
 
 
 def _parse_eia_brent(html: str) -> float | None:
@@ -724,6 +792,200 @@ def _persist_market_snapshot_set(
     return snapshot_time
 
 
+def _latest_market_values_by_metric(db: Session) -> dict[str, float]:
+    rows = db.scalars(
+        select(MarketSnapshot).order_by(MarketSnapshot.metric_key.asc(), MarketSnapshot.as_of.desc())
+    ).all()
+    latest: dict[str, float] = {}
+    for row in rows:
+        if row.metric_key not in latest:
+            latest[row.metric_key] = float(row.value)
+    if len(latest) < len(DEFAULT_MARKET_METRICS):
+        seed_market_snapshot_set(db)
+        return _latest_market_values_by_metric(db)
+    return latest
+
+
+def _scale_history_to_latest(
+    rows: list[tuple[datetime, float]],
+    *,
+    latest_value: float,
+    inverse: bool = False,
+) -> list[tuple[datetime, float]]:
+    if not rows:
+        return []
+    latest_proxy = float(rows[-1][1])
+    if abs(latest_proxy) < 1e-9:
+        return []
+
+    scaled: list[tuple[datetime, float]] = []
+    for as_of, proxy_value in rows:
+        if inverse:
+            value = latest_value * (latest_proxy / float(proxy_value)) if abs(float(proxy_value)) >= 1e-9 else latest_value
+        else:
+            value = latest_value * (float(proxy_value) / latest_proxy)
+        scaled.append((as_of, value))
+    return scaled
+
+
+def _insert_backfill_rows(
+    db: Session,
+    metric_key: str,
+    rows: list[tuple[datetime, float]],
+    *,
+    payload: dict[str, object],
+) -> int:
+    if not rows:
+        return 0
+
+    metric_defaults = {item["metric_key"]: item for item in DEFAULT_MARKET_METRICS}
+    defaults = metric_defaults[metric_key]
+    existing = {
+        _ensure_utc_datetime(row.as_of).replace(microsecond=0)
+        for row in db.scalars(select(MarketSnapshot).where(MarketSnapshot.metric_key == metric_key)).all()
+    }
+
+    inserted = 0
+    for raw_as_of, value in rows:
+        as_of = _ensure_utc_datetime(raw_as_of).replace(microsecond=0)
+        if as_of in existing:
+            continue
+        db.add(
+            MarketSnapshot(
+                source_key=defaults["source_key"],
+                metric_key=metric_key,
+                value=float(value),
+                unit=defaults["unit"],
+                as_of=as_of,
+                payload=payload,
+            )
+        )
+        existing.add(as_of)
+        inserted += 1
+    return inserted
+
+
+def backfill_market_history_from_public_sources(db: Session, *, days: int = 30) -> dict[str, object]:
+    """Backfill local market history with public daily series and labelled proxies.
+
+    Direct public sources are used where available. Metrics without a reliable
+    free daily spot series are scaled from a public proxy curve and labelled in
+    row payloads instead of being presented as raw exchange settlement data.
+    """
+    days = max(1, min(int(days), 90))
+    latest_values = _latest_market_values_by_metric(db)
+
+    brent_rows = _fetch_yahoo_chart_history("BZ=F", days=days)
+    jet_rows = [
+        (as_of, _to_usd_per_l_from_usd_per_gal(value))
+        for as_of, value in _fetch_fred_history("DJFUELUSGULF", days=days)
+    ]
+    carbon_proxy_rows = _fetch_yahoo_chart_history("CO2.L", days=days)
+
+    inserted = 0
+    sources = ["Yahoo Finance BZ=F", "FRED DJFUELUSGULF", "Yahoo Finance CO2.L"]
+
+    inserted += _insert_backfill_rows(
+        db,
+        "brent_usd_per_bbl",
+        brent_rows,
+        payload={
+            "history_backfill": True,
+            "source": "yahoo:BZ=F",
+            "source_url": "https://finance.yahoo.com/quote/BZ=F/",
+            "note": "Brent futures daily close from Yahoo chart endpoint.",
+        },
+    )
+    inserted += _insert_backfill_rows(
+        db,
+        "jet_usd_per_l",
+        jet_rows,
+        payload={
+            "history_backfill": True,
+            "source": "fred:DJFUELUSGULF",
+            "source_url": "https://fred.stlouisfed.org/series/DJFUELUSGULF",
+            "note": "U.S. Gulf Coast kerosene-type jet fuel converted from USD/gal to USD/L.",
+        },
+    )
+
+    for metric_key, note in (
+        (
+            "jet_eu_proxy_usd_per_l",
+            "EU jet proxy scaled from Brent futures daily returns to the latest local EU jet proxy value.",
+        ),
+        (
+            "rotterdam_jet_fuel_usd_per_l",
+            "Rotterdam jet proxy scaled from Brent futures daily returns to the latest local Rotterdam value.",
+        ),
+    ):
+        inserted += _insert_backfill_rows(
+            db,
+            metric_key,
+            _scale_history_to_latest(brent_rows, latest_value=latest_values[metric_key]),
+            payload={
+                "history_backfill": True,
+                "source": "proxy:yahoo:BZ=F",
+                "source_url": "https://finance.yahoo.com/quote/BZ=F/",
+                "note": note,
+            },
+        )
+
+    for metric_key, note in (
+        (
+            "eu_ets_price_eur_per_t",
+            "EU ETS proxy scaled from SparkChange Physical Carbon EUA ETC daily returns to the latest local EU ETS value.",
+        ),
+        (
+            "carbon_proxy_usd_per_t",
+            "Carbon proxy scaled from SparkChange Physical Carbon EUA ETC daily returns to the latest local carbon proxy value.",
+        ),
+    ):
+        inserted += _insert_backfill_rows(
+            db,
+            metric_key,
+            _scale_history_to_latest(carbon_proxy_rows, latest_value=latest_values[metric_key]),
+            payload={
+                "history_backfill": True,
+                "source": "proxy:yahoo:CO2.L",
+                "source_url": "https://finance.yahoo.com/quote/CO2.L/",
+                "note": note,
+            },
+        )
+
+    inserted += _insert_backfill_rows(
+        db,
+        "germany_premium_pct",
+        _scale_history_to_latest(
+            brent_rows,
+            latest_value=latest_values["germany_premium_pct"],
+            inverse=True,
+        ),
+        payload={
+            "history_backfill": True,
+            "source": "proxy:yahoo:BZ=F:inverse",
+            "source_url": "https://finance.yahoo.com/quote/BZ=F/",
+            "note": "Germany premium proxy moves inversely to Brent-derived jet cost and is scaled to the latest local premium value.",
+        },
+    )
+
+    if inserted:
+        db.add(
+            MarketRefreshRun(
+                refreshed_at=utcnow(),
+                source_status="ok",
+                sources={"history_backfill": {"sources": sources, "days": days}},
+                ingest="history-backfill",
+            )
+        )
+        db.commit()
+
+    return {
+        "inserted_metric_count": inserted,
+        "days_requested": days,
+        "sources": sources,
+    }
+
+
 def seed_market_snapshot_set(db: Session, as_of: datetime | None = None) -> datetime:
     seed_values = {metric["metric_key"]: float(metric["value"]) for metric in DEFAULT_MARKET_METRICS}
     return _persist_market_snapshot_set(
@@ -931,6 +1193,10 @@ def build_market_history_response(
 
     metrics: dict[str, MarketMetricHistory] = {}
     for metric_key, metric_rows in rows_by_metric.items():
+        non_seed_rows = [row for row in metric_rows if not (row.payload or {}).get("seed")]
+        if non_seed_rows:
+            metric_rows = non_seed_rows
+
         latest = metric_rows[0]
         latest_value = float(latest.value)
         latest_as_of = latest.as_of

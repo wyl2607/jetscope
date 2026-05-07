@@ -409,6 +409,7 @@ test('reserve price trends guard finite chart coordinates and highlight the curr
   assert.match(chartSource, /safeYRange/);
   assert.match(chartSource, /timeWindow/);
   assert.match(chartSource, /TIME_WINDOWS/);
+  assert.match(chartSource, /近1天/);
   assert.match(chartSource, /近7天/);
   assert.match(chartSource, /近30天/);
   assert.match(chartSource, /filterPointsByWindow/);

@@ -1,5 +1,16 @@
 # JetScope Project Progress
 
+## 2026-05-07 Market History Backfill
+
+- Purpose: populate `/crisis/eu-jet-reserves` price trends with real local history so 1d/7d/30d controls behave like a trading chart instead of an accumulating placeholder.
+- Sources: Brent futures daily curve from Yahoo Finance `BZ=F`; U.S. Gulf Coast jet fuel from FRED/EIA `DJFUELUSGULF`; EUA/carbon proxy curve from Yahoo Finance `CO2.L`; EU jet, Rotterdam, carbon, EU ETS, and Germany premium rows are marked as proxy/scaled in `MarketSnapshot.payload`.
+- Changes: added an admin-protected `POST /v1/market/history/backfill`, public-source backfill service, idempotent row insertion into `market_snapshots`, seed-row filtering for chart history once non-seed rows exist, and a `近1天` chart window.
+- Local data result: ran the backfill against `/tmp/jetscope-dev-api.db`; inserted 217 total history rows across two runs, expanding metric coverage to roughly 44 days with non-null 1d/7d/30d changes for all seven tracked metrics.
+- Browser evidence: Browser Use reloaded `/crisis/eu-jet-reserves`, confirmed `近1天`, `近7天`, and `近30天` controls; clicked `德国溢价`, `近1天`, and `近30天`, confirming visible line movement, 25-28 samples in the 30-day window, `数据覆盖：本地历史约 44.3 天 / 目标 30 天`, and no console errors.
+- Validation: `npm test -- test/product-read-model.test.mjs` passed all 70 Node tests; `cd apps/api && .venv/bin/python -m pytest tests/test_market_contract_v1.py -q` passed 7 tests; `npm run web:typecheck` passed; `npm run api:openapi && npm run api:openapi:check` passed.
+- Compatibility: no schema migration was required; new rows are additive, old rows remain readable, duplicate backfill rows are skipped by metric/timestamp, and seed rows are ignored only for history chart series when non-seed rows are available.
+- Boundary: no production database, push, PR, release, deploy, node sync, SSH, rsync, lockfile, or env changes were made.
+
 ## 2026-05-07 Reserve Trend Coverage Truthfulness
 
 - Purpose: make the reserve page honest when the local `market_snapshots` store has not yet accumulated 7/30 days of real history.
