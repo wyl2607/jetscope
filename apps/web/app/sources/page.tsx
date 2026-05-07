@@ -34,9 +34,9 @@ export default async function SourcesPage({
   };
 
   const alertColor = (level: "normal" | "watch" | "alert") => {
-    if (level === "alert") return "text-rose-300";
-    if (level === "watch") return "text-amber-300";
-    return "text-emerald-300";
+    if (level === "alert") return "text-rose-700";
+    if (level === "watch") return "text-amber-700";
+    return "text-emerald-700";
   };
 
   const sparklineDataUrl = (encoded: string) => {
@@ -64,10 +64,10 @@ export default async function SourcesPage({
   };
 
   const trustClass = (state: string) => {
-    if (state === 'live') return 'border-emerald-600/40 bg-emerald-500/10 text-emerald-200';
-    if (state === 'proxy') return 'border-sky-600/40 bg-sky-500/10 text-sky-200';
-    if (state === 'fallback') return 'border-amber-600/40 bg-amber-500/10 text-amber-200';
-    return 'border-rose-600/40 bg-rose-500/10 text-rose-200';
+    if (state === 'live') return 'border-emerald-200 bg-emerald-50 text-emerald-800';
+    if (state === 'proxy') return 'border-sky-200 bg-sky-50 text-sky-800';
+    if (state === 'fallback') return 'border-amber-200 bg-amber-50 text-amber-800';
+    return 'border-rose-200 bg-rose-50 text-rose-700';
   };
 
   const trustLabel = (state: string) => {
@@ -91,6 +91,8 @@ export default async function SourcesPage({
   const statusLabel = (status: string) => {
     if (status === 'ok') return '正常';
     if (status === 'seed') return '种子回退';
+    if (status === 'fallback') return '回退';
+    if (status === 'error') return '异常';
     if (status === 'unknown') return '未知';
     return status;
   };
@@ -119,22 +121,22 @@ export default async function SourcesPage({
         />
       </div>
       <InfoCard title="市场输入矩阵" subtitle={`总体状态：${readModel.overallStatus}`}>
-        <p className="mb-3 text-xs text-slate-400">
+        <p className="mb-3 text-xs text-slate-600">
           生成于 {new Date(readModel.generatedAt).toLocaleString()}
           {readModel.isFallback ? ' · 实时来源覆盖不可用时显示回退估算' : ''}
         </p>
         {focusMetricKey ? (
-          <p className="mb-3 text-xs text-sky-300">
+          <p className="mb-3 text-xs text-sky-700">
             已从驾驶舱风险信号聚焦：<code>{focusMetricKey}</code>{' '}
-            <Link href="/sources" className="underline text-sky-200">
+            <Link href="/sources" className="underline text-sky-800">
               清除
             </Link>
           </p>
         ) : null}
         <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm text-slate-300">
+          <table className="min-w-full text-left text-sm text-slate-700">
             <thead>
-              <tr className="border-b border-slate-800 text-slate-400">
+              <tr className="border-b border-slate-200 text-slate-600">
                 <th className="py-3 pr-4">界面</th>
                 <th className="py-3 pr-4">来源</th>
                 <th className="py-3 pr-4">可信状态</th>
@@ -156,17 +158,17 @@ export default async function SourcesPage({
                 <tr
                   key={row.surface}
                   id={`metric-${row.metricKey}`}
-                  className={`border-b border-slate-900 ${
+                  className={`border-b border-slate-200 ${
                     focusMetricKey === row.metricKey
-                      ? 'ring-1 ring-sky-400/60 bg-sky-950/30'
+                      ? 'ring-1 ring-sky-400/60 bg-sky-50'
                       : row.alertLevel === 'alert'
-                      ? 'bg-rose-950/25'
+                      ? 'bg-rose-50'
                       : row.alertLevel === 'watch'
-                        ? 'bg-amber-950/20'
+                        ? 'bg-amber-50'
                         : ''
                   }`}
                 >
-                  <td className="py-3 pr-4 font-medium text-white">{row.surface}</td>
+                  <td className="py-3 pr-4 font-medium text-slate-950">{row.surface}</td>
                   <td className="py-3 pr-4">{row.source}</td>
                   <td className="py-3 pr-4">
                     <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] ${trustClass(row.trustState)}`}>
@@ -198,7 +200,7 @@ export default async function SourcesPage({
                     )}
                   </td>
                   <td className="py-3">
-                    <span className="block text-slate-300">{row.degradedReason}</span>
+                    <span className="block text-slate-700">{row.degradedReason}</span>
                     {row.note !== row.degradedReason ? <span className="mt-1 block text-xs text-slate-500">{row.note}</span> : null}
                   </td>
                 </tr>

@@ -192,7 +192,7 @@ function formatMetricValue(metricKey: string, value: number | undefined): string
 
 function buildMetricNote(metric: SourceCoverageMetric): string {
   if (metric.error) {
-    return metric.error;
+    return sourceErrorLabel(metric.error);
   }
   if (typeof metric.cbam_eur === 'number' && typeof metric.usd_per_eur === 'number') {
     return `CBAM ${formatNumber(metric.cbam_eur)} EUR × FX ${formatNumber(metric.usd_per_eur, 4)}`;
@@ -208,12 +208,18 @@ function buildMetricNote(metric: SourceCoverageMetric): string {
 }
 
 function degradedReasonFor(metric: SourceCoverageMetric): string {
-  if (metric.error) return metric.error;
+  if (metric.error) return sourceErrorLabel(metric.error);
   if (metric.fallback_used && metric.status === 'seed') return '实时覆盖不可用，已使用种子回退值';
   if (metric.fallback_used) return '该指标使用了回退路径';
   if (metric.status !== 'ok') return `来源状态为 ${metric.status}`;
   if (metric.source_type.includes('proxy') || metric.source_type === 'derived') return '派生或代理指标；用于高风险决策前需要复核';
   return '实时主来源或官方来源，未标记降级';
+}
+
+function sourceErrorLabel(error: string): string {
+  if (error === 'fallback_used') return '实时来源不可用，当前值来自回退路径';
+  if (error === 'source_unavailable') return '来源暂不可用';
+  return error;
 }
 
 function averageFinite(values: number[]): number {

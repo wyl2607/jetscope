@@ -10,7 +10,8 @@ from sqlalchemy.orm import sessionmaker
 from app.api.router import api_router
 from app.db.base import Base
 from app.db.session import get_db
-from app.models.tables import MarketRefreshRun
+from app.models.tables import MarketRefreshRun, MarketSnapshot
+from app.services.market import DEFAULT_MARKET_METRICS
 
 
 @pytest.fixture
@@ -160,3 +161,47 @@ def test_source_coverage_carries_display_supplements(client: TestClient, seeded_
     jet = metrics["jet_usd_per_l"]
     assert jet["error"] == "source_unavailable"
     assert "internal.example" not in str(jet)
+
+
+def test_source_coverage_generated_at_tracks_latest_market_snapshot(client: TestClient, db_path: Path):
+    engine = create_engine(f"sqlite:///{db_path}", future=True)
+    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+    Base.metadata.create_all(bind=engine)
+    snapshot_time = datetime(2100, 1, 2, 3, 4, 5, tzinfo=UTC)
+
+    with SessionLocal() as db:
+        db.add(
+            MarketRefreshRun(
+                refreshed_at=snapshot_time,
+                source_status="ok",
+                ingest="test-live",
+                sources={
+                    "brent": {
+                        "source": "eia",
+                        "status": "ok",
+                        "region": "global",
+                        "market_scope": "physical_spot_benchmark",
+                        "confidence_score": 0.88,
+                        "fallback_used": False,
+                    }
+                },
+            )
+        )
+        for metric in DEFAULT_MARKET_METRICS:
+            db.add(
+                MarketSnapshot(
+                    source_key=metric["source_key"],
+                    metric_key=metric["metric_key"],
+                    value=float(metric["value"]),
+                    unit=metric["unit"],
+                    as_of=snapshot_time,
+                    payload={"test": True},
+                )
+            )
+        db.commit()
+
+    response = client.get("/v1/sources/coverage")
+    assert response.status_code == 200
+    payload = response.json()
+
+    assert payload["generated_at"].startswith("2100-01-02T03:04:05")

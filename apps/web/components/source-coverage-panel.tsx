@@ -33,51 +33,51 @@ export function SourceCoveragePanel({
         <span
           className={`rounded-full border px-3 py-1 font-medium ${
             degraded
-              ? 'border-amber-700/40 bg-amber-950/40 text-amber-300'
-              : 'border-emerald-700/40 bg-emerald-950/40 text-emerald-300'
+              ? 'border-amber-200 bg-amber-50 text-amber-700'
+              : 'border-emerald-200 bg-emerald-50 text-emerald-700'
           }`}
         >
           {degraded ? '已降级' : '健康'}
         </span>
-        <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-slate-300">
+        <span className="rounded-full border border-slate-300 bg-white px-3 py-1 text-slate-700">
           完整度 {Math.round(completeness * 100)}%
         </span>
-        <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-slate-300">
+        <span className="rounded-full border border-slate-300 bg-white px-3 py-1 text-slate-700">
           实时 {liveCount}
         </span>
         {proxyCount > 0 && (
-          <span className="rounded-full border border-sky-700/50 bg-sky-950/30 px-3 py-1 text-sky-300">
+          <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sky-700">
             代理 {proxyCount}
           </span>
         )}
         {seedCount > 0 && (
-          <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-slate-300">
+          <span className="rounded-full border border-slate-300 bg-white px-3 py-1 text-slate-700">
             种子 {seedCount}
           </span>
         )}
         {fallbackCount > 0 && (
-          <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-slate-300">
+          <span className="rounded-full border border-slate-300 bg-white px-3 py-1 text-slate-700">
             回退 {fallbackCount}
           </span>
         )}
         {degradedCount > 0 && (
-          <span className="rounded-full border border-amber-700/50 bg-amber-950/30 px-3 py-1 text-amber-300">
+          <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-700">
             降级 {degradedCount}
           </span>
         )}
         {metrics.length === 0 && (
-          <span className="text-slate-400">暂无来源覆盖数据。</span>
+          <span className="text-slate-600">暂无来源覆盖数据。</span>
         )}
       </div>
       {metrics.length > 0 ? (
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {metrics.slice(0, 4).map((metric) => (
-            <div key={metric.metric_key} className="rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-xs text-slate-300">
+            <div key={metric.metric_key} className="rounded-xl border border-slate-200 bg-white/90 p-3 text-xs text-slate-700">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-medium text-white">{metric.metric_key}</span>
-                <span className="rounded-full border border-slate-700 px-2 py-0.5 text-slate-300">{getSourceCoverageTrustState(metric)}</span>
+                <span className="font-medium text-slate-950">{metric.metric_key}</span>
+                <span className="rounded-full border border-slate-300 px-2 py-0.5 text-slate-700">{getSourceCoverageTrustState(metric)}</span>
               </div>
-              <p className="mt-2 text-slate-400">{metric.source_name} · {metric.source_type.replaceAll('_', ' ')}</p>
+              <p className="mt-2 text-slate-600">{metric.source_name} · {metric.source_type.replaceAll('_', ' ')}</p>
               <p className="mt-1 text-slate-500">置信度 {Math.round(metric.confidence_score * 100)}% · 滞后 {formatSourceCoverageLag(metric.lag_minutes)}</p>
             </div>
           ))}

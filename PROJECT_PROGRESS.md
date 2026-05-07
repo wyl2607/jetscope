@@ -1,5 +1,14 @@
 # JetScope Project Progress
 
+## 2026-05-07 Sources Flow And Timestamp Gate
+
+- Purpose: verify `/sources` as a real front/back-end provenance surface and remove misleading freshness/UI regressions.
+- Findings: Browser Use showed the page worked end-to-end, but `/api/sources/coverage.generated_at` used request time while `/api/market.generated_at` used the real snapshot time, making "recently updated" appear newer than the data. The sources UI also retained dark table/panel classes and exposed machine error codes such as `fallback_used`.
+- Changes: `build_source_coverage_response` now reports the underlying market snapshot timestamp, the sources page/provenance/coverage panels use the light data-review theme, and source error/status labels render as user-facing Chinese text.
+- Browser evidence: `/sources?focus=carbon_proxy_usd_per_t` focused the intended metric, showed real snapshot time `2026-05-07 12:15:23`, removed the request-time `12:24/12:25` freshness illusion, and displayed `实时来源不可用，当前值来自回退路径` / `来源暂不可用` instead of raw error codes.
+- Validation: `npm test -- test/sources-read-model.test.mjs` passed all 67 Node tests; `cd apps/api && .venv/bin/python -m pytest tests/test_market_contract_v1.py -q` passed 5 tests; `npm run web:typecheck` passed.
+- Boundary: no push, PR, release, deploy, node sync, SSH, rsync, lockfile, env file, or production database changes were made.
+
 ## 2026-05-07 Admin UI And Data Persistence Gate
 
 - Purpose: verify `/admin` as a real operations surface, not placeholder UI, while keeping the page readable in the light workbench theme.

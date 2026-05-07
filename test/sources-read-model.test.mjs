@@ -107,6 +107,23 @@ test('source coverage contract owns trust-state and lag formatting helpers', asy
   assert.doesNotMatch(panelSource, /function formatLag\(/);
 });
 
+test('sources page keeps a light data-review theme', async () => {
+  const files = [
+    new URL('../apps/web/app/sources/page.tsx', import.meta.url),
+    new URL('../apps/web/components/provenance-summary.tsx', import.meta.url),
+    new URL('../apps/web/components/source-coverage-panel.tsx', import.meta.url)
+  ];
+
+  for (const file of files) {
+    const source = await readFile(file, 'utf8');
+    assert.doesNotMatch(
+      source,
+      /bg-slate-950(?!\/)|bg-slate-950\/|bg-slate-900\/70|from-slate-900|to-black|text-white/,
+      `${file.pathname} should not hard-code dark sources surfaces`
+    );
+  }
+});
+
 test('sources read model keeps summary aggregation centralized', async () => {
   const readModelSource = await readFile(new URL('../apps/web/lib/sources-read-model.ts', import.meta.url), 'utf8');
 
