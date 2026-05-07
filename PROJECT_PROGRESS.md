@@ -1,5 +1,13 @@
 # JetScope Project Progress
 
+## 2026-05-07 Reserve Evidence Chain UI
+
+- Purpose: turn `/crisis/eu-jet-reserves` from a persuasive crisis narrative into a more auditable decision surface grounded in first-principles layers.
+- Changes: added a `第一性原理证据链` section with fact, mechanism, confidence, and action layers; added institution/research links for NREL SAF, IATA Fuel, EU ETS aviation, and IEA Aviation; added an explicit model-boundary card for proxy curves, manually estimated reserves, and non-forecast use.
+- Browser evidence: Browser Use reloaded `/crisis/eu-jet-reserves`, confirmed the new evidence-chain section, four layer labels, model-boundary copy, and all four external reference hrefs; no console errors were observed.
+- Validation: `npm test -- test/product-read-model.test.mjs` failed first on the new evidence-chain contract, then passed all 70 Node tests after implementation; `npm run web:typecheck` passed.
+- Boundary: no backend, database, migration, data refresh, push, PR, release, deploy, node sync, SSH, rsync, lockfile, or env changes were made.
+
 ## 2026-05-07 Market History Backfill
 
 - Purpose: populate `/crisis/eu-jet-reserves` price trends with real local history so 1d/7d/30d controls behave like a trading chart instead of an accumulating placeholder.

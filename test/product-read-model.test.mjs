@@ -404,6 +404,16 @@ test('reserve price trends guard finite chart coordinates and highlight the curr
   assert.match(reserveSource, /本地 market_snapshots 历史库/);
   assert.match(reserveSource, /阅读方式/);
   assert.match(reserveSource, /拐点行/);
+  assert.match(reserveSource, /第一性原理证据链/);
+  assert.match(reserveSource, /事实层/);
+  assert.match(reserveSource, /机制层/);
+  assert.match(reserveSource, /置信层/);
+  assert.match(reserveSource, /行动层/);
+  assert.match(reserveSource, /模型边界/);
+  assert.match(reserveSource, /NREL SAF/);
+  assert.match(reserveSource, /IATA Fuel/);
+  assert.match(reserveSource, /EU ETS aviation/);
+  assert.match(reserveSource, /IEA Aviation/);
   assert.match(chartSource, /finitePoints/);
   assert.match(chartSource, /Number\.isFinite\(point\.value\)/);
   assert.match(chartSource, /safeYRange/);

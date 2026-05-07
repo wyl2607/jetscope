@@ -46,6 +46,52 @@ function formatDate(iso: string) {
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString();
 }
 
+const evidenceLayers = [
+  {
+    label: '事实层',
+    title: '先看可量化输入',
+    body: '油价、航油代理价、碳价、储备周数和历史覆盖天数必须先于叙事出现；缺数据时显示 proxy/fallback，而不是把估算包装成实时事实。'
+  },
+  {
+    label: '机制层',
+    title: '再解释因果链',
+    body: '储备收紧会放大区域航油 basis，航油成本压缩薄利航线，碳价与政策补贴改变 SAF 与 Jet-A 的相对经济性。'
+  },
+  {
+    label: '置信层',
+    title: '把不确定性放在台面上',
+    body: 'EU 航油和德国溢价仍是代理曲线；储备信号若来自人工估算，就必须低于交易所或官方统计数据的可信等级。'
+  },
+  {
+    label: '行动层',
+    title: '只给可复核动作',
+    body: '页面不直接给采购结论；它把用户引到来源复核、SAF 工作台、套保/锁价讨论和 offtake 情景测试。'
+  }
+];
+
+const researchReferences = [
+  {
+    title: 'NREL SAF',
+    href: 'https://www.nrel.gov/docs/fy24osti/87802.pdf',
+    note: '用于约束 HEFA、ATJ、FT、PtL 等 SAF 路径的技术经济边界。'
+  },
+  {
+    title: 'IATA Fuel',
+    href: 'https://www.iata.org/en/programs/ops-infra/fuel/',
+    note: '用于支撑燃油价格是航空公司最大、最波动成本项之一的运营逻辑。'
+  },
+  {
+    title: 'EU ETS aviation',
+    href: 'https://climate.ec.europa.eu/eu-action/transport/reducing-emissions-aviation_en',
+    note: '用于解释碳定价如何进入欧洲航空成本和 SAF 支持机制。'
+  },
+  {
+    title: 'IEA Aviation',
+    href: 'https://www.iea.org/reports/aviation',
+    note: '用于校验 SAF 需求、政策驱动和航空脱碳路径是否符合行业约束。'
+  }
+];
+
 function CurrentSafBreakpointRow() {
   const jetA = (115 / 158.987) * 1.20;
   const premiumLow = ((1.60 / jetA) - 1) * 100;
@@ -188,6 +234,52 @@ export default async function EuJetReserveCrisisPage() {
               HEFA SAF 当前较 Jet-A 高 {formatNumber(safSpreadLow, 0)}–{formatNumber(safSpreadHigh, 0)}%。当油价达到 $130/bbl，SAF 具备胜出条件。
             </p>
           </div>
+        </div>
+      </section>
+
+      <section className="mt-8 rounded-2xl border border-sky-200 bg-sky-50/60 p-8">
+        <div className="grid gap-6 lg:grid-cols-[1fr_0.42fr]">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">first principles</p>
+            <h2 className="mt-2 text-xl font-semibold text-slate-950">第一性原理证据链</h2>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-700">
+              这个页面的底层逻辑不是“危机叙事”，而是把燃料市场拆成事实、机制、置信和行动四层。
+              每一层都需要能回到数据来源、模型假设或机构研究；不能回溯的判断，只能作为待复核信号。
+            </p>
+            <div className="mt-6 grid gap-3 md:grid-cols-2">
+              {evidenceLayers.map((item) => (
+                <div key={item.label} className="rounded-lg border border-sky-200 bg-white p-4">
+                  <p className="text-xs font-semibold text-sky-700">{item.label}</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-950">{item.title}</p>
+                  <p className="mt-2 text-xs leading-6 text-slate-600">{item.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <aside className="rounded-lg border border-slate-200 bg-white p-5">
+            <p className="text-sm font-semibold text-slate-950">机构 / 论文依据</p>
+            <div className="mt-4 space-y-3">
+              {researchReferences.map((item) => (
+                <a
+                  key={item.title}
+                  href={item.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block rounded-lg border border-slate-200 p-3 text-sm transition hover:border-sky-300 hover:bg-sky-50"
+                >
+                  <span className="font-semibold text-sky-700">{item.title}</span>
+                  <span className="mt-1 block text-xs leading-5 text-slate-600">{item.note}</span>
+                </a>
+              ))}
+            </div>
+            <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
+              <p className="font-semibold">模型边界</p>
+              <p className="mt-1">
+                当前表格用于运营复核，不是价格预测。EU 航油、德国溢价和部分碳价历史为代理曲线；
+                储备信号仍需要官方库存或航司采购数据进一步校准。
+              </p>
+            </div>
+          </aside>
         </div>
       </section>
 
