@@ -6,9 +6,9 @@ Purpose:
 - Run per-device lanes in parallel to reduce total runtime.
 - Persist structured run reports for audit/replay.
 
-This script intentionally updates only the AI development tools tracked by the
-daily inventory: codex, claude, omx, opencode, and copilot. It does not run
-full-system package-manager upgrades by default.
+This script updates AI development tools tracked by the daily inventory:
+codex, claude, omx, opencode, and copilot. Full-system package-manager
+upgrades remain opt-in and are recorded as separate steps.
 
 Default targets:
 - local
@@ -38,6 +38,7 @@ AUTOMATION = WORKSPACE_ROOT / "tools" / "automation"
 OUT_ROOT = AUTOMATION / "runtime" / "internal-device-updates"
 
 DEFAULT_TARGETS = ["local", "mac-mini", "coco"]
+VPS_OS_TARGETS = {"usa-vps", "france-vps"}
 
 NPM_CORE_AI_PACKAGES = [
     "@anthropic-ai/claude-code@latest",
@@ -154,11 +155,21 @@ def run_step(
 
 
 def local_steps(args: argparse.Namespace) -> list[tuple[str, Callable[[], tuple[int, str, str]], dict[str, Any]]]:
-    npm_cmd = ["npm", "install", "-g", *NPM_AI_PACKAGES]
-    return [
-        ("npm_ai_tools_update", lambda: run_cmd(npm_cmd, args.timeout_local_tools), {}),
-        ("copilot_cask_update", lambda: run_cmd(["brew", "upgrade", "--cask", "copilot-cli"], args.timeout_local_tools), {"allow_skip_rc": {0}}),
+    # Local opencode is Homebrew-managed. Installing opencode-ai globally with
+    # npm collides with /opt/homebrew/bin/opencode, so npm handles only core AI
+    # tools and Homebrew handles opencode/copilot.
+    npm_cmd = ["npm", "install", "-g", *NPM_CORE_AI_PACKAGES]
+    steps: list[tuple[str, Callable[[], tuple[int, str, str]], dict[str, Any]]] = [
+        ("npm_core_ai_tools_update", lambda: run_cmd(npm_cmd, args.timeout_local_tools), {}),
+        ("opencode_brew_update", lambda: run_cmd(["brew", "upgrade", "opencode"], args.timeout_local_tools), {"skip_condition": brew_ok_or_noop}),
+        ("copilot_cask_update", lambda: run_cmd(["brew", "upgrade", "--cask", "copilot-cli"], args.timeout_local_tools), {"skip_condition": brew_ok_or_noop}),
     ]
+    if args.install_local_brew_updates:
+        steps.append(("local_brew_upgrade_all", lambda: run_cmd(["brew", "upgrade"], args.timeout_local_updates), {"skip_condition": brew_ok_or_noop}))
+        steps.append(("npm_core_ai_tools_refresh_after_brew", lambda: run_cmd(npm_cmd, args.timeout_local_tools), {}))
+    if args.install_local_macos_system_updates:
+        steps.append(("local_macos_updates_install_all", lambda: run_cmd(["softwareupdate", "-i", "-a", "--verbose"], args.timeout_macos_updates), {"skip_condition": softwareupdate_ok_or_noop}))
+    return steps
 
 
 def remote_npm_ai_update(target: str, timeout: int, *, prefix: str | None = None, include_opencode: bool = True) -> tuple[int, str, str]:
@@ -207,8 +218,21 @@ def mac_mini_steps(args: argparse.Namespace) -> list[tuple[str, Callable[[], tup
         ("macos_updates_list", lambda: run_ssh_bash("mac-mini", "softwareupdate --list", args.timeout_macos_updates), {"skip_condition": softwareupdate_ok_or_noop}),
     ]
     if args.install_macos_system_updates:
+        steps.append(("mac_mini_brew_upgrade_all", lambda: run_ssh_bash("mac-mini", "brew upgrade", args.timeout_mac_updates), {"skip_condition": brew_ok_or_noop}))
         steps.append(("macos_updates_install_all", lambda: run_ssh_bash("mac-mini", "softwareupdate -i -a --verbose", args.timeout_macos_updates), {}))
     return steps
+
+
+def linux_apt_steps(node: str, args: argparse.Namespace, *, enabled: bool) -> list[tuple[str, Callable[[], tuple[int, str, str]], dict[str, Any]]]:
+    if enabled:
+        apt_cmd = (
+            "if sudo -n true >/dev/null 2>&1; then "
+            "sudo apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get -y upgrade && "
+            "sudo DEBIAN_FRONTEND=noninteractive apt-get -y autoremove && sudo apt-get -y autoclean; "
+            "else echo '__SKIP__:sudo_password_required'; exit 10; fi"
+        )
+        return [(f"{node}_apt_upgrade", lambda: run_ssh_bash(node, apt_cmd, args.timeout_linux_updates), {"allow_skip_rc": {10}, "skip_condition": lambda rc, out, err: rc == 10 and "__SKIP__" in out})]
+    return [(f"{node}_apt_upgrade", lambda: (10, f"Skipped: apt updates not enabled for {node}", ""), {"allow_skip_rc": {10}, "skip_condition": lambda rc, out, err: rc == 10})]
 
 
 def coco_steps(args: argparse.Namespace) -> list[tuple[str, Callable[[], tuple[int, str, str]], dict[str, Any]]]:
@@ -219,17 +243,14 @@ def coco_steps(args: argparse.Namespace) -> list[tuple[str, Callable[[], tuple[i
             {},
         )
     ]
-    if args.install_coco_system_updates:
-        apt_cmd = (
-            "if sudo -n true >/dev/null 2>&1; then "
-            "sudo apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get -y upgrade && "
-            "sudo DEBIAN_FRONTEND=noninteractive apt-get -y autoremove && sudo apt-get -y autoclean; "
-            "else echo '__SKIP__:sudo_password_required'; exit 10; fi"
-        )
-        steps.append(("coco_apt_upgrade", lambda: run_ssh_bash("coco", apt_cmd, args.timeout_linux_updates), {"allow_skip_rc": {10}, "skip_condition": lambda rc, out, err: rc == 10 and "__SKIP__" in out}))
-    else:
-        steps.append(("coco_apt_upgrade", lambda: (10, "Skipped: --install-coco-system-updates not enabled", ""), {"allow_skip_rc": {10}, "skip_condition": lambda rc, out, err: rc == 10}))
+    steps.extend(linux_apt_steps("coco", args, enabled=args.install_coco_system_updates))
     return steps
+
+
+def vps_os_steps(node: str, args: argparse.Namespace) -> list[tuple[str, Callable[[], tuple[int, str, str]], dict[str, Any]]]:
+    if not args.install_vps_system_updates:
+        return [(f"{node}_apt_upgrade", lambda: (10, "Skipped: --install-vps-system-updates not enabled", ""), {"allow_skip_rc": {10}, "skip_condition": lambda rc, out, err: rc == 10})]
+    return linux_apt_steps(node, args, enabled=True)
 
 
 def windows_steps(args: argparse.Namespace) -> list[tuple[str, Callable[[], tuple[int, str, str]], dict[str, Any]]]:
@@ -247,6 +268,8 @@ NODE_BUILDERS: dict[str, Callable[[argparse.Namespace], list[tuple[str, Callable
     "mac-mini": mac_mini_steps,
     "coco": coco_steps,
     "windows-pc": windows_steps,
+    "usa-vps": lambda args: vps_os_steps("usa-vps", args),
+    "france-vps": lambda args: vps_os_steps("france-vps", args),
 }
 
 
@@ -342,11 +365,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--agent-lanes", type=int, help="Alias of --max-workers (for multi-agent lane wording)")
     parser.add_argument("--dry-run", action="store_true", help="Plan only, execute nothing")
     parser.add_argument("--verify-after", action="store_true", help="Run daily_ai_tools_update_check.py after updates")
-    parser.add_argument("--install-macos-system-updates", action="store_true", help="Install all pending macOS system updates on mac-mini; system-level, non-default, may require reboot")
+    parser.add_argument("--install-macos-system-updates", action="store_true", help="Install pending Homebrew plus macOS system updates on mac-mini; system-level, non-default, may require reboot")
+    parser.add_argument("--install-local-brew-updates", action="store_true", help="Run brew upgrade on the local Mac; system-level, non-default")
+    parser.add_argument("--install-local-macos-system-updates", action="store_true", help="Install all pending macOS system updates on the local Mac; system-level, non-default, may require reboot")
     parser.add_argument("--install-coco-system-updates", action="store_true", help="Run apt update/upgrade/autoremove/autoclean on coco; system-level, non-default, requires passwordless sudo")
-    parser.add_argument("--include-vps", action="store_true", help="Reserved safety gate; VPS targets remain unsupported unless ALLOW_VPS_AI_TOOL_INSTALL=1")
+    parser.add_argument("--install-vps-system-updates", action="store_true", help="Run apt update/upgrade/autoremove/autoclean on VPS targets only; requires --include-vps plus ALLOW_VPS_SYSTEM_UPDATES=1; does not install AI tools")
+    parser.add_argument("--include-vps", action="store_true", help="Safety gate required for VPS targets. VPS targets perform OS maintenance only; AI tool installs remain blocked.")
     parser.add_argument("--timeout-mac-tools", type=int, default=1800)
     parser.add_argument("--timeout-local-tools", type=int, default=1800)
+    parser.add_argument("--timeout-local-updates", type=int, default=3600)
+    parser.add_argument("--timeout-mac-updates", type=int, default=3600)
     parser.add_argument("--timeout-macos-updates", type=int, default=3600)
     parser.add_argument("--timeout-linux-tools", type=int, default=600)
     parser.add_argument("--timeout-linux-updates", type=int, default=3600)
@@ -363,8 +391,10 @@ def main() -> int:
         args.max_workers = args.agent_lanes
     targets = [target.strip() for target in args.targets.split(",") if target.strip()]
     vps_targets = [target for target in targets if target.endswith("-vps")]
-    if vps_targets and not (args.include_vps and truthy_env("ALLOW_VPS_AI_TOOL_INSTALL")):
-        raise SystemExit("VPS AI tool updates are blocked by policy; set --include-vps and ALLOW_VPS_AI_TOOL_INSTALL=1 only after explicit approval")
+    if vps_targets and not args.include_vps:
+        raise SystemExit("VPS targets are blocked unless --include-vps is set after explicit approval; VPS targets perform OS maintenance only")
+    if vps_targets and args.install_vps_system_updates and not truthy_env("ALLOW_VPS_SYSTEM_UPDATES"):
+        raise SystemExit("VPS system updates require ALLOW_VPS_SYSTEM_UPDATES=1 plus explicit approval")
     unknown = [target for target in targets if target not in NODE_BUILDERS]
     if unknown:
         raise SystemExit(f"Unsupported target(s): {', '.join(unknown)}")

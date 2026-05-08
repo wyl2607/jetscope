@@ -22,7 +22,8 @@ from pathlib import Path
 from typing import Any
 
 
-ROOT = Path("/Users/yumei")
+SCRIPT_DIR = Path(__file__).resolve().parent
+ROOT = Path(os.environ.get("WORKSPACE_ROOT", str(SCRIPT_DIR.parent))).expanduser().resolve()
 RUNTIME = ROOT / "tools" / "automation" / "runtime" / "ai-tools-update-check"
 ALERT_DIR = RUNTIME / "alerts"
 VPS_PLAN_DIR = RUNTIME / "vps-remediation-plans"
@@ -37,6 +38,9 @@ TOOLS = {
 }
 
 NODES = ["local", "mac-mini", "windows-pc", "coco", "usa-vps", "france-vps"]
+SSH_TARGETS = {
+    "coco": os.environ.get("COCO_SSH_TARGET", "coco@100.92.147.76"),
+}
 REQUIRED_CONTROL_NODES = ["local"]
 REQUIRED_AI_WORKER_NODES = ["coco"]
 OPTIONAL_AI_WORKER_NODES = ["mac-mini", "windows-pc"]
@@ -46,6 +50,14 @@ REQUIRED_NODES = REQUIRED_CONTROL_NODES + REQUIRED_AI_WORKER_NODES + REQUIRED_IN
 OPTIONAL_NODES = OPTIONAL_AI_WORKER_NODES + OPTIONAL_INFRA_NODES
 VPS_NODES = {"usa-vps", "france-vps"}
 VPS_FORBIDDEN_TOOLS = ["claude", "codex", "omx", "opencode"]
+AI_TOOL_EXPECTATIONS = {
+    "local": ["codex", "claude", "omx", "opencode", "copilot"],
+    "mac-mini": ["codex", "claude", "omx", "opencode", "copilot"],
+    "windows-pc": ["codex", "claude", "omx", "opencode", "copilot"],
+    "coco": ["codex", "claude", "omx", "opencode"],
+    "usa-vps": [],
+    "france-vps": [],
+}
 REMOTE_TIMEOUT = 15
 ALERT_TIMEOUT = 10
 
@@ -60,6 +72,16 @@ def run(args: list[str], timeout: int = 8) -> subprocess.CompletedProcess[str]:
         timeout=timeout,
         check=False,
     )
+
+
+def run_text(args: list[str], timeout: int = 8) -> tuple[int, str, str]:
+    try:
+        proc = run(args, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return 124, "", "timeout"
+    except Exception as exc:
+        return 1, "", str(exc)
+    return proc.returncode, (proc.stdout or "").strip(), (proc.stderr or "").strip()
 
 
 def first_line(text: str | None) -> str | None:
@@ -90,6 +112,99 @@ def compare_semver(left: str | None, right: str | None) -> int | None:
     if left_parts == right_parts:
         return 0
     return 1 if left_parts > right_parts else -1
+
+
+def count_nonempty_lines(text: str | None) -> int | None:
+    if text is None:
+        return None
+    return sum(1 for line in text.splitlines() if line.strip())
+
+
+def parse_brew_outdated_count(raw: str | None) -> int | None:
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+    except Exception:
+        return count_nonempty_lines(raw)
+    return len(data.get("formulae") or []) + len(data.get("casks") or [])
+
+
+def local_tailscale() -> dict[str, Any]:
+    if shutil.which("tailscale") is None:
+        return {"installed": False, "backend_state": None, "ip4": None, "version": None, "online": None}
+    rc_ip, out_ip, err_ip = run_text(["tailscale", "ip", "-4"], timeout=4)
+    rc_ver, out_ver, err_ver = run_text(["tailscale", "version"], timeout=4)
+    rc_status, out_status, err_status = run_text(["tailscale", "status", "--json"], timeout=6)
+    status: dict[str, Any] = {}
+    if rc_status == 0 and out_status:
+        try:
+            status = json.loads(out_status)
+        except Exception:
+            status = {}
+    self_node = status.get("Self") or {}
+    ips = self_node.get("TailscaleIPs") or []
+    return {
+        "installed": True,
+        "backend_state": status.get("BackendState"),
+        "ip4": first_line(out_ip) if rc_ip == 0 else None,
+        "version": first_line(out_ver) if rc_ver == 0 else None,
+        "online": self_node.get("Online"),
+        "hostname": self_node.get("HostName"),
+        "dns_name": self_node.get("DNSName"),
+        "tailscale_ips": ips,
+        "errors": [err for err in (err_ip if rc_ip else "", err_ver if rc_ver else "", err_status if rc_status else "") if err],
+    }
+
+
+def local_system_updates() -> dict[str, Any]:
+    system_name = platform.system()
+    updates: dict[str, Any] = {
+        "manager": None,
+        "available": None,
+        "count": None,
+        "sample": [],
+        "reboot_required": None,
+        "check_errors": [],
+    }
+    if system_name == "Darwin":
+        updates["manager"] = "softwareupdate+brew"
+        rc_sw, out_sw, err_sw = run_text(["softwareupdate", "--list"], timeout=25)
+        combined = f"{out_sw}\n{err_sw}".lower()
+        macos_available = rc_sw == 0 and "no new software available" not in combined and "no updates are available" not in combined
+        if "software update found" in combined or "recommended" in combined or "label:" in combined:
+            macos_available = True
+        if rc_sw not in {0, 1}:
+            updates["check_errors"].append(f"softwareupdate:{err_sw or rc_sw}")
+        rc_brew, out_brew, err_brew = run_text(["brew", "outdated", "--json=v2"], timeout=25) if shutil.which("brew") else (127, "", "brew missing")
+        brew_count = parse_brew_outdated_count(out_brew) if rc_brew == 0 else None
+        if rc_brew not in {0, 127}:
+            updates["check_errors"].append(f"brew:{err_brew or rc_brew}")
+        updates.update(
+            {
+                "available": bool(macos_available or (brew_count and brew_count > 0)),
+                "count": brew_count,
+                "macos_updates_available": macos_available,
+                "brew_outdated_count": brew_count,
+                "sample": [],
+            }
+        )
+    elif system_name == "Linux":
+        updates["manager"] = "apt"
+        rc_apt, out_apt, err_apt = run_text(["bash", "-lc", "apt list --upgradable 2>/dev/null | sed '1d'"], timeout=12)
+        apt_count = count_nonempty_lines(out_apt) if rc_apt == 0 else None
+        if rc_apt != 0:
+            updates["check_errors"].append(f"apt:{err_apt or rc_apt}")
+        updates.update(
+            {
+                "available": bool(apt_count and apt_count > 0),
+                "count": apt_count,
+                "apt_upgradable_count": apt_count,
+                "sample": [line.split("/", 1)[0] for line in out_apt.splitlines()[:8]] if out_apt else [],
+                "reboot_required": Path("/var/run/reboot-required").exists(),
+            }
+        )
+    return updates
 
 
 def local_tool_version(tool: str) -> str | None:
@@ -179,6 +294,7 @@ def local_system() -> dict[str, Any]:
 
 
 def local_result() -> dict[str, Any]:
+    updates = local_system_updates()
     return {
         "node": "local",
         "ok": True,
@@ -187,8 +303,10 @@ def local_result() -> dict[str, Any]:
             "os": platform.system(),
             "kernel": platform.release(),
             "tools": collect_tools(False),
-            "apt_upgradable_count": None,
-            "brew_outdated_count": None,
+            "tailscale": local_tailscale(),
+            "system_updates": updates,
+            "apt_upgradable_count": updates.get("apt_upgradable_count"),
+            "brew_outdated_count": updates.get("brew_outdated_count"),
             "system": local_system(),
         },
     }
@@ -210,7 +328,65 @@ def first_line(s):
     line=line.strip()
     if line: return line
   return None
-out={"hostname": platform.node(), "os": platform.system(), "kernel": platform.release(), "tools": {}, "apt_upgradable_count": None, "brew_outdated_count": None, "system": {"memory_used_percent": None, "disk_root_used_percent": None, "disk_max_used_percent": None, "disk_hot_mounts": [], "top_memory_processes": []}}
+def run(args, timeout=5):
+  try:
+    p=subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+    return p.returncode, (p.stdout or '').strip(), (p.stderr or '').strip()
+  except subprocess.TimeoutExpired:
+    return 124, '', 'timeout'
+  except Exception as exc:
+    return 1, '', str(exc)
+def line_count(s):
+  return sum(1 for line in (s or '').splitlines() if line.strip())
+def brew_count(raw):
+  if not raw: return None
+  try:
+    data=json.loads(raw)
+    return len(data.get('formulae') or []) + len(data.get('casks') or [])
+  except Exception:
+    return line_count(raw)
+def tailscale_state():
+  if not shutil.which('tailscale'):
+    return {"installed": False, "backend_state": None, "ip4": None, "version": None, "online": None}
+  rc_ip,out_ip,err_ip=run(['tailscale','ip','-4'],4)
+  rc_ver,out_ver,err_ver=run(['tailscale','version'],4)
+  rc_status,out_status,err_status=run(['tailscale','status','--json'],6)
+  status={}
+  if rc_status == 0 and out_status:
+    try: status=json.loads(out_status)
+    except Exception: status={}
+  self_node=status.get('Self') or {}
+  return {"installed": True, "backend_state": status.get('BackendState'), "ip4": first_line(out_ip) if rc_ip == 0 else None, "version": first_line(out_ver) if rc_ver == 0 else None, "online": self_node.get('Online'), "hostname": self_node.get('HostName'), "dns_name": self_node.get('DNSName'), "tailscale_ips": self_node.get('TailscaleIPs') or [], "errors": [e for e in (err_ip if rc_ip else '', err_ver if rc_ver else '', err_status if rc_status else '') if e]}
+def system_updates():
+  name=platform.system()
+  result={"manager": None, "available": None, "count": None, "sample": [], "reboot_required": None, "check_errors": []}
+  if name == 'Darwin':
+    result["manager"]='softwareupdate+brew'
+    rc_sw,out_sw,err_sw=run(['softwareupdate','--list'],25)
+    combined=(out_sw+'\n'+err_sw).lower()
+    macos_available=rc_sw == 0 and 'no new software available' not in combined and 'no updates are available' not in combined
+    if 'software update found' in combined or 'recommended' in combined or 'label:' in combined:
+      macos_available=True
+    if rc_sw not in (0,1):
+      result["check_errors"].append(f"softwareupdate:{err_sw or rc_sw}")
+    if shutil.which('brew'):
+      rc_brew,out_brew,err_brew=run(['brew','outdated','--json=v2'],25)
+      brew_outdated=brew_count(out_brew) if rc_brew == 0 else None
+      if rc_brew != 0:
+        result["check_errors"].append(f"brew:{err_brew or rc_brew}")
+    else:
+      brew_outdated=None
+    result.update({"available": bool(macos_available or (brew_outdated and brew_outdated > 0)), "count": brew_outdated, "macos_updates_available": macos_available, "brew_outdated_count": brew_outdated})
+  elif name == 'Linux':
+    result["manager"]='apt'
+    rc_apt,out_apt,err_apt=run(['bash','-lc',"apt list --upgradable 2>/dev/null | sed '1d'"],12)
+    apt_count=line_count(out_apt) if rc_apt == 0 else None
+    if rc_apt != 0:
+      result["check_errors"].append(f"apt:{err_apt or rc_apt}")
+    result.update({"available": bool(apt_count and apt_count > 0), "count": apt_count, "apt_upgradable_count": apt_count, "sample": [line.split('/',1)[0] for line in out_apt.splitlines()[:8]] if out_apt else [], "reboot_required": os.path.exists('/var/run/reboot-required')})
+  return result
+updates=system_updates()
+out={"hostname": platform.node(), "os": platform.system(), "kernel": platform.release(), "tools": {}, "tailscale": tailscale_state(), "system_updates": updates, "apt_upgradable_count": updates.get("apt_upgradable_count"), "brew_outdated_count": updates.get("brew_outdated_count"), "system": {"memory_used_percent": None, "disk_root_used_percent": None, "disk_max_used_percent": None, "disk_hot_mounts": [], "top_memory_processes": []}}
 for name, matrix in TOOLS.items():
   version=None
   source=None
@@ -260,6 +436,73 @@ function ToolVersion($name, $argSets) {
   }
   return $null
 }
+function LineCount($value) {
+  if ($null -eq $value) { return $null }
+  $lines = @()
+  foreach ($line in (($value | Out-String) -split "`r?`n")) {
+    if ($line.Trim().Length -gt 0) { $lines += $line.Trim() }
+  }
+  return $lines.Count
+}
+function TailscaleState() {
+  if ($null -eq (Get-Command tailscale -ErrorAction SilentlyContinue)) {
+    return [ordered]@{ installed = $false; backend_state = $null; ip4 = $null; version = $null; online = $null }
+  }
+  $ip4 = $null
+  $version = $null
+  $backend = $null
+  $online = $null
+  $hostname = $null
+  $dnsName = $null
+  $ips = @()
+  try { $ip4 = FirstLine (& tailscale ip -4 2>&1) } catch {}
+  try { $version = FirstLine (& tailscale version 2>&1) } catch {}
+  try {
+    $statusRaw = & tailscale status --json 2>$null
+    $status = $statusRaw | ConvertFrom-Json
+    if ($status) {
+      $backend = $status.BackendState
+      if ($status.Self) {
+        $online = $status.Self.Online
+        $hostname = $status.Self.HostName
+        $dnsName = $status.Self.DNSName
+        $ips = @($status.Self.TailscaleIPs)
+      }
+    }
+  } catch {}
+  return [ordered]@{ installed = $true; backend_state = $backend; ip4 = $ip4; version = $version; online = $online; hostname = $hostname; dns_name = $dnsName; tailscale_ips = $ips; errors = @() }
+}
+function SystemUpdates() {
+  $result = [ordered]@{ manager = 'winget'; available = $null; count = $null; sample = @(); reboot_required = $null; check_errors = @() }
+  if ($null -eq (Get-Command winget -ErrorAction SilentlyContinue)) {
+    $result.manager = $null
+    $result.check_errors = @('winget:missing')
+    return $result
+  }
+  try {
+    $raw = & winget upgrade --accept-source-agreements 2>&1
+    $text = $raw | Out-String
+    $lower = $text.ToLowerInvariant()
+    if ($lower -match 'no available upgrade found' -or $lower -match 'no newer package versions are available' -or $lower -match 'kein verf') {
+      $result.available = $false
+      $result.count = 0
+    } else {
+      $rows = @()
+      foreach ($line in ($text -split "`r?`n")) {
+        $trimmed = $line.Trim()
+        if ($trimmed.Length -gt 0 -and $trimmed -notmatch '^Name\s+Id\s+Version' -and $trimmed -notmatch '^-+$' -and $trimmed -notmatch '^\d+\s+upgrades?\s+available') {
+          $rows += $trimmed
+        }
+      }
+      $result.count = $rows.Count
+      $result.available = $rows.Count -gt 0
+      $result.sample = @($rows | Select-Object -First 8)
+    }
+  } catch {
+    $result.check_errors = @("winget:$($_.Exception.GetType().Name)")
+  }
+  return $result
+}
 $osInfo = Get-CimInstance Win32_OperatingSystem
 $drive = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'"
 $diskUsed = $null
@@ -277,11 +520,14 @@ $tools = [ordered]@{
   opencode = ToolVersion 'opencode' @(@('--version'), @('-v'))
   copilot = ToolVersion 'copilot' @(@('version'), @('--version'))
 }
+$updates = SystemUpdates
 $result = [ordered]@{
   hostname = $env:COMPUTERNAME
   os = 'Windows'
   kernel = if ($osInfo) { $osInfo.Version } else { $null }
   tools = $tools
+  tailscale = TailscaleState
+  system_updates = $updates
   apt_upgradable_count = $null
   brew_outdated_count = $null
   system = [ordered]@{
@@ -302,12 +548,13 @@ def windows_probe_command() -> list[str]:
 
 
 def remote_result(node: str) -> dict[str, Any]:
+    ssh_target = SSH_TARGETS.get(node, node)
     if node == "windows-pc":
         command = windows_probe_command()
     else:
         command = [REMOTE_PROBE]
     try:
-        proc = run(["ssh", "-o", "BatchMode=yes", "-o", f"ConnectTimeout={REMOTE_TIMEOUT}", node, *command], timeout=REMOTE_TIMEOUT + 10)
+        proc = run(["ssh", "-o", "BatchMode=yes", "-o", f"ConnectTimeout={REMOTE_TIMEOUT}", ssh_target, *command], timeout=REMOTE_TIMEOUT + 10)
     except subprocess.TimeoutExpired:
         return {"node": node, "ok": False, "error": "timeout", "error_kind": "timeout"}
     except Exception as exc:
@@ -346,11 +593,31 @@ def attach_policy_and_health(item: dict[str, Any]) -> dict[str, Any]:
         issues.append("offline_required" if required else "offline_optional")
         severity = "critical" if required else "warning"
     else:
-        tools = (((item.get("data") or {}).get("tools") or {}))
+        data = item.get("data") or {}
+        tools = ((data.get("tools") or {}))
         violations = [name for name, data in tools.items() if data.get("policy_violation")]
         if violations:
             issues.append("policy_violation:" + ",".join(violations))
             severity = "critical" if required else "warning"
+        tailscale = data.get("tailscale") or {}
+        if tailscale.get("installed") is False:
+            issues.append("tailscale_missing")
+            severity = "critical" if required else "warning"
+        elif tailscale.get("backend_state") and tailscale.get("backend_state") != "Running":
+            issues.append(f"tailscale_state:{tailscale.get('backend_state')}")
+            severity = "critical" if required else "warning"
+        elif tailscale.get("online") is False:
+            issues.append("tailscale_offline")
+            severity = "critical" if required else "warning"
+        updates = data.get("system_updates") or {}
+        if updates.get("available"):
+            issues.append("system_updates_available")
+            if severity == "ok":
+                severity = "warning"
+        if updates.get("reboot_required"):
+            issues.append("reboot_required")
+            if severity == "ok":
+                severity = "warning"
     system = ((item.get("data") or {}).get("system") or {})
     item["health"] = {
         "severity": severity,
@@ -360,6 +627,103 @@ def attach_policy_and_health(item: dict[str, Any]) -> dict[str, Any]:
         "disk_hot_mounts": system.get("disk_hot_mounts") or [],
     }
     return item
+
+
+def tool_expectations_for(node: str) -> list[str]:
+    return AI_TOOL_EXPECTATIONS.get(node, ["codex", "claude", "omx", "opencode", "copilot"])
+
+
+def node_maintenance(item: dict[str, Any]) -> dict[str, Any]:
+    node = item["node"]
+    if not item.get("ok"):
+        return {
+            "node": node,
+            "reachable": False,
+            "ai_tools": {"expected": tool_expectations_for(node), "missing": [], "outdated": [], "policy_blocked": node in VPS_NODES},
+            "system_updates": {"available": None, "count": None, "reboot_required": None, "manager": None},
+            "tailscale": {"installed": None, "running": None, "online": None, "ip4": None, "version": None},
+            "recommended_actions": ["restore SSH/Tailscale reachability before checking packages"],
+        }
+    data = item.get("data") or {}
+    tools = data.get("tools") or {}
+    expected = tool_expectations_for(node)
+    missing = [name for name in expected if not (tools.get(name) or {}).get("installed")]
+    outdated = [name for name, info in tools.items() if name in expected and info.get("status") == "outdated"]
+    policy_violations = [name for name, info in tools.items() if info.get("policy_violation")]
+    updates = data.get("system_updates") or {}
+    tailscale = data.get("tailscale") or {}
+    actions: list[str] = []
+    if missing:
+        actions.append("install missing AI tools via internal_device_update_orchestrator target for this node")
+    if outdated:
+        actions.append("update AI tools via ops_hub ai-tools update")
+    if policy_violations:
+        actions.append("VPS has forbidden AI tools; use read-only remediation plan before any cleanup")
+    if updates.get("available"):
+        if node == "mac-mini":
+            actions.append("maintenance window: internal_device_update_orchestrator --targets mac-mini --install-macos-system-updates --verify-after")
+        elif node == "coco":
+            actions.append("maintenance window: internal_device_update_orchestrator --targets coco --install-coco-system-updates --verify-after")
+        elif node == "local":
+            actions.append("review local macOS/Homebrew updates manually before installing")
+        elif node == "windows-pc":
+            actions.append("maintenance window: update Windows packages with winget/Windows Update")
+        elif node in VPS_NODES:
+            actions.append("VPS OS updates require separate VPS maintenance SOP and approval")
+    if tailscale.get("installed") is False:
+        actions.append("install or re-enable Tailscale on this node")
+    elif tailscale.get("backend_state") and tailscale.get("backend_state") != "Running":
+        actions.append("inspect tailscaled service/state before scheduling this node")
+    elif tailscale.get("online") is False:
+        actions.append("bring Tailscale online before using this node")
+    if not actions:
+        actions.append("no action required from this report")
+    return {
+        "node": node,
+        "reachable": True,
+        "ai_tools": {
+            "expected": expected,
+            "missing": missing,
+            "outdated": outdated,
+            "policy_violations": policy_violations,
+            "policy_blocked": node in VPS_NODES,
+        },
+        "system_updates": {
+            "available": updates.get("available"),
+            "count": updates.get("count"),
+            "manager": updates.get("manager"),
+            "reboot_required": updates.get("reboot_required"),
+            "sample": updates.get("sample") or [],
+            "check_errors": updates.get("check_errors") or [],
+        },
+        "tailscale": {
+            "installed": tailscale.get("installed"),
+            "running": tailscale.get("backend_state") == "Running" if tailscale.get("backend_state") is not None else None,
+            "backend_state": tailscale.get("backend_state"),
+            "online": tailscale.get("online"),
+            "ip4": tailscale.get("ip4"),
+            "version": tailscale.get("version"),
+            "hostname": tailscale.get("hostname"),
+            "dns_name": tailscale.get("dns_name"),
+        },
+        "recommended_actions": actions,
+    }
+
+
+def maintenance_summary(results: list[dict[str, Any]]) -> dict[str, Any]:
+    nodes = [node_maintenance(item) for item in results]
+    return {
+        "nodes": nodes,
+        "nodes_with_missing_ai_tools": [item["node"] for item in nodes if item["ai_tools"]["missing"]],
+        "nodes_with_outdated_ai_tools": [item["node"] for item in nodes if item["ai_tools"]["outdated"]],
+        "nodes_with_system_updates": [item["node"] for item in nodes if item["system_updates"]["available"]],
+        "nodes_requiring_reboot": [item["node"] for item in nodes if item["system_updates"]["reboot_required"]],
+        "tailscale_problem_nodes": [
+            item["node"]
+            for item in nodes
+            if item["tailscale"]["installed"] is False or item["tailscale"]["running"] is False or item["tailscale"]["online"] is False
+        ],
+    }
 
 
 def alert_config() -> dict[str, Any]:
@@ -621,6 +985,7 @@ def render_status(tool: dict[str, Any]) -> str:
 
 
 def render_md(report: dict[str, Any]) -> str:
+    maintenance = report.get("maintenance") or maintenance_summary(report["results"])
     lines = [
         "# AI Tools Daily Check Report",
         "",
@@ -660,6 +1025,46 @@ def render_md(report: dict[str, Any]) -> str:
         lines.append(
             f"| {node} | {data.get('os') or 'n/a'} | {render_status(tools['codex'])} | {render_status(tools['claude'])} | {render_status(tools['omx'])} | {render_status(tools['opencode'])} | {render_status(tools['copilot'])} | {'; '.join(notes)} |"
         )
+    lines += [
+        "",
+        "## Tailscale",
+        "",
+        "| Node | Installed | State | Online | IP | Version |",
+        "|---|---:|---|---:|---|---|",
+    ]
+    maintenance_by_node = {item["node"]: item for item in maintenance["nodes"]}
+    for item in report["results"]:
+        node = item["node"]
+        ts = maintenance_by_node.get(node, {}).get("tailscale") or {}
+        if not item.get("ok"):
+            lines.append(f"| {node} | n/a | unreachable | n/a | n/a | n/a |")
+            continue
+        lines.append(
+            f"| {node} | {ts.get('installed')} | {ts.get('backend_state') or 'unknown'} | {ts.get('online')} | {ts.get('ip4') or '-'} | {ts.get('version') or '-'} |"
+        )
+    lines += [
+        "",
+        "## System Updates",
+        "",
+        "| Node | Manager | Available | Count | Reboot | Sample |",
+        "|---|---|---:|---:|---:|---|",
+    ]
+    for item in maintenance["nodes"]:
+        updates = item["system_updates"]
+        sample = ", ".join(updates.get("sample") or [])
+        lines.append(
+            f"| {item['node']} | {updates.get('manager') or '-'} | {updates.get('available')} | {updates.get('count')} | {updates.get('reboot_required')} | {sample or '-'} |"
+        )
+    lines += [
+        "",
+        "## Recommended Actions",
+        "",
+    ]
+    for item in maintenance["nodes"]:
+        actions = "; ".join(item.get("recommended_actions") or [])
+        missing = ",".join(item["ai_tools"].get("missing") or []) or "-"
+        outdated = ",".join(item["ai_tools"].get("outdated") or []) or "-"
+        lines.append(f"- {item['node']}: missing_ai={missing}; outdated_ai={outdated}; {actions}")
     lines += ["", "## Alert channel preflight", ""]
     if report["alert_config"]["issues"]:
         for issue in report["alert_config"]["issues"]:
@@ -678,7 +1083,9 @@ def render_md(report: dict[str, Any]) -> str:
         "## Actions",
         "",
         "- Daily check generated this report with read-only probes only.",
+        "- Use `/Users/yumei/scripts/ops_hub.sh ai-tools update` for AI tool updates on default worker nodes.",
         "- Do not remediate VPS policy violations without explicit approval.",
+        "- Do not run VPS OS maintenance from the AI worker updater; use a separate approval-gated VPS SOP.",
         "- Refresh global registry with `python3 /Users/yumei/tools/automation/scripts/refresh_ai_systems_registry.py --write` if runtime inventory changed.",
         "",
     ]
@@ -805,6 +1212,7 @@ def main() -> int:
         "checked_at": checked_at,
         "latest_versions": latest_versions,
         "results": results,
+        "maintenance": maintenance_summary(results),
         "alert_config": alert_config(),
         "policy": {
             "vps_forbidden_tools": VPS_FORBIDDEN_TOOLS,
