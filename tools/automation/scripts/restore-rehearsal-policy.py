@@ -74,6 +74,39 @@ AUDIT_CHECKLIST_SPECS = [
     },
 ]
 
+EXECUTION_CHECKPOINT_SPECS = [
+    {
+        "id": "pre-backup",
+        "description": "Confirm source/runtime boundaries before any backup would be planned.",
+        "covered_by_checks": ["git-canonical-source", "runtime-ignore-boundary", "approval-boundary"],
+    },
+    {
+        "id": "backup-plan",
+        "description": "Validate the backup plan metadata without writing a backup artifact.",
+        "covered_by_checks": ["registry-backup-policy", "approval-boundary"],
+    },
+    {
+        "id": "restore-plan",
+        "description": "Validate the source-only restore target without restoring files.",
+        "covered_by_checks": ["registry-backup-policy", "mirror-policy", "approval-boundary"],
+    },
+    {
+        "id": "post-restore-verification",
+        "description": "Confirm the verification commands required after a hypothetical restore.",
+        "covered_by_checks": ["registry-backup-policy", "git-canonical-source", "runtime-ignore-boundary"],
+    },
+    {
+        "id": "retention-check",
+        "description": "Confirm retention policy metadata without creating or pruning backup files.",
+        "covered_by_checks": ["registry-backup-policy", "approval-boundary"],
+    },
+    {
+        "id": "before-after-comparison",
+        "description": "Compare planned source/runtime evidence boundaries without changing the worktree.",
+        "covered_by_checks": ["git-canonical-source", "runtime-ignore-boundary", "mirror-policy"],
+    },
+]
+
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -112,6 +145,41 @@ def build_audit_checklist(checks: Sequence[dict[str, Any]]) -> list[dict[str, An
             }
         )
     return checklist
+
+
+def build_execution_evidence(checks: Sequence[dict[str, Any]], policy: dict[str, Any]) -> dict[str, Any]:
+    checks_by_id = {item.get("id"): item for item in checks}
+    checkpoints = []
+    for spec in EXECUTION_CHECKPOINT_SPECS:
+        covered_checks = [checks_by_id.get(check_id) for check_id in spec["covered_by_checks"]]
+        failed_checks = [
+            check_id
+            for check_id, item in zip(spec["covered_by_checks"], covered_checks)
+            if not item or item.get("status") != "pass"
+        ]
+        checkpoints.append(
+            {
+                "id": spec["id"],
+                "status": "pass" if covered_checks and not failed_checks else "fail",
+                "description": spec["description"],
+                "semantics": ["dry-run", "read-only", "no-write"],
+                "backup_written": False,
+                "restore_executed": False,
+                "git_mutation": False,
+                "covered_by_checks": list(spec["covered_by_checks"]),
+                "failed_checks": failed_checks,
+            }
+        )
+    return {
+        "mode": "dry-run-read-only-no-write",
+        "summary": "Read-only restore rehearsal checkpoints; no backup is written and no restore is executed.",
+        "backup_written": False,
+        "restore_executed": False,
+        "git_mutation": False,
+        "restore_target": policy.get("restore_target"),
+        "runtime_lane": policy.get("runtime_lane"),
+        "checkpoints": checkpoints,
+    }
 
 
 def registry_backup_policy(registry: dict[str, Any]) -> dict[str, Any]:
@@ -229,8 +297,11 @@ def build_report(manifest_path: Path = DEFAULT_MANIFEST, mirror_path: Path = DEF
         ),
     ]
     audit_checklist = build_audit_checklist(checks)
+    execution_evidence = build_execution_evidence(checks, policy)
+    checks_ok = all(item["status"] == "pass" for item in checks)
+    execution_ok = all(item["status"] == "pass" for item in execution_evidence["checkpoints"])
     return {
-        "ok": all(item["status"] == "pass" for item in checks),
+        "ok": checks_ok and execution_ok,
         "generated_at": utc_now(),
         "scanner": "restore-rehearsal-policy",
         "inputs": {
@@ -239,6 +310,7 @@ def build_report(manifest_path: Path = DEFAULT_MANIFEST, mirror_path: Path = DEF
             "registry": str(registry_path),
         },
         "policy": policy,
+        "execution_evidence": execution_evidence,
         "checks": checks,
         "audit_checklist": audit_checklist,
     }
@@ -257,8 +329,34 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         "Safety: read-only policy report; no backup write, restore write, Git mutation, push, PR, Obsidian write, deploy, remote mutation, or destructive cleanup.",
         "",
-        "## Audit Checklist",
+        "## Execution Evidence",
+        "",
+        f"- mode: `{(report.get('execution_evidence') or {}).get('mode')}`",
+        f"- backup written: `{str((report.get('execution_evidence') or {}).get('backup_written')).lower()}`",
+        f"- restore executed: `{str((report.get('execution_evidence') or {}).get('restore_executed')).lower()}`",
+        f"- Git mutation: `{str((report.get('execution_evidence') or {}).get('git_mutation')).lower()}`",
+        f"- summary: {(report.get('execution_evidence') or {}).get('summary')}",
+        "",
+        "### Checkpoints",
     ]
+    for item in (report.get("execution_evidence") or {}).get("checkpoints") or []:
+        lines.append(f"- `{item.get('status')}` `{item.get('id')}`: {item.get('description')}")
+        lines.append(f"  - semantics: `{', '.join(item.get('semantics') or [])}`")
+        lines.append(
+            "  - side effects: "
+            f"backup_written=`{str(item.get('backup_written')).lower()}`, "
+            f"restore_executed=`{str(item.get('restore_executed')).lower()}`, "
+            f"git_mutation=`{str(item.get('git_mutation')).lower()}`"
+        )
+        lines.append(f"  - covered by checks: `{', '.join(item.get('covered_by_checks') or [])}`")
+        if item.get("failed_checks"):
+            lines.append(f"  - failed checks: `{', '.join(item.get('failed_checks') or [])}`")
+    lines.extend(
+        [
+            "",
+            "## Audit Checklist",
+        ]
+    )
     for item in report.get("audit_checklist") or []:
         lines.append(f"- `{item.get('status')}` `{item.get('id')}`: {item.get('requirement')}")
         lines.append(f"  - evidence sources: `{', '.join(item.get('evidence_sources') or [])}`")

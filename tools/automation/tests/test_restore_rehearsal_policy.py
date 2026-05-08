@@ -16,6 +16,14 @@ REQUIRED_AUDIT_CHECKLIST_IDS = {
     "approval-boundary",
     "forbidden-actions-no-write",
 }
+REQUIRED_EXECUTION_CHECKPOINT_IDS = {
+    "pre-backup",
+    "backup-plan",
+    "restore-plan",
+    "post-restore-verification",
+    "retention-check",
+    "before-after-comparison",
+}
 
 
 def _load_module():
@@ -150,6 +158,20 @@ class RestoreRehearsalPolicyTests(unittest.TestCase):
         self.assertIn("python3 scripts/automationctl manifest --check", report["policy"]["verification_commands"])
         self.assertIn("python3 scripts/restore-rehearsal-policy.py", report["policy"]["verification_commands"])
         self.assertEqual(report["policy"]["mode"], "read-only-rehearsal-policy")
+        execution_evidence = report["execution_evidence"]
+        self.assertFalse(execution_evidence["backup_written"])
+        self.assertFalse(execution_evidence["restore_executed"])
+        self.assertFalse(execution_evidence["git_mutation"])
+        checkpoints = {item["id"]: item for item in execution_evidence["checkpoints"]}
+        self.assertEqual(set(checkpoints), REQUIRED_EXECUTION_CHECKPOINT_IDS)
+        for item in checkpoints.values():
+            self.assertEqual(item["status"], "pass")
+            self.assertFalse(item["backup_written"])
+            self.assertFalse(item["restore_executed"])
+            self.assertFalse(item["git_mutation"])
+            self.assertIn("dry-run", item["semantics"])
+            self.assertIn("read-only", item["semantics"])
+            self.assertIn("no-write", item["semantics"])
         checklist = {item["id"]: item for item in report["audit_checklist"]}
         self.assertEqual(set(checklist), REQUIRED_AUDIT_CHECKLIST_IDS)
         for item in checklist.values():
@@ -162,6 +184,11 @@ class RestoreRehearsalPolicyTests(unittest.TestCase):
         self.assertTrue(report["ok"])
         markdown = self.module.render_markdown(report)
         self.assertIn("## Audit Checklist", markdown)
+        self.assertIn("## Execution Evidence", markdown)
+        self.assertIn("backup written: `false`", markdown)
+        self.assertIn("restore executed: `false`", markdown)
+        self.assertIn("Git mutation: `false`", markdown)
+        self.assertIn("`pass` `before-after-comparison`", markdown)
         self.assertIn("`pass` `source-manifest`", markdown)
         self.assertIn("evidence sources:", markdown)
 
@@ -232,6 +259,14 @@ class RestoreRehearsalPolicyTests(unittest.TestCase):
         checks = {item["id"]: item for item in report["checks"]}
         self.assertEqual(checks["registry-backup-policy"]["status"], "fail")
         self.assertEqual(checks["approval-boundary"]["status"], "fail")
+        checkpoints = {item["id"]: item for item in report["execution_evidence"]["checkpoints"]}
+        self.assertEqual(checkpoints["backup-plan"]["status"], "fail")
+        self.assertEqual(checkpoints["restore-plan"]["status"], "fail")
+        self.assertEqual(checkpoints["retention-check"]["status"], "fail")
+        self.assertNotEqual(
+            {item["status"] for item in checkpoints.values()},
+            {"pass"},
+        )
         checklist = {item["id"]: item for item in report["audit_checklist"]}
         self.assertEqual(checklist["backup-cadence-retention"]["status"], "fail")
         self.assertEqual(checklist["approval-boundary"]["status"], "fail")
