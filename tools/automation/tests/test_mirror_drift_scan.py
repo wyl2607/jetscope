@@ -135,6 +135,44 @@ class MirrorDriftScanTests(unittest.TestCase):
         self.assertEqual(report["findings"][0]["privacy_gate"], "required-before-publish")
         self.assertEqual(report["findings"][0]["conflict_policy"], "project-wins-unless-human-promotes-obsidian-note")
         self.assertEqual(report["findings"][0]["next_action"], "request-human-approval-before-mirror-creation")
+        packet = report["findings"][0]["approval_packet"]
+        self.assertFalse(packet["execution_allowed"])
+        self.assertEqual(packet["phase"], "approval-required")
+        self.assertEqual(packet["source_of_truth"], "project")
+        self.assertIn("Do not create, overwrite, or sync the Obsidian mirror target.", packet["blocked_without_approval"])
+        self.assertIn("Approve creating the proposed Obsidian mirror target?", packet["approval_questions"])
+        self.assertIn("scripts/automationctl manifest --check", packet["validation_after_approval"])
+
+    def test_markdown_renders_proposed_mirror_approval_packet(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "source.md"
+            source.write_text("source\n", encoding="utf-8")
+            registry = self._registry(
+                root,
+                [
+                    {
+                        "id": "pair",
+                        "source": str(source),
+                        "mirror": str(root / "missing.md"),
+                        "status": "proposed",
+                        "relationship": "mirror",
+                        "sourceOfTruth": "project",
+                        "direction": "project-to-obsidian",
+                        "privacyGate": "required-before-publish",
+                        "conflictPolicy": "project-wins-unless-human-promotes-obsidian-note",
+                        "syncMode": "approval-required",
+                    }
+                ],
+            )
+
+            report = self.module.scan_registry(registry)
+            markdown = self.module.render_markdown(report)
+
+        self.assertIn("**Approval packet**", markdown)
+        self.assertIn("execution allowed now: `false`", markdown)
+        self.assertIn("Approve creating the proposed Obsidian mirror target?", markdown)
+        self.assertIn("Do not create, overwrite, or sync the Obsidian mirror target.", markdown)
 
     def test_derived_index_requires_do_not_merge_back_policy(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
