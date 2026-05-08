@@ -43,9 +43,19 @@ class SkillChainDashboardStaticUiTests(unittest.TestCase):
         zh = i18n["zh"]
 
         self.assertEqual(zh["viewSkills"], "技能库")
+        self.assertEqual(zh["viewRepoEvolver"], "仓库演化")
         self.assertEqual(zh["skillLibraryTitle"], "技能库")
         self.assertEqual(zh["searchSkills"], "搜索技能")
         self.assertEqual(zh["dedupeWatchTitle"], "去重观察期")
+        self.assertEqual(zh["repoEvolverTitle"], "仓库演化看板")
+        self.assertEqual(zh["repoEvolverMaintenance"], "维护审计与持续重构队列")
+        self.assertEqual(zh["repoEvolverDocs"], "文档事实核验与过时声明审查")
+        self.assertEqual(zh["repoEvolverSkills"], "Agent 技能生命周期治理")
+        self.assertEqual(zh["repoEvolverMirror"], "Obsidian 镜像策略：Git 是唯一真相")
+        self.assertEqual(zh["repoEvolverRestore"], "Git 备份、源清单、运行时忽略与恢复治理")
+        self.assertNotIn("Maintenance audit", zh["repoEvolverMaintenance"])
+        self.assertNotIn("Documentation fact", zh["repoEvolverDocs"])
+        self.assertNotIn("runtime ignore", zh["repoEvolverRestore"])
 
     def test_dashboard_data_exposes_skill_duplicate_metadata_gate(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -292,6 +302,11 @@ class SkillChainDashboardStaticUiTests(unittest.TestCase):
         i18n = json.loads((DASHBOARD_DIR / "i18n.json").read_text(encoding="utf-8"))
 
         self.assertIn("function renderRepoEvolverGatePanel", app_js)
+        self.assertIn("function repoEvolverGapLabel", app_js)
+        self.assertIn("function repoEvolverGapNote", app_js)
+        self.assertIn('weak: "偏弱"', app_js)
+        self.assertIn('fail: "失败"', app_js)
+        self.assertIn('pass: "通过"', app_js)
         self.assertIn("data && data.repo_evolver", app_js)
         self.assertIn("split_reconsideration_blocked", app_js)
         self.assertIn("repo-evolver-gate-panel", styles)
@@ -299,6 +314,8 @@ class SkillChainDashboardStaticUiTests(unittest.TestCase):
         self.assertIn(".badge.warn", styles)
         self.assertEqual(i18n["zh"]["repoEvolverGateTitle"], "阶段门禁")
         self.assertEqual(i18n["zh"]["repoEvolverSplitBlocked"].startswith("Phase 5"), True)
+        self.assertEqual(i18n["zh"]["repoEvolverGapLabel.phase-5-stability-before-split"], "Phase 5 拆分前稳定性")
+        self.assertIn("拆仓库/拆包", i18n["zh"]["repoEvolverGapNote.phase-5-stability-before-split"])
 
 
 if __name__ == "__main__":
