@@ -78,6 +78,15 @@
       "scanner": "doc-drift-auditor"
     },
     {
+      "id": "tools-automation-summary",
+      "source": "/Users/yumei/tools/automation/automation-summary.md",
+      "mirrors": [],
+      "role": "historical-execution-report",
+      "zone": "local",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
+    },
+    {
       "id": "tools-automation-readme",
       "source": "/Users/yumei/tools/automation/README.md",
       "mirrors": [],
@@ -165,6 +174,60 @@
       "source": "/Users/yumei/tools/automation/.evolver/memory/rejected-patterns.md",
       "mirrors": [],
       "role": "evolver-memory",
+      "zone": "source",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "docs-index",
+      "source": "/Users/yumei/tools/automation/docs/INDEX.md",
+      "mirrors": [],
+      "role": "docs-navigation",
+      "zone": "source",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "docs-architecture-index",
+      "source": "/Users/yumei/tools/automation/docs/architecture/INDEX.md",
+      "mirrors": [],
+      "role": "docs-navigation",
+      "zone": "source",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "docs-human-index",
+      "source": "/Users/yumei/tools/automation/docs/human/INDEX.md",
+      "mirrors": [],
+      "role": "docs-navigation",
+      "zone": "source",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "docs-decisions-index",
+      "source": "/Users/yumei/tools/automation/docs/decisions/INDEX.md",
+      "mirrors": [],
+      "role": "docs-navigation",
+      "zone": "source",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "docs-changelog-index",
+      "source": "/Users/yumei/tools/automation/docs/changelog/INDEX.md",
+      "mirrors": [],
+      "role": "docs-navigation",
+      "zone": "source",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "agent-skills-index",
+      "source": "/Users/yumei/tools/automation/agent-skills/INDEX.md",
+      "mirrors": [],
+      "role": "skill-governance",
       "zone": "source",
       "syncMode": "source-only",
       "scanner": "doc-drift-auditor"

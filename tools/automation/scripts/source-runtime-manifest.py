@@ -18,9 +18,11 @@ DEFAULT_OUT = AUTOMATION / "runtime" / "task-board" / "source-runtime-manifest.j
 SOURCE_PREFIXES = (
     ".agents/skills/",
     ".evolver/",
+    "agent-skills/",
     "ai-scheduler/",
     "auto-refactor-loop/",
     "config/",
+    "docs/",
     "roles/",
     "scripts/",
     "templates/",
