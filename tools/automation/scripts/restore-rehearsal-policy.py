@@ -35,6 +35,45 @@ REQUIRED_VERIFICATION_COMMANDS = {
     "python3 scripts/restore-rehearsal-policy.py",
 }
 
+AUDIT_CHECKLIST_SPECS = [
+    {
+        "id": "source-manifest",
+        "requirement": "Restore rehearsal evidence must include a classified source manifest with no unclassified files.",
+        "evidence_sources": ["source-runtime-manifest.json:summary", "source-runtime-manifest.json:git_visibility"],
+        "covered_by_checks": ["git-canonical-source"],
+    },
+    {
+        "id": "runtime-ignore",
+        "requirement": "Runtime and generated evidence must remain ignored and excluded from source restore targets.",
+        "evidence_sources": ["source-runtime-manifest.json:publication_gate", "source-runtime-manifest.json:summary"],
+        "covered_by_checks": ["runtime-ignore-boundary"],
+    },
+    {
+        "id": "mirror-relationship",
+        "requirement": "Mirror relationships must keep project files as source of truth and mirrors as derived evidence.",
+        "evidence_sources": ["mirror-drift-scan.json:summary", "mirror-drift-scan.json:findings"],
+        "covered_by_checks": ["mirror-policy"],
+    },
+    {
+        "id": "backup-cadence-retention",
+        "requirement": "Backup policy must define cadence, retention, scope, restore target, runtime lane, and verification commands.",
+        "evidence_sources": ["evolution-registry.json:backupPolicy"],
+        "covered_by_checks": ["registry-backup-policy"],
+    },
+    {
+        "id": "approval-boundary",
+        "requirement": "Backup, restore, publication, remote mutation, and destructive cleanup require explicit approval.",
+        "evidence_sources": ["evolution-registry.json:backupPolicy.approvalRequiredFor", "source-runtime-manifest.json:publication_gate"],
+        "covered_by_checks": ["approval-boundary"],
+    },
+    {
+        "id": "forbidden-actions-no-write",
+        "requirement": "This rehearsal report must not perform backup writes, restore writes, Git mutations, pushes, PRs, remote writes, or destructive actions.",
+        "evidence_sources": ["restore-rehearsal-policy.py:mode", "evolution-registry.json:backupPolicy.verificationCommands"],
+        "covered_by_checks": ["registry-backup-policy", "approval-boundary"],
+    },
+]
+
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -55,6 +94,24 @@ def check(check_id: str, passed: bool, message: str, **evidence: Any) -> dict[st
         "message": message,
         "evidence": evidence,
     }
+
+
+def build_audit_checklist(checks: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    checks_by_id = {item.get("id"): item for item in checks}
+    checklist = []
+    for spec in AUDIT_CHECKLIST_SPECS:
+        covered_checks = [checks_by_id.get(check_id) for check_id in spec["covered_by_checks"]]
+        status = "pass" if covered_checks and all(item and item.get("status") == "pass" for item in covered_checks) else "fail"
+        checklist.append(
+            {
+                "id": spec["id"],
+                "requirement": spec["requirement"],
+                "evidence_sources": list(spec["evidence_sources"]),
+                "covered_by_checks": list(spec["covered_by_checks"]),
+                "status": status,
+            }
+        )
+    return checklist
 
 
 def registry_backup_policy(registry: dict[str, Any]) -> dict[str, Any]:
@@ -171,6 +228,7 @@ def build_report(manifest_path: Path = DEFAULT_MANIFEST, mirror_path: Path = DEF
             requires_review_for_high_risk=publication_gate.get("requires_review_for_high_risk"),
         ),
     ]
+    audit_checklist = build_audit_checklist(checks)
     return {
         "ok": all(item["status"] == "pass" for item in checks),
         "generated_at": utc_now(),
@@ -182,6 +240,7 @@ def build_report(manifest_path: Path = DEFAULT_MANIFEST, mirror_path: Path = DEF
         },
         "policy": policy,
         "checks": checks,
+        "audit_checklist": audit_checklist,
     }
 
 
@@ -198,8 +257,18 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         "Safety: read-only policy report; no backup write, restore write, Git mutation, push, PR, Obsidian write, deploy, remote mutation, or destructive cleanup.",
         "",
-        "## Checks",
+        "## Audit Checklist",
     ]
+    for item in report.get("audit_checklist") or []:
+        lines.append(f"- `{item.get('status')}` `{item.get('id')}`: {item.get('requirement')}")
+        lines.append(f"  - evidence sources: `{', '.join(item.get('evidence_sources') or [])}`")
+        lines.append(f"  - covered by checks: `{', '.join(item.get('covered_by_checks') or [])}`")
+    lines.extend(
+        [
+            "",
+            "## Checks",
+        ]
+    )
     for item in report.get("checks") or []:
         lines.append(f"- `{item.get('status')}` `{item.get('id')}`: {item.get('message')}")
     return "\n".join(lines) + "\n"
