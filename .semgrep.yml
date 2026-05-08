@@ -1,0 +1,14 @@
+rules:
+  - id: no-shell-pipe-to-python
+    message: Avoid pipe-to-interpreter install patterns in repository scripts.
+    severity: WARNING
+    languages:
+      - generic
+    pattern-regex: "curl\\s+[^\\n|]+\\|\\s*(bash|sh|python|python3)"
+
+  - id: no-hardcoded-openai-secret
+    message: Do not commit OpenAI-style secret keys.
+    severity: ERROR
+    languages:
+      - generic
+    pattern-regex: "sk-[A-Za-z0-9_-]{20,}"

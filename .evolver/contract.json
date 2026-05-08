@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "scope": "public-safe repository maintenance metadata",
+  "default_mode": "read-only",
+  "allowed": [
+    "policy-contracts",
+    "public-safe-metadata",
+    "small-schemas",
+    "reviewable-maintenance-candidates"
+  ],
+  "forbidden": [
+    "secrets",
+    "credentials",
+    "runtime-queues",
+    "logs",
+    "generated-reports",
+    "raw-agent-memory",
+    "obsidian-vault-excerpts",
+    "remote-mutation-approval-state"
+  ],
+  "required_gates": [
+    "scripts/security_check.sh",
+    "scripts/review_push_guard.sh origin/main"
+  ],
+  "promotion_policy": {
+    "push": "explicit-human-approval-required",
+    "pr": "explicit-human-approval-required",
+    "deploy": "forbidden",
+    "sync": "forbidden",
+    "destructive_git": "forbidden"
+  }
+}

@@ -1,144 +1,106 @@
-# AGENTS.md — JetScope AI 入口指南
+# AGENTS.md - Workspace AI Entry
 
-> **项目**: JetScope
-> **角色**: AI 并行开发系统入口
-> **版本**: v2.1
+This repository has a dual role during the workspace transition. Treat this
+file as the public, repository-local AI entrypoint.
 
-## 仓库角色边界（B 阶段，2026-05-02 起）
+## Canonical Flow
 
-- 本仓 (`/Users/yumei`) 已声明为**双重身份**：workspace 治理层（活）+ jetscope 产品镜像（只读）。
-- **jetscope 产品类改动**（`apps/`、`infra/`、`packages/`、`test/`、产品类 `scripts/*`）的唯一开发口：`~/projects/jetscope`。
-- **workspace 治理类改动**（`tools/automation/`、`scripts/obsidian_*`、`scripts/ops_hub.sh` 等）继续在本仓维护，C 阶段会迁出。
-- 详细分类与不可触碰路径见 `/Users/yumei/NOTICE.md`。
-- 决策方案见 `~/.claude/plans/jetscope-dual-repo-convergence.md`。
+- Read this file before editing.
+- `CLAUDE.md` imports and extends this file for Claude-specific behavior.
+- Product work for JetScope belongs in `/Users/yumei/projects/jetscope`.
+- Workspace governance work belongs in `/Users/yumei/tools/automation` during
+  the transition and must stay local-first unless explicitly promoted.
 
-## 快速开始
+## Repository Boundary
+
+`/Users/yumei` is not a normal single-purpose product repo:
+
+| Area | Paths | Default action |
+|---|---|---|
+| JetScope product mirror | `apps/`, `infra/`, `packages/`, `test/`, product docs/scripts | Read-only here; develop in `/Users/yumei/projects/jetscope` |
+| Workspace governance | `tools/automation/`, guard scripts, AI maintenance docs | Local-first; classify before any publish |
+| Runtime/private state | `runtime/`, `.claude/`, `.codex/`, `.omx/`, vaults, logs, caches | Never publish |
+
+See `NOTICE.md` when deciding whether a file belongs to product, governance,
+runtime, private, or public-candidate zones.
+
+## Safety Rules
+
+- No push, PR, merge, release, deploy, sync, SSH, rsync, launchd mutation, or
+  destructive Git operation without explicit approval.
+- Do not read, print, stage, or store secrets.
+- Keep runtime/cache/log/tool-state/temp/archive/nested-repo artifacts out of
+  commits.
+- Split commits by purpose and risk surface.
+- If the worktree is dirty, classify changes before staging.
+- Unknown, private, generated, runtime, or deploy-adjacent files block publish.
+
+## Required Gates
+
+Before local commits, run the smallest relevant validation plus:
 
 ```bash
-cd ~/projects/jetscope
-source scripts/jetscope-env
+scripts/security_check.sh
 ```
 
-## 路径
+Before any push or PR preparation, also run:
 
-- 本机: `~/projects/jetscope`
-- GitHub: `wyl2607/jetscope`
+```bash
+scripts/review_push_guard.sh origin/main
+```
 
-## 默认规则
+Do not bypass hooks or guards.
 
-- 修改代码前先读本文件和根目录 `~/AGENTS.md`
-- 发布前运行 `npm run preflight`
-- 不得提交 `.env*`、内部交付文档、日志、`.automation/`、`.omx/`
-- 多节点同步脚本和发布脚本属于高风险操作，修改后必须说明影响面
+## Maintenance Pipeline
 
-## 关键命令
+The repo-evolver direction is intentionally conservative:
 
-- `APPROVE_JETSCOPE_RELEASE=<token> npm run release -- --approval-token <token>`（默认发布入口；会串联 preflight、GitHub 发布、VPS 部署；节点同步为显式 opt-in）
-- `npm run preflight`
-- `npm run web:gate`
-- `npm run api:check`
-- `./scripts/publish-to-github.sh`（局部重跑入口，非默认发布路径）
-- `./scripts/sync-to-nodes.sh`（高风险节点同步，非默认发布路径）
+- Daily automation should produce low-risk, reviewable maintenance candidates.
+- Codex GitHub Action runs must be read-only unless explicitly approved.
+- Static gates should report Semgrep, Vale, and markdownlint issues without
+  mutating files.
+- `.evolver/` stores small public-safe metadata and policy contracts only.
+- Runtime memory, raw reports, local queues, vault-derived notes, and secrets
+  remain outside `.evolver/` and outside public commits.
 
-## 当前架构重点
+## Cross-AI Traceability
 
-- `apps/web`: Next.js 前端
-- `apps/api`: FastAPI 后端
-- `packages/core`: 共享领域逻辑
-- `docs/`: 产品、API、数据合同、AI 流水线与部署文档
-- `scripts/`: 发布、预检、同步和部署脚本
-
-## 仓库规则
-
-- 不得提交 `.env*`、密钥、本地数据库、日志、构建产物、`node_modules/` 或内部交付归档
-- 新增文档应面向公开仓库，避免写入私人机器路径、内部节点名或不可复现的本地流程
-- 发布和部署规则以 `OPERATIONS.md` 为准
-- 非琐碎任务开始前，先查 `/Users/yumei/tools/automation/runtime/ai-trace/*.jsonl`
-- 新的稳定解法必须写回 ledger
-
-## 发布安全边界
-
-- 推送或发布前必须遵守 `/Users/yumei/.codex/memories/UNIVERSAL_AI_DEV_POLICY.md`
-- 发布前先运行 `npm run preflight`
-- 推送或默认发布必须先运行 `scripts/security_check.sh` 和 `scripts/review_push_guard.sh origin/main`；若 gate 缺失，发布脚本应 fail closed，不得自行伪造通过结果
-- `.gitignore` 不等于节点同步安全边界；新增本地/敏感忽略规则时，也要同步检查 `scripts/sync-excludes.sh`
-
-## Cross-AI Traceability (Mandatory)
-
-Before deep debugging or non-trivial implementation:
-
-1. Read `/Users/yumei/tools/automation/workspace-guides/ai-collaboration-traceability-standard.md`.
-2. Search shared ledgers first:
-   - `/Users/yumei/tools/automation/runtime/ai-trace/issue-ledger.jsonl`
-   - `/Users/yumei/tools/automation/runtime/ai-trace/solution-ledger.jsonl`
-3. Then load this project's `INCIDENT_LOG.md` and `PROJECT_PROGRESS.md` if present.
-
-Use:
+For non-trivial implementation or debugging, search local trace ledgers first:
 
 ```bash
 bash /Users/yumei/tools/automation/scripts/ai-trace.sh find "<keyword>"
 ```
 
-If a stable root cause or reusable fix is confirmed, write it back immediately:
+Stable reusable findings should be written back with the same script.
 
-```bash
-bash /Users/yumei/tools/automation/scripts/ai-trace.sh issue "<scope>" "<symptom>" "<root_cause>" "<fix>" "<verification>" "<artifacts>"
-bash /Users/yumei/tools/automation/scripts/ai-trace.sh solution "<scope>" "<problem_pattern>" "<solution_pattern>" "<verification>" "<artifacts>"
-bash /Users/yumei/tools/automation/scripts/ai-trace.sh session "<scope>" "<summary>" "<next_step>" "<linked_issue>"
-```
+## Codex Goal Packet
 
-## Dev-Harness Continuation Index
-
-- 开始或恢复任一 `/Users/yumei/projects/*` 项目工作前，先读 `/Users/yumei/.claude/projects/-Users-yumei/dev-harness/INDEX.md`。
-- 进入具体项目后，再读对应 `/Users/yumei/.claude/projects/-Users-yumei/dev-harness/projects/<project>.md`，用其中的 `Resume Hint`、风险、未完成项和 guard 约束决定下一步。
-- `dev-harness/` 是私有本机开发台账，只能由 harness 脚本更新；不得提交、推送、同步、复制到公开仓库或写入项目源码目录。
-
-## Harness Engineering
-
-- Codex/OpenCode 可用 skills: `repo-onboarding`, `test-harness`, `pr-review-guard`, `migration-safety`, `browser-qa`, `harness-engineering-orchestrator`。
-- 非琐碎实现任务先压成 `Goal / Context / Constraints / Done criteria`，再进入代码修改。
-- 宽泛、高风险、多步、跨仓、AI workflow/skill-chain、夜间/无人值守或 Codex CLI `/goal` 委派任务，先遵守 `/Users/yumei/tools/automation/workspace-guides/skill-chains/plan-first-goal-chain-sop.md`：写 plan 文件，评审到 `approved_for_goal`，再派单个 bounded `/goal`。
-- Codex CLI 已启用 `/goal` 时，默认把它作为单任务执行模式：Claude/OpenCode 负责任务切分、边界、并发安全和最终验收；Codex `/goal` 负责按任务包闭环执行。
-- Codex goal 任务包必须包含：目标、上下文、允许修改范围、禁止事项、验证命令、完成标准、交付摘要；默认 CLI-first，优先用文件、日志、测试和构建命令，不默认使用 Computer Use。
-- 多个 Codex goal 只能并行处理文件范围不重叠的任务；涉及同一核心文件、数据模型、迁移、发布、节点同步或安全边界时，必须串行并由主控复审。
-- 非琐碎实现完成后，默认进入“提交/同步/推送闭环”：先按目的切 commit（既有重构/API/UI、本轮功能/汉化、计划/进度文档分开），再 `git fetch` 检查 `ahead/behind`，必要时先建本地备份分支再 rebase/merge 到最新 `origin/<base>`，解决冲突后重跑验证。
-- `git push`、PR、merge、release、deploy、sync 一律视为 release-readiness 远端动作：必须先完成本地验证、`scripts/security_check.sh`、`scripts/review_push_guard.sh origin/main`、目标仓边界检查和 trace 写回；非 dry-run 远端动作必须等用户显式批准。
-- 若某次闭环产生稳定可复用流程（例如 dirty tree slicing、commit slicing、rebase conflict policy、push guard 顺序），必须写入 `/Users/yumei/tools/automation/runtime/ai-trace/solution-ledger.jsonl` 或相关 SOP，不能只留在聊天记录。
-- AI 生成代码后的默认收口顺序是：清点 `git status --short` -> 分类 tracked/untracked -> 删除或归档仅限明确属于本轮产生的临时产物 -> 合并重复/过时草稿 -> 运行最小验证 -> 按目的本地 commit。不得把 runtime、缓存、日志、工具状态、临时工作区、归档副本或嵌套项目作为“代码成果”提交。
-- 若发现无关脏树，先隔离：本轮 allowlist 内文件继续验证和 commit；无关 tracked 改动保持未暂存并报告；无关 untracked runtime/临时目录优先加入忽略规则或归档清单，不直接删除，除非用户明确批准。
-- 以后创建临时工作区、agent 输出、下载包、归档或实验目录，默认放到 `/private/tmp`、项目内已忽略目录或明确命名的 `*-archive-*`/runtime 目录；任务结束前必须确认这些产物不会污染目标 repo 的 `git status`。
-- 本仓提交/发布前硬门：运行 `python3 scripts/dirty_tree_guard.py --mode pre-commit`；push/readiness 路径由 `scripts/security_check.sh` 和 `scripts/review_push_guard.sh` 调用该 guard。未知 untracked、runtime/cache/log/tool-state/archive/nested repo/secret-like 路径必须先分类处理。
-- 需要从 PRD 到架构、里程碑、任务、验证的完整开发流时，使用 `harness-engineering-orchestrator`；普通小修复优先使用 `repo-onboarding` + `test-harness`。
-- 不要在 `/Users/yumei` 根目录随意运行 Harness setup。只在目标项目目录明确执行，常用形式：`bun /Users/yumei/.agents/skills/harness-engineering-orchestrator/scripts/harness-setup.ts --isGreenfield=false --skipGithub=true`。
-- Harness 产生的规划、架构、进度、状态必须写回项目文件或 trace ledger，不能只留在聊天里。
-- 修改代码后报告实际验证证据：运行过的命令、通过/失败结果、未运行原因、剩余风险。
-
-## Codex Goal Task Packet
+Use this shape for bounded delegated work:
 
 ```text
-/goal 完成 <任务名>
+/goal 完成 <task>
 
 目标：
-<一句话说明要完成什么>
+<one sentence>
 
 上下文：
-<项目、当前状态、相关文件或文档>
+<repo, current state, relevant files>
 
 允许修改：
-<文件/目录白名单>
+<exact allowlist>
 
 禁止修改：
-<不能触碰的路径、不能执行的操作>
+<private/runtime/generated/deploy paths and all unrelated files>
 
 执行方式：
-默认 CLI-first：优先读取文件、运行测试/构建/日志命令；不要使用 Computer Use，除非本任务明确要求 GUI/视觉验证。
+CLI-first. No push/PR/deploy/sync/SSH/rsync/delete/reset.
 
 验证：
-<必须运行的命令>
+<focused commands>
 
 完成标准：
-<通过条件>
+<checkable done criteria>
 
 交付：
-最后报告改动文件、验证结果、剩余风险和建议下一步。
+changed files, validation, remaining risk.
 ```

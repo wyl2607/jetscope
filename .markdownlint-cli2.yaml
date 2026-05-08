@@ -1,0 +1,15 @@
+config:
+  default: true
+  MD013: false
+  MD033: false
+
+globs:
+  - "**/*.md"
+
+ignores:
+  - "node_modules/**"
+  - "tools/automation/runtime/**"
+  - "archive/**"
+  - "docs/archive/**"
+  - "tool-cleanup-archive-*/**"
+  - "Obsidian/**"
