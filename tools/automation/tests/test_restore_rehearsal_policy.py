@@ -1,0 +1,132 @@
+from __future__ import annotations
+
+import importlib.util
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+
+SCRIPT = Path("/Users/yumei/tools/automation/scripts/restore-rehearsal-policy.py")
+
+
+def _load_module():
+    if str(SCRIPT.parent) not in sys.path:
+        sys.path.insert(0, str(SCRIPT.parent))
+    spec = importlib.util.spec_from_file_location("restore_rehearsal_policy_test_module", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    assert spec and spec.loader
+    spec.loader.exec_module(module)
+    return module
+
+
+class RestoreRehearsalPolicyTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.module = _load_module()
+
+    def test_policy_requires_manifest_runtime_mirror_and_approval_gates(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = root / "manifest.json"
+            mirror = root / "mirror.json"
+            registry = root / "registry.json"
+            manifest.write_text(
+                self.module.json.dumps(
+                    {
+                        "summary": {
+                            "unclassified_count": 0,
+                            "source_candidate_count": 7,
+                            "excluded_by_default_count": 3,
+                        },
+                        "git_visibility": {
+                            "automation_ignored": True,
+                            "ignore_rule": ".gitignore:103:tools/automation/*",
+                        },
+                        "publication_gate": {
+                            "runtime_excluded_by_default": True,
+                            "requires_secret_scan": True,
+                            "requires_user_approval_for_push": True,
+                            "requires_review_for_high_risk": True,
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            mirror.write_text(
+                self.module.json.dumps(
+                    {
+                        "ok": True,
+                        "summary": {"blocking_count": 0, "drift_count": 0},
+                        "findings": [
+                            {"kind": "derived-index-registered"},
+                            {
+                                "kind": "proposed-mirror-target-missing",
+                                "approval_required": True,
+                                "source_of_truth": "project",
+                            },
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            registry.write_text(
+                self.module.json.dumps(
+                    {
+                        "safety": {
+                            "forbiddenWithoutApproval": [
+                                "push",
+                                "pr",
+                                "deploy",
+                                "remote-mutation",
+                                "secret-access",
+                                "destructive-cleanup",
+                                "broad-sync",
+                            ]
+                        },
+                        "mirrorPairs": [{"sourceOfTruth": "project"}],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            report = self.module.build_report(manifest, mirror, registry)
+
+        self.assertTrue(report["ok"])
+        checks = {item["id"]: item for item in report["checks"]}
+        self.assertEqual(checks["git-canonical-source"]["status"], "pass")
+        self.assertEqual(checks["runtime-ignore-boundary"]["status"], "pass")
+        self.assertEqual(checks["mirror-policy"]["status"], "pass")
+        self.assertEqual(checks["approval-boundary"]["status"], "pass")
+        self.assertEqual(report["policy"]["restore_target"], "source-only")
+        self.assertEqual(report["policy"]["runtime_lane"], "separate-local-evidence-only")
+        self.assertEqual(report["policy"]["mode"], "read-only-rehearsal-policy")
+
+    def test_policy_fails_closed_when_runtime_is_not_excluded(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = root / "manifest.json"
+            mirror = root / "mirror.json"
+            registry = root / "registry.json"
+            manifest.write_text(
+                self.module.json.dumps(
+                    {
+                        "summary": {"unclassified_count": 0, "source_candidate_count": 1, "excluded_by_default_count": 0},
+                        "git_visibility": {"automation_ignored": True, "ignore_rule": ".gitignore:103:tools/automation/*"},
+                        "publication_gate": {"runtime_excluded_by_default": False},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            mirror.write_text(self.module.json.dumps({"ok": True, "summary": {"blocking_count": 0}, "findings": []}), encoding="utf-8")
+            registry.write_text(self.module.json.dumps({"safety": {"forbiddenWithoutApproval": []}, "mirrorPairs": []}), encoding="utf-8")
+
+            report = self.module.build_report(manifest, mirror, registry)
+
+        self.assertFalse(report["ok"])
+        failed = {item["id"] for item in report["checks"] if item["status"] == "fail"}
+        self.assertIn("runtime-ignore-boundary", failed)
+        self.assertIn("approval-boundary", failed)
+
+
+if __name__ == "__main__":
+    unittest.main()

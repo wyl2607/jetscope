@@ -46,6 +46,7 @@ def daily_plan(limit: int = 10) -> list[Step]:
         Step("registry", [sys.executable, str(SCRIPTS / "evolution-registry.py"), "validate", "--registry", str(ROOT / "workspace-guides/evolution-registry.json")], hard_gate=True),
         Step("skill-dashboard", [sys.executable, str(SCRIPTS / "skill-chain-dashboard.py"), "--once"]),
         Step("mirror-drift", [sys.executable, str(SCRIPTS / "mirror-drift-scan.py")], hard_gate=True),
+        Step("restore-rehearsal-policy", [sys.executable, str(SCRIPTS / "restore-rehearsal-policy.py")], hard_gate=True),
         Step("static-tool-probes", [sys.executable, str(SCRIPTS / "static-tool-probes.py")]),
         Step("doc-drift", [sys.executable, str(DOC_DRIFT), "--root", str(ROOT)]),
         Step("reshape-scan", [sys.executable, str(RESHAPE_SCAN), "--root", str(ROOT)]),
@@ -109,6 +110,7 @@ def run_daily(limit: int = 10, out_dir: Path = RUNTIME) -> int:
         },
         "outputs": {
             "mirror_drift": str(RUNTIME / "mirror-drift-scan.json"),
+            "restore_rehearsal_policy": str(RUNTIME / "restore-rehearsal-policy.json"),
             "static_tool_probes": str(RUNTIME / "static-tool-probes.json"),
             "approval_inbox": str(ROOT / "runtime/task-board/daily-approval-inbox.json"),
             "dashboard": str(ROOT / "runtime/skill-chains/dashboard/data.json"),

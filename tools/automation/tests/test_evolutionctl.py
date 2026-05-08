@@ -39,6 +39,7 @@ class EvolutionCtlTests(unittest.TestCase):
                 "registry",
                 "skill-dashboard",
                 "mirror-drift",
+                "restore-rehearsal-policy",
                 "static-tool-probes",
                 "doc-drift",
                 "reshape-scan",
@@ -63,7 +64,7 @@ class EvolutionCtlTests(unittest.TestCase):
             markdown_exists = (out_dir / "daily-evolution-control.md").exists()
 
         self.assertEqual(rc, 1)
-        self.assertEqual(len(calls), 8)
+        self.assertEqual(len(calls), 9)
         self.assertFalse(report["ok"])
         self.assertEqual(report["summary"]["failed_count"], 1)
         self.assertTrue(markdown_exists)
