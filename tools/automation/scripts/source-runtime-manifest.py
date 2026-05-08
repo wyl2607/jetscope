@@ -17,6 +17,7 @@ DEFAULT_OUT = AUTOMATION / "runtime" / "task-board" / "source-runtime-manifest.j
 
 SOURCE_PREFIXES = (
     ".agents/skills/",
+    ".evolver/",
     "ai-scheduler/",
     "auto-refactor-loop/",
     "config/",
@@ -31,6 +32,7 @@ SOURCE_NAMES = {
     "PLANS.md",
     "README.md",
     "PROJECT_PROGRESS.md",
+    "development-plan.md",
     "plan.md",
     "skills-lock.json",
     "parallel-codex-builder.sh",

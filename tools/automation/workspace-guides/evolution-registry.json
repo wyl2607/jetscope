@@ -114,6 +114,60 @@
       "zone": "source",
       "syncMode": "manual-review",
       "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "evolver-config",
+      "source": "/Users/yumei/tools/automation/.evolver/config.yml",
+      "mirrors": [],
+      "role": "evolver-configuration",
+      "zone": "source",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "evolver-risk-policy",
+      "source": "/Users/yumei/tools/automation/.evolver/risk-policy.md",
+      "mirrors": [],
+      "role": "evolver-policy",
+      "zone": "source",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "evolver-style-guide",
+      "source": "/Users/yumei/tools/automation/.evolver/style-guide.md",
+      "mirrors": [],
+      "role": "evolver-style-guide",
+      "zone": "source",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "evolver-development-plan",
+      "source": "/Users/yumei/tools/automation/development-plan.md",
+      "mirrors": [],
+      "role": "project-plans",
+      "zone": "local",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "evolver-memory-lessons",
+      "source": "/Users/yumei/tools/automation/.evolver/memory/lessons.md",
+      "mirrors": [],
+      "role": "evolver-memory",
+      "zone": "source",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "evolver-memory-rejected-patterns",
+      "source": "/Users/yumei/tools/automation/.evolver/memory/rejected-patterns.md",
+      "mirrors": [],
+      "role": "evolver-memory",
+      "zone": "source",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
     }
   ],
   "mirrorPairs": [
