@@ -51,6 +51,7 @@ def daily_plan(limit: int = 10) -> list[Step]:
         Step("doc-drift", [sys.executable, str(DOC_DRIFT), "--root", str(ROOT)]),
         Step("reshape-scan", [sys.executable, str(RESHAPE_SCAN), "--root", str(ROOT)]),
         Step("approval-inbox", [sys.executable, str(SCRIPTS / "daily-approval-inbox.py"), "--limit", str(limit)]),
+        Step("self-evolution-dashboard", [sys.executable, str(SCRIPTS / "self-evolution-dashboard.py")]),
     ]
 
 
@@ -114,17 +115,30 @@ def run_daily(limit: int = 10, out_dir: Path = RUNTIME) -> int:
             "static_tool_probes": str(RUNTIME / "static-tool-probes.json"),
             "approval_inbox": str(ROOT / "runtime/task-board/daily-approval-inbox.json"),
             "dashboard": str(ROOT / "runtime/skill-chains/dashboard/data.json"),
+            "self_evolution_dashboard": str(RUNTIME / "dashboard/index.html"),
         },
         "steps": steps,
     }
     write_report(report, out_dir)
+    if report["steps"] and report["steps"][-1].get("name") == "self-evolution-dashboard" and report["steps"][-1].get("ok"):
+        # Refresh once more after the final control report is durable, so the
+        # static console reflects this exact daily run instead of the previous
+        # control snapshot.
+        run_step(Step("self-evolution-dashboard-refresh", [sys.executable, str(SCRIPTS / "self-evolution-dashboard.py")]))
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0 if report["ok"] else 1
+
+
+def run_dashboard() -> int:
+    result = run_step(Step("self-evolution-dashboard", [sys.executable, str(SCRIPTS / "self-evolution-dashboard.py")]))
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0 if result.get("ok") else 1
 
 
 def self_test() -> int:
     plan = daily_plan()
     assert [step.name for step in plan][:2] == ["manifest", "registry"]
+    assert plan[-1].name == "self-evolution-dashboard"
     assert all(step.read_only for step in plan)
     print(json.dumps({"ok": True, "script": "evolutionctl"}, indent=2))
     return 0
@@ -137,6 +151,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     daily.add_argument("--limit", type=int, default=10)
     daily.add_argument("--out-dir", type=Path, default=RUNTIME)
     daily.set_defaults(func=lambda args: run_daily(limit=args.limit, out_dir=args.out_dir))
+    dashboard = sub.add_parser("dashboard")
+    dashboard.set_defaults(func=lambda _args: run_dashboard())
     self_test_parser = sub.add_parser("self-test")
     self_test_parser.set_defaults(func=lambda _args: self_test())
     return parser.parse_args(argv)

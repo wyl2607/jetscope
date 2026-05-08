@@ -26,6 +26,8 @@ DEFAULT_TRACE_FILES = (
 DEFAULT_OUT_DIR = ROOT / "runtime/skill-chains/dashboard"
 DEFAULT_SKILL_LIBRARY = DEFAULT_OUT_DIR / "skills.json"
 DEFAULT_MODEL_ROUTER_STATE = ROOT / "runtime/ai-model-router/state.json"
+DEFAULT_REPO_EVOLVER_PLAN_AUDIT = ROOT / "runtime/self-evolution/repo-evolver-plan-audit.json"
+DEFAULT_DAILY_EVOLUTION_CONTROL = ROOT / "runtime/self-evolution/daily-evolution-control.json"
 CLAUDE_SKILL_ROOTS = (Path("/Users/yumei/.claude/skills"),)
 CODEX_SKILL_ROOTS = (
     Path("/Users/yumei/.codex/skills"),
@@ -319,6 +321,77 @@ def model_router_snapshot(path: Path, now: Optional[int] = None) -> Dict[str, An
             "fatal_clear": summary["fatal"] == 0,
             "cooldown_clear": summary["cooldown"] == 0,
         },
+    }
+
+
+def repo_evolver_snapshot(plan_audit_path: Path, daily_control_path: Path) -> Dict[str, Any]:
+    plan_audit = read_json(plan_audit_path)
+    daily_control = read_json(daily_control_path)
+    checklist = plan_audit.get("checklist", [])
+    gaps = plan_audit.get("gaps", [])
+    control_summary = daily_control.get("summary", {})
+    if not isinstance(checklist, list):
+        checklist = []
+    if not isinstance(gaps, list):
+        gaps = []
+    if not isinstance(control_summary, dict):
+        control_summary = {}
+    evidence_summary = plan_audit.get("evidence_summary", {})
+    manifest_summary: Dict[str, Any] = {}
+    if isinstance(evidence_summary, dict) and isinstance(evidence_summary.get("manifest_summary"), dict):
+        manifest_summary = evidence_summary["manifest_summary"]
+
+    status_counts: Dict[str, int] = defaultdict(int)
+    for item in checklist:
+        if not isinstance(item, dict):
+            continue
+        status = str(item.get("status") or "unknown")
+        status_counts[status] += 1
+
+    normalized_gaps: List[Dict[str, Any]] = []
+    for item in gaps:
+        if not isinstance(item, dict):
+            continue
+        normalized_gaps.append(
+            {
+                "id": str(item.get("id") or ""),
+                "status": str(item.get("status") or "unknown"),
+                "requirement": str(item.get("requirement") or ""),
+                "note": str(item.get("note") or ""),
+                "evidence_sources": item.get("evidence_sources", []),
+            }
+        )
+
+    hard_gate_failed = int_value(control_summary.get("hard_gate_failed_count"))
+    weak_count = status_counts.get("weak", 0)
+    fail_count = status_counts.get("fail", 0)
+    return {
+        "source": str(plan_audit_path),
+        "control_source": str(daily_control_path),
+        "missing": not plan_audit_path.exists(),
+        "control_missing": not daily_control_path.exists(),
+        "ok": bool(plan_audit.get("ok", False)),
+        "control_ok": bool(daily_control.get("ok", False)),
+        "generated_at": str(plan_audit.get("generated_at") or ""),
+        "control_generated_at": str(daily_control.get("generated_at") or ""),
+        "summary": {
+            "checks": sum(status_counts.values()),
+            "pass": status_counts.get("pass", 0),
+            "weak": weak_count,
+            "fail": fail_count,
+            "unknown": status_counts.get("unknown", 0),
+            "gaps": len(normalized_gaps),
+            "hard_gate_failed_count": hard_gate_failed,
+            "daily_failed_count": int_value(control_summary.get("failed_count")),
+            "daily_step_count": int_value(control_summary.get("step_count")),
+            "high_risk_count": int_value(manifest_summary.get("high_risk_count")),
+        },
+        "gate": {
+            "hard_gates_clear": hard_gate_failed == 0,
+            "split_reconsideration_blocked": fail_count > 0 or weak_count > 0 or hard_gate_failed > 0,
+            "approval_required": True,
+        },
+        "gaps": normalized_gaps,
     }
 
 
@@ -626,6 +699,8 @@ def build_payload(
     capability_path: Path,
     skill_library_path: Path,
     model_router_state_path: Path,
+    repo_evolver_plan_audit_path: Path,
+    daily_evolution_control_path: Path,
 ) -> Dict[str, Any]:
     registry = read_json(registry_path)
     schema = read_json(schema_path)
@@ -643,6 +718,7 @@ def build_payload(
         "assistants": assistant_profiles(chains, capabilities),
         "skill_library": skill_library_snapshot(skill_library_path),
         "model_router": model_router_snapshot(model_router_state_path),
+        "repo_evolver": repo_evolver_snapshot(repo_evolver_plan_audit_path, daily_evolution_control_path),
         "capability_registry": {
             "version": capabilities.get("version", 0),
             "updated_at": capabilities.get("updated_at", ""),
@@ -664,6 +740,8 @@ def build_payload(
                 str(DEFAULT_CAPABILITIES),
                 str(DEFAULT_SKILL_LIBRARY),
                 str(DEFAULT_MODEL_ROUTER_STATE),
+                str(DEFAULT_REPO_EVOLVER_PLAN_AUDIT),
+                str(DEFAULT_DAILY_EVOLUTION_CONTROL),
             ],
         },
     }
@@ -681,6 +759,8 @@ def write_once(args: argparse.Namespace) -> Path:
         Path(args.capabilities),
         Path(args.skill_library),
         Path(args.model_router_state),
+        Path(args.repo_evolver_plan_audit),
+        Path(args.daily_evolution_control),
     )
     data_path.write_text(json.dumps(payload, ensure_ascii=True, indent=2) + "\n", encoding="utf-8")
     data_js_path = out_dir / "data.js"
@@ -701,6 +781,8 @@ def write_once(args: argparse.Namespace) -> Path:
                 "traces": len(payload["traces"]),
                 "assistants": len(payload["assistants"]),
                 "active_drift_risk_names": payload["skill_library"]["summary"]["active_drift_risk_names"],
+                "repo_evolver_fail": payload["repo_evolver"]["summary"]["fail"],
+                "repo_evolver_weak": payload["repo_evolver"]["summary"]["weak"],
             },
             ensure_ascii=True,
             sort_keys=True,
@@ -732,6 +814,8 @@ def input_signature(args: argparse.Namespace) -> List[tuple[str, int, int]]:
         Path(args.capabilities),
         Path(args.state_dir),
         Path(args.model_router_state),
+        Path(args.repo_evolver_plan_audit),
+        Path(args.daily_evolution_control),
     ]
     paths.extend(Path(path) for path in args.trace_file)
     return file_signature(paths)
@@ -763,6 +847,8 @@ def main() -> int:
     parser.add_argument("--capabilities", default=str(DEFAULT_CAPABILITIES))
     parser.add_argument("--skill-library", default=str(DEFAULT_SKILL_LIBRARY))
     parser.add_argument("--model-router-state", default=str(DEFAULT_MODEL_ROUTER_STATE))
+    parser.add_argument("--repo-evolver-plan-audit", default=str(DEFAULT_REPO_EVOLVER_PLAN_AUDIT))
+    parser.add_argument("--daily-evolution-control", default=str(DEFAULT_DAILY_EVOLUTION_CONTROL))
     parser.add_argument("--state-dir", default=str(DEFAULT_STATE_DIR))
     parser.add_argument("--trace-file", action="append", default=[str(path) for path in DEFAULT_TRACE_FILES])
     args = parser.parse_args()

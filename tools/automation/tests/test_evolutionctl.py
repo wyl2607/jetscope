@@ -44,6 +44,7 @@ class EvolutionCtlTests(unittest.TestCase):
                 "doc-drift",
                 "reshape-scan",
                 "approval-inbox",
+                "self-evolution-dashboard",
             ],
         )
         self.assertTrue(all(step.read_only for step in plan))
@@ -64,10 +65,25 @@ class EvolutionCtlTests(unittest.TestCase):
             markdown_exists = (out_dir / "daily-evolution-control.md").exists()
 
         self.assertEqual(rc, 1)
-        self.assertEqual(len(calls), 9)
+        self.assertEqual(len(calls), 11)
+        self.assertIn("self-evolution-dashboard.py", str(calls[-1][-1]))
         self.assertFalse(report["ok"])
         self.assertEqual(report["summary"]["failed_count"], 1)
         self.assertTrue(markdown_exists)
+
+    def test_dashboard_subcommand_runs_dashboard_step(self) -> None:
+        seen = []
+
+        def fake_run_step(step):
+            seen.append(step)
+            return {"name": step.name, "ok": True, "returncode": 0}
+
+        with mock.patch.object(self.module, "run_step", side_effect=fake_run_step):
+            rc = self.module.parse_args(["dashboard"]).func(None)
+
+        self.assertEqual(rc, 0)
+        self.assertEqual(seen[0].name, "self-evolution-dashboard")
+        self.assertIn("self-evolution-dashboard.py", str(seen[0].argv[-1]))
 
 
 if __name__ == "__main__":

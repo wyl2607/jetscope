@@ -155,6 +155,73 @@ class SkillChainDashboardStaticUiTests(unittest.TestCase):
         self.assertEqual(statuses["cmd/deepseek-v4-pro"], "cooldown")
         self.assertEqual(statuses["gpt-5.5"], "fatal")
 
+    def test_dashboard_data_exposes_repo_evolver_gate_snapshot(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out_dir = root / "out"
+            out_dir.mkdir()
+            plan_audit = root / "repo-evolver-plan-audit.json"
+            daily_control = root / "daily-evolution-control.json"
+            plan_audit.write_text(
+                json.dumps(
+                    {
+                        "checklist": [
+                            {"id": "mainline-1", "status": "pass", "requirement": "covered"},
+                            {"id": "phase-3", "status": "weak", "requirement": "approval needed"},
+                            {"id": "phase-5", "status": "fail", "requirement": "blocked", "note": "open_queue=20"},
+                        ],
+                        "gaps": [
+                            {"id": "phase-3", "status": "weak", "note": "mirror approval pending"},
+                            {"id": "phase-5", "status": "fail", "note": "split blocked"},
+                        ],
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            daily_control.write_text(
+                json.dumps(
+                    {
+                        "summary": {
+                            "step_count": 10,
+                            "failed_count": 0,
+                            "hard_gate_failed_count": 0,
+                        }
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            subprocess.run(
+                [
+                    "python3",
+                    str(ROOT / "scripts/skill-chain-dashboard.py"),
+                    "--once",
+                    "--out",
+                    str(out_dir),
+                    "--repo-evolver-plan-audit",
+                    str(plan_audit),
+                    "--daily-evolution-control",
+                    str(daily_control),
+                ],
+                check=True,
+                cwd=str(ROOT),
+                stdout=subprocess.DEVNULL,
+            )
+            data = json.loads((out_dir / "data.json").read_text(encoding="utf-8"))
+
+        repo_evolver = data["repo_evolver"]
+        self.assertEqual(repo_evolver["summary"]["checks"], 3)
+        self.assertEqual(repo_evolver["summary"]["pass"], 1)
+        self.assertEqual(repo_evolver["summary"]["weak"], 1)
+        self.assertEqual(repo_evolver["summary"]["fail"], 1)
+        self.assertEqual(repo_evolver["summary"]["daily_step_count"], 10)
+        self.assertTrue(repo_evolver["gate"]["hard_gates_clear"])
+        self.assertTrue(repo_evolver["gate"]["split_reconsideration_blocked"])
+        self.assertEqual(repo_evolver["gaps"][0]["id"], "phase-3")
+
     def test_skill_library_ui_renders_duplicate_metadata_panel(self) -> None:
         app_js = (DASHBOARD_DIR / "app.js").read_text(encoding="utf-8")
         i18n = json.loads((DASHBOARD_DIR / "i18n.json").read_text(encoding="utf-8"))
@@ -205,6 +272,33 @@ class SkillChainDashboardStaticUiTests(unittest.TestCase):
         self.assertRegex(styles, r"@media\s*\(max-width:\s*680px\)[\s\S]*?\.repo-evolver-grid\s*\{[^}]*grid-template-columns:\s*1fr")
         self.assertRegex(styles, r"\.repo-evolver-(?:trace|evidence|next)[\s\S]*?overflow-wrap:\s*anywhere")
         self.assertRegex(styles, r"\.repo-evolver-(?:trace|evidence|next)[\s\S]*?word-break:\s*break-word")
+
+    def test_dispatch_ui_names_deepseek_and_opencode_go_lanes(self) -> None:
+        app_js = (DASHBOARD_DIR / "app.js").read_text(encoding="utf-8")
+        i18n = json.loads((DASHBOARD_DIR / "i18n.json").read_text(encoding="utf-8"))
+
+        self.assertIn("dispatch-lane-deepseek-flash", app_js)
+        self.assertIn("dispatch-lane-opencode-go", app_js)
+        self.assertIn("dispatchLaneDeepSeekFlashInvoke", app_js)
+        self.assertIn("dispatchLaneOpenCodeGoInvoke", app_js)
+        self.assertIn("opencode-go/deepseek-v4-flash", i18n["zh"]["dispatchLaneDeepSeekFlashInvoke"])
+        self.assertIn("opencode-go/deepseek-v4-pro", i18n["zh"]["dispatchLaneOpenCodeGoInvoke"])
+        self.assertEqual(i18n["zh"]["dispatchLaneDeepSeekFlash"], "DeepSeek V4 Flash 车道")
+        self.assertEqual(i18n["zh"]["dispatchLaneOpenCodeGo"], "OpenCode Go 车道")
+
+    def test_repo_evolver_ui_renders_phase_gate_panel(self) -> None:
+        app_js = (DASHBOARD_DIR / "app.js").read_text(encoding="utf-8")
+        styles = (DASHBOARD_DIR / "styles.css").read_text(encoding="utf-8")
+        i18n = json.loads((DASHBOARD_DIR / "i18n.json").read_text(encoding="utf-8"))
+
+        self.assertIn("function renderRepoEvolverGatePanel", app_js)
+        self.assertIn("data && data.repo_evolver", app_js)
+        self.assertIn("split_reconsideration_blocked", app_js)
+        self.assertIn("repo-evolver-gate-panel", styles)
+        self.assertIn("repo-evolver-gate-stats", styles)
+        self.assertIn(".badge.warn", styles)
+        self.assertEqual(i18n["zh"]["repoEvolverGateTitle"], "阶段门禁")
+        self.assertEqual(i18n["zh"]["repoEvolverSplitBlocked"].startswith("Phase 5"), True)
 
 
 if __name__ == "__main__":
