@@ -1,0 +1,13 @@
+extends: existence
+message: "Avoid overly positive or speculative language: '%s'."
+level: warning
+tokens:
+  - easily
+  - obviously
+  - simply
+  - just
+  - basically
+  - clearly
+  - of course
+  - trivial
+  - straightforward

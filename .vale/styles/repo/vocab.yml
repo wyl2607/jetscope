@@ -1,0 +1,8 @@
+extends: substitution
+message: "Prefer '%s' over '%s'."
+swap:
+  "暂不支持": "暂不支持"
+  "尚未实现": "暂未实现"
+  "目前": "当前"
+  "推荐": "建议"
+  "不需要": "无需"

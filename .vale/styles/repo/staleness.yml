@@ -1,0 +1,11 @@
+extends: existence
+message: "Avoid phrases that become quickly stale: '%s'."
+level: warning
+tokens:
+  - state.of.the.art
+  - cutting.edge
+  - bleeding.edge
+  - latest.and.greatest
+  - soon
+  - coming.soon
+  - in.the.near.future
