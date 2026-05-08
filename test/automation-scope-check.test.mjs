@@ -62,6 +62,15 @@ test('automation scope check accepts files inside allowed paths', () => {
   assert.match(output, /Automation scope OK/);
 });
 
+test('automation scope check defaults to a non-mutating command smoke check', () => {
+  const output = execFileSync('node', [scriptPath], {
+    encoding: 'utf8',
+    stderr: 'pipe'
+  });
+
+  assert.match(output, /Automation scope OK: no changed files relative to HEAD/);
+});
+
 test('automation scope check rejects off-scope files', () => {
   const repoDir = createRepo();
   writeFileSync(join(repoDir, 'README.md'), '# changed\n');

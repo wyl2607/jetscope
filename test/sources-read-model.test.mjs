@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
-
-import { importWebLib } from './helpers/load-web-lib.mjs';
+import { pathToFileURL } from 'node:url';
 
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -43,6 +45,77 @@ function installEnv(t) {
     }
   });
 }
+
+async function importSourcesReadModel() {
+  const source = await readFile(new URL('../apps/web/lib/sources-read-model.ts', import.meta.url), 'utf8');
+  const contractUrl = new URL('../apps/web/lib/source-coverage-contract.ts', import.meta.url).href;
+  const apiConfigUrl = new URL('../apps/web/lib/api-config.ts', import.meta.url).href;
+  const rewritten = source
+    .replaceAll("'@/lib/api-config'", `'${apiConfigUrl}'`)
+    .replaceAll("'./source-coverage-contract'", `'${contractUrl}'`);
+  const tempDir = await mkdtemp(path.join(tmpdir(), 'jetscope-sources-read-model-'));
+  const tempPath = path.join(tempDir, 'sources-read-model.ts');
+  await writeFile(tempPath, rewritten, 'utf8');
+  return import(`${pathToFileURL(tempPath).href}?ts=${Date.now()}-${Math.random()}`);
+}
+
+test('source coverage contract owns trust-state and lag formatting helpers', async () => {
+  const contract = await import('../apps/web/lib/source-coverage-contract.ts');
+  assert.equal(typeof contract.getSourceCoverageTrustState, 'function');
+  assert.equal(typeof contract.formatSourceCoverageLag, 'function');
+
+  assert.equal(
+    contract.getSourceCoverageTrustState({
+      metric_key: 'jet_usd_per_l',
+      source_name: 'FRED',
+      source_type: 'market_primary',
+      confidence_score: 0.91,
+      lag_minutes: 45,
+      fallback_used: false,
+      status: 'ok',
+      region: 'us',
+      market_scope: 'statistical_series'
+    }),
+    'live'
+  );
+  assert.equal(
+    contract.getSourceCoverageTrustState({
+      metric_key: 'jet_eu_proxy_usd_per_l',
+      source_name: 'Brent-derived',
+      source_type: 'derived',
+      confidence_score: 0.65,
+      lag_minutes: null,
+      fallback_used: false,
+      status: 'ok',
+      region: 'eu',
+      market_scope: 'derived_proxy'
+    }),
+    'proxy'
+  );
+  assert.equal(contract.formatSourceCoverageLag(59), '59m');
+  assert.equal(contract.formatSourceCoverageLag(60), '1h');
+  assert.equal(contract.formatSourceCoverageLag(1440), '1d');
+  assert.equal(contract.formatSourceCoverageLag(null), 'n/a');
+
+  const [readModelSource, panelSource] = await Promise.all([
+    readFile(new URL('../apps/web/lib/sources-read-model.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../apps/web/components/source-coverage-panel.tsx', import.meta.url), 'utf8')
+  ]);
+  assert.doesNotMatch(readModelSource, /function trustStateFor\(/);
+  assert.doesNotMatch(readModelSource, /function formatLagMinutes\(/);
+  assert.doesNotMatch(panelSource, /function trustState\(/);
+  assert.doesNotMatch(panelSource, /function formatLag\(/);
+});
+
+test('sources read model keeps summary aggregation centralized', async () => {
+  const readModelSource = await readFile(new URL('../apps/web/lib/sources-read-model.ts', import.meta.url), 'utf8');
+
+  assert.match(readModelSource, /function summarizeCoverageTrust\(/);
+  assert.match(readModelSource, /function averageFinite\(/);
+  assert.match(readModelSource, /function freshestLagMinutes\(/);
+  assert.doesNotMatch(readModelSource, /rows\.filter\(\(row\) => row\.trustState === /);
+  assert.doesNotMatch(readModelSource, /confidenceScores\.reduce\(/);
+});
 
 test('getSourcesReadModel maps live coverage, volatility levels, and notes for the sources page', async (t) => {
   installEnv(t);
@@ -236,7 +309,7 @@ test('getSourcesReadModel maps live coverage, volatility levels, and notes for t
     ])
   );
 
-  const { getSourcesReadModel } = await importWebLib('apps/web/lib/sources-read-model.ts');
+  const { getSourcesReadModel } = await importSourcesReadModel();
   const readModel = await getSourcesReadModel();
 
   assert.equal(readModel.isFallback, false);
@@ -351,7 +424,7 @@ test('getSourcesReadModel falls back to a generic degraded state when coverage A
     ])
   );
 
-  const { getSourcesReadModel } = await importWebLib('apps/web/lib/sources-read-model.ts');
+  const { getSourcesReadModel } = await importSourcesReadModel();
   const readModel = await getSourcesReadModel();
 
   assert.equal(readModel.isFallback, true);
@@ -509,7 +582,7 @@ test('getSourcesReadModel backfills missing metrics when coverage is partial (5 
     ])
   );
 
-  const { getSourcesReadModel } = await importWebLib('apps/web/lib/sources-read-model.ts');
+  const { getSourcesReadModel } = await importSourcesReadModel();
   const readModel = await getSourcesReadModel();
 
   assert.equal(readModel.isFallback, false);
@@ -589,7 +662,7 @@ test('getSourcesReadModel uses coverage metric supplements instead of snapshot s
     ])
   );
 
-  const { getSourcesReadModel } = await importWebLib('apps/web/lib/sources-read-model.ts');
+  const { getSourcesReadModel } = await importSourcesReadModel();
   const readModel = await getSourcesReadModel();
 
   assert.equal(readModel.rows.length, 1);
