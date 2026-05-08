@@ -41,6 +41,8 @@ class RestoreRehearsalPolicyTests(unittest.TestCase):
                         "git_visibility": {
                             "automation_ignored": True,
                             "ignore_rule": ".gitignore:103:tools/automation/*",
+                            "source_ignore_rule": ".gitignore:103:tools/automation/*",
+                            "runtime_ignore_rule": ".gitignore:108:tools/automation/runtime/",
                         },
                         "publication_gate": {
                             "runtime_excluded_by_default": True,
@@ -111,7 +113,12 @@ class RestoreRehearsalPolicyTests(unittest.TestCase):
                 self.module.json.dumps(
                     {
                         "summary": {"unclassified_count": 0, "source_candidate_count": 1, "excluded_by_default_count": 0},
-                        "git_visibility": {"automation_ignored": True, "ignore_rule": ".gitignore:103:tools/automation/*"},
+                        "git_visibility": {
+                            "automation_ignored": True,
+                            "ignore_rule": ".gitignore:103:tools/automation/*",
+                            "source_ignore_rule": ".gitignore:103:tools/automation/*",
+                            "runtime_ignore_rule": ".gitignore:108:tools/automation/runtime/",
+                        },
                         "publication_gate": {"runtime_excluded_by_default": False},
                     }
                 ),

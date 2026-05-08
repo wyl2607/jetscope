@@ -147,7 +147,7 @@ def git_output(args: List[str]) -> str:
 def first_ignore_rule(paths: Sequence[Path]) -> str:
     candidates = [str(path) for path in paths]
     proc = subprocess.run(
-        ["git", "check-ignore", "-v"] + candidates,
+        ["git", "check-ignore", "--no-index", "-v"] + candidates,
         cwd=str(AUTOMATION),
         capture_output=True,
         text=True,
@@ -161,13 +161,17 @@ def first_ignore_rule(paths: Sequence[Path]) -> str:
 
 def git_visibility() -> Dict[str, Any]:
     root = git_output(["rev-parse", "--show-toplevel"])
-    probe_paths = [
+    source_probe_paths = [
         AUTOMATION / "plan.md",
         AUTOMATION / "README.md",
         AUTOMATION / "scripts" / "source-runtime-manifest.py",
+    ]
+    runtime_probe_paths = [
         AUTOMATION / "runtime" / "task-board" / "source-runtime-manifest.json",
     ]
-    ignore_rule = first_ignore_rule(probe_paths)
+    source_ignore_rule = first_ignore_rule(source_probe_paths)
+    runtime_ignore_rule = first_ignore_rule(runtime_probe_paths)
+    ignore_rule = source_ignore_rule or runtime_ignore_rule
     tracked_count = len(run_git(["ls-files", str(AUTOMATION)]))
     automation_ignored = bool(ignore_rule)
     return {
@@ -175,6 +179,8 @@ def git_visibility() -> Dict[str, Any]:
         "automation_path": str(AUTOMATION),
         "automation_ignored": automation_ignored,
         "ignore_rule": ignore_rule,
+        "source_ignore_rule": source_ignore_rule,
+        "runtime_ignore_rule": runtime_ignore_rule,
         "tracked_files_under_automation": tracked_count,
         "commit_boundary_note": "tools/automation is ignored by the current root Git repository; changing that requires an explicit source boundary decision." if automation_ignored else "tools/automation is visible to the current Git repository.",
     }

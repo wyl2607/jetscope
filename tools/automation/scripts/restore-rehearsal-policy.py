@@ -62,10 +62,11 @@ def build_report(manifest_path: Path = DEFAULT_MANIFEST, mirror_path: Path = DEF
     mirror_findings = mirror.get("findings") if isinstance(mirror.get("findings"), list) else []
     safety = registry.get("safety") if isinstance(registry.get("safety"), dict) else {}
     forbidden = set(safety.get("forbiddenWithoutApproval") if isinstance(safety.get("forbiddenWithoutApproval"), list) else [])
+    source_ignore_rule = visibility.get("source_ignore_rule") or visibility.get("ignore_rule")
 
     source_ok = (
         bool(visibility.get("automation_ignored"))
-        and bool(visibility.get("ignore_rule"))
+        and bool(source_ignore_rule)
         and int(summary.get("source_candidate_count") or 0) > 0
         and int(summary.get("unclassified_count") or 0) == 0
     )
@@ -93,6 +94,8 @@ def build_report(manifest_path: Path = DEFAULT_MANIFEST, mirror_path: Path = DEF
             "Restore rehearsal must start from classified Git/source candidates, not chat memory or Obsidian.",
             automation_ignored=visibility.get("automation_ignored"),
             ignore_rule=visibility.get("ignore_rule"),
+            source_ignore_rule=source_ignore_rule,
+            runtime_ignore_rule=visibility.get("runtime_ignore_rule"),
             source_candidate_count=summary.get("source_candidate_count", 0),
             unclassified_count=summary.get("unclassified_count", 0),
         ),

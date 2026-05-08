@@ -43,17 +43,25 @@ class SourceRuntimeManifestTests(unittest.TestCase):
         self.assertNotIn(".DS_Store", files)
 
     def test_git_visibility_detects_parent_ignore_rule(self) -> None:
+        def fake_first_ignore_rule(paths):
+            path_texts = [str(path) for path in paths]
+            if any("/runtime/" in path_text or path_text.startswith("runtime/") for path_text in path_texts):
+                return ".gitignore:108:tools/automation/runtime/\ttools/automation/runtime/task-board/source-runtime-manifest.json"
+            return ".gitignore:103:tools/automation/*\ttools/automation/plan.md"
+
         with mock.patch.object(self.module, "git_output", return_value="/Users/yumei"), mock.patch.object(
             self.module, "run_git", return_value=["tools/automation/scripts/source-runtime-manifest.py"]
         ), mock.patch.object(
             self.module, "first_ignore_rule",
-            return_value=".gitignore:103:tools/automation/*\ttools/automation/plan.md",
+            side_effect=fake_first_ignore_rule,
         ):
             visibility = self.module.git_visibility()
 
         self.assertTrue(visibility["automation_ignored"])
         self.assertEqual(visibility["tracked_files_under_automation"], 1)
         self.assertIn("ignored", visibility["commit_boundary_note"])
+        self.assertIn("tools/automation/*", visibility["source_ignore_rule"])
+        self.assertIn("tools/automation/runtime/", visibility["runtime_ignore_rule"])
 
     def test_repo_evolver_plan_and_local_skill_assets_are_classified(self) -> None:
         self.assertEqual(self.module.classify("plan.md")["classification"], "source")
