@@ -26,27 +26,35 @@ class AiModelRouterTests(unittest.TestCase):
         self.module = _load_module()
 
     def test_fast_probe_prefers_deepseek_flash(self) -> None:
-        decision = self.module.route_task({"task": "fast_probe"})
+        with tempfile.TemporaryDirectory() as tmpdir:
+            state_path = Path(tmpdir) / "state.json"
+            decision = self.module.route_task({"task": "fast_probe"}, state_path=state_path)
 
         self.assertEqual(decision["lane"], "opencode-go")
         self.assertEqual(decision["model"], "opencode-go/deepseek-v4-flash")
         self.assertIn("opencode-go/deepseek-v4-pro", decision["fallback_models"])
 
     def test_hard_review_prefers_deepseek_pro(self) -> None:
-        decision = self.module.route_task({"task": "hard_review"})
+        with tempfile.TemporaryDirectory() as tmpdir:
+            state_path = Path(tmpdir) / "state.json"
+            decision = self.module.route_task({"task": "hard_review"}, state_path=state_path)
 
         self.assertEqual(decision["lane"], "opencode-go")
         self.assertEqual(decision["model"], "opencode-go/deepseek-v4-pro")
         self.assertEqual(decision["reasoning_effort"], "high")
 
     def test_large_implementation_prefers_kimi_then_codex(self) -> None:
-        decision = self.module.route_task({"task": "large_implementation"})
+        with tempfile.TemporaryDirectory() as tmpdir:
+            state_path = Path(tmpdir) / "state.json"
+            decision = self.module.route_task({"task": "large_implementation"}, state_path=state_path)
 
         self.assertEqual(decision["model"], "opencode-go/kimi-k2.6")
         self.assertIn("gpt-5.5", decision["fallback_models"])
 
     def test_codex_execution_prefers_codex_cli_relay(self) -> None:
-        decision = self.module.route_task({"task": "codex_execution"})
+        with tempfile.TemporaryDirectory() as tmpdir:
+            state_path = Path(tmpdir) / "state.json"
+            decision = self.module.route_task({"task": "codex_execution"}, state_path=state_path)
 
         self.assertEqual(decision["lane"], "codex-cli")
         self.assertEqual(decision["model"], "gpt-5.5")
@@ -162,6 +170,40 @@ class AiModelRouterTests(unittest.TestCase):
         entry = state["models"]["opencode-go/deepseek-v4-flash"]
         self.assertEqual(entry["failure_count"], 1)
         self.assertIn("cooldown_until", entry)
+
+    def test_execute_timeout_handles_bytes_stdout_and_stderr(self) -> None:
+        timeout_exc = subprocess.TimeoutExpired(cmd=["cmd"], timeout=1)
+        timeout_exc.stdout = b"stdout secret OPENAI_API_KEY=sk-timeout"
+        timeout_exc.stderr = b"stderr token=abcd1234"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            state_path = Path(tmpdir) / "state.json"
+            with mock.patch.object(
+                self.module.subprocess,
+                "run",
+                side_effect=timeout_exc,
+            ):
+                result = self.module.execute_request(
+                    {
+                        "task": "fast_probe",
+                        "prompt": "Return OK",
+                        "execute": True,
+                        "timeout_seconds": 1,
+                    },
+                    state_path=state_path,
+                )
+            state = self.module.load_state(state_path)
+
+        self.assertFalse(result["ok"])
+        self.assertTrue(result["timed_out"])
+        self.assertIsInstance(result["stdout"], str)
+        self.assertIsInstance(result["stderr"], str)
+        self.assertNotIn("sk-timeout", result["stdout"])
+        self.assertNotIn("abcd1234", result["stderr"])
+        self.assertIn("<redacted:OPENAI_API_KEY>", result["stdout"])
+        self.assertIn("<redacted:token>", result["stderr"])
+        self.assertEqual(state["models"]["opencode-go/deepseek-v4-flash"]["failure_count"], 1)
+        self.assertIn("cooldown_until", state["models"]["opencode-go/deepseek-v4-flash"])
 
 
 if __name__ == "__main__":

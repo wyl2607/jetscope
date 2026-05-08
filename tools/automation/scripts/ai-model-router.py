@@ -128,6 +128,16 @@ def redact_text(text: str) -> str:
     return redacted
 
 
+def normalize_text_output(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    if isinstance(value, bytearray):
+        return bytes(value).decode("utf-8", errors="replace")
+    return str(value)
+
+
 def truncate_text(text: str, limit: int = MAX_CAPTURE_CHARS) -> str:
     if len(text) <= limit:
         return text
@@ -298,13 +308,15 @@ def execute_request(request: Dict[str, Any], state_path: Path = DEFAULT_STATE) -
     except subprocess.TimeoutExpired as exc:
         reason = f"timeout after {timeout_seconds}s"
         record_result(model, False, reason, state_path=state_path)
+        stdout = redact_text(truncate_text(normalize_text_output(exc.stdout)))
+        stderr = redact_text(truncate_text(normalize_text_output(exc.stderr)))
         result.update(
             {
                 "executed": True,
                 "timed_out": True,
                 "error": reason,
-                "stdout": redact_text(truncate_text(exc.stdout or "")),
-                "stderr": redact_text(truncate_text(exc.stderr or "")),
+                "stdout": stdout,
+                "stderr": stderr,
             }
         )
         return result
@@ -314,8 +326,8 @@ def execute_request(request: Dict[str, Any], state_path: Path = DEFAULT_STATE) -
         result.update({"executed": True, "timed_out": False, "error": reason})
         return result
 
-    stdout = redact_text(truncate_text(completed.stdout or ""))
-    stderr = redact_text(truncate_text(completed.stderr or ""))
+    stdout = redact_text(truncate_text(normalize_text_output(completed.stdout)))
+    stderr = redact_text(truncate_text(normalize_text_output(completed.stderr)))
     ok = completed.returncode == 0
     if ok:
         record_result(model, True, state_path=state_path)
