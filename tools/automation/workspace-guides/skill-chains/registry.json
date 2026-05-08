@@ -1,0 +1,315 @@
+{
+  "$schema": "./state-schema.json#/definitions/registry",
+  "version": 4,
+  "updated_at": "2026-05-07",
+  "source_of_truth": true,
+  "notes_file": "registry.md",
+  "cross_cutting_skills": {
+    "display-i18n": {
+      "category": "knowledge",
+      "family": "presentation",
+      "source": "/Users/yumei/.agents/skills/display-i18n/SKILL.md",
+      "description": "Display-only UI localization without mutating canonical content (SKILL.md, registry, schemas). Triggered by intent match, not bound to a chain step.",
+      "non_negotiables": [
+        "no canonical mutation",
+        "fixture-asserted no source-language leftover",
+        "default fallback to source language"
+      ],
+      "complementary_skills": ["acceptance-gate-development", "goal-driven-execution", "analyze"]
+    }
+  },
+  "intents_to_chain": {
+    "feature": "feature-pr",
+    "bugfix": "feature-pr",
+    "refactor": "refactor-pr",
+    "cleanup": "refactor-pr",
+    "ai-slop-clean": "refactor-pr",
+    "dirty-tree": "dirty-tree-slice",
+    "grouped-commit": "grouped-commit-cycle",
+    "commit-slice": "grouped-commit-cycle",
+    "i18n-split": "grouped-commit-cycle",
+    "release": "release-readiness",
+    "push": "release-readiness",
+    "pr": "release-readiness",
+    "harness-init": "harness-bootstrap",
+    "harness-onboard": "harness-bootstrap"
+  },
+  "chains": {
+    "harness-bootstrap": {
+      "purpose": "Bring a new or existing project into harness-managed delivery. Stops at planning artifacts.",
+      "gate_type": "harness_artifact",
+      "executor_hint": {
+        "orchestrator": "claude",
+        "artifact_writer": "claude_or_codex"
+      },
+      "steps": [
+        { "step": 1, "skill": "harness-engineering-orchestrator", "role": "orchestrator" },
+        { "step": 2, "skill": "repo-onboarding", "role": "discovery" },
+        { "step": 3, "skill": "analyze", "role": "read-only" },
+        { "step": 4, "skill": "plan", "role": "planning" }
+      ],
+      "required_gates": ["prd_present", "architecture_present", "milestone_table_present"],
+      "forbidden_actions": [
+        "write_product_source",
+        "git_push",
+        "pr_create",
+        "auto_merge",
+        "delete_tests",
+        "weaken_tests"
+      ],
+      "write_permission": {
+        "mode": "harness_artifacts_only",
+        "allowlist_globs": [
+          "docs/PRD.md",
+          "docs/ARCHITECTURE.md",
+          "docs/PROGRESS.md",
+          ".harness/state.json",
+          ".harness/**"
+        ]
+      },
+      "outputs": ["docs/PRD.md", "docs/ARCHITECTURE.md", ".harness/state.json"]
+    },
+
+    "feature-pr": {
+      "purpose": "Implement a feature or fix a bug with red-before-green acceptance gate.",
+      "gate_type": "acceptance_red",
+      "executor_hint": {
+        "router": "claude",
+        "executor": "codex",
+        "reviewer": "claude"
+      },
+      "steps": [
+        { "step": 1, "skill": "chain-router", "role": "router" },
+        { "step": 2, "skill": "analyze", "role": "read-only" },
+        { "step": 3, "skill": "plan", "role": "planning" },
+        { "step": 4, "skill": "acceptance-gate-development", "role": "default-writer" },
+        { "step": 5, "skill": "test-harness", "role": "validation" },
+        { "step": 6, "skill": "code-review", "role": "review" },
+        { "step": 7, "skill": "pr-review-guard", "role": "pr-prep" },
+        { "step": 8, "skill": "pr-push-guard", "role": "push-prep" }
+      ],
+      "required_gates": [
+        "red_acceptance_gate_before_implementation",
+        "green_acceptance_gate_after_implementation",
+        "no_unrelated_baseline_regression",
+        "pr_target_validation"
+      ],
+      "forbidden_actions": [
+        "bypass_tests",
+        "delete_tests_without_review",
+        "skip_or_xfail_without_review",
+        "narrow_test_scope_without_review",
+        "push_without_target_repo_validation",
+        "auto_merge_without_required_ci"
+      ],
+      "write_permission": {
+        "mode": "chain_step_with_allowlist",
+        "default_writer": "acceptance-gate-development",
+        "wrappers_allowed": []
+      }
+    },
+
+    "refactor-pr": {
+      "purpose": "Behavior-preserving refactor / cleanup / deslop with characterization gate plus quality metric improvement.",
+      "gate_type": "characterization",
+      "executor_hint": {
+        "router": "claude",
+        "executor": "codex",
+        "reviewer": "claude"
+      },
+      "steps": [
+        { "step": 1, "skill": "chain-router", "role": "router" },
+        { "step": 2, "skill": "analyze", "role": "read-only" },
+        { "step": 3, "skill": "quality-refactor-loop", "role": "wrapper-writer" },
+        { "step": 4, "skill": "ai-slop-cleaner", "role": "wrapper-writer" },
+        { "step": 5, "skill": "test-harness", "role": "validation" },
+        { "step": 6, "skill": "cycle-effect-auditor", "role": "audit" },
+        { "step": 7, "skill": "code-review", "role": "review" },
+        { "step": 8, "skill": "pr-review-guard", "role": "pr-prep" }
+      ],
+      "required_gates": [
+        "characterization_gate_present_and_green_before",
+        "characterization_gate_still_green_after",
+        "at_least_one_quality_metric_improved",
+        "public_api_no_silent_change",
+        "no_unrelated_baseline_regression"
+      ],
+      "forbidden_actions": [
+        "behavior_change_without_acceptance_lane",
+        "public_api_change_without_contract_review",
+        "delete_tests_without_review",
+        "narrow_test_scope_without_review"
+      ],
+      "write_permission": {
+        "mode": "chain_step_with_allowlist",
+        "default_writer": "acceptance-gate-development",
+        "wrappers_allowed": ["quality-refactor-loop", "ai-slop-cleaner"]
+      }
+    },
+
+    "dirty-tree-slice": {
+      "purpose": "Triage a messy local tree into bounded task packets and submit lists. Does not directly modify code.",
+      "gate_type": "task_packet",
+      "executor_hint": {
+        "router": "claude",
+        "executor": "claude",
+        "reviewer": "claude"
+      },
+      "steps": [
+        { "step": 1, "skill": "dirty-tree-slicer", "role": "slicer" },
+        { "step": 2, "skill": "analyze", "role": "read-only" },
+        { "step": 3, "skill": "plan", "role": "planning" },
+        { "step": 4, "skill": "pr-review-guard", "role": "boundary-check" }
+      ],
+      "required_gates": ["task_packets_emitted", "submit_list_classified"],
+      "forbidden_actions": [
+        "write_product_source",
+        "git_commit_unreviewed_files",
+        "git_push"
+      ],
+      "write_permission": {
+        "mode": "no_code_write",
+        "allowlist_globs": []
+      }
+    },
+
+    "grouped-commit-cycle": {
+      "purpose": "Classify a dirty local tree into separate concern-based commits, run each group's local gates, and write ai-trace session evidence. Stops before any remote action.",
+      "gate_type": "task_packet",
+      "executor_hint": {
+        "classifier": "codex",
+        "validator": "codex",
+        "reviewer": "claude"
+      },
+      "steps": [
+        { "step": 1, "skill": "grouped-commit-cycle", "role": "classifier-and-local-committer" },
+        { "step": 2, "skill": "test-harness", "role": "per-group-validation" },
+        { "step": 3, "skill": "pr-review-guard", "role": "boundary-check" }
+      ],
+      "required_gates": [
+        "dirty_tree_classified",
+        "per_group_allowlist_present",
+        "per_group_validation_green",
+        "no_mixed_group_commit",
+        "trace_writeback_done"
+      ],
+      "forbidden_actions": [
+        "git_push",
+        "pr_create",
+        "auto_merge",
+        "deploy",
+        "node_sync",
+        "ssh",
+        "rsync",
+        "stage_unknown_paths",
+        "commit_private_runtime_generated_paths",
+        "mix_i18n_with_behavior_changes"
+      ],
+      "write_permission": {
+        "mode": "local_commits_only",
+        "allowlist_globs": [
+          "AGENTS.md",
+          "CLAUDE.md",
+          "README.md",
+          "PROJECT_PROGRESS.md",
+          "INCIDENT_LOG.md",
+          "docs/**",
+          "apps/web/**",
+          "apps/api/**",
+          "packages/**",
+          "test/**",
+          "infra/**",
+          "backend/app/**",
+          "backend/tests/**",
+          "scripts/**",
+          "Start Windows LAN.cmd"
+        ]
+      }
+    },
+
+    "release-readiness": {
+      "purpose": "Validate that a branch is safe to push and ready for auto-merge eligibility. Stops before triggering auto-merge.",
+      "gate_type": "release_readiness",
+      "executor_hint": {
+        "local_gates": "codex",
+        "remote_review": "claude",
+        "approval": "user"
+      },
+      "steps": [
+        { "step": 1, "stage": "local-readiness",         "skills": ["test-harness", "security-review", "pr-review-guard", "pr-push-guard"] },
+        { "step": 2, "stage": "push-gate",               "scripts": ["scripts/security_check.sh", "scripts/review_push_guard.sh", "scripts/run_preflight.sh"] },
+        { "step": 3, "stage": "push-action",             "action": "git_push", "approval": "explicit" },
+        { "step": 4, "stage": "pr-create-or-update",     "action": "gh_pr_create_or_edit", "approval": "explicit" },
+        { "step": 5, "stage": "branch-protection-check", "command": "chain-gates branch-protection-check",
+          "inputs_required": ["owner", "repo", "base_branch"],
+          "outputs": ["required_contexts", "enforce_admins", "required_reviewers"] },
+        { "step": 6, "stage": "remote-ci-check",         "command": "chain-gates remote-ci-check",
+          "inputs_required": ["pr_number", "head_sha", "base_branch", "required_contexts"],
+          "constraint": "head_sha must match current PR head; never fall back to branch name" }
+      ],
+      "ordering_constraint": "Step 5 MUST run before step 6. required_contexts is the input to remote-ci-check.",
+      "required_gates": [
+        "local_three_gates_green",
+        "commit_slices_reviewed",
+        "remote_base_fetched_and_ahead_behind_clean",
+        "rebased_or_merged_if_behind",
+        "project_security_and_push_guards_green",
+        "trace_writeback_done",
+        "pr_target_validation",
+        "branch_protection_required_contexts_present",
+        "remote_ci_all_required_green_on_head_sha"
+      ],
+      "forbidden_actions": [
+        "auto_merge",
+        "force_push",
+        "push_without_explicit_approval",
+        "push_while_behind_remote",
+        "push_without_security_check",
+        "push_without_review_push_guard",
+        "skip_remote_ci",
+        "use_branch_name_in_place_of_head_sha"
+      ],
+      "write_permission": {
+        "mode": "release_artifacts_only",
+        "allowlist_globs": [
+          "CHANGELOG.md",
+          "VERSION",
+          "package.json#version",
+          "pyproject.toml#version"
+        ]
+      }
+    },
+
+    "auto-merge-action": {
+      "purpose": "Trigger gh pr merge --auto only after release-readiness passed. Implemented in P5; explicit approval is still required for non-dry-run execution.",
+      "gate_type": "auto_merge_precondition",
+      "executor_hint": {
+        "dry_run": "claude",
+        "action": "user_approved"
+      },
+      "implemented_in": "P5",
+      "steps": [
+        { "step": 1, "stage": "preconditions", "command": "chain-gates validate-state",
+          "requires_state": ["push_ready"],
+          "requires_remote_gates": ["push_done", "remote_ci_status=green", "branch_protection_required_checks_present"] },
+        { "step": 2, "stage": "auto-merge-action", "action": "gh_pr_merge_auto", "approval": "explicit" }
+      ],
+      "required_gates": ["release_readiness_completed", "no_local_gate_bypass"],
+      "forbidden_actions": ["bypass_local_gates", "merge_without_required_ci"],
+      "write_permission": { "mode": "remote_merge_only", "allowlist_globs": [] }
+    }
+  },
+
+  "chain_gates_subcommands": {
+    "validate-state": "Validate runtime state JSON against state-schema.json including state-machine transitions.",
+    "enforce-chain": "Block actions that violate the registered chain step sequence and write_permission rules.",
+    "remote-ci-check": "Wait for required GitHub Actions on a specific head_sha to all reach success.",
+    "branch-protection-check": "Read GitHub branch protection for required_contexts list.",
+    "test-change-review": "Detect dangerous test diffs (delete/skip/weaken/scope-narrow) and require explicit approval."
+  },
+
+  "enforcement_phase": {
+    "P0_through_P3": "Define and audit only. Auditor and router emit warnings; do not abort.",
+    "P4_onward": "chain-gates enforce mode active. Schema/state/chain violations abort the cycle."
+  }
+}

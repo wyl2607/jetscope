@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+"""Daily read-only control entrypoint for the local evolution system."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Sequence
+
+
+ROOT = Path(__file__).resolve().parent.parent
+SCRIPTS = ROOT / "scripts"
+RUNTIME = ROOT / "runtime/self-evolution"
+DOC_DRIFT = Path("/Users/yumei/.agents/skills/doc-drift-auditor/scripts/scan_doc_drift.py")
+RESHAPE_SCAN = Path("/Users/yumei/.agents/skills/reshape-refactor-loop/scripts/scan_reshape_candidates.py")
+
+
+@dataclass(frozen=True)
+class Step:
+    name: str
+    argv: list[str]
+    read_only: bool = True
+    hard_gate: bool = False
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def read_json(path: Path) -> dict[str, Any]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def daily_plan(limit: int = 10) -> list[Step]:
+    return [
+        Step("manifest", [sys.executable, str(SCRIPTS / "automationctl"), "manifest", "--check"], hard_gate=True),
+        Step("registry", [sys.executable, str(SCRIPTS / "evolution-registry.py"), "validate", "--registry", str(ROOT / "workspace-guides/evolution-registry.json")], hard_gate=True),
+        Step("skill-dashboard", [sys.executable, str(SCRIPTS / "skill-chain-dashboard.py"), "--once"]),
+        Step("mirror-drift", [sys.executable, str(SCRIPTS / "mirror-drift-scan.py")], hard_gate=True),
+        Step("static-tool-probes", [sys.executable, str(SCRIPTS / "static-tool-probes.py")]),
+        Step("doc-drift", [sys.executable, str(DOC_DRIFT), "--root", str(ROOT)]),
+        Step("reshape-scan", [sys.executable, str(RESHAPE_SCAN), "--root", str(ROOT)]),
+        Step("approval-inbox", [sys.executable, str(SCRIPTS / "daily-approval-inbox.py"), "--limit", str(limit)]),
+    ]
+
+
+def run_step(step: Step) -> dict[str, Any]:
+    proc = subprocess.run(step.argv, cwd=str(ROOT), text=True, capture_output=True, check=False)
+    return {
+        "name": step.name,
+        "ok": proc.returncode == 0,
+        "returncode": proc.returncode,
+        "read_only": step.read_only,
+        "hard_gate": step.hard_gate,
+        "argv": step.argv,
+        "stdout_tail": proc.stdout[-4000:],
+        "stderr_tail": proc.stderr[-4000:],
+    }
+
+
+def render_markdown(report: dict[str, Any]) -> str:
+    summary = report["summary"]
+    lines = [
+        "# Daily Evolution Control",
+        "",
+        f"- ok: `{str(report['ok']).lower()}`",
+        f"- steps: `{summary['step_count']}`",
+        f"- failed: `{summary['failed_count']}`",
+        "",
+        "Safety: read-only orchestration; no approvals, source edits, Obsidian sync, Git mutation, push, PR, deploy, remote mutation, or destructive cleanup.",
+        "",
+        "## Steps",
+    ]
+    for step in report["steps"]:
+        status = "PASS" if step.get("ok") else "FAIL"
+        lines.append(f"- `{status}` `{step.get('name')}` rc=`{step.get('returncode')}`")
+    return "\n".join(lines) + "\n"
+
+
+def write_report(report: dict[str, Any], out_dir: Path) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "daily-evolution-control.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    (out_dir / "daily-evolution-control.md").write_text(render_markdown(report), encoding="utf-8")
+
+
+def run_daily(limit: int = 10, out_dir: Path = RUNTIME) -> int:
+    steps = []
+    for step in daily_plan(limit=limit):
+        result = run_step(step)
+        steps.append(result)
+    failed = [step for step in steps if not step.get("ok")]
+    report = {
+        "ok": not failed,
+        "generated_at": utc_now(),
+        "controller": "evolutionctl daily",
+        "summary": {
+            "step_count": len(steps),
+            "failed_count": len(failed),
+            "hard_gate_failed_count": sum(1 for step in failed if step.get("hard_gate")),
+        },
+        "outputs": {
+            "mirror_drift": str(RUNTIME / "mirror-drift-scan.json"),
+            "static_tool_probes": str(RUNTIME / "static-tool-probes.json"),
+            "approval_inbox": str(ROOT / "runtime/task-board/daily-approval-inbox.json"),
+            "dashboard": str(ROOT / "runtime/skill-chains/dashboard/data.json"),
+        },
+        "steps": steps,
+    }
+    write_report(report, out_dir)
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0 if report["ok"] else 1
+
+
+def self_test() -> int:
+    plan = daily_plan()
+    assert [step.name for step in plan][:2] == ["manifest", "registry"]
+    assert all(step.read_only for step in plan)
+    print(json.dumps({"ok": True, "script": "evolutionctl"}, indent=2))
+    return 0
+
+
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+    daily = sub.add_parser("daily")
+    daily.add_argument("--limit", type=int, default=10)
+    daily.add_argument("--out-dir", type=Path, default=RUNTIME)
+    daily.set_defaults(func=lambda args: run_daily(limit=args.limit, out_dir=args.out_dir))
+    self_test_parser = sub.add_parser("self-test")
+    self_test_parser.set_defaults(func=lambda _args: self_test())
+    return parser.parse_args(argv)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = parse_args(argv)
+    return int(args.func(args) or 0)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

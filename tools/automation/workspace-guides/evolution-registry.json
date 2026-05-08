@@ -1,0 +1,229 @@
+{
+  "schemaVersion": "evolution-registry-1.0",
+  "updatedAt": "2026-05-08",
+  "purpose": "Local source-of-truth map for daily self-evolution: skills, human-readable docs, Obsidian mirrors, project progress surfaces, scanners, and apply policy.",
+  "safety": {
+    "defaultZone": "local",
+    "forbiddenWithoutApproval": [
+      "push",
+      "pr",
+      "deploy",
+      "remote-mutation",
+      "secret-access",
+      "destructive-cleanup",
+      "broad-sync"
+    ],
+    "autoSafeWrites": [
+      "single-file local doc placeholder repair",
+      "runtime report generation",
+      "read-only inventory refresh"
+    ]
+  },
+  "skillRoots": [
+    {
+      "id": "agents-skills",
+      "path": "/Users/yumei/.agents/skills",
+      "role": "canonical-active",
+      "writePolicy": "review-first",
+      "scanner": "skill-drift-auditor"
+    },
+    {
+      "id": "codex-skills",
+      "path": "/Users/yumei/vibecoding/.codex/skills",
+      "role": "active-mirror",
+      "writePolicy": "review-first",
+      "scanner": "skill-drift-auditor"
+    },
+    {
+      "id": "relay-skills",
+      "path": "/Users/yumei/.codex-cli-relay/skills",
+      "role": "system-managed",
+      "writePolicy": "approval-required",
+      "scanner": "skill-drift-auditor"
+    },
+    {
+      "id": "archive-skill-chain-m0",
+      "path": "/Users/yumei/.agents/skills/_archive/skill-chain-m0-20260507",
+      "role": "archive",
+      "writePolicy": "approval-required",
+      "scanner": "skill-drift-auditor"
+    }
+  ],
+  "documentSurfaces": [
+    {
+      "id": "tools-automation-agents",
+      "source": "/Users/yumei/tools/automation/AGENTS.md",
+      "mirrors": [],
+      "role": "source-policy",
+      "zone": "source",
+      "syncMode": "manual-review",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "tools-automation-progress",
+      "source": "/Users/yumei/tools/automation/PROJECT_PROGRESS.md",
+      "mirrors": [],
+      "role": "project-progress",
+      "zone": "local",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "tools-automation-plans",
+      "source": "/Users/yumei/tools/automation/PLANS.md",
+      "mirrors": [],
+      "role": "project-plans",
+      "zone": "local",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "tools-automation-readme",
+      "source": "/Users/yumei/tools/automation/README.md",
+      "mirrors": [],
+      "role": "public-facing-local-doc",
+      "zone": "source",
+      "syncMode": "manual-review",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "automation-guides",
+      "source": "/Users/yumei/tools/automation/workspace-guides",
+      "mirrors": [],
+      "role": "runbooks-and-registries",
+      "zone": "source",
+      "syncMode": "manual-review",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "obsidian-ai-ingest-local",
+      "source": "/Users/yumei/Obsidian/MyKnowledgeVault/30-AI-Ingest",
+      "mirrors": [],
+      "role": "obsidian-local-knowledge",
+      "zone": "local",
+      "syncMode": "obsidian-source",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "obsidian-knowledge-pipeline",
+      "source": "/Users/yumei/projects/obsidian-knowledge-pipeline",
+      "mirrors": [
+        "/Users/yumei/.ai-entry-sync/projects/obsidian-knowledge-pipeline"
+      ],
+      "role": "obsidian-ingest-pipeline",
+      "zone": "source",
+      "syncMode": "manual-review",
+      "scanner": "doc-drift-auditor"
+    }
+  ],
+  "mirrorPairs": [
+    {
+      "id": "workspace-project-index-derived",
+      "source": "/Users/yumei/tools/automation/PROJECT_PROGRESS.md",
+      "mirror": "/Users/yumei/Obsidian/MyKnowledgeVault/30-AI-Ingest/workspace-project-index.md",
+      "status": "active",
+      "relationship": "derived-index",
+      "sourceOfTruth": "project",
+      "direction": "project-to-obsidian-derived",
+      "privacyGate": "required-before-publish",
+      "conflictPolicy": "do-not-merge-derived-output-back",
+      "syncMode": "manual-review",
+      "scanner": "doc-drift-auditor",
+      "notes": "Obsidian index summarizes workspace project records; it is not a 1:1 mirror of PROJECT_PROGRESS.md."
+    },
+    {
+      "id": "tools-automation-progress-obsidian-proposed",
+      "source": "/Users/yumei/tools/automation/PROJECT_PROGRESS.md",
+      "mirror": "/Users/yumei/Obsidian/MyKnowledgeVault/30-AI-Ingest/tools-automation-progress.md",
+      "status": "proposed",
+      "relationship": "mirror",
+      "sourceOfTruth": "project",
+      "direction": "project-to-obsidian",
+      "privacyGate": "required-before-publish",
+      "conflictPolicy": "project-wins-unless-human-promotes-obsidian-note",
+      "syncMode": "approval-required",
+      "scanner": "doc-drift-auditor",
+      "notes": "Target note is not created yet; registry records the intended pair so daily evolution can block blind sync."
+    }
+  ],
+  "projects": [
+    {
+      "id": "tools-automation",
+      "path": "/Users/yumei/tools/automation",
+      "progressFiles": [
+        "/Users/yumei/tools/automation/PROJECT_PROGRESS.md"
+      ],
+      "runtimeTruth": [
+        "/Users/yumei/tools/automation/runtime/self-evolution",
+        "/Users/yumei/tools/automation/runtime/task-board",
+        "/Users/yumei/tools/automation/runtime/ai-trace"
+      ],
+      "validationCommands": [
+        "python3 -m unittest tests.test_evolution_registry",
+        "python3 scripts/evolution-registry.py validate --registry workspace-guides/evolution-registry.json"
+      ],
+      "lanes": [
+        "doc-drift",
+        "skill-drift",
+        "reshape-refactor",
+        "daily-queue"
+      ]
+    }
+  ],
+  "scannerRouting": [
+    {
+      "scanner": "skill-drift-auditor",
+      "priorities": {
+        "L3": "approval-required",
+        "L2": "review-first",
+        "L1": "review-first",
+        "L0": "informational"
+      },
+      "canonicalRegistrySection": "skillRoots"
+    },
+    {
+      "scanner": "doc-drift-auditor",
+      "priorities": {
+        "P0": "approval-required",
+        "P1": "review-first",
+        "P2": "review-first",
+        "P3": "auto-safe"
+      },
+      "canonicalRegistrySection": "documentSurfaces"
+    },
+    {
+      "scanner": "reshape-refactor-loop",
+      "priorities": {
+        "P0": "approval-required",
+        "P1": "review-first",
+        "P2": "review-first",
+        "P3": "auto-safe"
+      },
+      "canonicalRegistrySection": "projects"
+    }
+  ],
+  "applyPolicy": {
+    "doc-drift-auditor": {
+      "autoSafeKinds": [
+        "missing-absolute-path"
+      ],
+      "conditions": [
+        "exactly one allowed file",
+        "local source or template file only",
+        "no command example rewrite unless template or archive strategy is explicit"
+      ]
+    },
+    "skill-drift-auditor": {
+      "autoSafeKinds": [],
+      "conditions": [
+        "skill edits require review-first because routing mistakes affect future agents"
+      ]
+    },
+    "reshape-refactor-loop": {
+      "autoSafeKinds": [],
+      "conditions": [
+        "code refactors require behavior gate and quality gate before write"
+      ]
+    }
+  }
+}
