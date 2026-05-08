@@ -85,6 +85,28 @@ class RestoreRehearsalPolicyTests(unittest.TestCase):
                                 "broad-sync",
                             ]
                         },
+                        "backupPolicy": {
+                            "id": "project-source-restore-rehearsal",
+                            "cadence": "before-push-and-weekly-local",
+                            "retention": "keep-last-7-local-evidence-reports",
+                            "backupScope": "classified-source-plus-local-runtime-evidence-manifest",
+                            "restoreTarget": "source-only",
+                            "runtimeLane": "separate-local-evidence-only",
+                            "approvalRequiredFor": [
+                                "backup-write",
+                                "restore-write",
+                                "git-mutation",
+                                "push",
+                                "pr",
+                                "remote-mutation",
+                                "obsidian-write",
+                                "destructive-cleanup",
+                            ],
+                            "verificationCommands": [
+                                "python3 scripts/automationctl manifest --check",
+                                "python3 scripts/restore-rehearsal-policy.py",
+                            ],
+                        },
                         "mirrorPairs": [{"sourceOfTruth": "project"}],
                     }
                 ),
@@ -101,6 +123,24 @@ class RestoreRehearsalPolicyTests(unittest.TestCase):
         self.assertEqual(checks["approval-boundary"]["status"], "pass")
         self.assertEqual(report["policy"]["restore_target"], "source-only")
         self.assertEqual(report["policy"]["runtime_lane"], "separate-local-evidence-only")
+        self.assertEqual(report["policy"]["cadence"], "before-push-and-weekly-local")
+        self.assertEqual(report["policy"]["retention"], "keep-last-7-local-evidence-reports")
+        self.assertEqual(report["policy"]["backup_scope"], "classified-source-plus-local-runtime-evidence-manifest")
+        self.assertEqual(
+            report["policy"]["approval_required_for"],
+            [
+                "backup-write",
+                "restore-write",
+                "git-mutation",
+                "push",
+                "pr",
+                "remote-mutation",
+                "obsidian-write",
+                "destructive-cleanup",
+            ],
+        )
+        self.assertIn("python3 scripts/automationctl manifest --check", report["policy"]["verification_commands"])
+        self.assertIn("python3 scripts/restore-rehearsal-policy.py", report["policy"]["verification_commands"])
         self.assertEqual(report["policy"]["mode"], "read-only-rehearsal-policy")
 
     def test_policy_fails_closed_when_runtime_is_not_excluded(self) -> None:
@@ -133,6 +173,99 @@ class RestoreRehearsalPolicyTests(unittest.TestCase):
         failed = {item["id"] for item in report["checks"] if item["status"] == "fail"}
         self.assertIn("runtime-ignore-boundary", failed)
         self.assertIn("approval-boundary", failed)
+
+    def test_policy_fails_closed_without_backup_policy(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = root / "manifest.json"
+            mirror = root / "mirror.json"
+            registry = root / "registry.json"
+            manifest.write_text(
+                self.module.json.dumps(
+                    {
+                        "summary": {"unclassified_count": 0, "source_candidate_count": 1, "excluded_by_default_count": 1},
+                        "git_visibility": {
+                            "automation_ignored": True,
+                            "source_ignore_rule": ".gitignore:103:tools/automation/*",
+                        },
+                        "publication_gate": {
+                            "runtime_excluded_by_default": True,
+                            "requires_secret_scan": True,
+                            "requires_user_approval_for_push": True,
+                            "requires_review_for_high_risk": True,
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            mirror.write_text(
+                self.module.json.dumps({"ok": True, "summary": {"blocking_count": 0}, "findings": [{"kind": "derived-index-registered"}]}),
+                encoding="utf-8",
+            )
+            registry.write_text(self.module.json.dumps({"safety": {"forbiddenWithoutApproval": []}}), encoding="utf-8")
+
+            report = self.module.build_report(manifest, mirror, registry)
+
+        self.assertFalse(report["ok"])
+        checks = {item["id"]: item for item in report["checks"]}
+        self.assertEqual(checks["registry-backup-policy"]["status"], "fail")
+        self.assertEqual(checks["approval-boundary"]["status"], "fail")
+
+    def test_policy_fails_closed_when_approval_actions_are_incomplete(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = root / "manifest.json"
+            mirror = root / "mirror.json"
+            registry = root / "registry.json"
+            manifest.write_text(
+                self.module.json.dumps(
+                    {
+                        "summary": {"unclassified_count": 0, "source_candidate_count": 1, "excluded_by_default_count": 1},
+                        "git_visibility": {
+                            "automation_ignored": True,
+                            "source_ignore_rule": ".gitignore:103:tools/automation/*",
+                        },
+                        "publication_gate": {
+                            "runtime_excluded_by_default": True,
+                            "requires_secret_scan": True,
+                            "requires_user_approval_for_push": True,
+                            "requires_review_for_high_risk": True,
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            mirror.write_text(
+                self.module.json.dumps({"ok": True, "summary": {"blocking_count": 0}, "findings": [{"kind": "derived-index-registered"}]}),
+                encoding="utf-8",
+            )
+            registry.write_text(
+                self.module.json.dumps(
+                    {
+                        "backupPolicy": {
+                            "cadence": "before-push-and-weekly-local",
+                            "retention": "keep-last-7-local-evidence-reports",
+                            "backupScope": "classified-source-plus-local-runtime-evidence-manifest",
+                            "restoreTarget": "source-only",
+                            "runtimeLane": "separate-local-evidence-only",
+                            "approvalRequiredFor": ["backup-write", "restore-write"],
+                            "verificationCommands": [
+                                "python3 scripts/automationctl manifest --check",
+                                "python3 scripts/restore-rehearsal-policy.py",
+                            ],
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            report = self.module.build_report(manifest, mirror, registry)
+
+        self.assertFalse(report["ok"])
+        checks = {item["id"]: item for item in report["checks"]}
+        self.assertEqual(checks["registry-backup-policy"]["status"], "fail")
+        self.assertEqual(checks["approval-boundary"]["status"], "fail")
+        self.assertIn("git-mutation", checks["approval-boundary"]["evidence"]["missing_approval_actions"])
 
 
 if __name__ == "__main__":

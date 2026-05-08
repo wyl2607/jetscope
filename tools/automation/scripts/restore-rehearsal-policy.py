@@ -19,14 +19,20 @@ DEFAULT_JSON = ROOT / "runtime/self-evolution/restore-rehearsal-policy.json"
 DEFAULT_MD = ROOT / "runtime/self-evolution/restore-rehearsal-policy.md"
 
 
-REQUIRED_FORBIDDEN_ACTIONS = {
+REQUIRED_APPROVAL_ACTIONS = {
+    "backup-write",
+    "restore-write",
+    "git-mutation",
     "push",
     "pr",
-    "deploy",
     "remote-mutation",
-    "secret-access",
+    "obsidian-write",
     "destructive-cleanup",
-    "broad-sync",
+}
+
+REQUIRED_VERIFICATION_COMMANDS = {
+    "python3 scripts/automationctl manifest --check",
+    "python3 scripts/restore-rehearsal-policy.py",
 }
 
 
@@ -51,6 +57,27 @@ def check(check_id: str, passed: bool, message: str, **evidence: Any) -> dict[st
     }
 
 
+def registry_backup_policy(registry: dict[str, Any]) -> dict[str, Any]:
+    backup_policy = registry.get("backupPolicy") if isinstance(registry.get("backupPolicy"), dict) else {}
+    approval_required_for = (
+        backup_policy.get("approvalRequiredFor") if isinstance(backup_policy.get("approvalRequiredFor"), list) else []
+    )
+    verification_commands = (
+        backup_policy.get("verificationCommands") if isinstance(backup_policy.get("verificationCommands"), list) else []
+    )
+    return {
+        "mode": "read-only-rehearsal-policy",
+        "cadence": backup_policy.get("cadence"),
+        "retention": backup_policy.get("retention"),
+        "restore_target": backup_policy.get("restoreTarget"),
+        "runtime_lane": backup_policy.get("runtimeLane"),
+        "backup_scope": backup_policy.get("backupScope"),
+        "verification_commands": verification_commands,
+        "approval_required_for": approval_required_for,
+        "never_performed_by_this_check": approval_required_for,
+    }
+
+
 def build_report(manifest_path: Path = DEFAULT_MANIFEST, mirror_path: Path = DEFAULT_MIRROR_DRIFT, registry_path: Path = DEFAULT_REGISTRY) -> dict[str, Any]:
     manifest = read_json(manifest_path)
     mirror = read_json(mirror_path)
@@ -60,8 +87,9 @@ def build_report(manifest_path: Path = DEFAULT_MANIFEST, mirror_path: Path = DEF
     publication_gate = manifest.get("publication_gate") if isinstance(manifest.get("publication_gate"), dict) else {}
     mirror_summary = mirror.get("summary") if isinstance(mirror.get("summary"), dict) else {}
     mirror_findings = mirror.get("findings") if isinstance(mirror.get("findings"), list) else []
-    safety = registry.get("safety") if isinstance(registry.get("safety"), dict) else {}
-    forbidden = set(safety.get("forbiddenWithoutApproval") if isinstance(safety.get("forbiddenWithoutApproval"), list) else [])
+    policy = registry_backup_policy(registry)
+    approval_required_for = set(policy["approval_required_for"])
+    verification_commands = set(policy["verification_commands"])
     source_ignore_rule = visibility.get("source_ignore_rule") or visibility.get("ignore_rule")
 
     source_ok = (
@@ -80,8 +108,14 @@ def build_report(manifest_path: Path = DEFAULT_MANIFEST, mirror_path: Path = DEF
         and all(item.get("source_of_truth", "project") == "project" for item in mirror_findings if isinstance(item, dict) and item.get("kind") != "derived-index-registered")
         and any(item.get("kind") == "derived-index-registered" for item in mirror_findings if isinstance(item, dict))
     )
+    backup_policy_ok = (
+        isinstance(registry.get("backupPolicy"), dict)
+        and all(isinstance(policy.get(key), str) and bool(policy.get(key)) for key in ("cadence", "retention", "restore_target", "runtime_lane", "backup_scope"))
+        and REQUIRED_APPROVAL_ACTIONS.issubset(approval_required_for)
+        and REQUIRED_VERIFICATION_COMMANDS.issubset(verification_commands)
+    )
     approval_ok = (
-        REQUIRED_FORBIDDEN_ACTIONS.issubset(forbidden)
+        REQUIRED_APPROVAL_ACTIONS.issubset(approval_required_for)
         and publication_gate.get("requires_user_approval_for_push") is True
         and publication_gate.get("requires_secret_scan") is True
         and publication_gate.get("requires_review_for_high_risk") is True
@@ -115,10 +149,23 @@ def build_report(manifest_path: Path = DEFAULT_MANIFEST, mirror_path: Path = DEF
             finding_count=len(mirror_findings),
         ),
         check(
+            "registry-backup-policy",
+            backup_policy_ok,
+            "Restore rehearsal policy must be governed by Evolution Registry backupPolicy.",
+            has_backup_policy=isinstance(registry.get("backupPolicy"), dict),
+            cadence=policy.get("cadence"),
+            retention=policy.get("retention"),
+            backup_scope=policy.get("backup_scope"),
+            restore_target=policy.get("restore_target"),
+            runtime_lane=policy.get("runtime_lane"),
+            missing_approval_actions=sorted(REQUIRED_APPROVAL_ACTIONS - approval_required_for),
+            missing_verification_commands=sorted(REQUIRED_VERIFICATION_COMMANDS - verification_commands),
+        ),
+        check(
             "approval-boundary",
             approval_ok,
             "Backup, restore, push, publication, remote mutation, and destructive cleanup require explicit approval.",
-            missing_forbidden_actions=sorted(REQUIRED_FORBIDDEN_ACTIONS - forbidden),
+            missing_approval_actions=sorted(REQUIRED_APPROVAL_ACTIONS - approval_required_for),
             requires_user_approval_for_push=publication_gate.get("requires_user_approval_for_push"),
             requires_secret_scan=publication_gate.get("requires_secret_scan"),
             requires_review_for_high_risk=publication_gate.get("requires_review_for_high_risk"),
@@ -133,28 +180,7 @@ def build_report(manifest_path: Path = DEFAULT_MANIFEST, mirror_path: Path = DEF
             "mirror_drift": str(mirror_path),
             "registry": str(registry_path),
         },
-        "policy": {
-            "mode": "read-only-rehearsal-policy",
-            "restore_target": "source-only",
-            "runtime_lane": "separate-local-evidence-only",
-            "backup_scope": "classified-source-plus-local-runtime-evidence-manifest",
-            "restore_rehearsal_order": [
-                "verify-source-runtime-manifest",
-                "verify-runtime-exclusion-boundary",
-                "verify-mirror-policy",
-                "verify-approval-boundary",
-            ],
-            "never_performed_by_this_check": [
-                "backup-write",
-                "restore-write",
-                "git-mutation",
-                "push",
-                "pr",
-                "remote-mutation",
-                "obsidian-write",
-                "destructive-cleanup",
-            ],
-        },
+        "policy": policy,
         "checks": checks,
     }
 
@@ -165,6 +191,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         f"- ok: `{str(report.get('ok')).lower()}`",
         f"- mode: `{(report.get('policy') or {}).get('mode')}`",
+        f"- cadence: `{(report.get('policy') or {}).get('cadence')}`",
+        f"- retention: `{(report.get('policy') or {}).get('retention')}`",
         f"- restore target: `{(report.get('policy') or {}).get('restore_target')}`",
         f"- runtime lane: `{(report.get('policy') or {}).get('runtime_lane')}`",
         "",
@@ -209,7 +237,22 @@ def self_test() -> None:
             json.dumps({"ok": True, "summary": {"blocking_count": 0}, "findings": [{"kind": "derived-index-registered"}]}),
             encoding="utf-8",
         )
-        registry.write_text(json.dumps({"safety": {"forbiddenWithoutApproval": sorted(REQUIRED_FORBIDDEN_ACTIONS)}}), encoding="utf-8")
+        registry.write_text(
+            json.dumps(
+                {
+                    "backupPolicy": {
+                        "cadence": "before-push-and-weekly-local",
+                        "retention": "keep-last-7-local-evidence-reports",
+                        "backupScope": "classified-source-plus-local-runtime-evidence-manifest",
+                        "restoreTarget": "source-only",
+                        "runtimeLane": "separate-local-evidence-only",
+                        "approvalRequiredFor": sorted(REQUIRED_APPROVAL_ACTIONS),
+                        "verificationCommands": sorted(REQUIRED_VERIFICATION_COMMANDS),
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
         assert build_report(manifest, mirror, registry)["ok"] is True
 
 
