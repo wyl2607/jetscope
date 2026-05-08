@@ -80,7 +80,22 @@ def scan_pair(pair: dict[str, Any]) -> list[dict[str, Any]]:
         if status == "active":
             rows.append(finding(pair, "active-mirror-target-missing", "P0", "approval-required", "Active mirror target is missing.", source_endpoint=source_ep, mirror_endpoint=mirror_ep))
         elif status == "proposed":
-            rows.append(finding(pair, "proposed-mirror-target-missing", "P2", "informational", "Proposed mirror target has not been created yet.", source_endpoint=source_ep, mirror_endpoint=mirror_ep))
+            rows.append(
+                finding(
+                    pair,
+                    "proposed-mirror-target-missing",
+                    "P2",
+                    "informational",
+                    "Proposed mirror target has not been created yet; creation/write-back requires human approval.",
+                    source_endpoint=source_ep,
+                    mirror_endpoint=mirror_ep,
+                    approval_required=True,
+                    next_action="request-human-approval-before-mirror-creation",
+                    privacy_gate=pair.get("privacyGate"),
+                    conflict_policy=conflict_policy,
+                    source_of_truth=pair.get("sourceOfTruth"),
+                )
+            )
         else:
             rows.append(finding(pair, "mirror-target-missing", "P1", "review-first", "Mirror target is missing.", source_endpoint=source_ep, mirror_endpoint=mirror_ep))
         return rows
@@ -176,6 +191,11 @@ def render_markdown(report: dict[str, Any]) -> str:
         lines.append("- None.")
     for item in findings:
         lines.append(f"- `{item.get('level')}` `{item.get('mode')}` `{item.get('kind')}` `{item.get('pair_id')}`: {item.get('message')}")
+        if item.get("approval_required"):
+            lines.append(f"  - next action: `{item.get('next_action')}`")
+            lines.append(f"  - source of truth: `{item.get('source_of_truth')}`")
+            lines.append(f"  - privacy gate: `{item.get('privacy_gate')}`")
+            lines.append(f"  - conflict policy: `{item.get('conflict_policy')}`")
     return "\n".join(lines) + "\n"
 
 

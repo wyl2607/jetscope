@@ -130,6 +130,11 @@ class MirrorDriftScanTests(unittest.TestCase):
         self.assertTrue(report["ok"])
         self.assertEqual(report["summary"]["warning_count"], 1)
         self.assertEqual(report["findings"][0]["kind"], "proposed-mirror-target-missing")
+        self.assertEqual(report["findings"][0]["approval_required"], True)
+        self.assertEqual(report["findings"][0]["source_of_truth"], "project")
+        self.assertEqual(report["findings"][0]["privacy_gate"], "required-before-publish")
+        self.assertEqual(report["findings"][0]["conflict_policy"], "project-wins-unless-human-promotes-obsidian-note")
+        self.assertEqual(report["findings"][0]["next_action"], "request-human-approval-before-mirror-creation")
 
     def test_derived_index_requires_do_not_merge_back_policy(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
