@@ -170,6 +170,28 @@
       ]
     }
   ],
+  "backupPolicy": {
+    "id": "project-source-restore-rehearsal",
+    "cadence": "before-push-and-weekly-local",
+    "retention": "keep-last-7-local-evidence-reports",
+    "backupScope": "classified-source-plus-local-runtime-evidence-manifest",
+    "restoreTarget": "source-only",
+    "runtimeLane": "separate-local-evidence-only",
+    "approvalRequiredFor": [
+      "backup-write",
+      "restore-write",
+      "git-mutation",
+      "push",
+      "pr",
+      "remote-mutation",
+      "obsidian-write",
+      "destructive-cleanup"
+    ],
+    "verificationCommands": [
+      "python3 scripts/automationctl manifest --check",
+      "python3 scripts/restore-rehearsal-policy.py"
+    ]
+  },
   "scannerRouting": [
     {
       "scanner": "skill-drift-auditor",

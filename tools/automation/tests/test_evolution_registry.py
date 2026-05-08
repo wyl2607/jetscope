@@ -73,6 +73,28 @@ class EvolutionRegistryTests(unittest.TestCase):
                         "validationCommands": ["python3 -m unittest"],
                     }
                 ],
+                "backupPolicy": {
+                    "id": "project-source-restore-rehearsal",
+                    "cadence": "before-push-and-weekly-local",
+                    "retention": "keep-last-7-local-evidence-reports",
+                    "backupScope": "classified-source-plus-local-runtime-evidence-manifest",
+                    "restoreTarget": "source-only",
+                    "runtimeLane": "separate-local-evidence-only",
+                    "approvalRequiredFor": [
+                        "backup-write",
+                        "restore-write",
+                        "git-mutation",
+                        "push",
+                        "pr",
+                        "remote-mutation",
+                        "obsidian-write",
+                        "destructive-cleanup",
+                    ],
+                    "verificationCommands": [
+                        "python3 scripts/automationctl manifest --check",
+                        "python3 scripts/restore-rehearsal-policy.py",
+                    ],
+                },
                 "scannerRouting": [
                     {
                         "scanner": "doc-drift-auditor",
@@ -86,6 +108,7 @@ class EvolutionRegistryTests(unittest.TestCase):
             self.assertTrue(result["ok"], result)
             self.assertEqual(result["counts"]["documentSurfaces"], 1)
             self.assertEqual(result["counts"]["mirrorPairs"], 1)
+            self.assertEqual(result["counts"]["backupPolicy"], 1)
             self.assertEqual(self.module.summarize_registry(registry)["warningCount"], 0)
 
     def test_validate_rejects_duplicate_skill_root_ids(self) -> None:
@@ -99,6 +122,7 @@ class EvolutionRegistryTests(unittest.TestCase):
             "documentSurfaces": [],
             "mirrorPairs": [],
             "projects": [],
+            "backupPolicy": {},
             "scannerRouting": [],
             "applyPolicy": {},
         }
@@ -142,6 +166,7 @@ class EvolutionRegistryTests(unittest.TestCase):
                     },
                 ],
                 "projects": [],
+                "backupPolicy": {},
                 "scannerRouting": [],
                 "applyPolicy": {},
             }
@@ -177,6 +202,7 @@ class EvolutionRegistryTests(unittest.TestCase):
                 }
             ],
             "projects": [],
+            "backupPolicy": {},
             "scannerRouting": [],
             "applyPolicy": {},
         }
@@ -227,6 +253,55 @@ class EvolutionRegistryTests(unittest.TestCase):
         self.assertEqual(mirror["direction"], "project-to-obsidian")
         self.assertEqual(mirror["privacyGate"], "required-before-publish")
         self.assertEqual(mirror["conflictPolicy"], "project-wins-unless-human-promotes-obsidian-note")
+
+    def test_backup_policy_requires_cadence_retention_scope_and_approval(self) -> None:
+        registry = self._base_mirror_registry()
+        registry["backupPolicy"] = {
+            "id": "policy",
+            "cadence": "before-push-and-weekly-local",
+            "retention": "keep-last-7-local-evidence-reports",
+            "backupScope": "classified-source-plus-local-runtime-evidence-manifest",
+            "restoreTarget": "source-only",
+            "runtimeLane": "separate-local-evidence-only",
+            "approvalRequiredFor": [
+                "backup-write",
+                "restore-write",
+                "git-mutation",
+                "push",
+                "pr",
+                "remote-mutation",
+                "obsidian-write",
+                "destructive-cleanup",
+            ],
+            "verificationCommands": [
+                "python3 scripts/automationctl manifest --check",
+                "python3 scripts/restore-rehearsal-policy.py",
+            ],
+        }
+
+        result = self.module.validate_registry(registry)
+        summary = self.module.summarize_registry(registry)
+
+        self.assertTrue(result["ok"], result)
+        self.assertEqual(summary["backupPolicy"]["restoreTarget"], "source-only")
+        self.assertEqual(summary["backupPolicy"]["runtimeLane"], "separate-local-evidence-only")
+
+    def test_backup_policy_rejects_missing_retention(self) -> None:
+        registry = self._base_mirror_registry()
+        registry["backupPolicy"] = {
+            "id": "policy",
+            "cadence": "before-push-and-weekly-local",
+            "backupScope": "classified-source-plus-local-runtime-evidence-manifest",
+            "restoreTarget": "source-only",
+            "runtimeLane": "separate-local-evidence-only",
+            "approvalRequiredFor": ["backup-write"],
+            "verificationCommands": ["python3 scripts/restore-rehearsal-policy.py"],
+        }
+
+        result = self.module.validate_registry(registry)
+
+        self.assertFalse(result["ok"])
+        self.assertIn("backupPolicy needs retention", "\n".join(result["errors"]))
 
     def test_project_registry_classifies_core_document_surfaces(self) -> None:
         registry = self.module.load_registry(Path("/Users/yumei/tools/automation/workspace-guides/evolution-registry.json"))

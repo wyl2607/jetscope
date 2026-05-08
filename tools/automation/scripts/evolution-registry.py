@@ -13,12 +13,22 @@ from typing import Any
 DEFAULT_REGISTRY = Path("/Users/yumei/tools/automation/workspace-guides/evolution-registry.json")
 KNOWN_ROOT_ROLES = {"canonical-active", "active-mirror", "system-managed", "vendor-managed", "archive"}
 KNOWN_WRITE_POLICIES = {"auto-safe", "review-first", "approval-required", "informational"}
-REQUIRED_TOP_LEVEL = {"schemaVersion", "updatedAt", "skillRoots", "documentSurfaces", "mirrorPairs", "projects", "scannerRouting", "applyPolicy"}
+REQUIRED_TOP_LEVEL = {"schemaVersion", "updatedAt", "skillRoots", "documentSurfaces", "mirrorPairs", "projects", "backupPolicy", "scannerRouting", "applyPolicy"}
 KNOWN_MIRROR_STATUSES = {"active", "proposed", "archived"}
 KNOWN_MIRROR_RELATIONSHIPS = {"mirror", "derived-index", "archive-copy"}
 KNOWN_SOURCE_OF_TRUTH = {"project", "obsidian", "external", "human-decision"}
 KNOWN_MIRROR_DIRECTIONS = {"project-to-obsidian", "project-to-obsidian-derived", "obsidian-to-project-proposed", "external-to-project"}
 KNOWN_PRIVACY_GATES = {"required-before-publish", "local-only", "not-publishable", "approved-public"}
+REQUIRED_BACKUP_APPROVALS = {
+    "backup-write",
+    "restore-write",
+    "git-mutation",
+    "push",
+    "pr",
+    "remote-mutation",
+    "obsidian-write",
+    "destructive-cleanup",
+}
 
 
 def load_registry(path: Path) -> dict[str, Any]:
@@ -65,6 +75,7 @@ def validate_registry(data: dict[str, Any]) -> dict[str, Any]:
     doc_surfaces = data.get("documentSurfaces", [])
     mirror_pairs = data.get("mirrorPairs", [])
     projects = data.get("projects", [])
+    backup_policy = data.get("backupPolicy", {})
     scanner_routing = data.get("scannerRouting", [])
 
     for section_name, rows in (("skillRoots", skill_roots), ("documentSurfaces", doc_surfaces), ("mirrorPairs", mirror_pairs), ("projects", projects), ("scannerRouting", scanner_routing)):
@@ -152,6 +163,24 @@ def validate_registry(data: dict[str, Any]) -> dict[str, Any]:
             if not isinstance(command, str) or not command.strip():
                 errors.append(f"projects {row.get('id')} has invalid validation command")
 
+    if not isinstance(backup_policy, dict):
+        errors.append("backupPolicy must be an object")
+    elif backup_policy:
+        for field in ("id", "cadence", "retention", "backupScope", "restoreTarget", "runtimeLane"):
+            value = backup_policy.get(field)
+            if not isinstance(value, str) or not value.strip():
+                errors.append(f"backupPolicy needs {field}")
+        approvals = backup_policy.get("approvalRequiredFor")
+        if not isinstance(approvals, list) or not all(isinstance(item, str) and item.strip() for item in approvals):
+            errors.append("backupPolicy approvalRequiredFor must be a list of non-empty strings")
+            approvals = []
+        missing_approvals = sorted(REQUIRED_BACKUP_APPROVALS - set(approvals))
+        if missing_approvals:
+            errors.append(f"backupPolicy missing approvalRequiredFor: {', '.join(missing_approvals)}")
+        commands = backup_policy.get("verificationCommands")
+        if not isinstance(commands, list) or not all(isinstance(item, str) and item.strip() for item in commands):
+            errors.append("backupPolicy verificationCommands must be a list of non-empty strings")
+
     return {
         "ok": not errors,
         "errors": errors,
@@ -161,6 +190,7 @@ def validate_registry(data: dict[str, Any]) -> dict[str, Any]:
             "documentSurfaces": len(doc_surfaces) if isinstance(doc_surfaces, list) else 0,
             "mirrorPairs": len(mirror_pairs) if isinstance(mirror_pairs, list) else 0,
             "projects": len(projects) if isinstance(projects, list) else 0,
+            "backupPolicy": 1 if isinstance(backup_policy, dict) and backup_policy else 0,
             "scannerRouting": len(scanner_routing) if isinstance(scanner_routing, list) else 0,
         },
     }
@@ -185,6 +215,7 @@ def summarize_registry(data: dict[str, Any]) -> dict[str, Any]:
         if isinstance(row, dict) and isinstance(row.get("source"), str) and isinstance(row.get("mirror"), str)
     ]
     skill_paths = [_path_status(row["path"]) for row in data.get("skillRoots", []) if isinstance(row, dict) and isinstance(row.get("path"), str)]
+    backup_policy = data.get("backupPolicy") if isinstance(data.get("backupPolicy"), dict) else {}
     return {
         "schemaVersion": data.get("schemaVersion"),
         "updatedAt": data.get("updatedAt"),
@@ -194,6 +225,16 @@ def summarize_registry(data: dict[str, Any]) -> dict[str, Any]:
         "errorCount": len(validation["errors"]),
         "documentSources": document_sources,
         "mirrorPairs": mirror_pairs,
+        "backupPolicy": {
+            "id": backup_policy.get("id"),
+            "cadence": backup_policy.get("cadence"),
+            "retention": backup_policy.get("retention"),
+            "backupScope": backup_policy.get("backupScope"),
+            "restoreTarget": backup_policy.get("restoreTarget"),
+            "runtimeLane": backup_policy.get("runtimeLane"),
+            "approvalRequiredFor": backup_policy.get("approvalRequiredFor", []),
+            "verificationCommands": backup_policy.get("verificationCommands", []),
+        } if backup_policy else {},
         "skillRoots": skill_paths,
     }
 
@@ -226,6 +267,19 @@ def self_test() -> None:
                 }
             ],
             "projects": [{"id": "project", "path": str(project), "validationCommands": ["python3 -m unittest"]}],
+            "backupPolicy": {
+                "id": "project-source-restore-rehearsal",
+                "cadence": "before-push-and-weekly-local",
+                "retention": "keep-last-7-local-evidence-reports",
+                "backupScope": "classified-source-plus-local-runtime-evidence-manifest",
+                "restoreTarget": "source-only",
+                "runtimeLane": "separate-local-evidence-only",
+                "approvalRequiredFor": sorted(REQUIRED_BACKUP_APPROVALS),
+                "verificationCommands": [
+                    "python3 scripts/automationctl manifest --check",
+                    "python3 scripts/restore-rehearsal-policy.py",
+                ],
+            },
             "scannerRouting": [{"scanner": "doc-drift-auditor", "priorities": {"P1": "review-first"}}],
             "applyPolicy": {"doc-drift-auditor": {"autoSafeKinds": ["missing-absolute-path"]}},
         }
