@@ -10,6 +10,7 @@
 
 - `tools/automation/AGENTS.md`
 - `tools/automation/PROJECT_PROGRESS.md`
+- `tools/automation/plan.md` — repo-evolver architecture plan / phase roadmap
 - `tools/automation/workspace-guides/parallel-dev-vps-handbook.md`
 - `tools/automation/workspace-guides/windows-opencode-handoff.md`
 - `tools/automation/workspace-guides/automation-source-runtime-classification.md`

@@ -197,6 +197,15 @@ class SkillChainDashboardStaticUiTests(unittest.TestCase):
         self.assertEqual(i18n["zh"]["duplicateGovernance"], "重复治理")
         self.assertEqual(i18n["zh"]["activeDriftClear"], "活跃漂移已清零")
 
+    def test_repo_evolver_grid_has_readable_responsive_breakpoints(self) -> None:
+        styles = (DASHBOARD_DIR / "styles.css").read_text(encoding="utf-8")
+
+        self.assertIn(".repo-evolver-grid", styles)
+        self.assertRegex(styles, r"@media\s*\(max-width:\s*1100px\)[\s\S]*?\.repo-evolver-grid\s*\{[^}]*repeat\(2,\s*minmax\(0,\s*1fr\)\)")
+        self.assertRegex(styles, r"@media\s*\(max-width:\s*680px\)[\s\S]*?\.repo-evolver-grid\s*\{[^}]*grid-template-columns:\s*1fr")
+        self.assertRegex(styles, r"\.repo-evolver-(?:trace|evidence|next)[\s\S]*?overflow-wrap:\s*anywhere")
+        self.assertRegex(styles, r"\.repo-evolver-(?:trace|evidence|next)[\s\S]*?word-break:\s*break-word")
+
 
 if __name__ == "__main__":
     unittest.main()
