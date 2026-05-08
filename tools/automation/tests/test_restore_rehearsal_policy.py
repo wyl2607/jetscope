@@ -8,6 +8,14 @@ from pathlib import Path
 
 
 SCRIPT = Path("/Users/yumei/tools/automation/scripts/restore-rehearsal-policy.py")
+REQUIRED_AUDIT_CHECKLIST_IDS = {
+    "source-manifest",
+    "runtime-ignore",
+    "mirror-relationship",
+    "backup-cadence-retention",
+    "approval-boundary",
+    "forbidden-actions-no-write",
+}
 
 
 def _load_module():
@@ -142,6 +150,20 @@ class RestoreRehearsalPolicyTests(unittest.TestCase):
         self.assertIn("python3 scripts/automationctl manifest --check", report["policy"]["verification_commands"])
         self.assertIn("python3 scripts/restore-rehearsal-policy.py", report["policy"]["verification_commands"])
         self.assertEqual(report["policy"]["mode"], "read-only-rehearsal-policy")
+        checklist = {item["id"]: item for item in report["audit_checklist"]}
+        self.assertEqual(set(checklist), REQUIRED_AUDIT_CHECKLIST_IDS)
+        for item in checklist.values():
+            self.assertIn("requirement", item)
+            self.assertIsInstance(item["evidence_sources"], list)
+            self.assertGreater(len(item["evidence_sources"]), 0)
+            self.assertIsInstance(item["covered_by_checks"], list)
+            self.assertGreater(len(item["covered_by_checks"]), 0)
+            self.assertEqual(item["status"], "pass")
+        self.assertTrue(report["ok"])
+        markdown = self.module.render_markdown(report)
+        self.assertIn("## Audit Checklist", markdown)
+        self.assertIn("`pass` `source-manifest`", markdown)
+        self.assertIn("evidence sources:", markdown)
 
     def test_policy_fails_closed_when_runtime_is_not_excluded(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -210,6 +232,10 @@ class RestoreRehearsalPolicyTests(unittest.TestCase):
         checks = {item["id"]: item for item in report["checks"]}
         self.assertEqual(checks["registry-backup-policy"]["status"], "fail")
         self.assertEqual(checks["approval-boundary"]["status"], "fail")
+        checklist = {item["id"]: item for item in report["audit_checklist"]}
+        self.assertEqual(checklist["backup-cadence-retention"]["status"], "fail")
+        self.assertEqual(checklist["approval-boundary"]["status"], "fail")
+        self.assertEqual(checklist["forbidden-actions-no-write"]["status"], "fail")
 
     def test_policy_fails_closed_when_approval_actions_are_incomplete(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -266,6 +292,64 @@ class RestoreRehearsalPolicyTests(unittest.TestCase):
         self.assertEqual(checks["registry-backup-policy"]["status"], "fail")
         self.assertEqual(checks["approval-boundary"]["status"], "fail")
         self.assertIn("git-mutation", checks["approval-boundary"]["evidence"]["missing_approval_actions"])
+
+    def test_policy_fails_closed_when_required_verification_command_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = root / "manifest.json"
+            mirror = root / "mirror.json"
+            registry = root / "registry.json"
+            manifest.write_text(
+                self.module.json.dumps(
+                    {
+                        "summary": {"unclassified_count": 0, "source_candidate_count": 1, "excluded_by_default_count": 1},
+                        "git_visibility": {
+                            "automation_ignored": True,
+                            "source_ignore_rule": ".gitignore:103:tools/automation/*",
+                        },
+                        "publication_gate": {
+                            "runtime_excluded_by_default": True,
+                            "requires_secret_scan": True,
+                            "requires_user_approval_for_push": True,
+                            "requires_review_for_high_risk": True,
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            mirror.write_text(
+                self.module.json.dumps({"ok": True, "summary": {"blocking_count": 0}, "findings": [{"kind": "derived-index-registered"}]}),
+                encoding="utf-8",
+            )
+            registry.write_text(
+                self.module.json.dumps(
+                    {
+                        "backupPolicy": {
+                            "cadence": "before-push-and-weekly-local",
+                            "retention": "keep-last-7-local-evidence-reports",
+                            "backupScope": "classified-source-plus-local-runtime-evidence-manifest",
+                            "restoreTarget": "source-only",
+                            "runtimeLane": "separate-local-evidence-only",
+                            "approvalRequiredFor": sorted(self.module.REQUIRED_APPROVAL_ACTIONS),
+                            "verificationCommands": ["python3 scripts/automationctl manifest --check"],
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            report = self.module.build_report(manifest, mirror, registry)
+
+        self.assertFalse(report["ok"])
+        checks = {item["id"]: item for item in report["checks"]}
+        self.assertEqual(checks["registry-backup-policy"]["status"], "fail")
+        self.assertIn(
+            "python3 scripts/restore-rehearsal-policy.py",
+            checks["registry-backup-policy"]["evidence"]["missing_verification_commands"],
+        )
+        checklist = {item["id"]: item for item in report["audit_checklist"]}
+        self.assertEqual(checklist["backup-cadence-retention"]["status"], "fail")
+        self.assertEqual(checklist["forbidden-actions-no-write"]["status"], "fail")
 
 
 if __name__ == "__main__":
