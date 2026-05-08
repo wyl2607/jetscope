@@ -296,3 +296,94 @@ Proceed only with local verification and packaging notes for `jetscope` and `esg
 3. 如果仍是低风险，推进最小实现或生成一个明确的 `execute-local` 单任务审批点。
 4. 修改后运行 focused validation，再按需运行 `bash scripts/validate-workspace-automation.sh`。
 5. 写入 `ai-trace` session；如形成可复用模式，再写 `solution-ledger`。
+
+## Repo Evolver Maintenance Pipeline — 2026-05-08
+
+### Goal
+
+建立一个可持续的 repo-evolver 维护流水线，把持续重构、文档事实校验、agent 技能演化、Obsidian 知识镜像和 Git 备份治理收口到同一个本地优先、审批分层、可验证的闭环中。
+
+### Current State
+
+- `/Users/yumei` 仍是双身份过渡区：一部分历史上作为 JetScope 产品镜像，一部分正在承担 workspace governance。产品开发应进入 `~/projects/jetscope`，workspace governance 正迁往 `/Users/yumei/workspace-ops`。
+- 根 Git 当前存在发布风险：本地 `main` 与 `origin/main` 存在 ahead/behind 分叉，且 workspace governance 改动仍与 JetScope remote 混居；提交或发布前必须重新读取 `git status --short --branch`，不要复用旧聊天快照。
+- root push、PR、deploy、sync、remote mutation 默认继续阻断；任何 root 到 JetScope remote 的发布路径都必须先做单独分支和目标匹配审查。
+- 现有 Obsidian 策略保持单向本地桥：只把 workspace/project metadata 写到本地 vault，不读取 vault 正文，不发布 vault-derived reports。
+- `PLANS.md` 继续作为根工作区规划入口；`PROJECT_PROGRESS.md` 继续作为当前状态 dashboard；本轮不新建 `PLAN.md`。
+
+### Existing Assets
+
+- 根级规划和状态入口：`PLANS.md`、`PROJECT_PROGRESS.md`。
+- Workspace automation 基础设施：AI tooling daily check、dirty tree guard、review/push guard、skill-chain dashboard、ai-trace、workspace automation scripts。
+- 已有安全边界：root `.gitignore` 对 home/config/runtime/project surfaces 做默认隐藏，push 前要求 `scripts/security_check.sh` 与 `scripts/review_push_guard.sh origin/main`。
+- 已有开发控制面：self-healing dev-control loop、task-board、safe-local runner、Telegram preview 控制面、OpenCode/Codex handoff 记录。
+- 已有知识镜像策略：Obsidian bridge 只做本地 metadata sink，不把 vault 当作事实源或发布源。
+
+### Gaps
+
+- 没有统一的 repo-evolver 闭环：扫描、候选报告、单任务执行、复审、验证摘要之间仍是松散流程。
+- 文档事实声明未绑定 source-of-truth；版本、日期、latest/current、命令、API 行为、支持矩阵等内容容易 stale。
+- Skill 漂移治理还不是自动 gate；重复 skill、archive copy、active copy、frontmatter、symlink 策略缺少统一检查。
+- Obsidian 镜像缺 privacy review gate；vault 内容、note excerpt、tag/link/report 的发布边界需要显式阻断。
+- Git 备份和发布治理仍受 root/JetScope remote 混居影响；root governance branch、local backup branch、PR target policy 需要先定义。
+
+### Boundaries
+
+- 允许：只读扫描、候选报告、单个低风险任务执行、Claude/Codex review、focused validation、local progress/dashboard 写回。
+- 禁止默认开启：push、PR、merge、deploy、sync、remote mutation、Obsidian apply、bulk rewrite、跨仓库批量修改、destructive git。
+- 禁止触碰：JetScope 产品文件、runtime/private dirs、Obsidian vault 正文、`.env*`、secret、未分类本地私有路径。
+- root `/Users/yumei` 到 JetScope remote 默认 blocked，除非先形成单独 branch/PR 方案，并通过内容-目标匹配、敏感文件、review/push guard。
+- 删除、迁移、归档、symlink 政策变更必须有 rollback 包和明确批准。
+
+### Phases
+
+#### Phase 0: Freeze Snapshot
+
+- 记录 root Git 状态：ahead/behind、dirty files、未跟踪本地私有路径、当前 remote 风险。
+- 明确本阶段禁止 push、PR、deploy、sync、remote mutation、Obsidian apply、bulk rewrite。
+- 把 snapshot 写入 `PROJECT_PROGRESS.md` 或更近的本地 progress surface，避免后续执行只依赖聊天上下文。
+
+#### Phase 1: Repository Boundary Closure
+
+- 明确 `/Users/yumei`、`/Users/yumei/workspace-ops`、`~/projects/jetscope` 的职责边界。
+- 在 governance 文件迁移完成前，不把 workspace governance 推到 JetScope remote。
+- 为 root governance 变更定义 local-only、public-candidate、never-push 三类路径，并在 push gate 前强制分类。
+
+#### Phase 2: Minimal Repo Evolver Loop
+
+- 第一版只运行低风险闭环：scan -> candidate report -> 单任务 Codex execution -> Claude review -> validation summary。
+- 默认不启用 remote、deploy、Obsidian apply、bulk rewrite、跨仓库批量修改。
+- 单任务 execution 必须带允许修改路径、禁止修改路径、最小验证命令和可检查 Done criteria。
+
+#### Phase 3: Documentation Fact Verification
+
+- 建立文档事实校验规则：版本、日期、latest/current、命令、API 行为、支持矩阵等声明必须绑定本地证据或外部可信源。
+- 第一版只报告 stale、unsupported、unverified，不自动重写文档正文。
+- 外部事实需要可信来源；高变动事实不得只依赖模型记忆。
+
+#### Phase 4: Agent Skill Evolution
+
+- 对 skills 做 frontmatter lint、重复/漂移检查、active skill gate、archive/symlink policy 检查。
+- 将 active skill、archive copy、project-local override 的优先级写成可验证规则。
+- 删除、迁移、归档 skill 前必须生成 rollback 包，并等待明确批准。
+
+#### Phase 5: Obsidian Knowledge Mirror Governance
+
+- 保持 Obsidian bridge 单向本地写入默认；Obsidian 不是第二事实源。
+- 发布任何 vault 内容、note excerpt、tag/link/report 前必须经过 privacy review。
+- vault-derived report 默认 local-only；除非人工批准并通过脱敏审查，否则不得进入 public docs、GitHub 或网站。
+
+#### Phase 6: Git Backup And Promotion Policy
+
+- 定义 local backup branch、root governance branch、public promotion branch 的用途和互斥边界。
+- push checklist 必须覆盖内容-目标匹配、zone classification、secret scan、root/JetScope remote 风险、review/push guard 结果。
+- root 到 JetScope remote 默认 blocked；只有单独 branch/PR 方案通过后，才能进入下一步发布讨论。
+
+### Done Criteria
+
+- repo-evolver 有一个最小可运行的只读/低风险闭环，能产出候选报告、单任务执行记录、复审意见和验证摘要。
+- 文档事实校验能报告 stale、unsupported、unverified 声明，并能指出本地证据或外部可信源缺口。
+- skill 漂移检查能识别重复、archive/active 冲突、frontmatter 缺失和 symlink policy 风险。
+- Obsidian bridge 保持单向本地 metadata mirror；任何 vault-derived 发布动作都被 privacy review gate 阻断到人工批准。
+- Git 备份和 promotion policy 明确 root governance 与 JetScope 产品 remote 的边界；默认不允许 root governance 误推到 JetScope remote。
+- `PLANS.md` 和 `PROJECT_PROGRESS.md` 分工清楚：前者记录计划和 backlog，后者记录当前状态和验证证据。
