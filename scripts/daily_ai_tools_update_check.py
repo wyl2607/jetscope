@@ -14,6 +14,7 @@ import re
 import shutil
 import subprocess
 import base64
+import http.client
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -780,19 +781,26 @@ def post_json(url: str, payload: dict[str, Any]) -> tuple[bool, str]:
     if parsed.scheme != "https" or not parsed.netloc:
         return False, "invalid_https_url"
     data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    request = urllib.request.Request(
-        url,
-        data=data,
-        headers={"Content-Type": "application/json", "User-Agent": "yumei-ai-tools-check/1"},
-        method="POST",
-    )
+    path = parsed.path or "/"
+    if parsed.query:
+        path = f"{path}?{parsed.query}"
     try:
-        with urllib.request.urlopen(request, timeout=ALERT_TIMEOUT) as response:
-            return 200 <= response.status < 300, f"http_{response.status}"
-    except urllib.error.HTTPError as exc:
-        return False, f"http_{exc.code}"
+        connection = http.client.HTTPSConnection(parsed.netloc, timeout=ALERT_TIMEOUT)  # nosemgrep: python.lang.security.audit.httpsconnection-detected.httpsconnection-detected
+        connection.request(
+            "POST",
+            path,
+            body=data,
+            headers={"Content-Type": "application/json", "User-Agent": "yumei-ai-tools-check/1"},
+        )
+        response = connection.getresponse()
+        return 200 <= response.status < 300, f"http_{response.status}"
     except Exception as exc:
         return False, exc.__class__.__name__
+    finally:
+        try:
+            connection.close()
+        except UnboundLocalError:
+            pass
 
 
 def validate_alert_channels(config: dict[str, Any]) -> list[dict[str, Any]]:

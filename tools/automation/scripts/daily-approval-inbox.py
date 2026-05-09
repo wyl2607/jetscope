@@ -112,7 +112,7 @@ def packet_task_id(packet: Dict[str, Any]) -> str:
             packet.get("goal"),
         )
     )
-    digest = hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
+    digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:12]
     return f"packet-{digest}"
 
 

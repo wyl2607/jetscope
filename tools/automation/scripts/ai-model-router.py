@@ -26,6 +26,12 @@ DEFAULT_TIMEOUT_SECONDS = 45
 MAX_CAPTURE_CHARS = 8000
 OPENCODE_HELPER = Path("/Users/yumei/vibecoding/.codex/skills/opencode-model-router/scripts/opencode-model-call")
 COPILOT_HELPER = Path("/Users/yumei/vibecoding/.codex/skills/opencode-model-router/scripts/copilot-call")
+ALLOWED_EXECUTABLES = {
+    str(OPENCODE_HELPER),
+    str(COPILOT_HELPER),
+    "cmd",
+    "codex",
+}
 OPENCODE_POLICY_MODELS = "$opencode-policy"
 OPENCODE_DAILY_FREE_MODELS = "$opencode-daily-free"
 OPENCODE_STRONG_GO_MODELS = "$opencode-strong-go"
@@ -429,9 +435,13 @@ def execute_request(request: Dict[str, Any], state_path: Path = DEFAULT_STATE) -
             "Pass --execute to call the selected external lane.",
         ]
         return result
+    if not argv or argv[0] not in ALLOWED_EXECUTABLES:
+        result["error"] = "unsupported executable lane"
+        return result
 
     try:
-        completed = subprocess.run(
+        # argv is built only by argv_for() from allowlisted local lane executables.
+        completed = subprocess.run(  # nosemgrep
             argv,
             env=env_for(model),
             text=True,

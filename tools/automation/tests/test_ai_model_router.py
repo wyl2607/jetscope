@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest import mock
 
 
-SCRIPT = Path("/Users/yumei/tools/automation/scripts/ai-model-router.py")
+SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "ai-model-router.py"
 
 
 def _load_module():

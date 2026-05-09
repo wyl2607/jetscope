@@ -10,7 +10,7 @@ import subprocess
 import re
 from pathlib import Path
 from datetime import datetime
-from typing import List, Optional, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 # 所有受管理的项目
 PROJECTS = {
@@ -191,9 +191,9 @@ def is_actionable_todo_line(raw: str) -> bool:
     return not any(pattern in raw for pattern in TODO_SCANNER_META_PATTERNS)
 
 
-def run(cmd: str, cwd: Optional[str] = None, timeout: int = 30) -> Tuple[int, str]:
+def run(cmd: Sequence[str], cwd: Optional[str] = None, timeout: int = 30) -> Tuple[int, str]:
     try:
-        r = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=cwd, timeout=timeout)
+        r = subprocess.run(cmd, shell=False, capture_output=True, text=True, cwd=cwd, timeout=timeout)
         return r.returncode, (r.stdout + r.stderr).strip()
     except Exception as e:
         return 1, str(e)
@@ -251,7 +251,7 @@ def scan_outdated_deps(proj: str, proj_dir: str, stack: List[str]) -> list:
     if "node" in stack:
         pkg_json = os.path.join(proj_dir, "package.json")
         if os.path.exists(pkg_json):
-            code, out = run("npm outdated --json 2>/dev/null || true", cwd=proj_dir, timeout=60)
+            code, out = run(["npm", "outdated", "--json"], cwd=proj_dir, timeout=60)
             try:
                 outdated = json.loads(out) if out else {}
                 if outdated:
@@ -278,7 +278,7 @@ def scan_outdated_deps(proj: str, proj_dir: str, stack: List[str]) -> list:
     if "python" in stack:
         req_files = list(Path(proj_dir).glob("requirements*.txt")) + list(Path(proj_dir).glob("pyproject.toml"))
         if req_files:
-            code, out = run("pip list --outdated --format=json 2>/dev/null || true", cwd=proj_dir, timeout=60)
+            code, out = run(["pip", "list", "--outdated", "--format=json"], cwd=proj_dir, timeout=60)
             try:
                 outdated = json.loads(out) if out else []
                 if outdated:
@@ -312,7 +312,7 @@ def scan_lint_issues(proj: str, proj_dir: str, stack: List[str]) -> list:
         )
         if eslint_cfg:
             code, out = run(
-                "npx eslint . --format json --max-warnings 0 2>/dev/null || true",
+                ["npx", "eslint", ".", "--format", "json", "--max-warnings", "0"],
                 cwd=proj_dir, timeout=60
             )
             try:
@@ -337,7 +337,7 @@ def scan_lint_issues(proj: str, proj_dir: str, stack: List[str]) -> list:
 
     if "python" in stack:
         code, out = run(
-            "python3 -m pylint . --exit-zero --output-format=json 2>/dev/null || true",
+            ["python3", "-m", "pylint", ".", "--exit-zero", "--output-format=json"],
             cwd=proj_dir, timeout=60
         )
         try:
