@@ -107,6 +107,38 @@ test('source coverage contract owns trust-state and lag formatting helpers', asy
   assert.doesNotMatch(panelSource, /function formatLag\(/);
 });
 
+test('sources page keeps a light data-review theme', async () => {
+  const files = [
+    new URL('../apps/web/app/sources/page.tsx', import.meta.url),
+    new URL('../apps/web/components/provenance-summary.tsx', import.meta.url),
+    new URL('../apps/web/components/source-coverage-panel.tsx', import.meta.url)
+  ];
+
+  for (const file of files) {
+    const source = await readFile(file, 'utf8');
+    assert.doesNotMatch(
+      source,
+      /bg-slate-950(?!\/)|bg-slate-950\/|bg-slate-900\/70|from-slate-900|to-black|text-white/,
+      `${file.pathname} should not hard-code dark sources surfaces`
+    );
+  }
+});
+
+test('sources page exposes click-through filters and row focus actions', async () => {
+  const source = await readFile(new URL('../apps/web/app/sources/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /filterRaw/);
+  assert.match(source, /rowMatchesSourceFilter/);
+  assert.match(source, /visibleRows/);
+  assert.match(source, /key: 'review', label: '需复核'/);
+  assert.match(source, /key: 'fallback', label: '回退'/);
+  assert.match(source, /key: 'proxy', label: '代理'/);
+  assert.match(source, /key: 'live', label: '实时'/);
+  assert.match(source, /href=\{sourceFilterHref\(filter\.key\)\}/);
+  assert.match(source, /href=\{sourceFocusHref\(row\.metricKey\)\}/);
+  assert.ok(source.includes('正在显示 {visibleRows.length} / {readModel.rows.length}'));
+});
+
 test('sources read model keeps summary aggregation centralized', async () => {
   const readModelSource = await readFile(new URL('../apps/web/lib/sources-read-model.ts', import.meta.url), 'utf8');
 
@@ -336,8 +368,8 @@ test('getSourcesReadModel maps live coverage, volatility levels, and notes for t
   assert.ok(readModel.completeness < 1.0);
   assert.equal(readModel.rows[0].source, 'EIA Daily Prices');
   assert.equal(readModel.rows[0].trustState, 'live');
-  assert.equal(readModel.rows[0].sourceType, 'market primary');
-  assert.match(readModel.rows[0].degradedReason, /live primary/);
+  assert.equal(readModel.rows[0].sourceType, '市场主来源');
+  assert.match(readModel.rows[0].degradedReason, /实时主来源/);
   assert.equal(readModel.rows[0].lag, '45m');
   assert.equal(readModel.rows[1].source, 'FRED');
   assert.equal(readModel.rows[1].value, '1.043 USD/L');
@@ -345,7 +377,7 @@ test('getSourcesReadModel maps live coverage, volatility levels, and notes for t
   assert.equal(readModel.rows[1].change30d, '+21.70%');
   assert.equal(readModel.rows[2].trustState, 'fallback');
   assert.equal(readModel.rows[2].note, 'CBAM 88.00 EUR × FX 1.0923');
-  assert.equal(readModel.rows[4].surface, 'Rotterdam jet fuel');
+  assert.equal(readModel.rows[4].surface, 'Rotterdam 航煤');
   assert.equal(readModel.rows[4].source, 'rotterdam-jet-direct');
   assert.equal(readModel.rows[4].trustState, 'proxy');
   assert.equal(readModel.rows[4].note, 'ARA direct quote');
@@ -353,7 +385,7 @@ test('getSourcesReadModel maps live coverage, volatility levels, and notes for t
   assert.equal(readModel.summary.liveCount, 2);
   assert.equal(readModel.summary.proxyCount, 1);
   assert.equal(readModel.summary.fallbackCount, 4);
-  assert.match(readModel.summary.trustLabel, /verify degraded inputs/);
+  assert.match(readModel.summary.trustLabel, /核验降级输入/);
   assert.notEqual(readModel.rows[1].sparkline, '');
 });
 
@@ -429,7 +461,7 @@ test('getSourcesReadModel falls back to a generic degraded state when coverage A
 
   assert.equal(readModel.isFallback, true);
   assert.equal(readModel.overallStatus, 'degraded');
-  assert.match(readModel.error ?? '', /coverage contract missing metrics/);
+  assert.match(readModel.error ?? '', /来源覆盖合约缺少指标/);
   assert.equal(readModel.coverageMetrics.length, 7);
   assert.equal(readModel.rows.length, 7);
   assert.deepEqual(
@@ -444,20 +476,20 @@ test('getSourcesReadModel falls back to a generic degraded state when coverage A
       'germany_premium_pct'
     ]
   );
-  assert.equal(readModel.rows[0].source, 'coverage unavailable');
+  assert.equal(readModel.rows[0].source, '覆盖不可用');
   assert.equal(readModel.rows[0].status, 'unknown');
   assert.equal(readModel.rows[0].trustState, 'fallback');
-  assert.match(readModel.rows[0].degradedReason, /fallback path/);
+  assert.match(readModel.rows[0].degradedReason, /回退路径/);
   assert.equal(readModel.rows[0].scope, 'unknown · coverage_unavailable');
-  assert.equal(readModel.rows[0].note, 'fallback');
+  assert.equal(readModel.rows[0].note, '回退');
   assert.equal(readModel.rows[1].value, '1.010 USD/L');
   assert.equal(readModel.rows[2].value, '90.50 USD/tCO2');
   assert.equal(readModel.rows[3].value, '1.080 USD/L');
-  assert.equal(readModel.rows[4].value, 'n/a');
+  assert.equal(readModel.rows[4].value, '无数据');
   assert.equal(readModel.degraded, true);
   assert.equal(readModel.completeness, 0.0);
   assert.equal(readModel.summary.fallbackCount, 7);
-  assert.match(readModel.summary.degradedReason, /coverage completeness 0%/);
+  assert.match(readModel.summary.degradedReason, /覆盖完整度 0%/);
 });
 
 test('getSourcesReadModel backfills missing metrics when coverage is partial (5 of 7)', async (t) => {

@@ -61,3 +61,15 @@ class MarketHistoryResponse(BaseModel):
 class MarketRefreshResponse(BaseModel):
     accepted: bool
     message: str
+    refreshed_at: datetime | None = None
+    source_status: str | None = None
+    persisted_metric_count: int | None = None
+    ingest: str | None = None
+
+
+class MarketHistoryBackfillResponse(BaseModel):
+    accepted: bool
+    message: str
+    inserted_metric_count: int
+    days_requested: int
+    sources: list[str] = Field(default_factory=list)

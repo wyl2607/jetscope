@@ -1,4 +1,22 @@
 {
+  "shell": {
+    "nav": {
+      "dashboard": "Entscheidungscockpit",
+      "crisis": "Krisenmonitor",
+      "scenarios": "Szenarien",
+      "research": "Forschungssignale",
+      "reports": "Berichte",
+      "sources": "Quellen",
+      "admin": "Admin"
+    }
+  },
+  "home": {
+    "title": "JetScope Einstieg für Luftfahrtkraftstoff-Entscheidungen",
+    "description": "Ein Fünf-Minuten-Überblick über europäische Jet-A-Stresssignale, SAF-Kipppunkt-Ereignisse, EU-ETS-Kosteneffekte und KI-gestützte Research-Workflows.",
+    "primary_cta": "Entscheidungscockpit öffnen",
+    "scenario_cta": "Szenario testen",
+    "sources_cta": "Quellenqualität prüfen"
+  },
   "dashboard": {
     "market_price": "Marktpreis",
     "carbon_intensity": "Kohlenstoffintensität",
@@ -14,7 +32,7 @@
     "germany_premium": "Deutschland Prämie",
     "rotterdam_port": "Rotterdam Emissionen",
     "eu_ets_volume": "ETS Volumen",
-    "freshness": "Datalalter",
+    "freshness": "Datenalter",
     "source_status": "Quellengesundheit"
   },
   "status": {

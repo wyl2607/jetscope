@@ -7,6 +7,8 @@ import {
   type SourceCoverageTrustState
 } from './source-coverage-contract';
 
+const DEFAULT_FETCH_TIMEOUT_MS = 2000;
+
 type MarketSnapshot = {
   generated_at: string;
   source_status: { overall: string };
@@ -83,12 +85,12 @@ const PRIMARY_METRIC_ORDER = [
 
 const SURFACE_LABELS: Record<string, string> = {
   brent_usd_per_bbl: 'Brent',
-  jet_usd_per_l: 'Jet fuel',
-  carbon_proxy_usd_per_t: 'Carbon proxy',
-  jet_eu_proxy_usd_per_l: 'Jet fuel (EU proxy)',
-  rotterdam_jet_fuel_usd_per_l: 'Rotterdam jet fuel',
+  jet_usd_per_l: '航煤',
+  carbon_proxy_usd_per_t: '碳价代理',
+  jet_eu_proxy_usd_per_l: '航煤（欧盟代理）',
+  rotterdam_jet_fuel_usd_per_l: 'Rotterdam 航煤',
   eu_ets_price_eur_per_t: 'EU ETS',
-  germany_premium_pct: 'Germany premium'
+  germany_premium_pct: '德国溢价'
 };
 
 function formatNumber(value: number, digits = 2) {
@@ -99,12 +101,12 @@ function formatNumber(value: number, digits = 2) {
 }
 
 function sourceLabel(raw?: string) {
-  if (!raw) return "n/a";
+  if (!raw) return "无数据";
   if (raw === "eia") return "EIA Daily Prices";
   if (raw === "fred") return "FRED";
   if (raw === "cbam+ecb") return "CBAM + ECB";
   if (raw === "ara-rotterdam-public") return "ARA/Rotterdam (public)";
-  if (raw === "brent-derived") return "Brent-derived fallback";
+  if (raw === "brent-derived") return "Brent 派生回退";
   return raw;
 }
 
@@ -113,22 +115,22 @@ function surfaceLabel(metricKey: string) {
 }
 
 function statusLabel(raw?: string) {
-  if (!raw) return "unknown";
+  if (!raw) return "未知";
   return raw;
 }
 
 function sourceTypeLabel(raw?: string): string {
-  if (!raw) return 'unknown';
-  if (raw === 'market_primary') return 'market primary';
-  if (raw === 'public_proxy') return 'public proxy';
-  if (raw === 'regulatory_proxy') return 'regulatory proxy';
-  if (raw === 'derived') return 'derived proxy';
-  if (raw === 'official') return 'official';
+  if (!raw) return '未知';
+  if (raw === 'market_primary') return '市场主来源';
+  if (raw === 'public_proxy') return '公开代理';
+  if (raw === 'regulatory_proxy') return '监管代理';
+  if (raw === 'derived') return '派生代理';
+  if (raw === 'official') return '官方来源';
   return raw.replaceAll('_', ' ');
 }
 
 function formatChange(value?: number | null) {
-  if (!Number.isFinite(value ?? NaN)) return "n/a";
+  if (!Number.isFinite(value ?? NaN)) return "无数据";
   const numeric = Number(value);
   const sign = numeric > 0 ? "+" : "";
   return `${sign}${numeric.toFixed(2)}%`;
@@ -171,7 +173,7 @@ function metricHistoryFor(history: MarketHistory | null, key: string): MarketHis
 
 function formatMetricValue(metricKey: string, value: number | undefined): string {
   if (!Number.isFinite(value ?? NaN)) {
-    return 'n/a';
+    return '无数据';
   }
   if (metricKey === 'brent_usd_per_bbl') {
     return `${formatNumber(Number(value))} USD/bbl`;
@@ -190,7 +192,7 @@ function formatMetricValue(metricKey: string, value: number | undefined): string
 
 function buildMetricNote(metric: SourceCoverageMetric): string {
   if (metric.error) {
-    return metric.error;
+    return sourceErrorLabel(metric.error);
   }
   if (typeof metric.cbam_eur === 'number' && typeof metric.usd_per_eur === 'number') {
     return `CBAM ${formatNumber(metric.cbam_eur)} EUR × FX ${formatNumber(metric.usd_per_eur, 4)}`;
@@ -200,18 +202,24 @@ function buildMetricNote(metric: SourceCoverageMetric): string {
     parts.push(metric.note);
   }
   if (metric.fallback_used) {
-    parts.push('fallback');
+    parts.push('回退');
   }
-  return parts.join(' | ') || 'live';
+  return parts.join(' | ') || '实时';
 }
 
 function degradedReasonFor(metric: SourceCoverageMetric): string {
-  if (metric.error) return metric.error;
-  if (metric.fallback_used && metric.status === 'seed') return 'seed fallback used because live coverage is not available';
-  if (metric.fallback_used) return 'fallback path used for this metric';
-  if (metric.status !== 'ok') return `source status is ${metric.status}`;
-  if (metric.source_type.includes('proxy') || metric.source_type === 'derived') return 'derived or proxy metric; validate before high-stakes decisions';
-  return 'live primary or official source with no degraded flag';
+  if (metric.error) return sourceErrorLabel(metric.error);
+  if (metric.fallback_used && metric.status === 'seed') return '实时覆盖不可用，已使用种子回退值';
+  if (metric.fallback_used) return '该指标使用了回退路径';
+  if (metric.status !== 'ok') return `来源状态为 ${metric.status}`;
+  if (metric.source_type.includes('proxy') || metric.source_type === 'derived') return '派生或代理指标；用于高风险决策前需要复核';
+  return '实时主来源或官方来源，未标记降级';
+}
+
+function sourceErrorLabel(error: string): string {
+  if (error === 'fallback_used') return '实时来源不可用，当前值来自回退路径';
+  if (error === 'source_unavailable') return '来源暂不可用';
+  return error;
 }
 
 function averageFinite(values: number[]): number {
@@ -253,19 +261,19 @@ function buildSummary(rows: SourcesReadModel['rows'], completeness: number, degr
   const { liveCount, proxyCount, fallbackCount, degradedCount } = summarizeCoverageTrust(rows);
   const averageConfidence = averageFinite(rows.map((row) => row.confidenceScore));
   const freshestLag = freshestLagMinutes(rows);
-  const freshnessLabel = freshestLag == null ? 'freshness unknown' : `freshest source ${formatSourceCoverageLag(freshestLag)}`;
+  const freshnessLabel = freshestLag == null ? '新鲜度未知' : `最新来源 ${formatSourceCoverageLag(freshestLag)}`;
   const trustLabel = degraded || fallbackCount > 0 || degradedCount > 0
-    ? 'decision support: verify degraded inputs'
+    ? '决策支持：请核验降级输入'
     : proxyCount > 0
-      ? 'decision support: proxy-aware'
-      : 'decision support: live-source ready';
+      ? '决策支持：含代理来源'
+      : '决策支持：实时来源就绪';
   const degradedReason = degraded
-    ? `coverage completeness ${Math.round(completeness * 100)}%; ${fallbackCount} fallback, ${degradedCount} degraded`
+    ? `覆盖完整度 ${Math.round(completeness * 100)}%；${fallbackCount} 个回退，${degradedCount} 个降级`
     : fallbackCount > 0
-      ? `${fallbackCount} metric${fallbackCount === 1 ? '' : 's'} use fallback values`
+      ? `${fallbackCount} 个指标使用回退值`
       : proxyCount > 0
-        ? `${proxyCount} metric${proxyCount === 1 ? '' : 's'} are proxy or derived estimates`
-        : 'all metrics are live primary or official sources';
+        ? `${proxyCount} 个指标为代理或派生估算`
+        : '所有指标均来自实时主来源或官方来源';
 
   return {
     liveCount,
@@ -324,7 +332,7 @@ function buildRows(
 function buildGenericFallbackCoverageMetrics(): SourceCoverageMetric[] {
   return PRIMARY_METRIC_ORDER.map((metricKey) => ({
     metric_key: metricKey,
-    source_name: 'coverage unavailable',
+    source_name: '覆盖不可用',
     source_type: 'unknown',
     confidence_score: 0,
     lag_minutes: null,
@@ -357,7 +365,7 @@ function fallback(
     summary: buildSummary(rows, 0, true),
     rows,
     isFallback: true,
-    error: error instanceof Error ? error.message : "unknown error",
+    error: error instanceof Error ? error.message : "未知错误",
     completeness: 0.0,
     degraded: true
   };
@@ -365,7 +373,11 @@ function fallback(
 
 export async function getSourcesReadModel(): Promise<SourcesReadModel> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
+  const timeoutMs = Number(process.env.JETSCOPE_MARKET_FETCH_TIMEOUT_MS ?? DEFAULT_FETCH_TIMEOUT_MS);
+  const timeout = setTimeout(
+    () => controller.abort(),
+    Number.isFinite(timeoutMs) && timeoutMs >= 100 ? timeoutMs : DEFAULT_FETCH_TIMEOUT_MS
+  );
   let snapshotPayload: MarketSnapshot | undefined;
   let historyPayload: MarketHistory | null = null;
   try {
@@ -396,7 +408,7 @@ export async function getSourcesReadModel(): Promise<SourcesReadModel> {
       ? ((await coverageResponse.json()) as SourceCoverageResponse)
       : null;
     if (!coveragePayload?.metrics?.length) {
-      throw new Error('coverage contract missing metrics');
+      throw new Error('来源覆盖合约缺少指标');
     }
     const coverageMetrics = sortCoverageMetrics(coveragePayload.metrics);
 

@@ -1,4 +1,22 @@
 {
+  "shell": {
+    "nav": {
+      "dashboard": "决策驾驶舱",
+      "crisis": "危机监测",
+      "scenarios": "情景推演",
+      "research": "研究信号",
+      "reports": "分析报告",
+      "sources": "数据来源",
+      "admin": "管理"
+    }
+  },
+  "home": {
+    "title": "JetScope 航油转型决策入口",
+    "description": "用五分钟了解欧洲航油压力信号、SAF 转折点事件、EU ETS 成本影响与 AI 辅助研究工作流。",
+    "primary_cta": "打开决策驾驶舱",
+    "scenario_cta": "测试情景",
+    "sources_cta": "查看来源质量"
+  },
   "dashboard": {
     "market_price": "市场价格",
     "carbon_intensity": "碳强度",

@@ -49,13 +49,46 @@ function finiteDraftNumber(value: string, field: string): number {
   return parsed;
 }
 
+type RefreshEvidence = {
+  refreshedAt: string;
+  sourceStatus: string;
+  persistedMetricCount: number;
+  snapshotGeneratedAt: string;
+  snapshotOverall: string;
+};
+
+async function readJson(response: Response): Promise<unknown> {
+  try {
+    return await response.json();
+  } catch {
+    return {};
+  }
+}
+
+function bodyRecord(body: unknown): Record<string, unknown> {
+  return body && typeof body === 'object' && !Array.isArray(body) ? body as Record<string, unknown> : {};
+}
+
+function friendlyAdminError(body: unknown, status: number, fallback: string): string {
+  const record = bodyRecord(body);
+  const raw = String(record.error ?? record.detail ?? '');
+  if (raw.includes('Server admin token is not configured')) {
+    return '后端没有配置 JETSCOPE_ADMIN_TOKEN，本次写操作没有进入本地数据库。请用带管理令牌的 API 服务重启后再试。';
+  }
+  if (status === 401 || raw.includes('Invalid admin token')) {
+    return '管理令牌不匹配，后端拒绝写入。';
+  }
+  return raw || `${fallback}（HTTP ${status}）`;
+}
+
 export function AdminDataOps() {
   const [pathwaysJson, setPathwaysJson] = useState(PATHWAYS_PLACEHOLDER);
   const [policiesJson, setPoliciesJson] = useState(POLICIES_PLACEHOLDER);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState('Ready');
+  const [status, setStatus] = useState('就绪');
   const [error, setError] = useState<string | null>(null);
+  const [refreshEvidence, setRefreshEvidence] = useState<RefreshEvidence | null>(null);
   const [adminToken, setAdminToken] = useState('');
   const [draftPathwayId, setDraftPathwayId] = useState('new-pathway');
   const [draftPathwayName, setDraftPathwayName] = useState('New Pathway');
@@ -64,7 +97,7 @@ export function AdminDataOps() {
   const [draftPolicyYear, setDraftPolicyYear] = useState('2040');
   const [draftPolicySaf, setDraftPolicySaf] = useState('30');
   const [draftPolicySynthetic, setDraftPolicySynthetic] = useState('12');
-  const [draftPolicyLabel, setDraftPolicyLabel] = useState('Draft target');
+  const [draftPolicyLabel, setDraftPolicyLabel] = useState('草案目标');
 
   async function loadAll() {
     setLoading(true);
@@ -74,21 +107,18 @@ export function AdminDataOps() {
         fetch('/api/pathways', { cache: 'no-store' }),
         fetch('/api/policies/refuel-eu', { cache: 'no-store' })
       ]);
-      const [pathwaysPayload, policiesPayload] = await Promise.all([
-        pathwaysRes.json(),
-        policiesRes.json()
-      ]);
+      const [pathwaysPayload, policiesPayload] = await Promise.all([readJson(pathwaysRes), readJson(policiesRes)]);
       if (!pathwaysRes.ok) {
-        throw new Error(pathwaysPayload?.error ?? `Pathways HTTP ${pathwaysRes.status}`);
+        throw new Error(friendlyAdminError(pathwaysPayload, pathwaysRes.status, '加载路径失败'));
       }
       if (!policiesRes.ok) {
-        throw new Error(policiesPayload?.error ?? `Policies HTTP ${policiesRes.status}`);
+        throw new Error(friendlyAdminError(policiesPayload, policiesRes.status, '加载政策失败'));
       }
       setPathwaysJson(stringify(pathwaysPayload));
       setPoliciesJson(stringify(policiesPayload));
-      setStatus('Loaded pathways + policies');
+      setStatus('已加载路径与政策');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load admin data');
+      setError(err instanceof Error ? err.message : '加载管理数据失败');
     } finally {
       setLoading(false);
     }
@@ -107,14 +137,14 @@ export function AdminDataOps() {
         },
         body: JSON.stringify(payload)
       });
-      const body = await response.json();
+      const body = await readJson(response);
       if (!response.ok) {
-        throw new Error(body?.error ?? `HTTP ${response.status}`);
+        throw new Error(friendlyAdminError(body, response.status, '保存路径失败'));
       }
       setPathwaysJson(stringify(body));
-      setStatus('Pathways saved');
+      setStatus('路径已保存');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save pathways');
+      setError(err instanceof Error ? err.message : '保存路径失败');
     } finally {
       setSaving(false);
     }
@@ -133,14 +163,14 @@ export function AdminDataOps() {
         },
         body: JSON.stringify(payload)
       });
-      const body = await response.json();
+      const body = await readJson(response);
       if (!response.ok) {
-        throw new Error(body?.error ?? `HTTP ${response.status}`);
+        throw new Error(friendlyAdminError(body, response.status, '保存政策失败'));
       }
       setPoliciesJson(stringify(body));
-      setStatus('Policies saved');
+      setStatus('政策已保存');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save policies');
+      setError(err instanceof Error ? err.message : '保存政策失败');
     } finally {
       setSaving(false);
     }
@@ -154,13 +184,33 @@ export function AdminDataOps() {
         method: 'POST',
         headers: { 'x-admin-token': adminToken }
       });
-      const body = await response.json();
+      const body = await readJson(response);
       if (!response.ok) {
-        throw new Error(body?.error ?? `HTTP ${response.status}`);
+        throw new Error(friendlyAdminError(body, response.status, '触发市场刷新失败'));
       }
-      setStatus(body?.message ?? 'Market refresh triggered');
+      const snapshotResponse = await fetch('/api/market', { cache: 'no-store' });
+      const snapshot = await readJson(snapshotResponse);
+      if (!snapshotResponse.ok) {
+        throw new Error(friendlyAdminError(snapshot, snapshotResponse.status, '读取刷新后市场快照失败'));
+      }
+      const refreshBody = bodyRecord(body);
+      const snapshotBody = bodyRecord(snapshot);
+      const persistedMetricCount = Number(refreshBody.persisted_metric_count ?? 0);
+      const refreshedAt = String(refreshBody.refreshed_at ?? '');
+      const sourceStatus = String(refreshBody.source_status ?? 'unknown');
+      const snapshotStatus = snapshotBody.source_status && typeof snapshotBody.source_status === 'object'
+        ? snapshotBody.source_status as Record<string, unknown>
+        : {};
+      setRefreshEvidence({
+        refreshedAt,
+        sourceStatus,
+        persistedMetricCount,
+        snapshotGeneratedAt: String(snapshotBody.generated_at ?? refreshedAt),
+        snapshotOverall: String(snapshotStatus.overall ?? sourceStatus)
+      });
+      setStatus(`市场刷新已写入本地数据库：market_snapshots ${persistedMetricCount} 行，状态 ${sourceStatus}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to trigger market refresh');
+      setError(err instanceof Error ? err.message : '触发市场刷新失败');
     } finally {
       setSaving(false);
     }
@@ -187,10 +237,10 @@ export function AdminDataOps() {
       });
       validatePathwaysPayload(JSON.stringify(list));
       setPathwaysJson(stringify(list));
-      setStatus(`Appended pathway row: ${draftPathwayId}`);
+      setStatus(`已追加路径行：${draftPathwayId}`);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to append pathway draft');
+      setError(err instanceof Error ? err.message : '追加路径草案失败');
     }
   }
 
@@ -205,10 +255,10 @@ export function AdminDataOps() {
       });
       validatePoliciesPayload(JSON.stringify(list));
       setPoliciesJson(stringify(list));
-      setStatus(`Appended policy row: ${draftPolicyYear}`);
+      setStatus(`已追加政策行：${draftPolicyYear}`);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to append policy draft');
+      setError(err instanceof Error ? err.message : '追加政策草案失败');
     }
   }
 
@@ -216,10 +266,10 @@ export function AdminDataOps() {
     try {
       const payload = validatePathwaysPayload(pathwaysJson);
       setPathwaysJson(stringify(payload));
-      setStatus('Pathways JSON validated');
+      setStatus('路径 JSON 已校验');
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Pathways validation failed');
+      setError(err instanceof Error ? err.message : '路径校验失败');
     }
   }
 
@@ -227,48 +277,48 @@ export function AdminDataOps() {
     try {
       const payload = validatePoliciesPayload(policiesJson);
       setPoliciesJson(stringify(payload));
-      setStatus('Policies JSON validated');
+      setStatus('政策 JSON 已校验');
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Policies validation failed');
+      setError(err instanceof Error ? err.message : '政策校验失败');
     }
   }
 
   return (
     <section className="mt-8 grid gap-5 lg:grid-cols-[1fr_1fr]">
-      <InfoCard title="Pathways admin" subtitle="DB-backed /v1/pathways">
+      <InfoCard title="路径管理" subtitle="数据库支撑的 /v1/pathways">
         <div className="space-y-3">
-          <div className="grid gap-3 rounded-xl border border-slate-800 p-3 md:grid-cols-2">
-            <label className="text-xs text-slate-400">
+          <div className="grid gap-3 rounded-xl border border-slate-200 p-3 md:grid-cols-2">
+            <label className="text-xs text-slate-600">
               pathway_id
               <input
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
                 value={draftPathwayId}
                 onChange={(event) => setDraftPathwayId(event.target.value)}
               />
             </label>
-            <label className="text-xs text-slate-400">
+            <label className="text-xs text-slate-600">
               name
               <input
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
                 value={draftPathwayName}
                 onChange={(event) => setDraftPathwayName(event.target.value)}
               />
             </label>
-            <label className="text-xs text-slate-400">
+            <label className="text-xs text-slate-600">
               base_cost_usd_per_l
               <input
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
                 type="number"
                 step="0.01"
                 value={draftPathwayCost}
                 onChange={(event) => setDraftPathwayCost(event.target.value)}
               />
             </label>
-            <label className="text-xs text-slate-400">
+            <label className="text-xs text-slate-600">
               co2_savings_kg_per_l
               <input
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
                 type="number"
                 step="0.01"
                 value={draftPathwaySavings}
@@ -277,15 +327,15 @@ export function AdminDataOps() {
             </label>
             <button
               type="button"
-              className="rounded-lg border border-sky-500/40 bg-sky-500/20 px-3 py-1.5 text-xs font-semibold text-sky-200 md:col-span-2"
+              className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800 md:col-span-2"
               onClick={appendDraftPathway}
               disabled={loading || saving}
             >
-              Append draft pathway row
+              追加路径草案行
             </button>
           </div>
           <textarea
-            className="h-72 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-xs text-white"
+            className="h-72 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-mono text-xs text-slate-950"
             value={pathwaysJson}
             onChange={(event) => setPathwaysJson(event.target.value)}
           />
@@ -295,67 +345,67 @@ export function AdminDataOps() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-300"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700"
               onClick={formatAndValidatePathways}
               disabled={loading || saving}
             >
-              Validate + format
+              校验并格式化
             </button>
             <button
               type="button"
-              className="rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-200"
+              className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800"
               onClick={savePathways}
               disabled={loading || saving || !adminToken}
             >
-              Save pathways
+              保存路径
             </button>
           </div>
         </div>
       </InfoCard>
 
-      <InfoCard title="Policies admin" subtitle="DB-backed /v1/policies/refuel-eu">
+      <InfoCard title="政策管理" subtitle="数据库支撑的 /v1/policies/refuel-eu">
         <div className="space-y-3">
-          <label className="block text-xs uppercase tracking-[0.14em] text-slate-400">
-            Admin token (required for write operations)
+          <label className="block text-xs uppercase tracking-[0.14em] text-slate-600">
+            管理令牌（写操作必需）
             <input
-              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
               value={adminToken}
               onChange={(event) => handleAdminTokenChange(event.target.value)}
               placeholder="x-admin-token"
             />
           </label>
-          <div className="grid gap-3 rounded-xl border border-slate-800 p-3 md:grid-cols-2">
-            <label className="text-xs text-slate-400">
+          <div className="grid gap-3 rounded-xl border border-slate-200 p-3 md:grid-cols-2">
+            <label className="text-xs text-slate-600">
               year
               <input
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
                 type="number"
                 value={draftPolicyYear}
                 onChange={(event) => setDraftPolicyYear(event.target.value)}
               />
             </label>
-            <label className="text-xs text-slate-400">
+            <label className="text-xs text-slate-600">
               label
               <input
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
                 value={draftPolicyLabel}
                 onChange={(event) => setDraftPolicyLabel(event.target.value)}
               />
             </label>
-            <label className="text-xs text-slate-400">
+            <label className="text-xs text-slate-600">
               saf_share_pct
               <input
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
                 type="number"
                 step="0.1"
                 value={draftPolicySaf}
                 onChange={(event) => setDraftPolicySaf(event.target.value)}
               />
             </label>
-            <label className="text-xs text-slate-400">
+            <label className="text-xs text-slate-600">
               synthetic_share_pct
               <input
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
                 type="number"
                 step="0.1"
                 value={draftPolicySynthetic}
@@ -364,15 +414,15 @@ export function AdminDataOps() {
             </label>
             <button
               type="button"
-              className="rounded-lg border border-sky-500/40 bg-sky-500/20 px-3 py-1.5 text-xs font-semibold text-sky-200 md:col-span-2"
+              className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800 md:col-span-2"
               onClick={appendDraftPolicy}
               disabled={loading || saving}
             >
-              Append draft policy row
+              追加政策草案行
             </button>
           </div>
           <textarea
-            className="h-72 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-xs text-white"
+            className="h-72 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-mono text-xs text-slate-950"
             value={policiesJson}
             onChange={(event) => setPoliciesJson(event.target.value)}
           />
@@ -382,40 +432,76 @@ export function AdminDataOps() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-300"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700"
               onClick={formatAndValidatePolicies}
               disabled={loading || saving}
             >
-              Validate + format
+              校验并格式化
             </button>
             <button
               type="button"
-              className="rounded-lg border border-amber-500/40 bg-amber-500/20 px-3 py-1.5 text-xs font-semibold text-amber-200"
+              className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800"
               onClick={savePolicies}
               disabled={loading || saving || !adminToken}
             >
-              Save policies
+              保存政策
             </button>
             <button
               type="button"
-              className="rounded-lg border border-sky-500/40 bg-sky-500/20 px-3 py-1.5 text-xs font-semibold text-sky-200"
+              className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800"
               onClick={triggerMarketRefresh}
               disabled={loading || saving || !adminToken}
             >
-              Trigger market refresh
+              触发市场刷新
             </button>
             <button
               type="button"
-              className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-300"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700"
               onClick={loadAll}
               disabled={loading || saving}
             >
-              Reload
+              重新加载
             </button>
           </div>
-          <p className="text-xs text-slate-400">{status}</p>
+          <p className="text-xs text-slate-600">{status}</p>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-6 text-slate-700">
+            <p className="font-semibold text-slate-950">刷新写入证据</p>
+            {refreshEvidence ? (
+              <div className="mt-2 grid gap-2 md:grid-cols-2">
+                <p>
+                  本地数据库：
+                  <span className="font-mono text-slate-950">
+                    market_snapshots +{refreshEvidence.persistedMetricCount}
+                  </span>
+                </p>
+                <p>
+                  后端刷新状态：
+                  <span className="font-mono text-slate-950">{refreshEvidence.sourceStatus}</span>
+                </p>
+                <p>
+                  写入时间：
+                  <span className="font-mono text-slate-950">{refreshEvidence.refreshedAt}</span>
+                </p>
+                <p>
+                  前端读回：
+                  <span className="font-mono text-slate-950">
+                    /api/market generated_at={refreshEvidence.snapshotGeneratedAt}
+                  </span>
+                </p>
+                <p className="md:col-span-2">
+                  读回状态：
+                  <span className="font-mono text-slate-950">{refreshEvidence.snapshotOverall}</span>
+                </p>
+              </div>
+            ) : (
+              <p className="mt-2">
+                等待刷新。成功后这里会显示 `/api/market/refresh` 写入 FastAPI 本地数据库，再由
+                `/api/market` 读回的证据。
+              </p>
+            )}
+          </div>
           {error ? (
-            <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+            <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
               {error}
             </p>
           ) : null}

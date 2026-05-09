@@ -23,7 +23,7 @@ test('UI preflight keeps admin refresh auth coverage', () => {
   assertOrdered(
     [
       "await page.goto('/admin')",
-      "const triggerMarketRefreshButton = page.getByRole('button', { name: 'Trigger market refresh' })",
+      "const triggerMarketRefreshButton = page.getByRole('button', { name: '触发市场刷新' })",
       "await adminTokenInput.fill(invalidToken)",
       'const invalidRefreshRespPromise = page.waitForResponse',
       "resp.request().method() === 'POST' && resp.url().includes('/api/market/refresh')",
@@ -46,7 +46,7 @@ test('UI preflight keeps admin reload and save coverage after refresh checks', (
       'await pathwaysTextArea.fill',
       'await policiesTextArea.fill',
       'await reloadButton.click()',
-      "hasText: 'Loaded pathways + policies'",
+      "hasText: '已加载路径与政策'",
       'await savePathwaysButton.click()',
       'await savePoliciesButton.click()'
     ],

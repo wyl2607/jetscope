@@ -1,6 +1,6 @@
 import { InfoCard } from '@/components/cards';
 import { Shell } from '@/components/shell';
-import { getGermanyJetFuelReadModel } from '@/lib/product-read-model';
+import { getGermanyJetFuelReadModel } from '@/lib/germany-jet-fuel-read-model';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { buildPageMetadata } from '@/lib/seo';

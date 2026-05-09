@@ -16,45 +16,45 @@ interface Milestone {
 const MILESTONES: Milestone[] = [
   {
     year: 2025,
-    title: 'EU SAF Mandate Effective',
-    description: 'European Union SAF blending obligation begins',
+    title: '欧盟 SAF 强制掺混生效',
+    description: '欧盟 SAF 掺混义务开始执行',
     regions: ['EU'],
-    target: '2% blending requirement at EU airports',
+    target: '欧盟机场 2% 掺混要求',
   },
   {
     year: 2026,
-    title: 'EU e-SAF Sub-target Launch',
-    description: 'Synthetic fuel component introduced',
+    title: '欧盟 e-SAF 子目标启动',
+    description: '合成燃料组成部分纳入强制要求',
     regions: ['EU'],
-    target: '0.7% synthetic fuel mandate',
+    target: '0.7% 合成燃料要求',
   },
   {
     year: 2027,
-    title: 'India SAF Trial Mandate',
-    description: 'International flight SAF requirement begins',
+    title: '印度 SAF 试点要求',
+    description: '国际航班 SAF 要求开始执行',
     regions: ['India'],
-    target: '1% SAF for international flights',
+    target: '国际航班 1% SAF',
   },
   {
     year: 2030,
-    title: 'Major Market Milestones',
-    description: 'Key regulatory targets across major regions',
+    title: '主要市场里程碑',
+    description: '主要区域监管目标集中到期',
     regions: ['EU', 'USA', 'Japan'],
     target: 'EU 6% · USA 3B gallons · Japan 10%',
   },
   {
     year: 2035,
-    title: 'EU SAF Significant Increase',
-    description: 'Major blending target escalation',
+    title: '欧盟 SAF 目标大幅抬升',
+    description: '掺混目标进入显著上行阶段',
     regions: ['EU'],
-    target: '20% blending requirement',
+    target: '20% 掺混要求',
   },
   {
     year: 2050,
-    title: 'Net-Zero Aviation Target',
-    description: 'Industry-wide net-zero commitment',
+    title: '航空净零目标',
+    description: '行业级净零承诺目标',
     regions: ['Global'],
-    target: 'EU 70% · Industry net-zero',
+    target: 'EU 70% · 行业净零',
   },
 ];
 
@@ -104,9 +104,9 @@ export function PolicyTimeline({ currentTimestamp = Date.now(), className = '' }
   return (
     <div className={`policy-timeline ${className}`}>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-100">Policy Milestone Timeline</h2>
+        <h2 className="text-2xl font-bold text-slate-100">政策里程碑时间线</h2>
         <p className="text-sm text-slate-400 mt-1">
-          Regulatory targets based on market data from {new Date(currentTimestamp).toLocaleDateString()}
+          基于 {new Date(currentTimestamp).toLocaleDateString('zh-CN')} 市场数据的监管目标
         </p>
       </div>
 
@@ -135,7 +135,7 @@ export function PolicyTimeline({ currentTimestamp = Date.now(), className = '' }
                 <div className="flex items-baseline gap-3 flex-wrap">
                   <span className="text-3xl font-bold text-slate-100">{milestone.year}</span>
                   <span className={`text-xs font-semibold px-2 py-1 rounded ${styles.badge}`}>
-                    {status === 'past' ? '✓ Past' : status === 'current' ? '◆ Current' : '→ Upcoming'}
+                    {status === 'past' ? '✓ 已完成' : status === 'current' ? '◆ 当前年份' : '→ 即将到来'}
                   </span>
                 </div>
 
@@ -162,14 +162,14 @@ export function PolicyTimeline({ currentTimestamp = Date.now(), className = '' }
 
                 {milestone.target && (
                   <p className={`text-sm font-medium mt-2 ${styles.content}`}>
-                    📊 Target: <span className="text-slate-200">{milestone.target}</span>
+                    目标：<span className="text-slate-200">{milestone.target}</span>
                   </p>
                 )}
 
                 {/* "From now to next milestone" text for future milestones */}
                 {status === 'future' && idx < MILESTONES.length - 1 && (
                   <p className="text-xs text-slate-500 mt-2 italic">
-                    {MILESTONES[idx + 1].year - milestone.year} years to next milestone
+                    距下一里程碑还有 {MILESTONES[idx + 1].year - milestone.year} 年
                   </p>
                 )}
               </div>
@@ -182,15 +182,15 @@ export function PolicyTimeline({ currentTimestamp = Date.now(), className = '' }
       <div className="mt-8 pt-6 border-t border-slate-700 grid grid-cols-3 gap-4 text-sm">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-green-500/60 ring-2 ring-green-500/30" />
-          <span className="text-slate-400">Completed</span>
+          <span className="text-slate-400">已完成</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-blue-500 ring-2 ring-blue-400 animate-pulse" />
-          <span className="text-slate-300">Current Year</span>
+          <span className="text-slate-300">当前年份</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-slate-600/50 ring-2 ring-slate-500/30" />
-          <span className="text-slate-500">Upcoming</span>
+          <span className="text-slate-500">即将到来</span>
         </div>
       </div>
     </div>

@@ -40,24 +40,24 @@ export function FuelVsSafPriceChart({
   );
 
   return (
-    <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+    <article className="rounded-2xl border border-slate-200 bg-white/90 p-6">
       <div className="mb-6">
-        <h3 className="text-lg font-medium text-white">Fuel vs SAF price ladder</h3>
-        <p className="mt-1 text-sm text-slate-400">
-          Fossil jet baseline, carbon-adjusted effective cost, and pathway net-cost bands.
+        <h3 className="text-lg font-medium text-slate-950">航油与 SAF 价格阶梯</h3>
+        <p className="mt-1 text-sm text-slate-600">
+          化石航油基准、碳调整后有效成本与各路径净成本区间。
         </p>
       </div>
 
       <div className="space-y-4">
-        <div className="rounded-xl border border-rose-900/60 bg-rose-950/30 p-4">
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-rose-200">Fossil jet spot</p>
-              <p className="mt-1 text-xs text-slate-400">Current observed market price before carbon pressure.</p>
+              <p className="text-sm font-medium text-rose-700">化石航油现货</p>
+              <p className="mt-1 text-xs text-slate-600">纳入碳成本压力前的当前观察价格。</p>
             </div>
-            <p className="text-xl font-semibold text-white">{formatUsd(fossilJetUsdPerL)}</p>
+            <p className="text-xl font-semibold text-slate-950">{formatUsd(fossilJetUsdPerL)}</p>
           </div>
-          <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-800">
+          <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200">
             <div
               className="h-full rounded-full bg-gradient-to-r from-rose-500 to-red-300"
               style={{ width: `${Math.max(6, (fossilJetUsdPerL / maxValue) * 100)}%` }}
@@ -65,15 +65,15 @@ export function FuelVsSafPriceChart({
           </div>
         </div>
 
-        <div className="rounded-xl border border-amber-900/60 bg-amber-950/20 p-4">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-amber-200">Effective fossil cost</p>
-              <p className="mt-1 text-xs text-slate-400">Includes modeled carbon pressure at the selected blend assumptions.</p>
+              <p className="text-sm font-medium text-amber-800">有效化石航油成本</p>
+              <p className="mt-1 text-xs text-slate-600">包含所选掺混假设下的模型化碳成本压力。</p>
             </div>
-            <p className="text-xl font-semibold text-white">{formatUsd(effectiveFossilJetUsdPerL)}</p>
+            <p className="text-xl font-semibold text-slate-950">{formatUsd(effectiveFossilJetUsdPerL)}</p>
           </div>
-          <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-800">
+          <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200">
             <div
               className="h-full rounded-full bg-gradient-to-r from-amber-500 to-yellow-300"
               style={{ width: `${Math.max(6, (effectiveFossilJetUsdPerL / maxValue) * 100)}%` }}
@@ -88,32 +88,32 @@ export function FuelVsSafPriceChart({
             const color = pathwayColorMap[pathway.pathway_key] ?? 'from-slate-500 to-slate-300';
             const statusColor =
               pathway.status === 'competitive'
-                ? 'text-emerald-300'
+                ? 'text-emerald-700'
                 : pathway.status === 'inflection'
-                  ? 'text-amber-300'
-                  : 'text-rose-300';
+                  ? 'text-amber-700'
+                  : 'text-rose-700';
 
             return (
-              <div key={pathway.pathway_key} className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+              <div key={pathway.pathway_key} className="rounded-xl border border-slate-200 bg-white/90 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium text-white">{pathway.display_name}</p>
+                    <p className="text-sm font-medium text-slate-950">{pathway.display_name}</p>
                     <p className={`mt-1 text-xs uppercase tracking-[0.18em] ${statusColor}`}>{pathway.status}</p>
                   </div>
-                  <p className="text-sm text-slate-300">
-                    {formatUsd(pathway.net_cost_low_usd_per_l)} to {formatUsd(pathway.net_cost_high_usd_per_l)}
+                  <p className="text-sm text-slate-700">
+                    {formatUsd(pathway.net_cost_low_usd_per_l)} 至 {formatUsd(pathway.net_cost_high_usd_per_l)}
                   </p>
                 </div>
-                <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-800">
+                <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200">
                   <div
                     className={`h-full rounded-full bg-gradient-to-r ${color}`}
                     style={{ width: `${widthHigh}%` }}
                   />
                 </div>
-                <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
-                  <span>Spread vs effective fossil</span>
+                <div className="mt-2 flex items-center justify-between text-xs text-slate-600">
+                  <span>相对有效化石航油价差</span>
                   <span>
-                    {pathway.spread_low_pct.toFixed(1)}% to {pathway.spread_high_pct.toFixed(1)}%
+                    {pathway.spread_low_pct.toFixed(1)}% 至 {pathway.spread_high_pct.toFixed(1)}%
                   </span>
                 </div>
               </div>
