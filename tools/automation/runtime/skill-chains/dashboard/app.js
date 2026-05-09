@@ -1334,7 +1334,7 @@
     var watch = latestWatch();
     var watchNote = watch ? text(watch.ts, t("unknown")) : t("watchNotLoaded");
     var watchValue = watch ? text(watch.anomalies_total, "0") : "-";
-    var skillLibrary = data && data.skill_library || {};
+    var skillLibrary = data && data.skill_library || getSkillLibrary() || {};
     var skillGate = skillLibrary.gate || {};
     var skillSummary = skillLibrary.summary || {};
     var skillRiskCount = Number(skillSummary.active_drift_risk_names || 0);

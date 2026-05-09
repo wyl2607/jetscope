@@ -4,12 +4,7 @@
 
 ## 背景
 
-目标是把 `/storage/emulated/0/Download/phone-ops-kit` 中的资料包导入 `Termux`，并自动执行：
-
-```bash
-cd /storage/emulated/0/Download/phone-ops-kit
-bash termux-bootstrap.sh
-```
+目标是把 `/storage/emulated/0/Download/phone-ops-kit` 中的资料包导入 `Termux`，并让用户在 `Termux` 前台进入该目录后运行 `termux-bootstrap.sh`。这段是历史目标描述，不是 Mac/ADB 可执行入口；当前推荐的人工步骤见下方“当前推荐流程”。
 
 以便自动安装常用运维包：
 

@@ -875,9 +875,10 @@ input[type="search"] {
 
 .dispatch-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
   gap: 10px;
   margin-top: 12px;
+  align-items: start;
 }
 
 .dispatch-lane {
@@ -885,6 +886,7 @@ input[type="search"] {
   align-content: start;
   gap: 10px;
   min-width: 0;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 12px;
@@ -904,6 +906,15 @@ input[type="search"] {
   color: #d7e8f0;
   font-size: 13px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.dispatch-lane .detail-block,
+.dispatch-lane .detail-list,
+.dispatch-lane .detail-list li,
+.dispatch-lane .copy-row,
+.dispatch-lane code {
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 

@@ -2,12 +2,12 @@
 
 > Status: Historical / compatibility reference.
 >
-> Current model routing truth is `scripts/ai-model-router.py` plus
+> Maintained local routing truth is `scripts/ai-model-router.py` plus
 > `workspace-guides/opencode-model-policy.json`. New automation should use
 > `python3 scripts/ai-model-router.py --task <task-class> --json` instead of
 > copying the legacy `kilo_*` / `opencode_ask` decision tree below.
 >
-> Current task classes are `fast_probe`, `structured_check`, `hard_review`,
+> Local router task classes are `fast_probe`, `structured_check`, `hard_review`,
 > `large_implementation`, `chinese_reasoning`, and `codex_execution`. The
 > default OpenCode policy profile is `daily-free-first`, with `strong-go` and
 > `deep-review` used for heavier implementation or review lanes.
@@ -20,7 +20,7 @@ implements them.
 
 ## 🎯 历史快速决策流程
 
-For current routing, prefer:
+For maintained routing, prefer:
 
 ```bash
 python3 scripts/ai-model-router.py --task fast_probe --json
@@ -102,14 +102,14 @@ result = await kilo_ask(
 # 简单函数
 result = await kilo_code(
     task="Write a function to check palindrome",
-    dir="~/myproject",
+    dir="<example-project-dir>",
     model="stepfun"  # 代码质量最佳
 )
 
 # 不确定用什么
 result = await kilo_code(
     task="Implement JWT authentication",
-    dir="~/myproject",
+    dir="<example-project-dir>",
     model="grok"  # 快速 + 能用就行
 )
 ```
@@ -273,7 +273,7 @@ if response.status == "error":
 **最佳示范**:
 ```text
 ✅ kilo_code task="Write a TypeScript function to validate email addresses"
-   model="stepfun" dir="~/myapp"
+   model="stepfun" dir="<example-project-dir>"
 
 ❌ kilo_ask prompt="code?"  # 太模糊
 ⚠️ opencode_ask prompt="..." # 若网络异常则回退到 kilo_ask(auto)
@@ -289,11 +289,8 @@ if response.status == "error":
 - [ ] 模型响应异常时：立即重新测试
 
 **重新测试方式**:
-```python
-result = await kilo_ask(
-    prompt="Run a model benchmark check",
-    model="auto",
-)
+```bash
+python3 scripts/ai-model-router.py --task fast_probe --json
 ```
 
 ---
