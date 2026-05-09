@@ -1,13 +1,21 @@
 config:
   default: true
   MD013: false
+  MD022: false
+  MD024:
+    siblings_only: true
+  MD029: false
+  MD031: false
+  MD032: false
   MD033: false
-
-globs:
-  - "**/*.md"
+  MD040: false
+  MD041: false
+  MD060: false
 
 ignores:
   - "node_modules/**"
+  - "runtime/**"
+  - "vibecoding/.codex/**"
   - "tools/automation/runtime/**"
   - "archive/**"
   - "docs/archive/**"
