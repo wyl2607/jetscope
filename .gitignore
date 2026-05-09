@@ -105,6 +105,13 @@ tools/automation/*
 tools/automation/scripts/*
 !tools/automation/scripts/task-similar-dedup.py
 !tools/automation/scripts/next-action-recommender.py
+!tools/automation/scripts/import-review-first-packets.py
+!tools/automation/workspace-guides/
+tools/automation/workspace-guides/*
+!tools/automation/workspace-guides/ai-model-selection-guide.md
+!tools/automation/workspace-guides/android-phone-ops/
+tools/automation/workspace-guides/android-phone-ops/*
+!tools/automation/workspace-guides/android-phone-ops/termux-automation-limitations.md
 tools/automation/runtime/
 yumei/
 tools/automation/runtime/task-board/

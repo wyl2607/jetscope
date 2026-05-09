@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import tempfile
@@ -17,7 +18,7 @@ AUTOMATION = _SCRIPT_DIR.parent
 OUT_PATH = AUTOMATION / "runtime" / "multi-agent" / "next-recommender.json"
 TERMINAL = {"completed", "cancelled", "failed"}
 PRANK = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}
-KRANK = {"wait_for_user": 0, "manual_dry_run": 1, "apply_triage": 2, "cancel_dedup": 3, "execute_local_gate": 4}
+KRANK = {"wait_for_user": 0, "review_first_packet": 1, "manual_dry_run": 2, "apply_triage": 3, "cancel_dedup": 4, "execute_local_gate": 5}
 
 
 def read_json(path: Path, default: Any) -> Any:
@@ -48,6 +49,34 @@ def task_id_of(item: Any) -> str:
     return ""
 
 
+def compact(value: Any, limit: int = 240) -> str:
+    text = " ".join(str(value or "").split())
+    if len(text) <= limit:
+        return text
+    return text[: max(0, limit - 1)].rstrip() + "..."
+
+
+def packet_task_id(packet: dict[str, Any]) -> str:
+    key = "|".join(
+        compact(item, 200)
+        for item in (
+            packet.get("scanner"),
+            packet.get("kind"),
+            packet.get("path"),
+            packet.get("target"),
+            packet.get("goal"),
+        )
+    )
+    digest = hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
+    return f"packet-{digest}"
+
+
+def packet_rows(path: Path) -> list[dict[str, Any]]:
+    payload = read_json(path, {})
+    rows = payload.get("task_packets") if isinstance(payload, dict) else []
+    return [row for row in rows if isinstance(row, dict)]
+
+
 def id_set(items: list[Any]) -> set[str]:
     return {task_id_of(item) for item in items if task_id_of(item)}
 
@@ -60,6 +89,10 @@ def active_tasks(state: dict[str, Any]) -> dict[str, dict[str, Any]]:
         if isinstance(task, dict) and task_id and status and status not in TERMINAL:
             out[task_id] = task
     return out
+
+
+def all_task_ids(state: dict[str, Any]) -> set[str]:
+    return {task_id_of(task) for task in as_list(state.get("tasks")) if task_id_of(task)}
 
 
 def by_task_id(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -114,6 +147,7 @@ def load_inputs(root: Path) -> dict[str, Any]:
         "state": read_json(runtime / "dev-control" / "state.json", {}),
         "board": read_json(runtime / "task-board" / "enriched-board.json", {}),
         "triage": read_json(runtime / "task-board" / "triage-recommendations.json", {}),
+        "approval_inbox": read_json(runtime / "task-board" / "daily-approval-inbox.json", {}),
         "dry": read_json(runtime / "task-board" / "auto-dry-run-plan.json", {}),
         "quarantine": read_json(runtime / "multi-agent" / "quarantine.json", {}),
         "dedup": read_json(runtime / "multi-agent" / "dedup-cooldown.json", {}),
@@ -138,6 +172,44 @@ def add_dry_runs(recs, seen, skip, dry, tasks, enriched) -> None:
         task_id = task_id_of(item)
         if isinstance(item, dict) and task_id:
             add_rec(recs, seen, skip, rec("manual_dry_run", task_id, f"可先收集单任务 dry-run 证据：{title(task_id, tasks, enriched)}", f"/manual_dry_run {task_id}", "如果通过,下一步会推荐 /execute_local_gate <id>", item, tasks, enriched))
+
+
+def add_review_first_packets(recs, seen, skip, inbox, existing_task_ids: set[str]) -> None:
+    decisions = inbox.get("decisions_today") if isinstance(inbox, dict) else {}
+    artifacts = inbox.get("artifacts") if isinstance(inbox, dict) else {}
+    packet_source = str((artifacts or {}).get("daily_evolution_task_packets") or "").strip()
+    source_path = Path(packet_source) if packet_source else None
+    source_rows = packet_rows(source_path) if source_path and source_path.exists() else []
+    if source_rows:
+        items = [
+            {
+                "task_id": packet_task_id(row),
+                "priority": row.get("priority") or "P3",
+                "reason": f"review-first task packet: {row.get('scanner')} finding in {row.get('path') or 'unknown-path'}",
+            }
+            for row in source_rows
+            if row.get("mode") == "review-first" and row.get("priority") in {"P1", "P2", "P3"}
+        ]
+    else:
+        items = as_list((decisions or {}).get("review_first_packets"))
+    source_arg = f" --task-packets {packet_source}" if source_path and source_path.exists() else ""
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        task_id = task_id_of(item)
+        if not task_id or task_id in existing_task_ids:
+            continue
+        priority = str(item.get("priority") or "P3")
+        packet = {
+            "kind": "review_first_packet",
+            "task_id": task_id,
+            "reason": str(item.get("reason") or item.get("title") or "daily evolution review-first task packet"),
+            "value_score": 0,
+            "priority": priority,
+            "suggested_command": f"python3 scripts/import-review-first-packets.py{source_arg} --task-id {task_id}",
+            "next_after": "预览无误后加 --apply 导入 dev-control, 再走 plan/dry-run 审批",
+        }
+        add_rec(recs, seen, skip, packet)
 
 
 def add_triage(recs, seen, skip, triage, tasks, enriched) -> None:
@@ -176,6 +248,7 @@ def summarize(recs: list[dict[str, Any]], blocked: list[dict[str, str]]) -> str:
 def build(root: Path = AUTOMATION, queue_owner: str = "") -> dict[str, Any]:
     data = load_inputs(root)
     tasks = active_tasks(data["state"])
+    existing_task_ids = all_task_ids(data["state"])
     enriched = by_task_id(data["board"])
     skip = id_set(as_list(data["quarantine"])) | id_set(as_list(data["dedup"].get("suggestions"))) | id_set(as_list(data["dedup"].get("pairs")))
     budget = data["budget"]
@@ -185,6 +258,7 @@ def build(root: Path = AUTOMATION, queue_owner: str = "") -> dict[str, Any]:
     seen: set[str] = set()
 
     add_decisions(recs, seen, skip, tasks, enriched)
+    add_review_first_packets(recs, seen, skip, data["approval_inbox"], existing_task_ids)
     if not paused:
         add_dry_runs(recs, seen, skip, data["dry"], tasks, enriched)
     add_triage(recs, seen, skip, data["triage"], tasks, enriched)
@@ -220,8 +294,28 @@ def self_test() -> None:
             path = root / rel
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(payload), encoding="utf-8")
+        packet_path = root / "runtime/self-evolution/task-packets.json"
+        packet_path.parent.mkdir(parents=True, exist_ok=True)
+        packet = {
+            "scanner": "doc-drift-auditor",
+            "kind": "semantic-stale-risk-group",
+            "path": str(root / "docs/example.md"),
+            "target": "example",
+            "goal": "Review packet source.",
+            "priority": "P1",
+            "mode": "review-first",
+        }
+        packet_path.write_text(json.dumps({"task_packets": [packet]}), encoding="utf-8")
+        source_packet_id = packet_task_id(packet)
         wf("runtime/dev-control/state.json", {"tasks": [{"task_id": "p0", "priority": "P0", "status": "received", "requires_user_decision": True, "goal": "decide"}, {"task_id": "dry", "priority": "P2", "status": "planned", "goal": "dry"}, {"task_id": "skip", "priority": "P1", "status": "planned", "goal": "skip"}, {"task_id": "done", "priority": "P1", "status": "completed", "goal": "done"}, {"task_id": "missing", "priority": "P1", "goal": "missing status"}]})
         wf("runtime/task-board/enriched-board.json", {"tasks": [{"task_id": "dry", "value_score": 7}]})
+        wf(
+            "runtime/task-board/daily-approval-inbox.json",
+            {
+                "artifacts": {"daily_evolution_task_packets": str(packet_path)},
+                "decisions_today": {"review_first_packets": [{"task_id": "stale-packet-a", "priority": "P1", "reason": "stale review packet"}, {"task_id": "done", "priority": "P1", "reason": "already imported"}]},
+            },
+        )
         wf("runtime/task-board/auto-dry-run-plan.json", {"candidates": [{"task_id": "dry", "value_score": 7}, {"task_id": "skip"}]})
         wf("runtime/task-board/triage-recommendations.json", {"recommendations": []})
         wf("runtime/multi-agent/quarantine.json", {"quarantine": [{"task_id": "skip"}]})
@@ -230,6 +324,11 @@ def self_test() -> None:
         wf("runtime/multi-agent/budget-state.json", {"paused": False})
         data = build(root, "fixture")
         assert data["recommendations"][0]["task_id"] == "p0"
+        assert any(item["task_id"] == source_packet_id and item["kind"] == "review_first_packet" for item in data["recommendations"])
+        assert not any(item["task_id"] == "stale-packet-a" for item in data["recommendations"])
+        assert not any(item["task_id"] == "done" and item["kind"] == "review_first_packet" for item in data["recommendations"])
+        source_rec = next(item for item in data["recommendations"] if item["task_id"] == source_packet_id)
+        assert "--task-packets" in source_rec["suggested_command"]
         assert any(item["task_id"] == "dry" for item in data["recommendations"])
         assert not any(item["task_id"] == "skip" for item in data["recommendations"])
         assert not any(item["task_id"] in {"done", "missing"} for item in data["recommendations"])
