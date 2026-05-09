@@ -113,6 +113,7 @@ tools/automation/workspace-guides/*
 !tools/automation/workspace-guides/ai-model-selection-guide.md
 !tools/automation/workspace-guides/android-phone-ops/
 tools/automation/workspace-guides/android-phone-ops/*
+!tools/automation/workspace-guides/android-phone-ops/background-restriction-commands.md
 !tools/automation/workspace-guides/android-phone-ops/offline-library-system.md
 !tools/automation/workspace-guides/android-phone-ops/termux-automation-limitations.md
 tools/automation/runtime/
