@@ -1,38 +1,69 @@
-# AGENTS.md — JetScope AI 入口指南
+# AGENTS.md - Workspace AI Entry
 
-> **项目**: JetScope
-> **角色**: AI 并行开发系统入口
-> **版本**: v2.1
+This repository has a dual role during the workspace transition. Treat this
+file as the public, repository-local AI entrypoint.
 
-## 快速开始
+## Canonical Flow
+
+- Read this file before editing.
+- `CLAUDE.md` imports and extends this file for Claude-specific behavior.
+- Product work for JetScope belongs in `/Users/yumei/projects/jetscope`.
+- Workspace governance work belongs in `/Users/yumei/tools/automation` during
+  the transition and must stay local-first unless explicitly promoted.
+
+## Repository Boundary
+
+`/Users/yumei` is not a normal single-purpose product repo:
+
+| Area | Paths | Default action |
+|---|---|---|
+| JetScope product mirror | `apps/`, `infra/`, `packages/`, `test/`, product docs/scripts | Read-only here; develop in `/Users/yumei/projects/jetscope` |
+| Workspace governance | `tools/automation/`, guard scripts, AI maintenance docs | Local-first; classify before any publish |
+| Runtime/private state | `runtime/`, `.claude/`, `.codex/`, `.omx/`, vaults, logs, caches | Never publish |
+
+See `NOTICE.md` when deciding whether a file belongs to product, governance,
+runtime, private, or public-candidate zones.
+
+## Safety Rules
+
+- No push, PR, merge, release, deploy, sync, SSH, rsync, launchd mutation, or
+  destructive Git operation without explicit approval.
+- Do not read, print, stage, or store secrets.
+- Keep runtime/cache/log/tool-state/temp/archive/nested-repo artifacts out of
+  commits.
+- Split commits by purpose and risk surface.
+- If the worktree is dirty, classify changes before staging.
+- Unknown, private, generated, runtime, or deploy-adjacent files block publish.
+
+## Required Gates
+
+Before local commits, run the smallest relevant validation plus:
 
 ```bash
-cd ~/projects/jetscope
-source scripts/jetscope-env
+scripts/security_check.sh
 ```
 
-## 路径
+Before any push or PR preparation, also run:
 
-- 本机: `~/projects/jetscope`
-- GitHub: `wyl2607/jetscope`
+```bash
+scripts/review_push_guard.sh origin/main
+```
 
-## 默认规则
+Do not bypass hooks or guards.
 
-- 修改代码前先读本文件和根目录 `~/AGENTS.md`
-- 发布前运行 `npm run preflight`
-- 不得提交 `.env*`、内部交付文档、日志、`.automation/`、`.omx/`
-- 多节点同步脚本和发布脚本属于高风险操作，修改后必须说明影响面
+## Maintenance Pipeline
 
-## 关键命令
+The repo-evolver direction is intentionally conservative:
 
-- `APPROVE_JETSCOPE_RELEASE=<token> npm run release -- --approval-token <token>`（默认发布入口；会串联 preflight、GitHub 发布、VPS 部署；节点同步为显式 opt-in）
-- `npm run preflight`
-- `npm run web:gate`
-- `npm run api:check`
-- `./scripts/publish-to-github.sh`（局部重跑入口，非默认发布路径）
-- `./scripts/sync-to-nodes.sh`（高风险节点同步，非默认发布路径）
+- Daily automation should produce low-risk, reviewable maintenance candidates.
+- Codex GitHub Action runs must be read-only unless explicitly approved.
+- Static gates should report Semgrep, Vale, and markdownlint issues without
+  mutating files.
+- `.evolver/` stores small public-safe metadata and policy contracts only.
+- Runtime memory, raw reports, local queues, vault-derived notes, and secrets
+  remain outside `.evolver/` and outside public commits.
 
-## 当前架构重点
+## Cross-AI Traceability
 
 - `apps/web`: Next.js 前端
 - `apps/api`: FastAPI 后端
@@ -81,14 +112,42 @@ Before deep debugging or non-trivial implementation:
 
 Use:
 
+For non-trivial implementation or debugging, search local trace ledgers first:
+
 ```bash
 bash /Users/yumei/tools/automation/scripts/ai-trace.sh find "<keyword>"
 ```
 
-If a stable root cause or reusable fix is confirmed, write it back immediately:
+Stable reusable findings should be written back with the same script.
 
-```bash
-bash /Users/yumei/tools/automation/scripts/ai-trace.sh issue "<scope>" "<symptom>" "<root_cause>" "<fix>" "<verification>" "<artifacts>"
-bash /Users/yumei/tools/automation/scripts/ai-trace.sh solution "<scope>" "<problem_pattern>" "<solution_pattern>" "<verification>" "<artifacts>"
-bash /Users/yumei/tools/automation/scripts/ai-trace.sh session "<scope>" "<summary>" "<next_step>" "<linked_issue>"
+## Codex Goal Packet
+
+Use this shape for bounded delegated work:
+
+```text
+/goal 完成 <task>
+
+目标：
+<one sentence>
+
+上下文：
+<repo, current state, relevant files>
+
+允许修改：
+<exact allowlist>
+
+禁止修改：
+<private/runtime/generated/deploy paths and all unrelated files>
+
+执行方式：
+CLI-first. No push/PR/deploy/sync/SSH/rsync/delete/reset.
+
+验证：
+<focused commands>
+
+完成标准：
+<checkable done criteria>
+
+交付：
+changed files, validation, remaining risk.
 ```
