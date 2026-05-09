@@ -4,25 +4,26 @@ import { Shell } from '@/components/shell';
 import { PolicyTimelineWithMarketTime } from '@/components/policy-timeline-with-market-time';
 import { PriceTrendsChart } from '@/components/price-trends-chart';
 import { computeDashboardAlertBanners } from '@/lib/market-signals';
-import { getDashboardReadModel, getPriceTrendChartReadModel, type DashboardReadModel } from '@/lib/product-read-model';
+import { getDashboardReadModel, type DashboardReadModel } from '@/lib/dashboard-read-model';
+import { getPriceTrendChartReadModel } from '@/lib/product-read-model';
 import { getSourcesReadModel } from '@/lib/sources-read-model';
 import type { Metadata } from 'next';
 import { buildPageMetadata } from '@/lib/seo';
 
 const priorities = [
-  'Real-time market data: Brent crude, jet fuel proxy, EU ETS carbon',
-  'Unified scenario engine: price, subsidy, carbon cost, break-even analysis',
-  'Admin control: route assumptions, policy parameters, data provenance',
-  'Export & reporting: charts, snapshots, scenario comparison'
+  '实时市场数据：Brent 原油、航油代理价、EU ETS 碳价',
+  '统一情景引擎：价格、补贴、碳成本与盈亏平衡分析',
+  '管理控制：航线假设、政策参数与数据来源',
+  '导出与报告：图表、快照与情景对比'
 ];
 
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = buildPageMetadata({
-  title: 'Dashboard',
+  title: '决策驾驶舱',
   description:
-    'Live SAF versus fossil jet fuel dashboard with market snapshot, scenario registry status, and transition delivery signals.',
+    '可持续航空燃料与传统航油的实时决策看板，覆盖市场快照、情景库状态与转型交付信号。',
   path: '/dashboard'
 });
 
@@ -40,9 +41,17 @@ function formatAsOf(value: string | null) {
   return date.toLocaleString();
 }
 
+function dashboardFallbackHint(readModel: DashboardReadModel) {
+  if (!readModel.isFallback) {
+    return `来源状态： ${readModel.market.source_status.overall} | 新鲜度=${readModel.freshnessSignal.level} (${readModel.freshnessSignal.minutes}m)`;
+  }
+
+  return '本地 API 暂不可用，正在使用内置决策模型，确保驾驶舱仍可审阅。';
+}
+
 export default async function DashboardPage() {
-  const readModel = await getDashboardReadModel();
-  const [priceChartData, sourcesReadModel] = await Promise.all([
+  const [readModel, priceChartData, sourcesReadModel] = await Promise.all([
+    getDashboardReadModel(),
     getPriceTrendChartReadModel(),
     getSourcesReadModel()
   ]);
@@ -59,16 +68,16 @@ export default async function DashboardPage() {
   const riskHref = risk == null ? undefined : `/sources?focus=${encodeURIComponent(risk.metricKey)}`;
   const riskHint =
     risk == null
-      ? 'No history signal available yet'
-      : `level=${risk.level} | as_of=${formatAsOf(risk.latestAsOf)} | samples=${risk.sampleCount}`;
+      ? '暂无历史风险信号'
+      : `级别=${risk.level} | 截至=${formatAsOf(risk.latestAsOf)} | 样本=${risk.sampleCount}`;
 
   const alertBanners = computeDashboardAlertBanners(readModel.market, risk);
 
   return (
     <Shell
-      eyebrow="Market Intelligence"
-      title="JetScope Decision Cockpit"
-      description="Live market snapshot, scenario modelling, and transition risk signals for sustainable aviation fuel decisions."
+      eyebrow="市场情报"
+      title="JetScope 决策驾驶舱"
+      description="面向 SAF 决策的实时市场快照、情景建模与转型风险信号。"
     >
       {alertBanners.length > 0 && (
         <section className="mb-6 space-y-3">
@@ -101,7 +110,7 @@ export default async function DashboardPage() {
                         : 'bg-amber-600 text-white hover:bg-amber-500'
                     }`}
                   >
-                    View details →
+                    查看详情 →
                   </a>
                 )}
               </div>
@@ -112,36 +121,32 @@ export default async function DashboardPage() {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="Market snapshot"
+          label="市场快照"
           value={`$${formatNumber(market.brent_usd_per_bbl)}/bbl`}
-          hint={`Jet(global) $${formatNumber(market.jet_usd_per_l, 3)}/L | Jet(EU proxy) $${formatNumber(market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l, 3)}/L | Carbon $${formatNumber(market.carbon_proxy_usd_per_t)}/tCO2`}
+          hint={`Jet(全球) $${formatNumber(market.jet_usd_per_l, 3)}/L | Jet(EU 代理) $${formatNumber(market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l, 3)}/L | 碳价 $${formatNumber(market.carbon_proxy_usd_per_t)}/tCO2`}
         />
         <MetricCard
-          label="Scenario mode"
+          label="情景模式"
           value={`${readModel.scenarioCount}`}
-          hint="从 /v1/workspaces/{slug}/scenarios 读取"
+          hint={readModel.scenarioCount > 0 ? '已有保存情景，可用于对比。' : '暂无保存情景；需要 what-if 案例时可从 Scenarios 开始。'}
         />
-        <MetricCard label="Admin control" value="Required" hint="路线成本、政策参数、来源维护" />
+        <MetricCard label="管理控制" value="必需" hint="路线成本、政策参数、来源维护" />
         <MetricCard
-          label="Delivery lane"
-          value={readModel.isFallback ? 'Fallback' : 'Live Slice'}
-          hint={
-            readModel.isFallback
-              ? `API fallback: ${readModel.error ?? 'unknown'}`
-              : `source status: ${readModel.market.source_status.overall} | freshness=${freshness.level} (${freshness.minutes}m)`
-          }
+          label="交付状态"
+          value={readModel.isFallback ? '回退' : '实时切片'}
+          hint={dashboardFallbackHint(readModel)}
         />
         <MetricCard
-          label="Top risk signal"
+          label="最高风险信号"
           value={riskValue}
           hint={riskHint}
           valueClassName={riskColor}
           valueHref={riskHref}
         />
         <MetricCard
-          label="Germany jet fuel page"
-          value="Open live page"
-          hint="SSR market page with Brent / global jet / EU jet proxy / carbon and 1d/7d/30d changes"
+          label="德国航油价格页"
+          value="打开实时页面"
+          hint="SSR 市场页，展示 Brent、全球航油、EU 航油代理价、碳价及 1d/7d/30d 变化"
           cardHref="/prices/germany-jet-fuel"
         />
       </section>
@@ -164,7 +169,7 @@ export default async function DashboardPage() {
       </section>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <InfoCard title="Dashboard capabilities" subtitle="Product features">
+        <InfoCard title="决策驾驶舱能力" subtitle="产品能力">
           <ul className="space-y-3 text-sm leading-7 text-slate-300">
             {priorities.map((item) => (
               <li key={item}>• {item}</li>
@@ -172,18 +177,18 @@ export default async function DashboardPage() {
           </ul>
         </InfoCard>
 
-        <InfoCard title="Data sources" subtitle="Market coverage">
+        <InfoCard title="数据来源" subtitle="市场覆盖">
           <div className="space-y-3 text-sm leading-7 text-slate-300">
-            <p>• Live metrics use primary or official sources when coverage is healthy.</p>
-            <p>• Proxy metrics are labelled separately from fallback values.</p>
-            <p>• Confidence, lag, and degraded reasons are visible on the Sources page.</p>
-            <p>• Fallback values keep the dashboard available but are not hidden from decision users.</p>
+            <p>• 覆盖健康时，实时指标优先使用主要或官方来源。</p>
+            <p>• 代理指标与回退值分开标注。</p>
+            <p>• 置信度、滞后时间与降级原因可在 Sources 页查看。</p>
+            <p>• 回退值用于保持驾驶舱可用，但不会对决策用户隐藏。</p>
           </div>
         </InfoCard>
       </section>
 
       <section className="mt-8">
-        <InfoCard title="Recent scenarios" subtitle="From FastAPI / PostgreSQL">
+        <InfoCard title="最近情景" subtitle="来自 FastAPI / PostgreSQL">
           {readModel.recentScenarioNames.length ? (
             <ul className="space-y-2 text-sm leading-7 text-slate-300">
               {readModel.recentScenarioNames.map((name) => (
@@ -192,7 +197,7 @@ export default async function DashboardPage() {
             </ul>
           ) : (
             <p className="text-sm leading-7 text-slate-300">
-              No saved scenarios yet. Create one through the scenario API to verify CRUD end-to-end.
+              暂无保存情景。可通过 scenario API 创建一个情景，用于端到端验证 CRUD。
             </p>
           )}
         </InfoCard>

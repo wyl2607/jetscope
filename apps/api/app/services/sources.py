@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 
 from app.schemas.sources import SourceCoverageMetric, SourceCoverageResponse
-from app.services.bootstrap import utcnow
 from app.services.market import DEFAULT_MARKET_METRICS, build_market_snapshot_response
 
 
@@ -112,7 +111,7 @@ def build_source_coverage_response(db: Session) -> SourceCoverageResponse:
     completeness = len(present_keys) / len(_EXPECTED_METRIC_KEYS) if had_source_details else 0.0
     fallback_or_seed = any(metric.fallback_used or metric.status == "seed" for metric in metrics)
     return SourceCoverageResponse(
-        generated_at=utcnow(),
+        generated_at=snapshot.generated_at,
         metrics=metrics,
         completeness=completeness,
         degraded=completeness < 1.0 or fallback_or_seed,

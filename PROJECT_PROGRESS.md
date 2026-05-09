@@ -9,6 +9,15 @@ The workspace is moving from a powerful but drifting multi-AI development area t
 
 ## JetScope Remote Baseline (origin/main through PR #47)
 
+> Last updated: 2026-05-01
+> Scope: local workspace `/Users/yumei`, project area `~/projects/*`, AI automation, and cross-node development operations.
+
+## Current State
+
+The workspace is moving from a powerful but drifting multi-AI development area toward a safer, traceable, handoff-ready local workstation. JetScope is clean and aligned with `origin/main` after PR #41 and PR #42. Root governance/source history is being reconciled on top of the JetScope repository baseline, with root pushes blocked until an explicit branch/PR decision.
+
+## JetScope Remote Baseline (origin/main through PR #47)
+
 - Status: PR #42 source coverage hardening and PR #41 PostCSS patch update are merged and deployed to production at `ee908f233f8d40cf8cef144971cdf8e4aa7743b7`; backend pytest is restored as a local gate.
 - Scope: JetScope web/API workspace, local data ignores, traceability entrypoint, release approval gates, token replay protection, and worker/VPS sync boundaries.
 - Release entrypoint: `APPROVE_JETSCOPE_RELEASE=<token> npm run release -- --approval-token <token>` after `source scripts/jetscope-env`; development worker sync is opt-in.
@@ -35,6 +44,15 @@ The workspace is moving from a powerful but drifting multi-AI development area t
 - Scope: `apps/web/lib/source-coverage-contract.ts`, `apps/web/lib/sources-read-model.ts`, `apps/web/components/source-coverage-panel.tsx`, and `test/sources-read-model.test.mjs`; `.governance/` and `GOAL.md` remained separate.
 - Initial gate: `npm test -- test/sources-read-model.test.mjs` failed as expected because `source-coverage-contract.ts` did not export `getSourceCoverageTrustState` or `formatSourceCoverageLag`.
 - Validation: `npm test -- test/sources-read-model.test.mjs` passed: 59 tests. `npm run web:typecheck` passed. `git diff --check -- apps/web/lib/sources-read-model.ts apps/web/components/source-coverage-panel.tsx apps/web/lib/source-coverage-contract.ts test/sources-read-model.test.mjs PROJECT_PROGRESS.md` passed.
+
+## 2026-05-06 Germany Jet Fuel Read-Model Refactor Gate
+
+- Purpose: continue the bounded refactor loop by extracting the Germany Jet Fuel read-model out of `apps/web/lib/product-read-model.ts` into its own stable subsystem boundary, so unrelated dashboard, price-trend, and Germany surfaces stop sharing one 665-line module.
+- Intent: keep `/prices/germany-jet-fuel` and `/de/prices/germany-jet-fuel` UI/API behavior unchanged while moving the Germany types, helpers, and `getGermanyJetFuelReadModel` into `apps/web/lib/germany-jet-fuel-read-model.ts`, importing the still-shared metric helpers from `product-read-model.ts` rather than duplicating them.
+- Scope: `apps/web/lib/germany-jet-fuel-read-model.ts` (new), `apps/web/lib/product-read-model.ts`, `apps/web/app/prices/germany-jet-fuel/page.tsx`, `apps/web/app/de/prices/germany-jet-fuel/page.tsx`, `test/helpers/load-web-lib.mjs` (alias rewrite extended to cover `@/lib/product-read-model` so the new module can import shared symbols under the Node test loader), and `test/product-read-model.test.mjs` (acceptance gate import path).
+- Initial gate: `npm test -- test/product-read-model.test.mjs` failed as expected because `apps/web/lib/germany-jet-fuel-read-model.ts` did not exist yet (ENOENT under the test loader).
+- Validation: `npm test -- test/product-read-model.test.mjs` passed: 60 tests. `npm run web:typecheck` passed. `git diff --check -- apps/web/lib/germany-jet-fuel-read-model.ts apps/web/lib/product-read-model.ts apps/web/app/prices/germany-jet-fuel/page.tsx apps/web/app/de/prices/germany-jet-fuel/page.tsx test/helpers/load-web-lib.mjs test/product-read-model.test.mjs` passed. `product-read-model.ts` shrank from 665 to 490 lines, `germany-jet-fuel-read-model.ts` is 153 lines, total 643 lines (-22 net) with the eight previously duplicated helpers/constants now imported instead of copied.
+- Risk: low behavior risk; existing read-model tests still cover Germany EU proxy fallback, freshness signal, top-risk signal, and dashboard fallback. No release, deploy, sync, push, PR, API, package, infra, or lockfile changes were made.
 
 ## 2026-05-04 Source Coverage Summary Refactor Gate
 

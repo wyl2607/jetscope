@@ -1,14 +1,14 @@
 import { Shell } from '@/components/shell';
 import { ResearchDecisionBriefCard } from '@/components/research-decision-brief';
-import { AI_RESEARCH_ENABLED, buildResearchDecisionBrief, getResearchSignals } from '@/lib/portfolio-read-model';
+import { AI_RESEARCH_ENABLED, buildResearchDecisionBrief, getResearchSignals } from '@/lib/research-signals-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = buildPageMetadata({
-  title: 'Research Signals',
-  description: 'AI-assisted SAF and jet fuel signal stream with confidence and source context.',
+  title: '研究信号',
+  description: 'AI 辅助的 SAF 与航油信号流，附带置信度与来源上下文。',
   path: '/research'
 });
 
@@ -35,23 +35,23 @@ export default async function ResearchPage() {
 
   return (
     <Shell
-      eyebrow="AI Research Pipeline"
-      title="Research Signals"
-      description="News-derived ESG and market signals. The page is safe before Phase B is enabled and becomes data-backed once the research API is live."
+      eyebrow="AI 研究流水线"
+      title="研究信号"
+      description="从新闻中提取 ESG 与市场信号。Phase B 启用前本页保持安全可构建；研究 API 上线后切换为数据支撑。"
     >
       {!AI_RESEARCH_ENABLED ? (
         <section className="rounded-2xl border border-dashed border-sky-600/50 bg-sky-500/10 p-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-200">Pipeline disabled</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-200">流水线未启用</p>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-200">
-            Set <code>JETSCOPE_AI_RESEARCH_ENABLED=true</code> after the Phase B backend is deployed. Until then this
-            route documents the product surface without claiming live Claude analysis.
+            Phase B 后端部署后设置 <code>JETSCOPE_AI_RESEARCH_ENABLED=true</code>。在此之前，
+            该路由仅展示产品界面，不声称正在运行实时 Claude 分析。
           </p>
         </section>
       ) : null}
 
       {result.status === 'error' ? (
         <section className="mt-6 rounded-2xl border border-rose-600/40 bg-rose-500/10 p-6 text-sm text-rose-100">
-          Research API error: {result.message}
+          Research API 错误：{result.message}
         </section>
       ) : null}
 
@@ -61,10 +61,9 @@ export default async function ResearchPage() {
 
       {result.status !== 'error' && result.signals.length === 0 ? (
         <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
-          <h3 className="text-xl font-semibold text-white">No research signals yet</h3>
+          <h3 className="text-xl font-semibold text-white">暂无研究信号</h3>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-            This is expected before the daily research job has persisted signals. The route remains build-safe and
-            ready for the Phase B signal feed.
+            每日研究任务尚未持久化信号前，这是预期状态。该路由保持可构建，并已准备接入 Phase B 信号流。
           </p>
         </section>
       ) : result.status === 'error' ? null : (
@@ -82,7 +81,7 @@ export default async function ResearchPage() {
               <p className="mt-3 text-sm leading-7 text-slate-300">{signal.summary_en}</p>
               <p className="mt-3 text-sm leading-7 text-slate-400">{signal.summary_cn}</p>
               <p className="mt-4 text-xs uppercase tracking-[0.14em] text-slate-500">
-                Confidence {(signal.confidence * 100).toFixed(0)}%
+                置信度 {(signal.confidence * 100).toFixed(0)}%
               </p>
             </article>
           ))}

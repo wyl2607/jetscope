@@ -150,7 +150,7 @@ def _reserve_source_name(source_type: str) -> str:
 def build_eu_reserve_signal_response(db=None) -> ReserveSignalResponse:
     reserve_stress = get_eu_reserve_stress(db=db)
     return ReserveSignalResponse(
-        generated_at=utcnow(),
+        generated_at=reserve_stress.observed_at or utcnow(),
         region=reserve_stress.region,
         coverage_days=reserve_stress.coverage_days,
         coverage_weeks=round(reserve_stress.coverage_days / 7.0, 2),

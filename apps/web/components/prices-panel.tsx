@@ -17,7 +17,7 @@ export function PricesPanel({ prices }: PricesPanelProps) {
   const sortedPrices = [...prices].sort((a, b) => a.priority - b.priority);
 
   return (
-    <InfoCard title="Prices by Priority" subtitle="EU ETS > Rotterdam > Germany > Cache">
+    <InfoCard title="按优先级排序的价格" subtitle="EU ETS > Rotterdam > Germany > Cache">
       <div className="space-y-4">
         {sortedPrices.map((price, index) => (
           <div key={price.source} className="flex items-center justify-between p-3 border border-slate-700 rounded-lg bg-slate-800/50">
@@ -27,12 +27,12 @@ export function PricesPanel({ prices }: PricesPanelProps) {
                 <p className="font-semibold text-white">{price.source}</p>
                 <p className="text-sm text-slate-300">
                   {price.value} {price.unit}
-                  {price.is_fallback && <span className="ml-2 text-amber-300">⚠️ Fallback</span>}
+                  {price.is_fallback && <span className="ml-2 text-amber-300">回退值</span>}
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-xs text-slate-500">Priority: {price.priority}</p>
+              <p className="text-xs text-slate-500">优先级：{price.priority}</p>
             </div>
           </div>
         ))}

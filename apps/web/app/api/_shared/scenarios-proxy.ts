@@ -6,6 +6,13 @@ type ProxyOptions = {
   scenarioId?: string;
 };
 
+const DEFAULT_PROXY_TIMEOUT_MS = 8000;
+
+function proxyTimeoutMs(): number {
+  const value = Number(process.env.JETSCOPE_API_PROXY_TIMEOUT_MS ?? DEFAULT_PROXY_TIMEOUT_MS);
+  return Number.isFinite(value) && value > 0 ? value : DEFAULT_PROXY_TIMEOUT_MS;
+}
+
 function scenariosBaseUrl(): string {
   return `${API_BASE_URL}${API_PREFIX}/workspaces/${encodeURIComponent(WORKSPACE_SLUG)}/scenarios`;
 }
@@ -86,6 +93,7 @@ async function forwardToBackend(url: string, request: Request): Promise<Response
     headers,
     body,
     cache: 'no-store',
+    signal: AbortSignal.timeout(proxyTimeoutMs()),
   });
 }
 
@@ -111,11 +119,8 @@ export async function proxyScenariosRequest(options: ProxyOptions): Promise<Resp
   }
 
   if (method === 'GET') {
-    const upstream = await fetch(baseUrl, {
-      method: 'GET',
-      headers: { accept: 'application/json' },
-      cache: 'no-store',
-    });
+    const upstreamUrl = `${baseUrl}/${encodeURIComponent(scenarioId)}`;
+    const upstream = await forwardToBackend(upstreamUrl, request);
     const body = await readResponseBody(upstream);
 
     if (!upstream.ok) {
@@ -123,22 +128,7 @@ export async function proxyScenariosRequest(options: ProxyOptions): Promise<Resp
       return jsonError(upstream.status, error, detail);
     }
 
-    if (!Array.isArray(body)) {
-      return jsonError(502, 'Invalid upstream response', 'Expected scenario list from upstream');
-    }
-
-    const matched = body.find((item) => {
-      if (!item || typeof item !== 'object') {
-        return false;
-      }
-      return (item as Record<string, unknown>).id === scenarioId;
-    });
-
-    if (!matched) {
-      return jsonError(404, 'Scenario not found', `Scenario ${scenarioId} not found`);
-    }
-
-    return NextResponse.json(matched, { status: 200 });
+    return NextResponse.json(body, { status: upstream.status });
   }
 
   const upstreamUrl = `${baseUrl}/${encodeURIComponent(scenarioId)}`;
@@ -158,6 +148,11 @@ export async function proxyScenariosRequest(options: ProxyOptions): Promise<Resp
 }
 
 export function toProxyFailure(error: unknown): Response {
-  const detail = error instanceof Error ? error.message : 'Unknown proxy error';
-  return jsonError(502, 'Failed to reach upstream scenarios service', detail);
+  const isTimeout = error instanceof Error && error.name === 'TimeoutError';
+  const detail = isTimeout
+    ? 'Upstream scenarios service timed out'
+    : error instanceof Error
+      ? error.message
+      : 'Unknown proxy error';
+  return jsonError(isTimeout ? 504 : 502, 'Failed to reach upstream scenarios service', detail);
 }

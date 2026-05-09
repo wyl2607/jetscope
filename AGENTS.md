@@ -67,6 +67,8 @@ The repo-evolver direction is intentionally conservative:
 
 For non-trivial implementation or debugging, search local trace ledgers first:
 
+For non-trivial implementation or debugging, search local trace ledgers first:
+
 ```bash
 bash /Users/yumei/tools/automation/scripts/ai-trace.sh find "<keyword>"
 ```
