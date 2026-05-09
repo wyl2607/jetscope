@@ -106,6 +106,7 @@ tools/automation/scripts/*
 !tools/automation/scripts/task-similar-dedup.py
 !tools/automation/scripts/next-action-recommender.py
 !tools/automation/scripts/import-review-first-packets.py
+!tools/automation/scripts/daily-approval-inbox.py
 !tools/automation/workspace-guides/
 tools/automation/workspace-guides/*
 !tools/automation/workspace-guides/ai-entry-map.md
