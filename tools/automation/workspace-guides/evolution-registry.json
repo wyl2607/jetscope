@@ -231,6 +231,15 @@
       "zone": "source",
       "syncMode": "source-only",
       "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "adr-phase5-split-decision",
+      "source": "/Users/yumei/tools/automation/docs/decisions/phase5-split-decision.md",
+      "mirrors": [],
+      "role": "architecture-decision-record",
+      "zone": "source",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
     }
   ],
   "mirrorPairs": [
@@ -249,18 +258,18 @@
       "notes": "Obsidian index summarizes workspace project records; it is not a 1:1 mirror of PROJECT_PROGRESS.md."
     },
     {
-      "id": "tools-automation-progress-obsidian-proposed",
+      "id": "tools-automation-progress-obsidian-mirror",
       "source": "/Users/yumei/tools/automation/PROJECT_PROGRESS.md",
       "mirror": "/Users/yumei/Obsidian/MyKnowledgeVault/30-AI-Ingest/tools-automation-progress.md",
-      "status": "proposed",
+      "status": "active",
       "relationship": "mirror",
       "sourceOfTruth": "project",
       "direction": "project-to-obsidian",
       "privacyGate": "required-before-publish",
       "conflictPolicy": "project-wins-unless-human-promotes-obsidian-note",
-      "syncMode": "approval-required",
+      "syncMode": "manual-review",
       "scanner": "doc-drift-auditor",
-      "notes": "Target note is not created yet; registry records the intended pair so daily evolution can block blind sync."
+      "notes": "Mirror created 2026-05-08 with user approval. Content is a curated summary; canonical truth remains PROJECT_PROGRESS.md."
     }
   ],
   "projects": [

@@ -4,7 +4,9 @@
 
 `tools/automation` 是 `/Users/yumei` 工作区的本地自动化包，负责跨 AI、跨节点、trace ledger、并行开发、VPS 边界和 Windows handoff。
 
-它暂时不拆成独立项目。当前实现仍强依赖本机路径、Windows 映射、`.omx` 集群状态、launchd 和 workspace ledger。先在本目录内稳定 source/runtime 边界，后续接口稳定后再考虑独立 repo/package。
+Phase 5 已经有 accepted ADR：`docs/decisions/phase5-split-decision.md` supersedes the older "do not split yet" baseline. The local review-ready closure can pass inside this package, but actual split execution remains deferred: no new repo, push, PR, launchd mutation, or remote/sync/deploy action is part of the default workflow.
+
+当前实现仍强依赖本机路径、Windows 映射、`.omx` 集群状态、launchd 和 workspace ledger。`tools/automation` 继续作为本机操作副本；任何独立 repo/package 执行都必须走 ADR 中的人工审批和恢复演练。
 
 当前状态入口：
 
@@ -28,7 +30,7 @@
 
 Phase H 多智能体治理入口：`workspace-guides/multi-agent/README.md`。主智能体只调度不干活，子智能体按 planner/developer/tester/reviewer 岗位执行，治理脚本默认只读 runtime 并输出 digest，避免反复消耗 token 做同类判断。
 
-当前结论：先保持为本地 workspace automation package，不拆独立项目。拆分判断标准记录在 `workspace-guides/automation-project-split-decision.md`。
+当前结论：Phase 5 决策已记录为可拆分方向，但执行仍 deferred。旧判断标准记录在 `workspace-guides/automation-project-split-decision.md`，现已被 `docs/decisions/phase5-split-decision.md` 取代为当前事实源。
 
 ## 统一日常入口
 

@@ -4,14 +4,14 @@
 
 - 这不是从零新建平台。
 - 这份计划只讨论如何在 `tools/automation` 内复用现有系统，逐步收敛成一个 Git-first 的 repo-evolver 维护流水线。
-- 当前不拆独立 repo/package；后续是否拆分，必须等边界、清单和治理规则稳定后再评估。
+- 当前尚未执行独立 repo/package 拆分；Phase 5 ADR 已记录可拆分方向，但执行仍需人工操作和单独验证。
 
 ## Current State
 
 - `PROJECT_PROGRESS.md` 记录了当前自演化队列、daily reports、task packets、以及 skill governance 的推进状态。
 - `README.md` 说明了现有 automation entrypoints、目录边界、以及当前仍属于本地 workspace automation package 的定位。
 - `workspace-guides/automation-source-runtime-classification.md` 已经把 source、runtime、generated evidence、hand-off material、high-risk tooling 做了分类。
-- `workspace-guides/automation-project-split-decision.md` 明确写着：现在不要把 `tools/automation` 拆成独立包。
+- `workspace-guides/automation-project-split-decision.md` 是原始不拆分基线；当前已由 `docs/decisions/phase5-split-decision.md` 记录新的 Phase 5 决策，但执行仍 deferred。
 - `runtime/self-evolution/daily-evolution-2026-05-08.json` 与 `.md` 展示了当前 drift queue、优先级分布、ignored findings 和 review-first task packets。
 - `runtime/self-evolution/daily-evolution-2026-05-08-task-packets.json` 提供了可执行的 task packet 形态，说明现阶段已经具备 review-first 交接素材，但还没有自动修复型平台接口。
 
@@ -76,8 +76,11 @@
 
 ### Phase 5: Reconsider repo/package split only after the above is stable
 
-- 只有当 source/runtime 边界、文档治理、技能治理、镜像治理和恢复治理都稳定后，才重新评估是否拆分。
-- 在那之前，`tools/automation` 继续作为本地 workspace automation package。
+- **2026-05-08 更新**：Phase 0-4 全部通过，用户批准记录拆分决策。
+- 已产出 `docs/decisions/phase5-split-decision.md`（ADR），包含可移植清单和 7 步迁移计划。
+- 拆分执行仍为 deferred，需人工操作（`git init`、parameterization、push），不纳入自动 pipeline。
+- `open_queue=20` 属于持续维护 backlog，必须在 audit/dashboard 中可见，但不阻塞 Phase 5 本地可审查闭环。
+- `tools/automation` 继续作为操作副本；新仓库为发布源。
 
 ## Execution Handoff
 

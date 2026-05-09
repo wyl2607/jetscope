@@ -46,6 +46,41 @@ def read_text(path: Path) -> str:
         return ""
 
 
+def parse_frontmatter(text: str) -> dict[str, Any]:
+    if not text.startswith("---\n"):
+        return {}
+    end = text.find("\n---", 4)
+    if end == -1:
+        return {}
+    data: dict[str, Any] = {}
+    current_key = ""
+    for raw_line in text[4:end].splitlines():
+        line = raw_line.rstrip()
+        if not line or line.lstrip().startswith("#"):
+            continue
+        if line.startswith("  - ") and current_key:
+            value = line[4:].strip()
+            existing = data.setdefault(current_key, [])
+            if isinstance(existing, list):
+                existing.append(value)
+            continue
+        if ":" not in line:
+            continue
+        key, raw_value = line.split(":", 1)
+        key = key.strip()
+        value = raw_value.strip()
+        current_key = key
+        if not value:
+            data[key] = []
+        elif value.lower() == "true":
+            data[key] = True
+        elif value.lower() == "false":
+            data[key] = False
+        else:
+            data[key] = value.strip('"').strip("'")
+    return data
+
+
 def latest_daily_report(root: Path = ROOT) -> Path:
     candidates = sorted((root / "runtime/self-evolution").glob("daily-evolution-20*.json"))
     candidates = [
@@ -140,6 +175,36 @@ def proposed_mirror_findings(mirror: dict[str, Any], registry: dict[str, Any]) -
     return findings
 
 
+def phase5_decision_document(ctx: dict[str, Any]) -> dict[str, Any]:
+    adr_path = ctx["plan_path"].parent / "docs/decisions/phase5-split-decision.md"
+    adr_text = read_text(adr_path)
+    frontmatter = parse_frontmatter(adr_text)
+    lower_text = lower(adr_text)
+    phase5_markers = ("phase 5", "phase-5", "phase5", "adr-phase5")
+    registered = any(
+        isinstance(item, dict) and item.get("source") == str(adr_path)
+        for item in as_list(ctx["registry"].get("documentSurfaces"))
+    )
+    if not adr_path.exists():
+        status = "missing"
+    elif frontmatter.get("decision_status") in {"accepted", "drafted"}:
+        status = str(frontmatter["decision_status"])
+    elif "accepted" in lower_text and any(marker in lower_text for marker in phase5_markers):
+        status = "accepted"
+    else:
+        status = "drafted"
+    return {
+        "status": status,
+        "path": str(adr_path),
+        "exists": adr_path.exists(),
+        "registered": registered,
+        "execution": frontmatter.get("execution_status") or "deferred",
+        "split_allowed": frontmatter.get("split_allowed") is True,
+        "automatic_split_allowed": frontmatter.get("automatic_split_allowed") is True,
+        "approval_required_for": as_list(frontmatter.get("approval_required_for")),
+    }
+
+
 def inventory_categories(manifest: dict[str, Any], registry: dict[str, Any], mirror: dict[str, Any]) -> dict[str, bool]:
     summary = manifest.get("summary") if isinstance(manifest.get("summary"), dict) else {}
     by_classification = summary.get("by_classification") if isinstance(summary.get("by_classification"), dict) else {}
@@ -165,6 +230,16 @@ def status_from_bool(passed: bool, weak: bool = False) -> Status:
 
 def is_gap_status(status: Status) -> bool:
     return status not in NON_BLOCKING_STATUSES
+
+
+def checklist_projection(item: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": item["id"],
+        "status": item["status"],
+        "requirement": item["requirement"],
+        "note": item.get("note", ""),
+        "evidence_sources": item["evidence_sources"],
+    }
 
 
 def checklist_item(check_id: str, requirement: str, evidence_sources: list[str], status: Status, note: str = "") -> dict[str, Any]:
@@ -196,8 +271,6 @@ def split_readiness(ctx: dict[str, Any]) -> dict[str, Any]:
         reasons.append(f"missing_inventory_categories={','.join(missing_categories)}")
     if unclassified_count:
         reasons.append(f"unclassified_count={unclassified_count}")
-    if queue_count:
-        reasons.append(f"open_queue={queue_count}")
     if proposed:
         reasons.append(f"proposed_mirror_count={len(proposed)}")
     if hard_gate_failed_count:
@@ -205,11 +278,19 @@ def split_readiness(ctx: dict[str, Any]) -> dict[str, Any]:
     if not restore_ok:
         reasons.append("restore_ok=false")
     reasons.append("explicit user approval")
-    decision = "defer" if len(reasons) > 1 else "ready-for-human-review"
+    decision_document = phase5_decision_document(ctx)
+    execution_decision = "defer" if decision_document.get("execution") == "deferred" or not decision_document.get("split_allowed") else "ready-for-human-review"
     return {
-        "decision": decision,
+        "decision": execution_decision,
+        "execution_decision": execution_decision,
+        "phase5_decision": decision_document["status"],
+        "decision_document": decision_document,
         "split_allowed": False,
         "reasons": reasons,
+        "maintenance_backlog": {
+            "open_queue": queue_count,
+            "blocking_for_local_closure": False,
+        },
         "approval_required": proposed,
         "evidence": {
             "missing_inventory_categories": missing_categories,
@@ -344,7 +425,18 @@ def phase_items(ctx: dict[str, Any]) -> list[dict[str, Any]]:
     queue_count = len(queue_items(daily))
     proposed = proposed_mirror_findings(mirror, registry)
     hard_gate_failed_count = int(nested(control, "summary", "hard_gate_failed_count", default=0) or 0)
-    phase_5_stable = queue_count == 0 and not proposed and hard_gate_failed_count == 0 and restore.get("ok") is True
+    decision_document = phase5_decision_document(ctx)
+    phase_5_local_closed = (
+        decision_document.get("status") == "accepted"
+        and decision_document.get("execution") == "deferred"
+        and decision_document.get("registered") is True
+        and decision_document.get("split_allowed") is False
+        and decision_document.get("automatic_split_allowed") is False
+        and unclassified_count == 0
+        and not proposed
+        and hard_gate_failed_count == 0
+        and restore.get("ok") is True
+    )
     return [
         checklist_item(
             "phase-0-inventory",
@@ -400,10 +492,10 @@ def phase_items(ctx: dict[str, Any]) -> list[dict[str, Any]]:
         ),
         checklist_item(
             "phase-5-stability-before-split",
-            "Phase 5 may reconsider repo/package split only after queue, mirror, and hard-gate evidence are stable.",
+            "Phase 5 local closure requires accepted ADR, deferred execution, disabled automatic split, clean manifests, no proposed mirror, clear hard gates, and restore policy evidence.",
             ["plan.md:Phase 5", "daily-evolution-*.json:queue", "mirror-drift-scan.json:findings", "daily-evolution-control.json:summary"],
-            "pass" if phase_5_stable else "deferred",
-            f"open_queue={queue_count}, proposed_mirror_count={len(proposed)}, hard_gate_failed_count={hard_gate_failed_count}",
+            "pass" if phase_5_local_closed else "deferred",
+            f"maintenance_backlog_open_queue={queue_count}, blocking_for_local_closure=false, proposed_mirror_count={len(proposed)}, hard_gate_failed_count={hard_gate_failed_count}, phase5_decision={decision_document.get('status')}",
         ),
     ]
 
@@ -546,17 +638,8 @@ def build_report(
     ctx = build_context(plan_path, manifest_path, daily_path, packets_path, mirror_path, registry_path, restore_path, control_path)
     checklist = build_checklist(ctx)
     readiness = split_readiness(ctx)
-    gaps = [
-        {
-            "id": item["id"],
-            "status": item["status"],
-            "requirement": item["requirement"],
-            "note": item.get("note", ""),
-            "evidence_sources": item["evidence_sources"],
-        }
-        for item in checklist
-        if is_gap_status(item["status"])
-    ]
+    gaps = [checklist_projection(item) for item in checklist if is_gap_status(item["status"])]
+    deferred_items = [checklist_projection(item) for item in checklist if item["status"] == "deferred"]
     return {
         "ok": not gaps,
         "generated_at": utc_now(),
@@ -564,6 +647,7 @@ def build_report(
         "split_readiness": readiness,
         "checklist": checklist,
         "gaps": gaps,
+        "deferred_items": deferred_items,
         "evidence_summary": build_evidence_summary(ctx),
     }
 
@@ -588,14 +672,19 @@ def render_markdown(report: dict[str, Any]) -> str:
         if isinstance(item, dict)
     ]
     lines.extend([
+        f"- phase5 decision document: `{readiness.get('phase5_decision')}`",
         f"- decision: `{readiness.get('decision')}`",
+        f"- execution decision: `{readiness.get('execution_decision')}`",
         f"- split allowed: `{str(readiness.get('split_allowed')).lower()}`",
         f"- reasons: `{', '.join(str(reason) for reason in reasons) if reasons else 'none'}`",
         f"- approval required: `{', '.join(approval_ids) if approval_ids else 'none'}`",
-        "",
-        "## Checklist",
-        "",
     ])
+    backlog = readiness.get("maintenance_backlog") if isinstance(readiness.get("maintenance_backlog"), dict) else {}
+    if backlog:
+        lines.append(
+            f"- maintenance backlog: `open_queue={backlog.get('open_queue')}, blocking_for_local_closure={str(backlog.get('blocking_for_local_closure')).lower()}`"
+        )
+    lines.extend(["", "## Checklist", ""])
     for item in report.get("checklist") or []:
         lines.append(f"- `{item.get('status')}` `{item.get('id')}`: {item.get('requirement')}")
         lines.append(f"  - evidence sources: `{', '.join(item.get('evidence_sources') or [])}`")
@@ -606,6 +695,14 @@ def render_markdown(report: dict[str, Any]) -> str:
     if not gaps:
         lines.append("- none")
     for item in gaps:
+        lines.append(f"- `{item.get('status')}` `{item.get('id')}`: {item.get('requirement')}")
+        if item.get("note"):
+            lines.append(f"  - note: {item.get('note')}")
+    lines.extend(["", "## Deferred Items", ""])
+    deferred_items = report.get("deferred_items") or []
+    if not deferred_items:
+        lines.append("- none")
+    for item in deferred_items:
         lines.append(f"- `{item.get('status')}` `{item.get('id')}`: {item.get('requirement')}")
         if item.get("note"):
             lines.append(f"  - note: {item.get('note')}")

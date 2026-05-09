@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import tempfile
@@ -106,15 +107,35 @@ class SkillChainDashboardStaticUiTests(unittest.TestCase):
             root = Path(tmp)
             out_dir = root / "out"
             out_dir.mkdir()
+            opencode_config = root / ".config/opencode/opencode.json"
+            opencode_config.parent.mkdir(parents=True)
+            opencode_config.write_text(
+                json.dumps(
+                    {
+                        "provider": {
+                            "codex-relay-backup": {
+                                "models": {
+                                    "gpt-5.5-medium": {"name": "GPT-5.5 Medium"}
+                                }
+                            }
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
             model_state = root / "ai-model-router-state.json"
             now = 1_800_000_000
             model_state.write_text(
                 json.dumps(
                     {
                         "models": {
-                            "opencode-go/deepseek-v4-pro": {
+                            "codex-relay-backup/gpt-5.5-medium": {
                                 "last_seen": now - 10,
                                 "last_success": now - 20,
+                                "failure_count": 0,
+                            },
+                            "opencode-go/deepseek-v4-pro": {
+                                "last_seen": now - 10,
                                 "failure_count": 0,
                             },
                             "cmd/deepseek-v4-pro": {
@@ -149,19 +170,22 @@ class SkillChainDashboardStaticUiTests(unittest.TestCase):
                 ],
                 check=True,
                 cwd=str(ROOT),
+                env={**os.environ, "HOME": str(root)},
                 stdout=subprocess.DEVNULL,
             )
             data = json.loads((out_dir / "data.json").read_text(encoding="utf-8"))
 
         router = data["model_router"]
         self.assertFalse(router["missing"])
-        self.assertEqual(router["summary"]["models"], 3)
+        self.assertEqual(router["summary"]["models"], 4)
         self.assertEqual(router["summary"]["cooldown"], 1)
         self.assertEqual(router["summary"]["fatal"], 1)
+        self.assertEqual(router["summary"]["unavailable"], 1)
         self.assertEqual(router["summary"]["last_success"], 1)
         self.assertEqual(router["models"][0]["model"], "cmd/deepseek-v4-pro")
         statuses = {item["model"]: item["status"] for item in router["models"]}
-        self.assertEqual(statuses["opencode-go/deepseek-v4-pro"], "ready")
+        self.assertEqual(statuses["codex-relay-backup/gpt-5.5-medium"], "ready")
+        self.assertEqual(statuses["opencode-go/deepseek-v4-pro"], "unavailable")
         self.assertEqual(statuses["cmd/deepseek-v4-pro"], "cooldown")
         self.assertEqual(statuses["gpt-5.5"], "fatal")
 
@@ -179,11 +203,34 @@ class SkillChainDashboardStaticUiTests(unittest.TestCase):
                             {"id": "mainline-1", "status": "pass", "requirement": "covered"},
                             {"id": "phase-3", "status": "weak", "requirement": "approval needed"},
                             {"id": "phase-5", "status": "fail", "requirement": "blocked", "note": "open_queue=20"},
+                            {"id": "phase-5-deferred", "status": "deferred", "requirement": "split deferred", "note": "open_queue=20"},
                         ],
                         "gaps": [
                             {"id": "phase-3", "status": "weak", "note": "mirror approval pending"},
                             {"id": "phase-5", "status": "fail", "note": "split blocked"},
                         ],
+                        "deferred_items": [
+                            {"id": "phase-5-deferred", "status": "deferred", "note": "open_queue=20"},
+                        ],
+                        "split_readiness": {
+                            "phase5_decision": "accepted",
+                            "execution_decision": "defer",
+                            "split_allowed": False,
+                            "reasons": ["explicit user approval"],
+                            "maintenance_backlog": {
+                                "open_queue": 20,
+                                "blocking_for_local_closure": False,
+                            },
+                            "decision_document": {
+                                "status": "accepted",
+                                "exists": True,
+                                "registered": True,
+                                "execution": "deferred",
+                                "split_allowed": False,
+                                "automatic_split_allowed": False,
+                                "approval_required_for": ["git init", "push"],
+                            },
+                        },
                     },
                     indent=2,
                 )
@@ -223,14 +270,26 @@ class SkillChainDashboardStaticUiTests(unittest.TestCase):
             data = json.loads((out_dir / "data.json").read_text(encoding="utf-8"))
 
         repo_evolver = data["repo_evolver"]
-        self.assertEqual(repo_evolver["summary"]["checks"], 3)
+        self.assertEqual(repo_evolver["summary"]["checks"], 4)
         self.assertEqual(repo_evolver["summary"]["pass"], 1)
         self.assertEqual(repo_evolver["summary"]["weak"], 1)
         self.assertEqual(repo_evolver["summary"]["fail"], 1)
+        self.assertEqual(repo_evolver["summary"]["deferred"], 1)
         self.assertEqual(repo_evolver["summary"]["daily_step_count"], 10)
         self.assertTrue(repo_evolver["gate"]["hard_gates_clear"])
         self.assertTrue(repo_evolver["gate"]["split_reconsideration_blocked"])
+        self.assertEqual(repo_evolver["split"]["phase5_decision"], "accepted")
+        self.assertEqual(repo_evolver["split"]["execution_decision"], "defer")
+        self.assertFalse(repo_evolver["split"]["split_allowed"])
+        self.assertEqual(repo_evolver["split"]["decision_document"]["status"], "accepted")
+        self.assertEqual(repo_evolver["split"]["decision_document"]["execution"], "deferred")
+        self.assertFalse(repo_evolver["split"]["decision_document"]["split_allowed"])
+        self.assertIn("git init", repo_evolver["split"]["decision_document"]["approval_required_for"])
+        self.assertEqual(repo_evolver["split"]["maintenance_backlog"]["open_queue"], 20)
+        self.assertFalse(repo_evolver["split"]["maintenance_backlog"]["blocking_for_local_closure"])
+        self.assertNotIn("open_queue=20", repo_evolver["split"]["reasons"])
         self.assertEqual(repo_evolver["gaps"][0]["id"], "phase-3")
+        self.assertEqual(repo_evolver["deferred_items"][0]["id"], "phase-5-deferred")
 
     def test_skill_library_ui_renders_duplicate_metadata_panel(self) -> None:
         app_js = (DASHBOARD_DIR / "app.js").read_text(encoding="utf-8")
@@ -259,10 +318,12 @@ class SkillChainDashboardStaticUiTests(unittest.TestCase):
         self.assertIn("data && data.model_router", app_js)
         self.assertIn("summary.cooldown", app_js)
         self.assertIn("summary.fatal", app_js)
+        self.assertIn("summary.unavailable", app_js)
         self.assertIn("model-router-health", app_js)
         self.assertEqual(i18n["zh"]["modelRouterHealth"], "模型路由健康")
         self.assertEqual(i18n["zh"]["modelCooldown"], "冷却")
         self.assertEqual(i18n["zh"]["modelFatal"], "致命")
+        self.assertEqual(i18n["zh"]["modelUnavailable"], "未注册")
 
     def test_skill_library_renders_duplicate_metadata_panel(self) -> None:
         app_js = (DASHBOARD_DIR / "app.js").read_text(encoding="utf-8")
@@ -283,18 +344,18 @@ class SkillChainDashboardStaticUiTests(unittest.TestCase):
         self.assertRegex(styles, r"\.repo-evolver-(?:trace|evidence|next)[\s\S]*?overflow-wrap:\s*anywhere")
         self.assertRegex(styles, r"\.repo-evolver-(?:trace|evidence|next)[\s\S]*?word-break:\s*break-word")
 
-    def test_dispatch_ui_names_deepseek_and_opencode_go_lanes(self) -> None:
+    def test_dispatch_ui_names_command_code_and_opencode_policy_lanes(self) -> None:
         app_js = (DASHBOARD_DIR / "app.js").read_text(encoding="utf-8")
         i18n = json.loads((DASHBOARD_DIR / "i18n.json").read_text(encoding="utf-8"))
 
-        self.assertIn("dispatch-lane-deepseek-flash", app_js)
-        self.assertIn("dispatch-lane-opencode-go", app_js)
+        self.assertIn("dispatch-lane-command-code-deepseek", app_js)
+        self.assertIn("dispatch-lane-opencode-policy", app_js)
         self.assertIn("dispatchLaneDeepSeekFlashInvoke", app_js)
         self.assertIn("dispatchLaneOpenCodeGoInvoke", app_js)
-        self.assertIn("opencode-go/deepseek-v4-flash", i18n["zh"]["dispatchLaneDeepSeekFlashInvoke"])
-        self.assertIn("opencode-go/deepseek-v4-pro", i18n["zh"]["dispatchLaneOpenCodeGoInvoke"])
-        self.assertEqual(i18n["zh"]["dispatchLaneDeepSeekFlash"], "DeepSeek V4 Flash 车道")
-        self.assertEqual(i18n["zh"]["dispatchLaneOpenCodeGo"], "OpenCode Go 车道")
+        self.assertIn("cmd -p", i18n["zh"]["dispatchLaneDeepSeekFlashInvoke"])
+        self.assertIn("ai-model-router.py --task hard_review", i18n["zh"]["dispatchLaneOpenCodeGoInvoke"])
+        self.assertEqual(i18n["zh"]["dispatchLaneDeepSeekFlash"], "Command Code DeepSeek 车道")
+        self.assertEqual(i18n["zh"]["dispatchLaneOpenCodeGo"], "OpenCode 策略车道")
 
     def test_repo_evolver_ui_renders_phase_gate_panel(self) -> None:
         app_js = (DASHBOARD_DIR / "app.js").read_text(encoding="utf-8")

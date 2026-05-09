@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import time
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -26,6 +27,7 @@ DEFAULT_TRACE_FILES = (
 DEFAULT_OUT_DIR = ROOT / "runtime/skill-chains/dashboard"
 DEFAULT_SKILL_LIBRARY = DEFAULT_OUT_DIR / "skills.json"
 DEFAULT_MODEL_ROUTER_STATE = ROOT / "runtime/ai-model-router/state.json"
+DEFAULT_OPENCODE_CONFIG = Path.home() / ".config" / "opencode" / "opencode.json"
 DEFAULT_REPO_EVOLVER_PLAN_AUDIT = ROOT / "runtime/self-evolution/repo-evolver-plan-audit.json"
 DEFAULT_DAILY_EVOLUTION_CONTROL = ROOT / "runtime/self-evolution/daily-evolution-control.json"
 CLAUDE_SKILL_ROOTS = (Path("/Users/yumei/.claude/skills"),)
@@ -266,12 +268,49 @@ def int_value(value: Any, default: int = 0) -> int:
         return default
 
 
+def registered_opencode_models(config_path: Path = DEFAULT_OPENCODE_CONFIG) -> set[str]:
+    registered = cli_opencode_models()
+    data = read_json(config_path)
+    providers = data.get("provider", {}) if isinstance(data, dict) else {}
+    if not isinstance(providers, dict):
+        return registered
+    for provider_name, provider_info in providers.items():
+        if not isinstance(provider_info, dict):
+            continue
+        models = provider_info.get("models", {})
+        if not isinstance(models, dict):
+            continue
+        for model_name in models:
+            registered.add(f"{provider_name}/{model_name}")
+    return registered
+
+
+def cli_opencode_models(timeout: int = 10) -> set[str]:
+    try:
+        proc = subprocess.run(["opencode", "models"], capture_output=True, text=True, timeout=timeout, check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        return set()
+    if proc.returncode != 0:
+        return set()
+    models: set[str] = set()
+    for raw in proc.stdout.splitlines():
+        item = raw.strip()
+        if item and "/" in item:
+            models.add(item)
+    return models
+
+
+def is_opencode_model(model: str) -> bool:
+    return "/" in model and not model.startswith("cmd/") and not model.startswith("copilot/")
+
+
 def model_router_snapshot(path: Path, now: Optional[int] = None) -> Dict[str, Any]:
     data = read_json(path)
     now = now or int(time.time())
     models = data.get("models", {})
     if not isinstance(models, dict):
         models = {}
+    registered = registered_opencode_models()
 
     rows: List[Dict[str, Any]] = []
     summary = {
@@ -279,15 +318,20 @@ def model_router_snapshot(path: Path, now: Optional[int] = None) -> Dict[str, An
         "ready": 0,
         "cooldown": 0,
         "fatal": 0,
+        "unavailable": 0,
         "last_success": 0,
     }
     for model, entry in models.items():
+        model_name = str(model)
         if not isinstance(entry, dict):
             entry = {}
         cooldown_until = int_value(entry.get("cooldown_until"))
         fatal = bool(entry.get("fatal"))
         last_success = int_value(entry.get("last_success"))
-        if fatal:
+        unavailable = is_opencode_model(model_name) and model_name not in registered
+        if unavailable:
+            status = "unavailable"
+        elif fatal:
             status = "fatal"
         elif cooldown_until > now:
             status = "cooldown"
@@ -299,8 +343,9 @@ def model_router_snapshot(path: Path, now: Optional[int] = None) -> Dict[str, An
             summary["last_success"] += 1
         rows.append(
             {
-                "model": str(model),
+                "model": model_name,
                 "status": status,
+                "registered": not unavailable,
                 "failure_count": int_value(entry.get("failure_count")),
                 "cooldown_until": cooldown_until,
                 "last_seen": int_value(entry.get("last_seen")),
@@ -310,7 +355,7 @@ def model_router_snapshot(path: Path, now: Optional[int] = None) -> Dict[str, An
             }
         )
 
-    status_order = {"cooldown": 0, "fatal": 1, "ready": 2}
+    status_order = {"cooldown": 0, "fatal": 1, "unavailable": 2, "ready": 3}
     rows.sort(key=lambda item: (status_order.get(item["status"], 9), item["model"]))
     return {
         "source": str(path),
@@ -320,6 +365,7 @@ def model_router_snapshot(path: Path, now: Optional[int] = None) -> Dict[str, An
         "gate": {
             "fatal_clear": summary["fatal"] == 0,
             "cooldown_clear": summary["cooldown"] == 0,
+            "unavailable_clear": summary["unavailable"] == 0,
         },
     }
 
@@ -337,6 +383,15 @@ def repo_evolver_snapshot(plan_audit_path: Path, daily_control_path: Path) -> Di
     if not isinstance(control_summary, dict):
         control_summary = {}
     evidence_summary = plan_audit.get("evidence_summary", {})
+    split_readiness = plan_audit.get("split_readiness", {})
+    if not isinstance(split_readiness, dict):
+        split_readiness = {}
+    decision_document = split_readiness.get("decision_document", {})
+    if not isinstance(decision_document, dict):
+        decision_document = {}
+    deferred_items = plan_audit.get("deferred_items", [])
+    if not isinstance(deferred_items, list):
+        deferred_items = []
     manifest_summary: Dict[str, Any] = {}
     if isinstance(evidence_summary, dict) and isinstance(evidence_summary.get("manifest_summary"), dict):
         manifest_summary = evidence_summary["manifest_summary"]
@@ -361,10 +416,24 @@ def repo_evolver_snapshot(plan_audit_path: Path, daily_control_path: Path) -> Di
                 "evidence_sources": item.get("evidence_sources", []),
             }
         )
+    normalized_deferred: List[Dict[str, Any]] = []
+    for item in deferred_items:
+        if not isinstance(item, dict):
+            continue
+        normalized_deferred.append(
+            {
+                "id": str(item.get("id") or ""),
+                "status": str(item.get("status") or "unknown"),
+                "requirement": str(item.get("requirement") or ""),
+                "note": str(item.get("note") or ""),
+                "evidence_sources": item.get("evidence_sources", []),
+            }
+        )
 
     hard_gate_failed = int_value(control_summary.get("hard_gate_failed_count"))
     weak_count = status_counts.get("weak", 0)
     fail_count = status_counts.get("fail", 0)
+    split_allowed = bool(split_readiness.get("split_allowed", False))
     return {
         "source": str(plan_audit_path),
         "control_source": str(daily_control_path),
@@ -381,6 +450,7 @@ def repo_evolver_snapshot(plan_audit_path: Path, daily_control_path: Path) -> Di
             "fail": fail_count,
             "unknown": status_counts.get("unknown", 0),
             "gaps": len(normalized_gaps),
+            "deferred": len(normalized_deferred),
             "hard_gate_failed_count": hard_gate_failed,
             "daily_failed_count": int_value(control_summary.get("failed_count")),
             "daily_step_count": int_value(control_summary.get("step_count")),
@@ -388,10 +458,38 @@ def repo_evolver_snapshot(plan_audit_path: Path, daily_control_path: Path) -> Di
         },
         "gate": {
             "hard_gates_clear": hard_gate_failed == 0,
-            "split_reconsideration_blocked": fail_count > 0 or weak_count > 0 or hard_gate_failed > 0,
+            "split_reconsideration_blocked": not split_allowed or fail_count > 0 or weak_count > 0 or hard_gate_failed > 0,
             "approval_required": True,
         },
+        "split": {
+            "phase5_decision": str(split_readiness.get("phase5_decision") or decision_document.get("status") or "unknown"),
+            "execution_decision": str(split_readiness.get("execution_decision") or split_readiness.get("decision") or "unknown"),
+            "split_allowed": split_allowed,
+            "decision_document": {
+                "status": str(decision_document.get("status") or "unknown"),
+                "exists": bool(decision_document.get("exists", False)),
+                "registered": bool(decision_document.get("registered", False)),
+                "execution": str(decision_document.get("execution") or ""),
+                "split_allowed": bool(decision_document.get("split_allowed", False)),
+                "automatic_split_allowed": bool(decision_document.get("automatic_split_allowed", False)),
+                "approval_required_for": [
+                    str(item) for item in decision_document.get("approval_required_for", [])
+                ]
+                if isinstance(decision_document.get("approval_required_for"), list)
+                else [],
+            },
+            "reasons": [str(item) for item in split_readiness.get("reasons", [])] if isinstance(split_readiness.get("reasons"), list) else [],
+            "maintenance_backlog": {
+                "open_queue": int_value((split_readiness.get("maintenance_backlog") or {}).get("open_queue"))
+                if isinstance(split_readiness.get("maintenance_backlog"), dict)
+                else 0,
+                "blocking_for_local_closure": bool((split_readiness.get("maintenance_backlog") or {}).get("blocking_for_local_closure"))
+                if isinstance(split_readiness.get("maintenance_backlog"), dict)
+                else False,
+            },
+        },
         "gaps": normalized_gaps,
+        "deferred_items": normalized_deferred,
     }
 
 
