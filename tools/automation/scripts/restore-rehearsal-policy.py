@@ -30,6 +30,14 @@ REQUIRED_APPROVAL_ACTIONS = {
     "destructive-cleanup",
 }
 
+
+def source_truth(item: Any) -> str | None:
+    if not isinstance(item, dict):
+        return None
+    if "sourceOfTruth" in item:
+        return item.get("sourceOfTruth")
+    return item.get("source_of_truth")
+
 REQUIRED_VERIFICATION_COMMANDS = {
     "python3 scripts/automationctl manifest --check",
     "python3 scripts/restore-rehearsal-policy.py",
@@ -230,7 +238,11 @@ def build_report(manifest_path: Path = DEFAULT_MANIFEST, mirror_path: Path = DEF
     mirror_ok = (
         mirror.get("ok") is True
         and int(mirror_summary.get("blocking_count") or 0) == 0
-        and all(item.get("source_of_truth", "project") == "project" for item in mirror_findings if isinstance(item, dict) and item.get("kind") != "derived-index-registered")
+        and all(
+            source_truth(item) in (None, "project")
+            for item in mirror_findings
+            if isinstance(item, dict) and item.get("kind") != "derived-index-registered"
+        )
         and any(item.get("kind") == "derived-index-registered" for item in mirror_findings if isinstance(item, dict))
     )
     backup_policy_ok = (

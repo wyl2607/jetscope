@@ -386,6 +386,75 @@ class RestoreRehearsalPolicyTests(unittest.TestCase):
         self.assertEqual(checklist["backup-cadence-retention"]["status"], "fail")
         self.assertEqual(checklist["forbidden-actions-no-write"]["status"], "fail")
 
+    def test_policy_fails_when_source_truth_is_not_project(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = root / "manifest.json"
+            mirror = root / "mirror.json"
+            registry = root / "registry.json"
+            manifest.write_text(
+                self.module.json.dumps(
+                    {
+                        "summary": {"unclassified_count": 0, "source_candidate_count": 1, "excluded_by_default_count": 1},
+                        "git_visibility": {
+                            "automation_ignored": True,
+                            "ignore_rule": ".gitignore:103:tools/automation/*",
+                            "source_ignore_rule": ".gitignore:103:tools/automation/*",
+                            "runtime_ignore_rule": ".gitignore:108:tools/automation/runtime/",
+                        },
+                        "publication_gate": {
+                            "runtime_excluded_by_default": True,
+                            "requires_secret_scan": True,
+                            "requires_user_approval_for_push": True,
+                            "requires_review_for_high_risk": True,
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            mirror.write_text(
+                self.module.json.dumps(
+                    {
+                        "ok": True,
+                        "summary": {"blocking_count": 0},
+                        "findings": [
+                            {"kind": "derived-index-registered"},
+                            {"kind": "mirror-content-drift", "sourceOfTruth": "obsidian"},
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            registry.write_text(
+                self.module.json.dumps(
+                    {
+                        "safety": {
+                            "forbiddenWithoutApproval": ["push", "pr", "deploy", "remote-mutation", "secret-access", "destructive-cleanup", "broad-sync"]
+                        },
+                        "backupPolicy": {
+                            "cadence": "before-push-and-weekly-local",
+                            "retention": "keep-last-7-local-evidence-reports",
+                            "backupScope": "classified-source-plus-local-runtime-evidence-manifest",
+                            "restoreTarget": "source-only",
+                            "runtimeLane": "separate-local-evidence-only",
+                            "approvalRequiredFor": sorted(self.module.REQUIRED_APPROVAL_ACTIONS),
+                            "verificationCommands": [
+                                "python3 scripts/automationctl manifest --check",
+                                "python3 scripts/restore-rehearsal-policy.py",
+                            ],
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            report = self.module.build_report(manifest, mirror, registry)
+
+        self.assertFalse(report["ok"])
+        checks = {item["id"]: item for item in report["checks"]}
+        self.assertEqual(checks["mirror-policy"]["status"], "fail")
+        self.assertEqual(checks["mirror-policy"]["evidence"]["finding_count"], 2)
+
 
 if __name__ == "__main__":
     unittest.main()
