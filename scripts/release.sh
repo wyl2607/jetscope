@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VPS_HOST="${JETSCOPE_VPS_HOST:-usa-vps}"
+VPS_HOST="${JETSCOPE_VPS_HOST:-}"
 VPS_DEPLOY_DIR="${JETSCOPE_VPS_DEPLOY_DIR:-/opt/jetscope}"
 EXPECTED_COMMIT=""
 APPROVAL_TOKEN=""
@@ -54,14 +54,14 @@ Usage: ./scripts/release.sh [options]
 Default flow:
   1. npm run preflight
   2. ./scripts/publish-to-github.sh
-  3. ssh usa-vps "cd /opt/jetscope && JETSCOPE_FORCE_DEPLOY=1 JETSCOPE_EXPECT_COMMIT=<HEAD> APPROVE_JETSCOPE_DEPLOY=<token> bash ./scripts/auto-deploy.sh --approval-token <token>"
+  3. ssh <production-host> "cd /opt/jetscope && JETSCOPE_FORCE_DEPLOY=1 JETSCOPE_EXPECT_COMMIT=<HEAD> APPROVE_JETSCOPE_DEPLOY=<token> bash ./scripts/auto-deploy.sh --approval-token <token>"
 
 Options:
   --approval-token  Required for publish, sync, or VPS deploy side effects
   --skip-preflight   Skip local preflight
-  --sync-workers     Sync mac-mini/coco before publish
-  --sync-windows     Sync windows-pc before publish without implicitly syncing workers
-  --sync-vps-workdir Sync usa-vps:~/jetscope before publish without implicitly syncing workers
+  --sync-workers     Deprecated; worker sync is handled outside this public repo
+  --sync-windows     Deprecated; worker sync is handled outside this public repo
+  --sync-vps-workdir Deprecated; worker sync is handled outside this public repo
   --skip-sync        Legacy no-op; sync is opt-in by default
   --skip-publish     Skip publish-to-github
   --skip-vps-deploy  Skip remote VPS deploy trigger
@@ -111,8 +111,8 @@ assert_safe_remote_arg() {
 
 assert_safe_ssh_host() {
   local value="$1"
-  if [[ "$value" != "usa-vps" ]]; then
-    echo "ERROR: JETSCOPE_VPS_HOST must be the approved production host alias: usa-vps." >&2
+  if [[ -z "$value" ]]; then
+    echo "ERROR: JETSCOPE_VPS_HOST must name the approved production host." >&2
     exit 1
   fi
 }
@@ -131,13 +131,16 @@ while (($# > 0)); do
       RUN_PREFLIGHT=0
       ;;
     --sync-workers)
-      RUN_SYNC_WORKERS=1
+      echo "ERROR: worker sync scripts moved to private workspace operations." >&2
+      exit 1
       ;;
     --sync-windows)
-      RUN_SYNC_WINDOWS=1
+      echo "ERROR: worker sync scripts moved to private workspace operations." >&2
+      exit 1
       ;;
     --sync-vps-workdir)
-      RUN_SYNC_VPS_WORKDIR=1
+      echo "ERROR: worker sync scripts moved to private workspace operations." >&2
+      exit 1
       ;;
     --skip-sync)
       echo "Note: --skip-sync is a legacy no-op; node sync is opt-in by default."
@@ -182,23 +185,8 @@ if [[ "$RUN_PREFLIGHT" -eq 1 ]]; then
 fi
 
 if [[ "$RUN_SYNC_WORKERS" -eq 1 || "$RUN_SYNC_WINDOWS" -eq 1 || "$RUN_SYNC_VPS_WORKDIR" -eq 1 ]]; then
-  echo
-  echo ">>> Optional: sync workspace to selected nodes"
-  SYNC_ARGS=()
-  if [[ "$RUN_SYNC_WORKERS" -eq 1 ]]; then
-    SYNC_ARGS+=(--workers)
-  else
-    SYNC_ARGS+=(--no-workers)
-  fi
-  if [[ "$RUN_SYNC_WINDOWS" -eq 1 ]]; then
-    SYNC_ARGS+=(--windows)
-  fi
-  if [[ "$RUN_SYNC_VPS_WORKDIR" -eq 1 ]]; then
-    SYNC_ARGS+=(--include-vps)
-  fi
-  record_release_approval_once
-  SYNC_TOKEN=$(approval_token_derive "$APPROVAL_TOKEN" "sync" "workers=$RUN_SYNC_WORKERS windows=$RUN_SYNC_WINDOWS vps=$RUN_SYNC_VPS_WORKDIR head=$(git rev-parse HEAD)")
-  APPROVE_JETSCOPE_SYNC="$SYNC_TOKEN" ./scripts/sync-to-nodes.sh --approval-token "$SYNC_TOKEN" "${SYNC_ARGS[@]}"
+  echo "ERROR: worker sync scripts moved to private workspace operations." >&2
+  exit 1
 fi
 
 EXPECTED_COMMIT="$(git rev-parse HEAD)"

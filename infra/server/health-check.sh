@@ -14,7 +14,7 @@ set -uo pipefail
 WEB_URL="https://saf.meichen.beauty/"
 API_URL="http://127.0.0.1:8000/v1/health"
 LOG="/var/log/jetscope-health.log"
-BUS_WRITE="/Users/yumei/tools/script-core/bin/sc-bus-write"
+BUS_WRITE="${JETSCOPE_BUS_WRITE:-}"
 PRODUCER="infra/server/health-check.sh"
 ALLOW_RESTART="${JETSCOPE_HEALTH_ALLOW_RESTART:-0}"
 RESTART_TOKEN="${JETSCOPE_HEALTH_RESTART_TOKEN:-}"

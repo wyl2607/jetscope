@@ -9,8 +9,6 @@ const releaseScript = readFileSync(join(process.cwd(), 'scripts/release.sh'), 'u
 const publishScript = readFileSync(join(process.cwd(), 'scripts/publish-to-github.sh'), 'utf8');
 const autoDeployScript = readFileSync(join(process.cwd(), 'scripts/auto-deploy.sh'), 'utf8');
 const prGateScript = readFileSync(join(process.cwd(), 'scripts/pr-approval-gate.mjs'), 'utf8');
-const syncToScript = readFileSync(join(process.cwd(), 'scripts/sync-to-nodes.sh'), 'utf8');
-const syncFromScript = readFileSync(join(process.cwd(), 'scripts/sync-from-node.sh'), 'utf8');
 const rollbackScript = readFileSync(join(process.cwd(), 'scripts/rollback.sh'), 'utf8');
 const healthCheckScript = readFileSync(join(process.cwd(), 'infra/server/health-check.sh'), 'utf8');
 const tokenLedgerScript = readFileSync(join(process.cwd(), 'scripts/approval-token-ledger.sh'), 'utf8');
@@ -34,7 +32,7 @@ test('release side effects require matching approval token', () => {
   assert.match(releaseScript, /publish, sync, or deploy requires --approval-token/);
   assert.match(releaseScript, /record_release_approval_once\(\)/);
   assert.match(releaseScript, /PUBLISH_TOKEN=\$\(approval_token_derive "\$APPROVAL_TOKEN" "publish" "main:\$EXPECTED_COMMIT"\)/);
-  assert.match(releaseScript, /SYNC_TOKEN=\$\(approval_token_derive "\$APPROVAL_TOKEN" "sync"/);
+  assert.match(releaseScript, /worker sync scripts moved to private workspace operations/);
   assert.match(releaseScript, /head=\$\(git rev-parse HEAD\)/);
   assert.match(releaseScript, /DEPLOY_TOKEN=\$\(approval_token_derive "\$APPROVAL_TOKEN" "deploy" "\$\{VPS_HOST\}:\$\{VPS_DEPLOY_DIR\}:\$\{EXPECTED_COMMIT\}"\)/);
   assert.match(releaseScript, /APPROVE_JETSCOPE_PUBLISH="\$PUBLISH_TOKEN" \.\/scripts\/publish-to-github\.sh --approval-token "\$PUBLISH_TOKEN"/);
@@ -55,7 +53,7 @@ test('publish side effects require matching publish approval token', () => {
 test('release rejects unsafe remote command arguments before deploy ssh', () => {
   assert.match(releaseScript, /assert_safe_remote_arg\(\)/);
   assert.match(releaseScript, /assert_safe_ssh_host\(\)/);
-  assert.match(releaseScript, /JETSCOPE_VPS_HOST must be the approved production host alias: usa-vps/);
+  assert.match(releaseScript, /JETSCOPE_VPS_HOST must name the approved production host/);
   assert.match(releaseScript, /\^\[A-Za-z0-9\._\/@:=,\+-\]\+\$/);
   assert.match(releaseScript, /assert_safe_ssh_host "\$VPS_HOST"/);
   assert.match(releaseScript, /assert_safe_remote_arg "JETSCOPE_VPS_DEPLOY_DIR" "\$VPS_DEPLOY_DIR"/);
@@ -98,11 +96,10 @@ test('PR gate treats operational policy docs as high risk', () => {
   assert.match(prGateScript, /\^scripts\\\/README\\\.md\$/);
 });
 
-test('direct node sync requires matching approval token', () => {
-  assert.match(syncToScript, /APPROVE_JETSCOPE_SYNC:-/);
-  assert.match(syncToScript, /sync requires --approval-token and matching APPROVE_JETSCOPE_SYNC/);
-  assert.match(syncFromScript, /APPROVE_JETSCOPE_SYNC:-/);
-  assert.match(syncFromScript, /pull sync requires --approval-token and matching APPROVE_JETSCOPE_SYNC/);
+test('direct node sync is externalized from the public product repo', () => {
+  assert.match(releaseScript, /--sync-workers\)\n\s+echo "ERROR: worker sync scripts moved to private workspace operations\."/);
+  assert.match(releaseScript, /--sync-windows\)\n\s+echo "ERROR: worker sync scripts moved to private workspace operations\."/);
+  assert.match(releaseScript, /--sync-vps-workdir\)\n\s+echo "ERROR: worker sync scripts moved to private workspace operations\."/);
 });
 
 test('PR gate runs local push gates when local preflight evidence is provided', () => {
@@ -120,8 +117,8 @@ test('PR gate execute mode pins local HEAD to the reviewed PR head', () => {
   assert.match(prGateScript, /--match-head-commit/);
 });
 
-test('windows sync readback checks nested env files', () => {
-  assert.match(syncToScript, /-Recurse -File -Filter '\.env\.\*'/);
+test('public repo no longer carries node sync implementation', () => {
+  assert.match(releaseScript, /worker sync scripts moved to private workspace operations/);
 });
 
 test('rollback requires matching approval token', () => {
@@ -156,29 +153,15 @@ test('direct publish exits before push gates when approval token is missing', ()
   assert.match(`${result.stdout}${result.stderr}`, /publish requires --approval-token and matching APPROVE_JETSCOPE_PUBLISH/);
 });
 
-test('sync-to-nodes dry-run is approval-free but write sync requires approval', () => {
-  const dryRun = runScript('./scripts/sync-to-nodes.sh', ['--dry-run', '--no-workers']);
-  assert.equal(dryRun.status, 0);
-  const writeSync = runScript('./scripts/sync-to-nodes.sh', ['--no-workers']);
-  assert.notEqual(writeSync.status, 0);
-  assert.match(`${writeSync.stdout}${writeSync.stderr}`, /sync requires --approval-token and matching APPROVE_JETSCOPE_SYNC/);
+test('release rejects public worker sync flags', () => {
+  const result = runScript('./scripts/release.sh', ['--skip-preflight', '--skip-publish', '--skip-vps-deploy', '--sync-workers']);
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stdout}${result.stderr}`, /worker sync scripts moved to private workspace operations/);
 });
 
-test('approval token replay is blocked before repeated write sync', () => {
+test('approval token replay is blocked by the shared ledger helper', () => {
   const ledgerDir = mkdtempSync(join(tmpdir(), 'jetscope-approval-ledger-'));
-  const token = uniqueToken('replay-token');
   try {
-    const first = runScript('./scripts/sync-to-nodes.sh', ['--no-workers', '--approval-token', token], {
-      APPROVE_JETSCOPE_SYNC: token,
-      JETSCOPE_APPROVAL_LEDGER_DIR: ledgerDir,
-    });
-    assert.equal(first.status, 0);
-    const second = runScript('./scripts/sync-to-nodes.sh', ['--no-workers', '--approval-token', token], {
-      APPROVE_JETSCOPE_SYNC: token,
-      JETSCOPE_APPROVAL_LEDGER_DIR: ledgerDir,
-    });
-    assert.equal(second.status, 0);
-
     const writeToken = uniqueToken('write-token');
     const firstRecord = spawnSync('bash', ['-c', 'source ./scripts/approval-token-ledger.sh && approval_token_record_once sync-push "$TOKEN" local-test'], {
       cwd: process.cwd(),

@@ -1,28 +1,32 @@
-# AGENTS.md - Workspace AI Entry
+# AGENTS.md - JetScope AI Entry
 
-This repository has a dual role during the workspace transition. Treat this
-file as the public, repository-local AI entrypoint.
+Treat this file as the public, repository-local AI entrypoint for JetScope
+product work.
 
 ## Canonical Flow
 
 - Read this file before editing.
-- `CLAUDE.md` imports and extends this file for Claude-specific behavior.
-- Product work for JetScope belongs in `/Users/yumei/projects/jetscope`.
-- Workspace governance work belongs in `/Users/yumei/tools/automation` during
-  the transition and must stay local-first unless explicitly promoted.
+- `CLAUDE.md`, when present locally, may extend this file for Claude-specific
+  behavior.
+- Product work belongs in this repository checkout.
+- Workspace governance, private automation ledgers, local AI tool state, and
+  operator-specific maintenance scripts belong outside this public product
+  repository.
 
 ## Repository Boundary
 
-`/Users/yumei` is not a normal single-purpose product repo:
+This repository should stay a normal single-purpose product repo:
 
 | Area | Paths | Default action |
 |---|---|---|
-| JetScope product mirror | `apps/`, `infra/`, `packages/`, `test/`, product docs/scripts | Read-only here; develop in `/Users/yumei/projects/jetscope` |
-| Workspace governance | `tools/automation/`, guard scripts, AI maintenance docs | Local-first; classify before any publish |
+| Area | Paths | Default action |
+| --- | --- | --- |
+| JetScope product | `apps/`, `infra/`, `packages/`, `test/`, product docs/scripts | Normal product work |
+| Workspace governance | external automation repos and local operator notes | Do not add here |
 | Runtime/private state | `runtime/`, `.claude/`, `.codex/`, `.omx/`, vaults, logs, caches | Never publish |
 
-See `NOTICE.md` when deciding whether a file belongs to product, governance,
-runtime, private, or public-candidate zones.
+If a file describes local machines, personal paths, private operators, or
+workspace-wide governance, keep it out of this repository.
 
 ## Safety Rules
 
@@ -62,16 +66,6 @@ The repo-evolver direction is intentionally conservative:
 - `.evolver/` stores small public-safe metadata and policy contracts only.
 - Runtime memory, raw reports, local queues, vault-derived notes, and secrets
   remain outside `.evolver/` and outside public commits.
-
-## Cross-AI Traceability
-
-For non-trivial implementation or debugging, search local trace ledgers first:
-
-```bash
-bash /Users/yumei/tools/automation/scripts/ai-trace.sh find "<keyword>"
-```
-
-Stable reusable findings should be written back with the same script.
 
 ## Codex Goal Packet
 

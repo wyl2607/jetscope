@@ -1,6 +1,6 @@
 #!/bin/bash
 # JetScope Auto-Deploy Script
-# Runs on production server (usa-vps) only through an approved release path.
+# Runs on the production server only through an approved release path.
 # Fetches the approved commit from GitHub, builds, and restarts services.
 
 set -euo pipefail
@@ -12,7 +12,7 @@ DEPLOY_STATE_DIR="${JETSCOPE_DEPLOY_STATE_DIR:-/var/lib/jetscope/deploy-state}"
 LOCK_DIR="$DEPLOY_STATE_DIR/deploy.lock"
 LAST_SUCCESS_FILE="$DEPLOY_STATE_DIR/last-success-commit"
 LAST_FAILURE_FILE="$DEPLOY_STATE_DIR/last-failure-commit"
-BUS_WRITE="/Users/yumei/tools/script-core/bin/sc-bus-write"
+BUS_WRITE="${JETSCOPE_BUS_WRITE:-}"
 PRODUCER="jetscope/scripts/auto-deploy.sh"
 FORCE_DEPLOY="${JETSCOPE_FORCE_DEPLOY:-0}"
 EXPECTED_COMMIT="${JETSCOPE_EXPECT_COMMIT:-}"
