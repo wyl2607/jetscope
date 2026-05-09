@@ -12,11 +12,27 @@ fail() {
   exit 1
 }
 
+python3 "$ROOT/scripts/dirty_tree_guard.py" --repo "$ROOT" --mode publish
+
 if ! git rev-parse --verify --quiet "$BASE_REF" >/dev/null; then
   fail "base ref not found: $BASE_REF"
 fi
 
-if [ -n "$(git diff --name-only --cached)" ]; then
+staged_files="$(git diff --name-only --cached)"
+if [ -n "$staged_files" ]; then
+  staged_blocked=()
+  while IFS= read -r path; do
+    case "$path" in
+      .claude/projects/*/dev-harness/*|*/.claude/projects/*/dev-harness/*)
+        staged_blocked+=("$path")
+        ;;
+    esac
+  done <<< "$staged_files"
+  if [ "${#staged_blocked[@]}" -gt 0 ]; then
+    printf 'review_push_guard: blocked staged dev-harness files:\n' >&2
+    printf '  %s\n' "${staged_blocked[@]}" | sort -u >&2
+    exit 1
+  fi
   fail "staged changes present; review and unstage or commit intentionally before push"
 fi
 
@@ -38,7 +54,7 @@ blocked=()
 credential_named=()
 for path in "${changed_files[@]}"; do
   case "$path" in
-    .env|*/.env|.env.local|*/.env.local|.envrc|*/.envrc|.env.*|*/.env.*|.automation/*|.omx/*|.guard/*|.next/*|apps/web/.next/*|apps/web/dist/*|*.tsbuildinfo|__pycache__/*|*/__pycache__/*|*.pyc|*.pyo|*.egg-info/*|.venv/*|apps/api/.venv/*|.pytest_cache/*|.ruff_cache/*|apps/api/data/*|data/local-preferences.json|data/market.db|infra/postgres-data/*|logs/*|webhook-logs/*|test-results/*|playwright-report/*|coverage/*|htmlcov/*|archive/*|docs/archive/*|*.log|*.tar.gz|*.zip)
+    .env|*/.env|.env.local|*/.env.local|.envrc|*/.envrc|.env.*|*/.env.*|.automation/*|.harness/*|.omx/*|.guard/*|.next/*|apps/web/.next/*|apps/web/dist/*|*.tsbuildinfo|__pycache__/*|*/__pycache__/*|*.pyc|*.pyo|*.egg-info/*|.venv/*|apps/api/.venv/*|.pytest_cache/*|.ruff_cache/*|apps/api/data/*|data/local-preferences.json|data/market.db|infra/postgres-data/*|logs/*|webhook-logs/*|test-results/*|playwright-report/*|coverage/*|htmlcov/*|archive/*|docs/archive/*|obsidian-audit-output/*|*.log|*.tar.gz|*.zip)
       case "$path" in
         .env.example|*/.env.example|.env.*.example|*/.env.*.example)
           ;;
@@ -46,6 +62,12 @@ for path in "${changed_files[@]}"; do
           blocked+=("$path")
           ;;
       esac
+      ;;
+  esac
+
+  case "$path" in
+    .claude/projects/*/dev-harness/*|*/.claude/projects/*/dev-harness/*)
+      blocked+=("$path")
       ;;
   esac
 

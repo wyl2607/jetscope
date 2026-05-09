@@ -1,116 +1,72 @@
-# JetScope Scripts
+# Root Workspace Scripts
 
-This directory contains JetScope project automation scripts.
+This directory contains `/Users/yumei` workspace-level governance and operations helpers. It is not a project application script directory.
 
-## Current Scripts
+## Safety Rules
 
-- `jetscope-env`: POSIX self-discovery for `JETSCOPE_ROOT`
-- `jetscope-env.ps1`: PowerShell self-discovery for `JETSCOPE_ROOT`
-- `publish-to-github.sh`: validate and push JetScope to GitHub, writing `publish-event` records to the workspace data bus
-- `security_check.sh`: fail-closed local safety gate for tracked/local-sensitive artifacts before push
-- `review_push_guard.sh`: fail-closed outgoing-change guard against `origin/main` before push
-- `sync-excludes.sh`: shared local-only and generated-artifact excludes for push/pull sync scripts
-- `sync-to-nodes.sh`: sync the project from local machine to selected remote development nodes, writing `node-sync-event` records
-- `sync-from-node.sh`: pull changes from a remote node back to local machine, writing `node-sync-event` records
-- `release.sh`: unified release entrypoint that runs preflight, publishes to GitHub, then triggers commit-pinned VPS deploy
-- `auto-deploy.sh`: production-side auto-deploy script, now also emitting `publish-event` records
-- `rollback.sh`: production rollback script, approval-gated with `APPROVE_JETSCOPE_ROLLBACK`, now also emitting `publish-event` records
-- `preflight-product-smoke.mjs`: product smoke verification
-- `preflight-ui-e2e.mjs`: UI end-to-end verification
-- `preflight-load-test.mjs`: load verification
-- `preflight-load-test-v1.mjs`: v1 API load verification
-- `automation-plan-check.mjs`: local validation for bounded parallel-development task specs
-- `automation-scope-check.mjs`: compare changed files with an automation task spec's allowed and forbidden paths
+- Read-only checks may run locally.
+- Commands that install, update, sync, deploy, clean remote state, or touch VPS/control-plane nodes require explicit approval.
+- Do not commit generated reports, logs, credentials, shell history, AI runtime state, or project runtime artifacts from this root repo.
+- Project-specific release/sync scripts live inside their project directories, for example `projects/jetscope/scripts/`.
 
-## Data Bus Integration
+## Current Source Candidates
 
-Some private deployments can write operational events to an external workspace data bus:
+- `daily_ai_tools_update_check.py`: read-only AI tool and node health report generator. It probes local/remote tool versions, Tailscale identity/state, system update availability, and per-node maintenance recommendations; applies VPS policy checks; writes local runtime reports under `tools/automation/runtime/`; and does not remediate state.
+- `dirty_tree_guard.py`: read-only commit/publish guard for AI-produced worktrees. It blocks staged/tracked/untracked runtime, cache, log, tool-state, archive, nested-repo, secret-like, and unknown untracked artifacts before they can enter commit or push flows.
+- `ops_hub.sh`: local orchestration wrapper for daily/weekly profiles. The default daily profile refreshes the AI systems registry, runs the daily AI tools check, and writes an ops journal.
+- `internal_device_update_orchestrator.py`: high-risk AI tool and opt-in package-maintenance updater for internal devices. Use `--dry-run` for review; real update runs can change local or remote tool installations and require explicit approval. Local/mac-mini `opencode` is Homebrew-managed, while npm updates only core AI tools. VPS targets require `--include-vps` and perform OS apt maintenance only; AI tool installs on VPS remain blocked by policy.
+- `opencode-model-resolver.py`: read-only local helper that resolves the first preferred OpenCode model from `~/.config/opencode/opencode.json`; it does not write config or contact providers.
+- `obsidian_workspace_bridge.py`: local-only one-way bridge that writes a workspace project index into the local Obsidian vault. It does not read vault note contents or copy vault files into repositories.
+- `probe-gpt55-authenticity.sh`: relay anti-spoof probe for `gpt-5.5` using Responses API behavior, negative controls, sampling, and optional official OpenAI A/B comparison.
+- Obsidian helper scripts are local/private source candidates. They default to dry-run and must not be run with `--apply` without explicit approval.
 
-- `tools/workspace-data-bus/topics/publish-event.jsonl`
-- `tools/workspace-data-bus/topics/node-sync-event.jsonl`
-
-Those tools are optional and are not required for a standard local checkout.
-
-## Push Gates
-
-`publish-to-github.sh` and the default `release.sh` path require these gates to exist and pass before any push:
+## Common Read-Only Checks
 
 ```bash
-./scripts/security_check.sh
-./scripts/review_push_guard.sh origin/main
+python3 /Users/yumei/scripts/daily_ai_tools_update_check.py
+python3 /Users/yumei/scripts/dirty_tree_guard.py --mode pre-commit
+bash /Users/yumei/scripts/ops_hub.sh run-profile daily
+python3 /Users/yumei/scripts/internal_device_update_orchestrator.py --targets local --dry-run --print-json
+python3 /Users/yumei/scripts/opencode-model-resolver.py --self-test
+python3 /Users/yumei/scripts/obsidian_workspace_bridge.py --dry-run
+bash /Users/yumei/scripts/probe-gpt55-authenticity.sh --help
 ```
 
-The gates fail closed when the worktree is dirty, blocked local/generated paths are tracked or outgoing, or sensitive untracked files are visible.
-
-## Typical Workflow
+The latest daily check summary is:
 
 ```bash
-cd ~/projects/jetscope
-source scripts/jetscope-env
-APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token>
+sed -n '/## Tailscale/,$p' /Users/yumei/tools/automation/runtime/ai-tools-update-check/latest-report.md
 ```
 
-### Release Variants
+Use that report to decide whether AI tools, system packages, or Tailscale reachability need attention before running any updater.
+
+## High-Risk Operations
+
+These are not default checks:
 
 ```bash
-# Full local + VPS release; worker sync is not part of the default path
-APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token>
-
-# Skip remote VPS trigger when you only want to publish
-APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token> --skip-vps-deploy
-
-# Re-run publish + VPS deploy without repeating preflight
-APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token> --skip-preflight
-
-# Re-run VPS deploy only after confirming current HEAD is already on origin/main
-APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token> --skip-preflight --skip-publish
-
-# Sync development workers before publishing
-APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token> --sync-workers
-
-# Sync workers and Windows handoff before publishing
-APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token> --sync-workers --sync-windows
-
-# Explicitly sync usa-vps:~/jetscope, which is not the production deploy path
-APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token> --sync-vps-workdir
+python3 /Users/yumei/scripts/internal_device_update_orchestrator.py --verify-after
+python3 /Users/yumei/scripts/internal_device_update_orchestrator.py --targets mac-mini,coco,windows-pc --verify-after
+python3 /Users/yumei/scripts/internal_device_update_orchestrator.py --targets local --install-local-brew-updates --verify-after
+python3 /Users/yumei/scripts/internal_device_update_orchestrator.py --targets usa-vps,france-vps --include-vps --install-vps-system-updates --verify-after
+python3 /Users/yumei/scripts/obsidian_vault_cleanup_apply.py --apply
+python3 /Users/yumei/scripts/obsidian_vault_inbox_stub_cleanup.py --apply
+python3 /Users/yumei/scripts/obsidian_vault_inbox_topic_route.py --apply
 ```
 
-### Node Sync Variants
+Run them only after confirming the intended target set and approval boundary.
 
-```bash
-# Default: sync mac-mini and coco only
-APPROVE_JETSCOPE_SYNC=<approval-token> ./scripts/sync-to-nodes.sh --approval-token <approval-token>
+## Output Locations
 
-# Include Windows handoff sync
-APPROVE_JETSCOPE_SYNC=<approval-token> ./scripts/sync-to-nodes.sh --approval-token <approval-token> --windows
-
-# Preview Unix worker changes without writing them
-./scripts/sync-to-nodes.sh --dry-run
-
-# Explicitly sync the non-production USA VPS workdir
-APPROVE_JETSCOPE_SYNC=<approval-token> ./scripts/sync-to-nodes.sh --approval-token <approval-token> --include-vps
-
-# Pull back from a selected node using the shared excludes
-APPROVE_JETSCOPE_SYNC=<approval-token> ./scripts/sync-from-node.sh mac-mini --approval-token <approval-token>
-
-# Pull back from the non-production USA VPS workdir only with explicit opt-in
-APPROVE_JETSCOPE_SYNC=<approval-token> ./scripts/sync-from-node.sh usa-vps --approval-token <approval-token> --allow-vps-workdir
-```
-
-Release and deploy behavior is also pinned in `../OPERATIONS.md`; treat that as the durable project memory for future sessions.
+- AI tools reports: `tools/automation/runtime/ai-tools-update-check/`
+- Internal device update reports: `tools/automation/runtime/internal-device-updates/`
+- Ops daily journal: `tools/automation/runtime/ops-daily-journal/`
+- Obsidian project index: `/Users/yumei/Obsidian/MyKnowledgeVault/30-AI-Ingest/workspace-project-index.md`
+- GPT probe reports: `gpt55-probe-report-*.json` in the current working directory unless `--out` is provided.
+- Obsidian audit/repair reports: `obsidian-audit-output/`
 
 ## Notes
 
-- Legacy JetScope predecessor naming has been removed from active script entrypoints.
-- Environment variable names like `SAFVSOIL_*` may still exist inside app/test code for compatibility and are not covered by this scripts README.
+- This root README intentionally does not document JetScope release/sync commands; use the JetScope project README/OPERATIONS files from the project checkout instead.
 - Shared reusable script infrastructure lives in `~/tools/script-core/`.
-- `usa-vps:/opt/jetscope` is the production deploy path. `usa-vps:~/jetscope` is a non-production workdir and is never synced unless explicitly requested.
-- `scripts/sync-excludes.sh` is the single sync exclude source. Update it whenever `.gitignore` or local-only path policy changes.
-- Unix worker sync performs a blocked-path readback after rsync. If historical excluded remnants remain on a node, sync fails instead of reporting a clean success.
-- Windows opt-in sync is an overlay handoff sync, not a clean mirror. It performs a blocked-path readback after extraction, but it is not a full historical cleanup of every excluded file.
-- Direct publish and release fail closed before pushing when required push gates `scripts/security_check.sh` and `scripts/review_push_guard.sh` are missing, not executable, or fail.
-- Release only permits the approved production SSH host alias `usa-vps`; do not override `JETSCOPE_VPS_HOST` for production release.
-- Approval tokens are operator-supplied action nonces. Generate a fresh token per publish, release, deploy, rollback, sync, or PR merge action and do not reuse it across action types. Side-effect scripts record token hashes through `approval-token-ledger.sh` and reject replay on the same machine.
-- Direct production deploy requires `APPROVE_JETSCOPE_DEPLOY=<approval-token> JETSCOPE_EXPECT_COMMIT=<approved-sha> ./scripts/auto-deploy.sh --approval-token <approval-token>`.
-- Production rollback requires `APPROVE_JETSCOPE_ROLLBACK=<approval-token> ./scripts/rollback.sh --approval-token <approval-token>`.
-- Private deployment wrappers may add extra observability around these scripts, but the checked-in scripts should remain runnable from this repository alone.
+- Root push remains blocked unless root-vs-JetScope remote divergence is explicitly reconciled and approved.

@@ -1,0 +1,9 @@
+extends: existence
+message: "Avoid publishing local-only or private workspace terms in public docs: '%s'."
+level: error
+ignorecase: true
+tokens:
+  - "API key"
+  - "secret token"
+  - "private key"
+  - "vault excerpt"

@@ -1,0 +1,36 @@
+name: Codex Daily Audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "18 6 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  read-only-audit:
+    name: Read-only maintenance audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Run Codex read-only audit
+        id: codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: .github/prompts/codex-daily-audit.md
+          output-file: codex-daily-audit.md
+          sandbox: read-only
+          safety-strategy: read-only
+
+      - name: Upload audit artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-daily-audit
+          path: codex-daily-audit.md
+          if-no-files-found: error

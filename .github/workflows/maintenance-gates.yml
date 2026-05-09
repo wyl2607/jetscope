@@ -1,0 +1,102 @@
+name: Maintenance Gates
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  semgrep:
+    name: Semgrep
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: semgrep/semgrep
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Collect changed code files
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+          echo "BASE_SHA=$BASE_SHA" >> "$GITHUB_ENV"
+          git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null || git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          git diff -z --name-only --diff-filter=ACMR "$BASE_SHA"...HEAD -- \
+            "*.py" "*.js" "*.mjs" "*.cjs" "*.ts" "*.tsx" "*.jsx" "*.sql" \
+            "Dockerfile" "*/Dockerfile" > /tmp/semgrep-changed-files
+          if [ ! -s /tmp/semgrep-changed-files ]; then
+            echo "No changed Semgrep targets."
+          else
+            tr '\0' '\n' < /tmp/semgrep-changed-files
+          fi
+      - name: Run Semgrep
+        run: |
+          if [ ! -s /tmp/semgrep-changed-files ]; then
+            exit 0
+          fi
+          semgrep scan --config auto --error --baseline-commit "$BASE_SHA"
+
+  prose-and-markdown:
+    name: Vale and markdownlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Collect changed Markdown files
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+          echo "BASE_SHA=$BASE_SHA" >> "$GITHUB_ENV"
+          git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null || git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          git diff -z --name-only --diff-filter=ACMR "$BASE_SHA"...HEAD -- "*.md" > /tmp/markdown-changed-files
+          if [ ! -s /tmp/markdown-changed-files ]; then
+            echo "No changed Markdown files."
+          else
+            tr '\0' '\n' < /tmp/markdown-changed-files
+          fi
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install markdownlint
+        run: npm install --global markdownlint-cli2
+
+      - name: Run markdownlint
+        run: |
+          if [ ! -s /tmp/markdown-changed-files ]; then
+            exit 0
+          fi
+          python3 scripts/markdownlint-pr-gate.py --base "$BASE_SHA" --head HEAD
+
+      - name: Install Vale
+        run: |
+          curl -sSfL https://github.com/errata-ai/vale/releases/download/v3.12.0/vale_3.12.0_Linux_64-bit.tar.gz -o vale.tar.gz
+          tar -xzf vale.tar.gz vale
+          sudo mv vale /usr/local/bin/vale
+
+      - name: Run Vale
+        run: |
+          if [ ! -s /tmp/markdown-changed-files ]; then
+            exit 0
+          fi
+          xargs -0 vale --minAlertLevel=error < /tmp/markdown-changed-files
