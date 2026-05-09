@@ -116,6 +116,7 @@ tools/automation/scripts/*
 tools/automation/tests/*
 !tools/automation/tests/test_ai_resource_probe.py
 !tools/automation/tests/test_ai_task_router.py
+!tools/automation/tests/test_next_action_recommender.py
 !tools/automation/workspace-guides/
 tools/automation/workspace-guides/*
 !tools/automation/workspace-guides/ai-entry-map.md

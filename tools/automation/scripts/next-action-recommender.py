@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import os
+import subprocess
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,6 +20,7 @@ OUT_PATH = AUTOMATION / "runtime" / "multi-agent" / "next-recommender.json"
 TERMINAL = {"completed", "cancelled", "failed"}
 PRANK = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}
 KRANK = {"wait_for_user": 0, "manual_dry_run": 1, "execute_local_gate": 2, "review_first_packet": 3, "apply_triage": 4, "cancel_dedup": 5}
+DOC_DRIFT_SCANNER = Path("/Users/yumei/.agents/skills/doc-drift-auditor/scripts/scan_doc_drift.py")
 
 
 def read_json(path: Path, default: Any) -> Any:
@@ -75,6 +77,110 @@ def packet_rows(path: Path) -> list[dict[str, Any]]:
     payload = read_json(path, {})
     rows = payload.get("task_packets") if isinstance(payload, dict) else []
     return [row for row in rows if isinstance(row, dict)]
+
+
+def normalize_kind(value: Any) -> str:
+    text = str(value or "").strip()
+    return text[:-6] if text.endswith("-group") else text
+
+
+def finding_path(value: Any, root: Path) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    path = Path(text)
+    if not path.is_absolute():
+        path = root / path
+    try:
+        return str(path.resolve())
+    except Exception:
+        return str(path)
+
+
+def load_doc_drift_findings(root: Path, scanner_path: Path = DOC_DRIFT_SCANNER) -> dict[str, list[dict[str, Any]]]:
+    if not scanner_path.exists():
+        return {}
+    try:
+        result = subprocess.run(
+            ["python3", str(scanner_path), "--root", str(root)],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        payload = json.loads(result.stdout)
+    except Exception:
+        return {}
+    by_path: dict[str, list[dict[str, Any]]] = {}
+    for finding in payload.get("findings") or []:
+        if not isinstance(finding, dict):
+            continue
+        path = finding_path(finding.get("path"), root)
+        if path:
+            by_path.setdefault(path, []).append(finding)
+    return by_path
+
+
+def packet_path(packet: dict[str, Any], root: Path) -> str:
+    value = packet.get("path")
+    if not value and isinstance(packet.get("task_packet"), dict):
+        value = packet["task_packet"].get("path")
+    return finding_path(value, root)
+
+
+def packet_matches_finding(packet: dict[str, Any], finding: dict[str, Any]) -> bool:
+    packet_kind = normalize_kind(packet.get("kind"))
+    finding_kind = normalize_kind(finding.get("kind"))
+    if packet_kind and finding_kind and packet_kind != finding_kind:
+        return False
+    packet_semantic = str(packet.get("semantic_type") or "").strip()
+    finding_semantic = str(finding.get("semantic_type") or "").strip()
+    if packet_semantic and finding_semantic and packet_semantic != finding_semantic:
+        return False
+    packet_line = packet.get("line")
+    if packet_line not in (None, "") and str(packet_line) != str(finding.get("line")):
+        return False
+    packet_targets = {
+        str(packet.get(key) or "").strip()
+        for key in ("target", "command_group")
+        if str(packet.get(key) or "").strip()
+    }
+    packet_targets.update(str(value or "").strip() for value in packet.get("sample_targets") or [] if str(value or "").strip())
+    if not packet_targets:
+        return True
+    finding_targets = {
+        str(finding.get(key) or "").strip()
+        for key in ("target", "command_group")
+        if str(finding.get(key) or "").strip()
+    }
+    return bool(packet_targets & finding_targets)
+
+
+def stale_status(packet: dict[str, Any], root: Path, findings_by_path: dict[str, list[dict[str, Any]]]) -> str:
+    if str(packet.get("scanner") or "") != "doc-drift-auditor":
+        return ""
+    path = packet_path(packet, root)
+    if not path:
+        return ""
+    if not Path(path).exists():
+        return "stale_or_removed"
+    current = findings_by_path.get(path, [])
+    if not current:
+        return "resolved"
+    if not any(packet_matches_finding(packet, finding) for finding in current):
+        return "stale"
+    return ""
+
+
+def stale_packet_record(packet: dict[str, Any], task_id: str, status: str, root: Path) -> dict[str, Any]:
+    return {
+        "task_id": task_id,
+        "status": status,
+        "scanner": str(packet.get("scanner") or ""),
+        "kind": str(packet.get("kind") or ""),
+        "path": packet_path(packet, root),
+        "target": str(packet.get("target") or packet.get("command_group") or ""),
+    }
 
 
 def id_set(items: list[Any]) -> set[str]:
@@ -182,7 +288,7 @@ def add_dry_runs(recs, seen, skip, dry, tasks, enriched) -> None:
             add_rec(recs, seen, skip, rec("manual_dry_run", task_id, f"可先收集单任务 dry-run 证据：{title(task_id, tasks, enriched)}", f"/manual_dry_run {task_id}", "如果通过,下一步会推荐 /execute_local_gate <id>", item, tasks, enriched))
 
 
-def add_review_first_packets(recs, seen, skip, inbox, existing_task_ids: set[str]) -> None:
+def add_review_first_packets(recs, seen, skip, inbox, existing_task_ids: set[str], root: Path, findings_by_path: dict[str, list[dict[str, Any]]], skipped_stale: list[dict[str, Any]]) -> None:
     decisions = inbox.get("decisions_today") if isinstance(inbox, dict) else {}
     artifacts = inbox.get("artifacts") if isinstance(inbox, dict) else {}
     packet_source = str((artifacts or {}).get("daily_evolution_task_packets") or "").strip()
@@ -194,6 +300,7 @@ def add_review_first_packets(recs, seen, skip, inbox, existing_task_ids: set[str
                 "task_id": packet_task_id(row),
                 "priority": row.get("priority") or "P3",
                 "reason": f"review-first task packet: {row.get('scanner')} finding in {row.get('path') or 'unknown-path'}",
+                "task_packet": row,
             }
             for row in source_rows
             if row.get("mode") == "review-first" and row.get("priority") in {"P1", "P2", "P3"}
@@ -206,6 +313,11 @@ def add_review_first_packets(recs, seen, skip, inbox, existing_task_ids: set[str
             continue
         task_id = task_id_of(item)
         if not task_id or task_id in existing_task_ids:
+            continue
+        packet_source = item.get("task_packet") if isinstance(item.get("task_packet"), dict) else item
+        status = stale_status(packet_source, root, findings_by_path)
+        if status:
+            skipped_stale.append(stale_packet_record(packet_source, task_id, status, root))
             continue
         priority = str(item.get("priority") or "P3")
         packet = {
@@ -256,7 +368,7 @@ def summarize(recs: list[dict[str, Any]], blocked: list[dict[str, str]]) -> str:
     return "推荐执行 " + " + ".join(parts) if parts else "当前没有可推荐动作"
 
 
-def build(root: Path = AUTOMATION, queue_owner: str = "") -> dict[str, Any]:
+def build(root: Path = AUTOMATION, queue_owner: str = "", scanner_path: Path = DOC_DRIFT_SCANNER) -> dict[str, Any]:
     data = load_inputs(root)
     tasks = active_tasks(data["state"])
     existing_task_ids = all_task_ids(data["state"])
@@ -267,9 +379,11 @@ def build(root: Path = AUTOMATION, queue_owner: str = "") -> dict[str, Any]:
     paused = bool(blocked)
     recs: list[dict[str, Any]] = []
     seen: set[str] = set()
+    skipped_stale: list[dict[str, Any]] = []
+    findings_by_path = load_doc_drift_findings(root, scanner_path)
 
     add_decisions(recs, seen, skip, tasks, enriched)
-    add_review_first_packets(recs, seen, skip, data["approval_inbox"], existing_task_ids)
+    add_review_first_packets(recs, seen, skip, data["approval_inbox"], existing_task_ids, root, findings_by_path, skipped_stale)
     if not paused:
         add_dry_runs(recs, seen, skip, data["dry"], tasks, enriched)
     add_triage(recs, seen, skip, data["triage"], tasks, enriched)
@@ -282,7 +396,7 @@ def build(root: Path = AUTOMATION, queue_owner: str = "") -> dict[str, Any]:
         item["rank"] = index
     if paused and not recs:
         recs.append({"rank": 1, "kind": "wait_for_user", "task_id": "", "reason": "预算暂停,只建议人工确认或清理队列", "value_score": 0, "priority": "P0", "suggested_command": "/tokens", "next_after": "预算恢复后再推荐 dry-run 或 execute-local"})
-    return {"generated_at": datetime.now(timezone.utc).isoformat(), "queue_owner": queue_owner or os.environ.get("DEV_CONTROL_QUEUE_OWNER", "local"), "recommendations": recs, "blocked": blocked, "summary": summarize(recs, blocked)}
+    return {"generated_at": datetime.now(timezone.utc).isoformat(), "queue_owner": queue_owner or os.environ.get("DEV_CONTROL_QUEUE_OWNER", "local"), "recommendations": recs, "blocked": blocked, "skipped_stale_count": len(skipped_stale), "skipped_stale_packets": skipped_stale, "summary": summarize(recs, blocked)}
 
 
 def atomic_write(path: Path, data: dict[str, Any]) -> None:
@@ -307,16 +421,26 @@ def self_test() -> None:
             path.write_text(json.dumps(payload), encoding="utf-8")
         packet_path = root / "runtime/self-evolution/task-packets.json"
         packet_path.parent.mkdir(parents=True, exist_ok=True)
+        example_doc = root / "docs/example.md"
+        example_doc.parent.mkdir(parents=True, exist_ok=True)
+        example_doc.write_text("example\n", encoding="utf-8")
         packet = {
             "scanner": "doc-drift-auditor",
             "kind": "semantic-stale-risk-group",
-            "path": str(root / "docs/example.md"),
+            "path": str(example_doc),
             "target": "example",
             "goal": "Review packet source.",
             "priority": "P1",
             "mode": "review-first",
         }
         packet_path.write_text(json.dumps({"task_packets": [packet]}), encoding="utf-8")
+        scanner = root / "scan_doc_drift.py"
+        scanner.write_text(
+            "#!/usr/bin/env python3\n"
+            "import json, sys\n"
+            f"print(json.dumps({{'findings': [{{'kind': 'semantic-stale-risk', 'semantic_type': 'command-example', 'path': {str(example_doc)!r}, 'target': 'example'}}]}}))\n",
+            encoding="utf-8",
+        )
         source_packet_id = packet_task_id(packet)
         wf("runtime/dev-control/state.json", {"tasks": [{"task_id": "p0", "priority": "P0", "status": "received", "requires_user_decision": True, "goal": "decide"}, {"task_id": "dry", "priority": "P2", "status": "planned", "goal": "dry"}, {"task_id": "skip", "priority": "P1", "status": "planned", "goal": "skip"}, {"task_id": "done", "priority": "P1", "status": "completed", "goal": "done"}, {"task_id": "missing", "priority": "P1", "goal": "missing status"}]})
         wf("runtime/task-board/enriched-board.json", {"tasks": [{"task_id": "dry", "value_score": 7}]})
@@ -333,7 +457,7 @@ def self_test() -> None:
         wf("runtime/multi-agent/dedup-cooldown.json", {"suggestions": []})
         wf("runtime/task-board/execute-local-gate.json", {"candidates": []})
         wf("runtime/multi-agent/budget-state.json", {"paused": False})
-        data = build(root, "fixture")
+        data = build(root, "fixture", scanner_path=scanner)
         assert data["recommendations"][0]["task_id"] == "p0"
         assert any(item["task_id"] == source_packet_id and item["kind"] == "review_first_packet" for item in data["recommendations"])
         assert not any(item["task_id"] == "stale-packet-a" for item in data["recommendations"])
