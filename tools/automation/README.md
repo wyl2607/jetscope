@@ -13,14 +13,17 @@ Phase 5 已经有 accepted ADR：`docs/decisions/phase5-split-decision.md` super
 - `tools/automation/AGENTS.md`
 - `tools/automation/workspace-guides/ai-entry-map.md`
 - `tools/automation/workspace-guides/ai-entry-map.json`
+- `tools/automation/workspace-guides/ai-systems-registry.json` — local AI CLI/App/provider inventory
+- `tools/automation/workspace-guides/ai-systems-registry.md` — human-readable AI systems registry guide
+- `tools/automation/workspace-guides/external-orchestration-candidates.md` — read-only external AI orchestration candidate ledger
 - `tools/automation/PROJECT_PROGRESS.md`
 - `tools/automation/plan.md` — repo-evolver architecture plan / phase roadmap
+- `tools/automation/workspace-guides/repo-evolver-maintenance-system.md` — Git-first maintenance pipeline planning record
 - `tools/automation/workspace-guides/parallel-dev-vps-handbook.md`
 - `tools/automation/workspace-guides/windows-opencode-handoff.md`
 - `tools/automation/workspace-guides/automation-source-runtime-classification.md`
 - `tools/automation/workspace-guides/automation-project-split-decision.md`
 - `tools/automation/workspace-guides/multi-agent/README.md`
-- `tools/automation/workspace-guides/ai-systems-registry.json`
 
 目录边界：
 
@@ -48,6 +51,49 @@ scripts/automationctl validate --full
 ```
 
 边界：`automationctl` 不批准 plan，不授予 `execute-local`，不确认 runner，不 push/PR/merge/deploy，不 sync worker，不修改 VPS 或远端状态。底层 Phase F/H、OpenCode、task-board、triage、dedupe、quarantine 脚本保留为内部模块；默认对外入口先收敛到 `automationctl`、Telegram `/ai` 和 Telegram `/center`。
+
+## AI 成本与额度入口
+
+Claude Code session 成本导入器借鉴 Ruflo cost-tracker 的 JSONL usage
+解析方式，但只写入本地 runtime JSON，不启用 Ruflo plugin、MCP、hooks 或
+AgentDB：
+
+```bash
+python3 /Users/yumei/tools/automation/scripts/claude-session-cost-importer.py \
+  --cwd /Users/yumei
+```
+
+默认输出：
+
+```text
+/Users/yumei/tools/automation/runtime/token-budget/claude-session-cost-latest.json
+```
+
+统一预算报告会自动读取这份摘要：
+
+```bash
+python3 /Users/yumei/tools/automation/token-budget-manager.py --report
+```
+
+统一预算阶梯：
+
+```bash
+python3 /Users/yumei/tools/automation/token-budget-manager.py --budget-governance
+```
+
+预算阶梯采用 Ruflo cost-tracker 风格的 50/75/90/100% 阈值：
+
+- `INFO`: 50%，记录并继续观察
+- `WARNING`: 75%，优先低成本 lane，避免宽并行
+- `CRITICAL`: 90%，降级模型、压缩上下文或要求人工复核
+- `HARD_STOP`: 100%，暂停非必要 agent/model 调用
+
+可用环境变量覆盖默认值：
+
+```bash
+CLAUDE_SESSION_BUDGET_USD=10.0
+OPENCODE_DAILY_TOKEN_QUOTA=50000000
+```
 
 ## 统一往返入口
 

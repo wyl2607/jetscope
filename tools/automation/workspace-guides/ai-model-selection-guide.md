@@ -58,7 +58,7 @@ The legacy flow below is retained only for compatibility notes.
 ## 📊 历史模型对比速查表
 
 | 需求 | 首选 | 备选 1 | 备选 2 | 不要用 |
-|------|------|--------|--------|--------|
+| ------ | ------ | -------- | -------- | -------- |
 | 速度优先 | grok | auto | stepfun | nemotron |
 | 质量优先 | auto | nemotron | stepfun | grok |
 | 代码优先 | stepfun | auto | grok | nemotron |
@@ -71,6 +71,7 @@ The legacy flow below is retained only for compatibility notes.
 ## 🚀 历史工具调用速查
 
 > 2026-04-21 复测更新：
+>
 > - OpenCode LongCat 已恢复（shared data 模式 + 网络可达时可用）
 > - Nemotron 旧模型名已下线，请使用 `kilo/nvidia/nemotron-3-super-120b-a12b:free`（`model="nemotron"` 别名保持不变）
 
@@ -129,6 +130,7 @@ result = await kilo_code(
 ```
 
 **模型选择**:
+
 - `"auto"` ← 推荐默认值（自动选最佳）
 - `"grok"` ← 快速 (~6s)
 - `"stepfun"` ← 代码好
@@ -149,7 +151,7 @@ result = await kilo_code(
 ## 📈 性能指标速查
 
 | 模型 | 速度 | 质量 | 代码 | 推理 | 配额 |
-|------|------|------|------|------|------|
+| ------ | ------ | ------ | ------ | ------ | ------ |
 | grok | ⚡⚡⚡ | 🟢🟢 | 🟢🟢 | 🟡 | ♾️ |
 | auto | ⚡⚡⚡ | 🟢🟢🟢 | 🟢🟢 | 🟢🟢 | ♾️ |
 | stepfun | ⚡⚡ | 🟢🟢 | 🟢🟢🟢 | 🟡 | ♾️ |
@@ -271,6 +273,7 @@ if response.status == "error":
 ## 🎓 学习指南
 
 **最佳示范**:
+
 ```text
 ✅ kilo_code task="Write a TypeScript function to validate email addresses"
    model="stepfun" dir="<example-project-dir>"
@@ -289,6 +292,7 @@ if response.status == "error":
 - [ ] 模型响应异常时：立即重新测试
 
 **重新测试方式**:
+
 ```bash
 python3 scripts/ai-model-router.py --task fast_probe --json
 ```

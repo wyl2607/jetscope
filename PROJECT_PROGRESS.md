@@ -131,7 +131,7 @@ The workspace is moving from a powerful but drifting multi-AI development area t
 ## Project Dashboard
 
 | Area | Status | Risk | Current boundary | Next action |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `projects/jetscope` | PR #41 and PR #42 merged; local main aligned | Low | No deploy/sync performed after merge checks; project worktree clean | Continue with normal feature work only after new task selection |
 | `projects/esg-research-toolkit` | Local/remote cleanup complete | Low | Clean main; no public action unless requested | Optional mirror/history cleanup only with explicit intent |
 | `projects/sustainos` | Local-only boundary strengthened | High | Root ignores `projects/`; project ignore/guard classify runtime, personal, review, DB, venv, and operator artifacts; no VPS/control-plane readback, rollout, promote, pullback, or sync | Decide whether to approve remote/control-plane recovery or continue local source review |

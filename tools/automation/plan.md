@@ -14,6 +14,7 @@
 - `workspace-guides/automation-project-split-decision.md` 是原始不拆分基线；当前已由 `docs/decisions/phase5-split-decision.md` 记录新的 Phase 5 决策，但执行仍 deferred。
 - `runtime/self-evolution/daily-evolution-2026-05-08.json` 与 `.md` 展示了当前 drift queue、优先级分布、ignored findings 和 review-first task packets。
 - `runtime/self-evolution/daily-evolution-2026-05-08-task-packets.json` 提供了可执行的 task packet 形态，说明现阶段已经具备 review-first 交接素材，但还没有自动修复型平台接口。
+- `workspace-guides/repo-evolver-maintenance-system.md` 保存了 Git-first 维护系统规划：Codex 作为项目级自动化/PR/CI 执行支持，Claude Code 作为本地技能、记忆、复杂判断和风格维护支持；外部工具和 workflow 只作为候选集，执行前必须按当前官方来源和本地策略复核。
 
 ## Target Architecture
 

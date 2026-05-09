@@ -56,6 +56,9 @@
       "triggers": [
         "model routing",
         "provider state",
+        "local AI assistant inventory",
+        "AI CLI inventory",
+        "AI desktop app inventory",
         "cross-AI delegation",
         "OpenCode",
         "Codex",
@@ -63,8 +66,10 @@
       ],
       "read": [
         "/Users/yumei/tools/automation/workspace-guides/ai-systems-registry.json",
+        "/Users/yumei/tools/automation/workspace-guides/ai-systems-registry.md",
         "/Users/yumei/tools/automation/workspace-guides/ai-model-selection-guide.md",
-        "/Users/yumei/tools/automation/PLANS.md"
+        "/Users/yumei/tools/automation/PLANS.md",
+        "/Users/yumei/tools/automation/scripts/refresh_ai_systems_registry.py"
       ],
       "mutationPolicy": "registry refresh is allowed only through documented scripts; no secrets"
     },
@@ -82,6 +87,24 @@
         "/Users/yumei/tools/automation/runtime/skill-chains/dashboard"
       ],
       "mutationPolicy": "review-first; no skill-root mutation without explicit approval"
+    },
+    {
+      "id": "external-orchestration-candidates",
+      "triggers": [
+        "external AI orchestration",
+        "Ruflo",
+        "ruflo",
+        "reuse external agent framework",
+        "cost tracker",
+        "swarm orchestration",
+        "model routing replacement"
+      ],
+      "read": [
+        "/Users/yumei/tools/automation/workspace-guides/external-orchestration-candidates.md",
+        "/Users/yumei/tools/automation/runtime/external-repos/ruflo/README.md",
+        "/Users/yumei/tools/automation/runtime/external-repos/ruflo/package.json"
+      ],
+      "mutationPolicy": "read-only candidate evaluation by default; no global install, MCP registration, hooks, daemons, or skill-root import without a separate approved task"
     },
     {
       "id": "multi-agent-and-sdd",
@@ -149,6 +172,24 @@
         "/Users/yumei/tools/automation/workspace-guides/evolution-registry.json"
       ],
       "mutationPolicy": "source-first; Obsidian write-back requires explicit approval or documented source-of-truth exception"
+    },
+    {
+      "id": "repo-evolver-maintenance-system",
+      "triggers": [
+        "repo-evolver",
+        "continuous refactor",
+        "maintenance pipeline",
+        "Git-first maintenance",
+        "agent skill evolution",
+        "documentation fact verification"
+      ],
+      "read": [
+        "/Users/yumei/tools/automation/workspace-guides/repo-evolver-maintenance-system.md",
+        "/Users/yumei/tools/automation/plan.md",
+        "/Users/yumei/tools/automation/.evolver/risk-policy.md",
+        "/Users/yumei/tools/automation/workspace-guides/evolution-registry.json"
+      ],
+      "mutationPolicy": "planning source only; future integrations require bounded tasks and approval where local policy requires it"
     }
   ],
   "globalHardBoundaries": [

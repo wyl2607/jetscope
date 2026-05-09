@@ -12,7 +12,7 @@ Use it before syncing, publishing, committing, or handing this package to anothe
 ## Classification Summary
 
 | Path | Classification | Default action |
-|---|---|---|
+| --- | --- | --- |
 | `AGENTS.md` | Source policy | Keep, sync only when handoff needs it |
 | `README.md` | Source documentation | Keep, safe to review/share after secret scan |
 | `PROJECT_PROGRESS.md` | Source/status documentation | Keep local canonical, sync only when needed |

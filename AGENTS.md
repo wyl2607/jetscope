@@ -16,7 +16,7 @@ file as the public, repository-local AI entrypoint.
 `/Users/yumei` is not a normal single-purpose product repo:
 
 | Area | Paths | Default action |
-|---|---|---|
+| --- | --- | --- |
 | JetScope product mirror | `apps/`, `infra/`, `packages/`, `test/`, product docs/scripts | Read-only here; develop in `/Users/yumei/projects/jetscope` |
 | Workspace governance | `tools/automation/`, guard scripts, AI maintenance docs | Local-first; classify before any publish |
 | Runtime/private state | `runtime/`, `.claude/`, `.codex/`, `.omx/`, vaults, logs, caches | Never publish |

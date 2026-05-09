@@ -1,0 +1,163 @@
+schema_version: ai-assistants-registry-1.0
+assistants:
+  - id: codex
+    provider: openai
+    lifecycle: core_pinned
+    task_lanes: [complex_coding, repo_refactor, tests, code_review, reasoning_review]
+    quota_window:
+      type: rolling_and_weekly
+      window: 5h+7d
+      remaining_estimate: unknown
+      confidence: manual_or_observed
+    cost_model: subscription
+    quality_score: 0.95
+    reliability_score: 0.90
+    privacy_class: project_code_allowed
+    replacement_probe_enabled: false
+    quota_probe_enabled: true
+    benchmark_probe_enabled: true
+    retirement_policy: core_pinned_never_auto_retire
+
+  - id: codex_spark
+    provider: openai
+    lifecycle: active
+    task_lanes: [fast_patch, small_coding, explanation, task_packet, tests]
+    quota_window:
+      type: rolling_and_weekly
+      window: 5h+7d
+      remaining_estimate: unknown
+      confidence: manual_or_observed
+    cost_model: subscription
+    quality_score: 0.86
+    reliability_score: 0.88
+    privacy_class: project_code_allowed
+    replacement_probe_enabled: false
+    quota_probe_enabled: true
+    benchmark_probe_enabled: true
+    retirement_policy: review_if_reliability_below_0_70_for_14d
+
+  - id: claude_code
+    provider: anthropic
+    lifecycle: core_pinned
+    task_lanes: [architecture, complex_refactor, reasoning_review, long_context, code_review]
+    quota_window:
+      type: rolling_window
+      window: 5h
+      remaining_estimate: unknown
+      confidence: manual_or_observed
+    cost_model: subscription
+    quality_score: 0.94
+    reliability_score: 0.88
+    privacy_class: project_code_allowed
+    replacement_probe_enabled: false
+    quota_probe_enabled: true
+    benchmark_probe_enabled: true
+    retirement_policy: core_pinned_never_auto_retire
+
+  - id: kimi
+    provider: moonshot
+    lifecycle: candidate
+    task_lanes: [summary, classification, chinese_reasoning, low_risk_docs]
+    quota_window:
+      type: provider_dynamic
+      window: unknown
+      remaining_estimate: unknown
+      confidence: provider_dynamic
+    cost_model: low_cost_dynamic
+    quality_score: 0.78
+    reliability_score: 0.72
+    privacy_class: no_secrets
+    replacement_probe_enabled: true
+    quota_probe_enabled: true
+    benchmark_probe_enabled: true
+    retirement_policy: retire_if_benchmark_regresses_or_quota_unusable_for_14d
+
+  - id: gemini_flash
+    provider: google
+    lifecycle: active
+    task_lanes: [summary, classification, low_risk_docs, fast_patch]
+    quota_window:
+      type: free_rate_limited
+      window: daily
+      remaining_estimate: unknown
+      confidence: provider_dynamic
+    cost_model: free_or_low_cost
+    quality_score: 0.76
+    reliability_score: 0.76
+    privacy_class: no_secrets
+    replacement_probe_enabled: true
+    quota_probe_enabled: true
+    benchmark_probe_enabled: true
+    retirement_policy: demote_if_free_quota_unreliable_for_7d
+
+  - id: qwen
+    provider: alibaba
+    lifecycle: candidate
+    task_lanes: [summary, classification, chinese_reasoning, low_risk_docs, benchmark_probe]
+    quota_window:
+      type: provider_dynamic
+      window: unknown
+      remaining_estimate: unknown
+      confidence: provider_dynamic
+    cost_model: low_cost_dynamic
+    quality_score: 0.77
+    reliability_score: 0.70
+    privacy_class: no_secrets
+    replacement_probe_enabled: true
+    quota_probe_enabled: true
+    benchmark_probe_enabled: true
+    retirement_policy: retire_if_replaced_by_higher_quality_candidate
+
+  - id: openrouter_free
+    provider: openrouter
+    lifecycle: candidate
+    task_lanes: [summary, classification, low_risk_docs, benchmark_probe]
+    quota_window:
+      type: free_rate_limited
+      window: unknown
+      remaining_estimate: unknown
+      confidence: provider_dynamic
+    cost_model: free_dynamic
+    quality_score: 0.68
+    reliability_score: 0.62
+    privacy_class: no_secrets
+    replacement_probe_enabled: true
+    quota_probe_enabled: true
+    benchmark_probe_enabled: true
+    retirement_policy: retire_if_quota_or_quality_unstable_for_7d
+
+  - id: local_lmstudio
+    provider: local
+    lifecycle: probation
+    task_lanes: [summary, classification, offline_probe, low_risk_docs]
+    quota_window:
+      type: local_capacity
+      window: local_runtime
+      remaining_estimate: unknown
+      confidence: observed
+    cost_model: local_compute
+    quality_score: 0.58
+    reliability_score: 0.55
+    privacy_class: local_only
+    replacement_probe_enabled: true
+    quota_probe_enabled: true
+    benchmark_probe_enabled: true
+    retirement_policy: retire_if_local_runtime_absent_for_30d
+
+  - id: legacy_cli_placeholder
+    provider: legacy
+    lifecycle: deprecated
+    task_lanes: [manual_fallback, compatibility_probe]
+    quota_window:
+      type: unknown
+      window: unknown
+      remaining_estimate: unknown
+      confidence: estimated
+    cost_model: unknown
+    quality_score: 0.20
+    reliability_score: 0.20
+    privacy_class: no_secrets
+    replacement_probe_enabled: true
+    quota_probe_enabled: false
+    benchmark_probe_enabled: false
+    retirement_policy: retire_after_successor_verified

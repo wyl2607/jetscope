@@ -22,7 +22,7 @@ Latest local audit artifacts:
 2026-05-08 snapshot:
 
 | Metric | Value |
-|---|---:|
+| --- | ---: |
 | Visible skill files in library scan | 200 |
 | Unique skill names in library scan | 103 |
 | Duplicate skill names | 61 |
@@ -51,7 +51,7 @@ Important interpretation:
 ## Skill Roots And Roles
 
 | Surface | Role | Default treatment |
-|---|---|---|
+| --- | --- | --- |
 | `/Users/yumei/.codex/skills` | Codex visible skill surface; symlink to `/Users/yumei/vibecoding/.codex/skills` | Primary runtime surface for Codex-specific skills and wrappers |
 | `/Users/yumei/.agents/skills` | Shared cross-assistant source for portable workflow skills | Preferred SSOT for shared planning, goal, and assistant-neutral skills |
 | `/Users/yumei/.claude/skills` | Claude compatibility surface | Keep thin; prefer pointers or symlinks over divergent copies |
@@ -149,7 +149,7 @@ Do not create broad replacement skills like `developer`, `qa`, `review`, or `wor
 
 Run this loop before any skill cleanup or new skill creation:
 
-0. Choose AI support lane when a second opinion or delegated execution is useful:
+1. Choose AI support lane when a second opinion or delegated execution is useful:
 
 ```bash
 python3 /Users/yumei/tools/automation/scripts/ai-model-router.py --task hard_review --json
@@ -176,11 +176,11 @@ python3 /Users/yumei/tools/automation/scripts/skill-library.py \
 python3 /Users/yumei/tools/automation/scripts/skill-frontmatter-lint.py --json
 ```
 
-2. Classify the target as `shared-ssot`, `codex-native`, `assistant-variant`, or `vendor-managed`.
-3. If the target is manual-merge, decide winner or merge content into one SSOT file.
-4. If the target is byte-identical, create a rollback tarball before replacing copies with symlinks or archiving.
-5. Re-run audit, library, and dashboard fixture after changes.
-6. Write trace with the changed skill names, verification commands, and remaining risk.
+1. Classify the target as `shared-ssot`, `codex-native`, `assistant-variant`, or `vendor-managed`.
+2. If the target is manual-merge, decide winner or merge content into one SSOT file.
+3. If the target is byte-identical, create a rollback tarball before replacing copies with symlinks or archiving.
+4. Re-run audit, library, and dashboard fixture after changes.
+5. Write trace with the changed skill names, verification commands, and remaining risk.
 
 ## Hard Stop Rules
 

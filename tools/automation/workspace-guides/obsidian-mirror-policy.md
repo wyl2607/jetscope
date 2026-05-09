@@ -20,7 +20,7 @@ Git-tracked project files remain the canonical truth. Obsidian may mirror or der
 ## Current Registered Mirrors
 
 | Pair | Status | Relationship | Direction | Rule |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `workspace-project-index-derived` | `active` | `derived-index` | `project-to-obsidian-derived` | One-way index; do not merge derived output back. |
 | `tools-automation-progress-obsidian-mirror` | `active` | `mirror` | `project-to-obsidian` | 1:1 mirror; drift is review-first until intentionally synchronized from source. |
 
@@ -43,7 +43,7 @@ For any new proposed mirror, scanners may report required approval but must not 
 ## Eligibility Matrix
 
 | Surface | Default mirror eligibility | Reason |
-|---|---|---|
+| --- | --- | --- |
 | `PROJECT_PROGRESS.md` | Eligible only after explicit approval | High-value progress mirror, but may contain local state and needs privacy review. |
 | Selected `workspace-guides/*.md` | Eligible after review | Source/handoff docs can be useful in Obsidian when classified and current. |
 | `plan.md` and selected planning docs | Eligible after review | Architecture plans can be mirrored if they do not expose private runtime details. |

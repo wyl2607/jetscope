@@ -114,6 +114,42 @@
       "scanner": "doc-drift-auditor"
     },
     {
+      "id": "ai-systems-registry-guide",
+      "source": "/Users/yumei/tools/automation/workspace-guides/ai-systems-registry.md",
+      "mirrors": [],
+      "role": "runtime-inventory-guide",
+      "zone": "source",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "ai-systems-registry-json",
+      "source": "/Users/yumei/tools/automation/workspace-guides/ai-systems-registry.json",
+      "mirrors": [],
+      "role": "machine-readable-runtime-inventory",
+      "zone": "source",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "repo-evolver-maintenance-system",
+      "source": "/Users/yumei/tools/automation/workspace-guides/repo-evolver-maintenance-system.md",
+      "mirrors": [],
+      "role": "architecture-plan",
+      "zone": "source",
+      "syncMode": "manual-review",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "external-orchestration-candidates",
+      "source": "/Users/yumei/tools/automation/workspace-guides/external-orchestration-candidates.md",
+      "mirrors": [],
+      "role": "external-candidate-evaluation",
+      "zone": "source",
+      "syncMode": "manual-review",
+      "scanner": "doc-drift-auditor"
+    },
+    {
       "id": "automation-guides",
       "source": "/Users/yumei/tools/automation/workspace-guides",
       "mirrors": [],

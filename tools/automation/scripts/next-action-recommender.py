@@ -18,7 +18,7 @@ AUTOMATION = _SCRIPT_DIR.parent
 OUT_PATH = AUTOMATION / "runtime" / "multi-agent" / "next-recommender.json"
 TERMINAL = {"completed", "cancelled", "failed"}
 PRANK = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}
-KRANK = {"wait_for_user": 0, "review_first_packet": 1, "manual_dry_run": 2, "apply_triage": 3, "cancel_dedup": 4, "execute_local_gate": 5}
+KRANK = {"wait_for_user": 0, "manual_dry_run": 1, "execute_local_gate": 2, "review_first_packet": 3, "apply_triage": 4, "cancel_dedup": 5}
 
 
 def read_json(path: Path, default: Any) -> Any:
@@ -162,7 +162,12 @@ def add_decisions(recs, seen, skip, tasks, enriched) -> None:
         merged = dict(enriched.get(task_id) or {})
         merged.update(task)
         pri = priority(task_id, tasks, enriched)
-        needs_user = merged.get("requires_user_decision") or merged.get("recommended_action") == "needs_user_decision"
+        approvals = set(merged.get("approvals") or [])
+        status = str(merged.get("status") or "")
+        plan_resolved = "plan" in approvals or status == "planned"
+        needs_user = (
+            merged.get("requires_user_decision") or merged.get("recommended_action") == "needs_user_decision"
+        ) and not plan_resolved
         if pri in {"P0", "P1"} and needs_user:
             add_rec(recs, seen, skip, rec("wait_for_user", task_id, f"{pri} 需要人工决策：{title(task_id, tasks, enriched)}", f"/show {task_id}", "人工定方向后,下一步会推荐 dry-run 或清理动作", merged, tasks, enriched))
 
@@ -170,7 +175,10 @@ def add_decisions(recs, seen, skip, tasks, enriched) -> None:
 def add_dry_runs(recs, seen, skip, dry, tasks, enriched) -> None:
     for item in as_list(dry.get("candidates")) + as_list(dry.get("manual_candidates")):
         task_id = task_id_of(item)
-        if isinstance(item, dict) and task_id:
+        if task_id not in tasks:
+            continue
+        approvals = set((tasks.get(task_id) or {}).get("approvals") or [])
+        if isinstance(item, dict) and task_id and "execute-local" not in approvals:
             add_rec(recs, seen, skip, rec("manual_dry_run", task_id, f"可先收集单任务 dry-run 证据：{title(task_id, tasks, enriched)}", f"/manual_dry_run {task_id}", "如果通过,下一步会推荐 /execute_local_gate <id>", item, tasks, enriched))
 
 
@@ -231,7 +239,10 @@ def add_dedup(recs, seen, dedup, tasks, enriched) -> None:
 def add_exec_gate(recs, seen, skip, gate, tasks, enriched) -> None:
     for item in as_list(gate.get("candidates")):
         task_id = task_id_of(item)
-        if isinstance(item, dict) and task_id and item.get("can_apply") is not False:
+        if task_id not in tasks:
+            continue
+        approvals = set((tasks.get(task_id) or {}).get("approvals") or [])
+        if isinstance(item, dict) and task_id and item.get("can_apply") is not False and "execute-local" not in approvals:
             add_rec(recs, seen, skip, rec("execute_local_gate", task_id, "已有 fresh manual dry-run evidence,可预览 execute-local 审批门", f"/execute_local_gate {task_id}", "如果批准,下一步仍需 runner preview + 二段确认", item, tasks, enriched))
 
 

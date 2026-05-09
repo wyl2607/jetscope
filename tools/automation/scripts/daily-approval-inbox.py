@@ -29,7 +29,7 @@ DEV_CONTROL = RUNTIME / "dev-control"
 MULTI_AGENT = RUNTIME / "multi-agent"
 DEFAULT_JSON = TASK_BOARD / "daily-approval-inbox.json"
 DEFAULT_MD = TASK_BOARD / "daily-approval-inbox.md"
-REPORT_VERSION = "daily-approval-inbox-1.0.1"
+REPORT_VERSION = "daily-approval-inbox-1.1.0"
 TERMINAL_STATUSES = {"completed", "cancelled", "failed"}
 SECRET_RE = re.compile(
     r"([0-9]{8,}:[A-Za-z0-9_-]{20,}|\bsk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|BEGIN (?:RSA |OPENSSH |EC )?PRIVATE KEY|(?:api[_-]?key|token|secret|password|authorization)\s*[:=]\s*\S+)",
@@ -101,6 +101,10 @@ def latest_task_packets_path() -> Path:
     return self_evolution_dir / "daily-evolution-unknown-task-packets.json"
 
 
+def mirror_drift_scan_path() -> Path:
+    return RUNTIME / "self-evolution" / "mirror-drift-scan.json"
+
+
 def packet_task_id(packet: Dict[str, Any]) -> str:
     key = "|".join(
         compact(item, 200)
@@ -126,7 +130,7 @@ def infer_project(path_value: Any) -> str:
 
 
 def packet_to_inbox(packet: Dict[str, Any], reason_prefix: str) -> Dict[str, Any]:
-    return {
+    row = {
         "task_id": packet_task_id(packet),
         "project": infer_project(packet.get("path")),
         "priority": packet.get("priority") or "P3",
@@ -136,6 +140,22 @@ def packet_to_inbox(packet: Dict[str, Any], reason_prefix: str) -> Dict[str, Any
         "reason": compact(f"{reason_prefix}: {packet.get('scanner')} finding in {packet.get('path') or 'unknown-path'}", 160),
         "suggested_action": "review packet and create task",
     }
+    preserved = {
+        key: packet.get(key)
+        for key in (
+            "sourceOfTruth",
+            "conflictPolicy",
+            "direction",
+            "privacyGate",
+            "riskClass",
+            "allowedActions",
+            "validation",
+        )
+        if packet.get(key) is not None
+    }
+    if preserved:
+        row["task_packet"] = preserved
+    return row
 
 
 def all_task_ids(state: Dict[str, Any]) -> set[str]:
@@ -163,6 +183,24 @@ def packet_candidates(value: int = 8, existing_task_ids: set[str] | None = None)
     ]
     enriched.sort(key=lambda item: (item.get("priority") or "", str(item.get("task_id") or "")))
     return enriched[:value]
+
+
+def mirror_drift_packet_candidates(value: int = 8, existing_task_ids: set[str] | None = None) -> List[Dict[str, Any]]:
+    existing = existing_task_ids or set()
+    report = read_json(mirror_drift_scan_path(), {})
+    findings = report.get("findings") if isinstance(report.get("findings"), list) else []
+    packets = []
+    for finding in findings:
+        if not isinstance(finding, dict) or finding.get("kind") != "mirror-content-drift":
+            continue
+        packet = finding.get("task_packet") if isinstance(finding.get("task_packet"), dict) else {}
+        if packet.get("mode") != "review-first":
+            continue
+        if packet_task_id(packet) in existing:
+            continue
+        packets.append(packet_to_inbox(packet, "mirror-content-drift task packet"))
+    packets.sort(key=lambda item: (item.get("priority") or "", str(item.get("task_id") or "")))
+    return packets[:value]
 
 
 def active_tasks(state: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -248,11 +286,17 @@ def build_report(limit: int = 8) -> Dict[str, Any]:
 
     plan_approval = []
     for row in planning.get("candidates") or []:
+        task_id = str(row.get("task_id") or "")
+        if task_id not in by_id:
+            continue
         task = by_id.get(str(row.get("task_id") or ""), row)
         plan_approval.append(public_task(task, row.get("plan_summary") or "ready for plan approval", "approve plan"))
 
     execute_local = []
     for row in execute_gate.get("candidates") or []:
+        task_id = str(row.get("task_id") or "")
+        if task_id not in by_id:
+            continue
         if row.get("can_apply"):
             task = by_id.get(str(row.get("task_id") or ""), row)
             execute_local.append(public_task(task, "fresh manual dry-run evidence is available", "approve execute-local"))
@@ -267,9 +311,23 @@ def build_report(limit: int = 8) -> Dict[str, Any]:
         if "execute-local" in approvals:
             runner_confirm.append(public_task(task, "execute-local is already approved; runner still needs preview token + confirm", "runner preview/confirm"))
 
+    active_auto_dry_count = sum(
+        1
+        for row in auto_dry.get("candidates") or []
+        if isinstance(row, dict) and str(row.get("task_id") or "") in by_id
+    )
+    active_manual_dry_count = sum(
+        1
+        for row in auto_dry.get("manual_candidates") or []
+        if isinstance(row, dict) and str(row.get("task_id") or "") in by_id
+    )
+
     direction_needed = []
     for task in tasks:
-        if bool(task.get("requires_user_decision")):
+        approvals = set(task.get("approvals") or [])
+        status = str(task.get("status") or "")
+        plan_resolved = "plan" in approvals or status == "planned"
+        if bool(task.get("requires_user_decision")) and not plan_resolved:
             direction_needed.append(public_task(task, "task is marked requires_user_decision", "set direction or split"))
         elif task.get("status") in {"received", "clarifying"}:
             direction_needed.append(public_task(task, "task is not yet planned", "clarify goal or approve plan"))
@@ -277,7 +335,10 @@ def build_report(limit: int = 8) -> Dict[str, Any]:
         task = by_id.get(str(alert.get("task_id") or ""), alert)
         direction_needed.append(public_task(task, alert.get("alert_type") or "unfinished runner alert", "reconcile or split"))
 
-    review_first_packets = packet_candidates(limit, existing_task_ids)
+    review_first_packets = mirror_drift_packet_candidates(limit, existing_task_ids)
+    remaining_packet_slots = max(0, limit - len(review_first_packets))
+    if remaining_packet_slots:
+        review_first_packets.extend(packet_candidates(remaining_packet_slots, existing_task_ids))
 
     risk_notes = []
     if budget.get("paused"):
@@ -325,8 +386,8 @@ def build_report(limit: int = 8) -> Dict[str, Any]:
             "runner_confirm_count": len(runner_confirm),
             "direction_needed_count": len(direction_needed),
             "review_first_packet_count": len(review_first_packets),
-            "auto_dry_run_candidates": (auto_dry.get("summary") or {}).get("candidate_count", 0),
-            "manual_dry_run_candidates": (auto_dry.get("summary") or {}).get("manual_candidate_count", 0),
+            "auto_dry_run_candidates": active_auto_dry_count,
+            "manual_dry_run_candidates": active_manual_dry_count,
         },
         "decisions_today": {
             "plan_approval": plan_approval[:limit],
@@ -343,6 +404,7 @@ def build_report(limit: int = 8) -> Dict[str, Any]:
             "execute_local_gate": str(TASK_BOARD / "execute-local-gate.json"),
             "auto_dry_run": str(TASK_BOARD / "auto-dry-run-plan.json"),
             "daily_evolution_task_packets": str(latest_task_packets_path()),
+            "mirror_drift_scan": str(mirror_drift_scan_path()),
         },
     }
     return report
@@ -444,6 +506,30 @@ def self_test() -> None:
         "priority": "P1",
     }
     assert packet_task_id(long_packet) == packet_to_inbox(long_packet, "review-first task packet")["task_id"]
+    mirror_packet = {
+        "scanner": "mirror-drift-scan",
+        "kind": "mirror-content-drift",
+        "path": str(AUTOMATION / "PROJECT_PROGRESS.md"),
+        "target": "/Users/yumei/Obsidian/MyKnowledgeVault/30-AI-Ingest/tools-automation-progress.md",
+        "goal": "Review mirror drift.",
+        "mode": "review-first",
+        "priority": "P1",
+        "sourceOfTruth": "project",
+        "conflictPolicy": "project-wins-unless-human-promotes-obsidian-note",
+        "direction": "project-to-obsidian",
+        "privacyGate": "required-before-publish",
+        "riskClass": "P1-review-first-mirror-drift",
+        "allowedActions": ["Review only."],
+        "validation": ["python3 /Users/yumei/tools/automation/scripts/mirror-drift-scan.py --no-write"],
+    }
+    inbox_row = packet_to_inbox(mirror_packet, "mirror-content-drift task packet")
+    assert inbox_row["task_packet"]["sourceOfTruth"] == "project"
+    assert inbox_row["task_packet"]["conflictPolicy"] == "project-wins-unless-human-promotes-obsidian-note"
+    assert inbox_row["task_packet"]["direction"] == "project-to-obsidian"
+    assert inbox_row["task_packet"]["privacyGate"] == "required-before-publish"
+    assert inbox_row["task_packet"]["riskClass"] == "P1-review-first-mirror-drift"
+    assert inbox_row["task_packet"]["allowedActions"] == ["Review only."]
+    assert inbox_row["task_packet"]["validation"]
     try:
         ensure_runtime_output(Path("/tmp/daily-approval-inbox.json"))
         raise AssertionError("outside runtime output accepted")
