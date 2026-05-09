@@ -11,6 +11,8 @@ Phase 5 已经有 accepted ADR：`docs/decisions/phase5-split-decision.md` super
 当前状态入口：
 
 - `tools/automation/AGENTS.md`
+- `tools/automation/workspace-guides/ai-entry-map.md`
+- `tools/automation/workspace-guides/ai-entry-map.json`
 - `tools/automation/PROJECT_PROGRESS.md`
 - `tools/automation/plan.md` — repo-evolver architecture plan / phase roadmap
 - `tools/automation/workspace-guides/parallel-dev-vps-handbook.md`

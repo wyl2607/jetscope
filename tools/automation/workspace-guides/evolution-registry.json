@@ -96,6 +96,24 @@
       "scanner": "doc-drift-auditor"
     },
     {
+      "id": "tools-automation-ai-entry-map",
+      "source": "/Users/yumei/tools/automation/workspace-guides/ai-entry-map.md",
+      "mirrors": [],
+      "role": "source-policy",
+      "zone": "source",
+      "syncMode": "manual-review",
+      "scanner": "doc-drift-auditor"
+    },
+    {
+      "id": "tools-automation-ai-entry-map-json",
+      "source": "/Users/yumei/tools/automation/workspace-guides/ai-entry-map.json",
+      "mirrors": [],
+      "role": "machine-readable-entry-map",
+      "zone": "source",
+      "syncMode": "source-only",
+      "scanner": "doc-drift-auditor"
+    },
+    {
       "id": "automation-guides",
       "source": "/Users/yumei/tools/automation/workspace-guides",
       "mirrors": [],

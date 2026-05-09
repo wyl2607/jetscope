@@ -108,6 +108,8 @@ tools/automation/scripts/*
 !tools/automation/scripts/import-review-first-packets.py
 !tools/automation/workspace-guides/
 tools/automation/workspace-guides/*
+!tools/automation/workspace-guides/ai-entry-map.md
+!tools/automation/workspace-guides/ai-entry-map.json
 !tools/automation/workspace-guides/ai-model-selection-guide.md
 !tools/automation/workspace-guides/android-phone-ops/
 tools/automation/workspace-guides/android-phone-ops/*

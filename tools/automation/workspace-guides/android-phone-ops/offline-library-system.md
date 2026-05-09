@@ -62,14 +62,14 @@
 当前入口：
 
 - 当前仓库未找到 `<legacy-missing-script:phone-offline-library.sh>`，旧脚本入口已失效。
-- 下面的 `adb` 步骤是人工审批后的手机资料整理示例，不是自动 runner 或 agent 默认入口。
+- 下面是人工审批后的手机资料整理意图，不是自动 runner 或 agent 默认入口。
 - 将 `<local-zim-file>` 替换为本机已经下载并确认可公开下发的 `.zim` 文件路径后，再由用户手动执行。
 
-```bash
-adb shell mkdir -p /storage/emulated/0/OfflineLibrary/10-Encyclopedia-ZIM
-adb push <local-zim-file> /storage/emulated/0/OfflineLibrary/10-Encyclopedia-ZIM/
-adb shell ls /storage/emulated/0/OfflineLibrary
-```
+人工步骤：
+
+1. 在手机共享存储中确认 `/storage/emulated/0/OfflineLibrary/10-Encyclopedia-ZIM` 目录存在。
+2. 将已确认的 `<local-zim-file>` 下发到该目录。
+3. 在手机端或经人工批准的 Android platform tools 会话中检查 `/storage/emulated/0/OfflineLibrary`。
 
 ## 推荐入库顺序
 

@@ -9,13 +9,18 @@ This directory is the local workspace automation package for `/Users/yumei`. It 
 Before non-trivial work in this directory, read:
 
 1. `/Users/yumei/AGENTS.md`
-2. `/Users/yumei/tools/automation/PROJECT_PROGRESS.md`
-3. `/Users/yumei/tools/automation/plan.md`
-4. `/Users/yumei/tools/automation/README.md`
-5. `/Users/yumei/tools/automation/workspace-guides/automation-source-runtime-classification.md`
-6. `/Users/yumei/tools/automation/workspace-guides/automation-project-split-decision.md`
-7. `/Users/yumei/tools/automation/workspace-guides/parallel-dev-vps-handbook.md`
-8. `/Users/yumei/tools/automation/workspace-guides/windows-opencode-handoff.md`
+2. `/Users/yumei/tools/automation/workspace-guides/ai-entry-map.json`
+3. `/Users/yumei/tools/automation/PROJECT_PROGRESS.md`
+4. `/Users/yumei/tools/automation/plan.md`
+5. `/Users/yumei/tools/automation/README.md`
+6. `/Users/yumei/tools/automation/workspace-guides/automation-source-runtime-classification.md`
+7. `/Users/yumei/tools/automation/workspace-guides/automation-project-split-decision.md`
+8. `/Users/yumei/tools/automation/workspace-guides/parallel-dev-vps-handbook.md`
+9. `/Users/yumei/tools/automation/workspace-guides/windows-opencode-handoff.md`
+
+Use `/Users/yumei/tools/automation/workspace-guides/ai-entry-map.md` for the
+human-readable progressive-discovery rules. Keep this file short; add deeper
+subsystem guidance to the entry map and linked guides instead.
 
 Then search trace ledgers for related prior work:
 
