@@ -230,6 +230,10 @@
     pass: "通过",
     weak: "偏弱",
     fail: "失败",
+    ready: "可用",
+    cooldown: "冷却",
+    fatal: "致命",
+    unavailable: "未注册",
     unknown: "未知",
     true: "是",
     false: "否"
@@ -1647,8 +1651,8 @@
       invokeKey: "dispatchLaneClaudeInvoke"
     },
     {
-      id: "dispatch-lane-deepseek-flash",
-      match: ["deepseek", "flash"],
+      id: "dispatch-lane-command-code-deepseek",
+      match: ["deepseek", "command code", "cmd"],
       nameKey: "dispatchLaneDeepSeekFlash",
       roleKey: "dispatchLaneDeepSeekFlashRole",
       taskKey: "dispatchLaneDeepSeekFlashTask",
@@ -1656,7 +1660,7 @@
       fallbackNameKey: "dispatchLaneDeepSeekFlashModel"
     },
     {
-      id: "dispatch-lane-opencode-go",
+      id: "dispatch-lane-opencode-policy",
       match: ["opencode", "open code"],
       nameKey: "dispatchLaneOpenCodeGo",
       roleKey: "dispatchLaneOpenCodeGoRole",
@@ -1876,18 +1880,19 @@
       [t("modelReady"), summary.ready || 0, "ready"],
       [t("modelCooldown"), summary.cooldown || 0, "cooldown"],
       [t("modelFatal"), summary.fatal || 0, "fatal"],
+      [t("modelUnavailable"), summary.unavailable || 0, "fatal"],
       [t("modelLastSuccess"), summary.last_success || 0, "success"]
     ].forEach(function (item) {
       var stat = node("div", "model-router-stat " + item[2]);
       stat.appendChild(node("span", "", item[0]));
       stat.appendChild(node("strong", "", String(item[1])));
-      panel.classList.toggle("has-risk", Number(summary.cooldown || 0) + Number(summary.fatal || 0) > 0);
+      panel.classList.toggle("has-risk", Number(summary.cooldown || 0) + Number(summary.fatal || 0) + Number(summary.unavailable || 0) > 0);
       stats.appendChild(stat);
     });
     panel.appendChild(stats);
 
     var rows = (router.models || []).filter(function (item) {
-      return item.status === "cooldown" || item.status === "fatal";
+      return item.status === "cooldown" || item.status === "fatal" || item.status === "unavailable";
     }).slice(0, 6);
     var list = node("div", "model-router-list");
     if (!rows.length) {

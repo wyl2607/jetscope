@@ -141,10 +141,10 @@ model_router = data.get("model_router", {})
 model_summary = model_router.get("summary", {})
 if not isinstance(model_router.get("models", []), list):
     fail(f"model router models should be a list: {model_router}")
-for required in ("models", "ready", "cooldown", "fatal", "last_success"):
+for required in ("models", "ready", "cooldown", "fatal", "unavailable", "last_success"):
     if required not in model_summary:
         fail(f"model router summary missing {required}: {model_summary}")
-if "fatal_clear" not in model_router.get("gate", {}) or "cooldown_clear" not in model_router.get("gate", {}):
+if "fatal_clear" not in model_router.get("gate", {}) or "cooldown_clear" not in model_router.get("gate", {}) or "unavailable_clear" not in model_router.get("gate", {}):
     fail(f"model router gate missing clear flags: {model_router.get('gate')}")
 
 goal_runs = data.get("goal_runs", [])

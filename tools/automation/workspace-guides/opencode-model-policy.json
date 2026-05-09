@@ -1,0 +1,114 @@
+{
+  "version": "2026-05-09",
+  "default_profile": "daily-free-first",
+  "profiles": {
+    "daily-free-first": {
+      "preferred_model": "opencode/big-pickle",
+      "fallback_models": [
+        "opencode/minimax-m2.5-free",
+        "opencode/nemotron-3-super-free",
+        "opencode-go/deepseek-v4-flash",
+        "opencode-go/glm-5.1",
+        "opencode-go/glm-5",
+        "opencode-go/kimi-k2.6",
+        "opencode-go/mimo-v2.5",
+        "opencode-go/mimo-v2.5-pro",
+        "opencode-go/qwen3.6-plus",
+        "opencode-go/minimax-m2.7",
+        "opencode-go/deepseek-v4-pro",
+        "opencode-go/qwen3.5-plus",
+        "codex-relay/gpt-5.5-medium"
+      ],
+      "reasoning_effort": "medium",
+      "load_balancing": {
+        "strategy": "daily-free-first-priority-failover",
+        "cooldown_seconds": 600,
+        "max_failures_before_fallback": 1
+      }
+    },
+    "strong-go": {
+      "preferred_model": "opencode-go/deepseek-v4-pro",
+      "fallback_models": [
+        "opencode-go/qwen3.6-plus",
+        "opencode-go/kimi-k2.6",
+        "opencode-go/minimax-m2.7",
+        "opencode-go/mimo-v2.5-pro",
+        "opencode-go/glm-5.1",
+        "opencode-go/deepseek-v4-flash",
+        "opencode/nemotron-3-super-free",
+        "opencode/minimax-m2.5-free",
+        "opencode/big-pickle",
+        "codex-relay/gpt-5.5-medium"
+      ],
+      "reasoning_effort": "high",
+      "load_balancing": {
+        "strategy": "strong-go-priority-failover",
+        "cooldown_seconds": 600,
+        "max_failures_before_fallback": 1
+      }
+    },
+    "coding-primary": {
+      "preferred_model": "opencode/big-pickle",
+      "fallback_models": [
+        "opencode/minimax-m2.5-free",
+        "opencode/nemotron-3-super-free",
+        "opencode-go/deepseek-v4-flash",
+        "opencode-go/glm-5.1",
+        "opencode-go/glm-5",
+        "opencode-go/kimi-k2.6",
+        "opencode-go/mimo-v2.5",
+        "opencode-go/mimo-v2.5-pro",
+        "opencode-go/qwen3.6-plus",
+        "opencode-go/minimax-m2.7",
+        "opencode-go/deepseek-v4-pro",
+        "opencode-go/qwen3.5-plus",
+        "codex-relay/gpt-5.5-medium"
+      ],
+      "reasoning_effort": "medium",
+      "load_balancing": {
+        "strategy": "daily-free-first-priority-failover",
+        "cooldown_seconds": 600,
+        "max_failures_before_fallback": 1
+      }
+    },
+    "deep-review": {
+      "preferred_model": "opencode-go/deepseek-v4-pro",
+      "fallback_models": [
+        "opencode-go/deepseek-v4-flash",
+        "opencode-go/qwen3.6-plus",
+        "opencode-go/kimi-k2.6",
+        "opencode/nemotron-3-super-free",
+        "opencode/minimax-m2.5-free",
+        "opencode/big-pickle",
+        "codex-relay/gpt-5.5-medium"
+      ],
+      "reasoning_effort": "high",
+      "load_balancing": {
+        "strategy": "priority-failover",
+        "cooldown_seconds": 600,
+        "max_failures_before_fallback": 1
+      }
+    }
+  },
+  "failure_classes": {
+    "fallback": [
+      "model not found",
+      "providermodelnotfounderror",
+      "timed out",
+      "timeout",
+      "rate limit",
+      "quota",
+      "temporarily unavailable",
+      "service unavailable"
+    ],
+    "fatal": [
+      "unauthorized",
+      "forbidden",
+      "permission",
+      "policy",
+      "safety",
+      "invalid api key",
+      "authentication"
+    ]
+  }
+}
