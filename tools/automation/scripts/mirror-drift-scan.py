@@ -59,6 +59,9 @@ def finding(pair: dict[str, Any], kind: str, level: str, mode: str, message: str
         "status": pair.get("status"),
     }
     row.update(extra)
+    for key in ("sourceOfTruth", "conflictPolicy", "direction", "privacyGate"):
+        if pair.get(key) is not None:
+            row[key] = pair.get(key)
     return row
 
 
@@ -166,9 +169,29 @@ def scan_pair(pair: dict[str, Any]) -> list[dict[str, Any]]:
 
     if relationship == "mirror":
         if source_ep["kind"] != "file" or mirror_ep["kind"] != "file":
-            rows.append(finding(pair, "mirror-endpoint-not-file", "P1", "review-first", "One-to-one mirrors must point at files for hash drift checks.", source_endpoint=source_ep, mirror_endpoint=mirror_ep))
+            rows.append(
+                finding(
+                    pair,
+                    "mirror-endpoint-not-file",
+                    "P1",
+                    "review-first",
+                    "One-to-one mirrors must point at files for hash drift checks.",
+                    source_endpoint=source_ep,
+                    mirror_endpoint=mirror_ep,
+                )
+            )
         elif source_ep["sha256"] != mirror_ep["sha256"]:
-            rows.append(finding(pair, "mirror-content-drift", "P1", "review-first", "One-to-one mirror content differs from the registered source.", source_endpoint=source_ep, mirror_endpoint=mirror_ep))
+            rows.append(
+                finding(
+                    pair,
+                    "mirror-content-drift",
+                    "P1",
+                    "review-first",
+                    "One-to-one mirror content differs from the registered source. Project is source-of-truth.",
+                    source_endpoint=source_ep,
+                    mirror_endpoint=mirror_ep,
+                )
+            )
         return rows
 
     rows.append(finding(pair, "mirror-relationship-not-scanned", "P4", "informational", "Mirror relationship is registered but has no content drift rule.", source_endpoint=source_ep, mirror_endpoint=mirror_ep))
@@ -273,6 +296,7 @@ def self_test() -> None:
                             "mirror": str(mirror),
                             "status": "active",
                             "relationship": "mirror",
+                            "sourceOfTruth": "project",
                             "direction": "project-to-obsidian",
                             "conflictPolicy": "project-wins-unless-human-promotes-obsidian-note",
                         }
@@ -283,6 +307,10 @@ def self_test() -> None:
         )
         report = scan_registry(registry)
         assert report["summary"]["drift_count"] == 1
+        pair = report["findings"][0]
+        assert pair["sourceOfTruth"] == "project"
+        assert pair["conflictPolicy"] == "project-wins-unless-human-promotes-obsidian-note"
+        assert pair["direction"] == "project-to-obsidian"
 
 
 def main() -> int:

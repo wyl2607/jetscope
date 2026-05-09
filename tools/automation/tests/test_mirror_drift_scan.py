@@ -74,6 +74,9 @@ class MirrorDriftScanTests(unittest.TestCase):
         self.assertEqual(report["summary"]["drift_count"], 1)
         self.assertEqual(report["findings"][0]["kind"], "mirror-content-drift")
         self.assertEqual(report["findings"][0]["mode"], "review-first")
+        self.assertEqual(report["findings"][0]["sourceOfTruth"], "project")
+        self.assertEqual(report["findings"][0]["conflictPolicy"], "project-wins-unless-human-promotes-obsidian-note")
+        self.assertEqual(report["findings"][0]["direction"], "project-to-obsidian")
 
     def test_active_missing_mirror_is_blocking_error(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -22,15 +22,15 @@ Git-tracked project files remain the canonical truth. Obsidian may mirror or der
 | Pair | Status | Relationship | Direction | Rule |
 |---|---|---|---|---|
 | `workspace-project-index-derived` | `active` | `derived-index` | `project-to-obsidian-derived` | One-way index; do not merge derived output back. |
-| `tools-automation-progress-obsidian-proposed` | `proposed` | `mirror` | `project-to-obsidian` | Target note is missing and requires approval before creation. |
+| `tools-automation-progress-obsidian-mirror` | `active` | `mirror` | `project-to-obsidian` | 1:1 mirror; drift is review-first until intentionally synchronized from source. |
 
-The current proposed mirror target is:
+Current registered mirror targets:
 
 ```text
 /Users/yumei/Obsidian/MyKnowledgeVault/30-AI-Ingest/tools-automation-progress.md
 ```
 
-Until the approval packet is accepted, scanners may report the proposed mirror but must not create, overwrite, or sync the Obsidian file.
+For any new proposed mirror, scanners may report required approval but must not create, overwrite, or sync an Obsidian file before approval.
 
 ## Canonical Truth
 
