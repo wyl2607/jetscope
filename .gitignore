@@ -99,29 +99,9 @@ Thumbs.db
 machine-label-ocr/
 projects/
 tools/*
-!tools/automation/
-tools/automation/*
-!tools/automation/scripts/
-tools/automation/scripts/*
-!tools/automation/scripts/task-similar-dedup.py
-!tools/automation/scripts/next-action-recommender.py
-!tools/automation/scripts/import-review-first-packets.py
-!tools/automation/scripts/daily-approval-inbox.py
-!tools/automation/workspace-guides/
-tools/automation/workspace-guides/*
-!tools/automation/workspace-guides/ai-entry-map.md
-!tools/automation/workspace-guides/ai-entry-map.json
-!tools/automation/workspace-guides/ai-model-selection-guide.md
-!tools/automation/workspace-guides/android-phone-ops/
-tools/automation/workspace-guides/android-phone-ops/*
-!tools/automation/workspace-guides/android-phone-ops/background-restriction-commands.md
-!tools/automation/workspace-guides/android-phone-ops/offline-library-system.md
-!tools/automation/workspace-guides/android-phone-ops/termux-automation-limitations.md
-tools/automation/runtime/
-yumei/
-tools/automation/runtime/task-board/
-tools/automation/runtime/task-board-validation/
-tools/automation/runtime/task-board-validation-telegram/
+vibecoding/
+workspace-ops/
+work/
 
 # Obsidian vaults and local-only bridge artifacts
 Obsidian/

@@ -25,6 +25,7 @@
 **对这些路径的修改可以继续在 root 仓提交。** 它们不属于 jetscope 产品的 git 历史，但目前借住在这个仓里——C 阶段会迁出到独立位置。
 
 被 launchd 直接引用的入口（不要改路径）：
+
 - `~/Library/LaunchAgents/com.yumei.ai-tools-update-check.plist` → `scripts/ops_hub.sh run-profile daily`
 - `~/Library/LaunchAgents/com.yumei.ops-hub-weekly.plist` → `scripts/ops_hub.sh run-profile weekly`
 - `~/Library/LaunchAgents/com.yumei.codex-p0-p1-loop.plist` → `scripts/codex_p0_p1_loop.sh`
@@ -46,7 +47,7 @@
 
 **不要在 root 编辑这些文件**。jetscope 产品开发的唯一入口是：
 
-```
+```text
 ~/projects/jetscope
 ```
 
@@ -57,12 +58,13 @@
 ## 2. 当前 git 分叉状态（2026-05-02 快照）
 
 | 仓 | HEAD | 共同祖先后独立 commit |
-|----|------|----------------------|
+| ---- | ------ | ---------------------- |
 | root (`/Users/yumei`) | `d820559` | 11 个：均为治理类（obsidian / ops_hub / dev-harness / 自动化） |
 | `~/projects/jetscope` | `9ba310db` | 1 个：jetscope 产品类（release.sh 加固） |
 | 共同祖先 | `ee908f23`（PR #41 合并） | — |
 
 两边触及文件零重叠。这意味着：
+
 - **root 上未来不会再有 jetscope 产品类 commit**——产品改动应去 `~/projects/jetscope` 提。
 - **root 上的治理 commit 不会被 push 到 `wyl2607/jetscope`**——它们将在 C 阶段迁出到 `~/workspace-ops/` 或类似位置。
 
