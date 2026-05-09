@@ -30,6 +30,7 @@ jobs:
             BASE_SHA="${{ github.event.before }}"
           fi
           echo "BASE_SHA=$BASE_SHA" >> "$GITHUB_ENV"
+          git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null || git fetch --no-tags --depth=1 origin "$BASE_SHA"
           git diff -z --name-only --diff-filter=ACMR "$BASE_SHA"...HEAD -- \
             "*.py" "*.js" "*.mjs" "*.cjs" "*.ts" "*.tsx" "*.jsx" "*.sql" \
             "Dockerfile" "*/Dockerfile" > /tmp/semgrep-changed-files
@@ -63,6 +64,7 @@ jobs:
             BASE_SHA="${{ github.event.before }}"
           fi
           echo "BASE_SHA=$BASE_SHA" >> "$GITHUB_ENV"
+          git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null || git fetch --no-tags --depth=1 origin "$BASE_SHA"
           git diff -z --name-only --diff-filter=ACMR "$BASE_SHA"...HEAD -- "*.md" > /tmp/markdown-changed-files
           if [ ! -s /tmp/markdown-changed-files ]; then
             echo "No changed Markdown files."
