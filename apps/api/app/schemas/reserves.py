@@ -10,6 +10,7 @@ class ReserveStressResponse(BaseModel):
     supply_gap_pct: float = Field(ge=0, le=100)
     source_type: str
     confidence: float = Field(ge=0, le=1)
+    observed_at: datetime | None = None
 
 
 class ReserveSignalResponse(BaseModel):

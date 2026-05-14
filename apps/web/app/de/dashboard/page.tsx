@@ -1,7 +1,7 @@
 import { InfoCard, MetricCard } from '@/components/cards';
 import { Shell } from '@/components/shell';
 import { PolicyTimelineWithMarketTime } from '@/components/policy-timeline-with-market-time';
-import { getDashboardReadModel } from '@/lib/product-read-model';
+import { getDashboardReadModel } from '@/lib/dashboard-read-model';
 import type { Metadata } from 'next';
 import { buildPageMetadata } from '@/lib/seo';
 

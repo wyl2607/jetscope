@@ -185,7 +185,7 @@ async function runUiFlow(page) {
   const updatedScenarioName = `${scenarioName} Updated`;
   const invalidToken = 'invalid-token';
 
-  const createButton = page.getByRole('button', { name: 'Create' });
+  const createButton = page.getByRole('button', { name: '创建' });
 
   const initialScenariosLoad = page.waitForResponse(
     (resp) =>
@@ -196,11 +196,11 @@ async function runUiFlow(page) {
   await page.goto('/scenarios');
   await initialScenariosLoad;
 
-  await page.getByPlaceholder('Scenario name').fill(`${scenarioName} Missing Token`);
+  await page.getByPlaceholder('情景名称').fill(`${scenarioName} Missing Token`);
   assert(await createButton.isDisabled(), 'Create must be disabled when admin token is missing');
 
   await page.getByPlaceholder('x-admin-token').fill(invalidToken);
-  await page.getByPlaceholder('Scenario name').fill(`${scenarioName} Invalid Token`);
+  await page.getByPlaceholder('情景名称').fill(`${scenarioName} Invalid Token`);
   const invalidCreateRespPromise = page.waitForResponse(
     (resp) => resp.request().method() === 'POST' && resp.url().includes('/api/scenarios'),
     { timeout: 10_000 }
@@ -211,29 +211,30 @@ async function runUiFlow(page) {
     invalidCreateResp.status() === 401 || invalidCreateResp.status() === 403,
     `Invalid-token create should fail with 401/403, got ${invalidCreateResp.status()}`
   );
-  await waitForErrorText(page, /401|token|forbidden|unauthorized/i);
+  await waitForErrorText(page, /401|token|forbidden|unauthorized|令牌|拒绝/i);
 
   await page.getByPlaceholder('x-admin-token').fill(adminToken);
-  await page.getByPlaceholder('Scenario name').fill(`${scenarioName} Invalid Route`);
-  await page.getByLabel('Route edits JSON (advanced)').fill(
+  await page.getByText('高级 JSON 设置', { exact: true }).click();
+  await page.getByPlaceholder('情景名称').fill(`${scenarioName} Invalid Route`);
+  await page.getByLabel('航线编辑 JSON').fill(
     '{"sugar-atj":{"baseCostUsdPerLiter":"oops"}}'
   );
   await createButton.click();
   await waitForErrorText(page, /finite number/i);
 
-  await page.getByPlaceholder('Scenario name').fill(`${scenarioName} Invalid Preferences`);
-  await page.getByLabel('Preferences JSON (advanced)').fill('{"crudeSource":"invalid-source"}');
-  await page.getByLabel('Route edits JSON (advanced)').fill(
+  await page.getByPlaceholder('情景名称').fill(`${scenarioName} Invalid Preferences`);
+  await page.getByLabel('偏好 JSON').fill('{"crudeSource":"invalid-source"}');
+  await page.getByLabel('航线编辑 JSON').fill(
     '{"sugar-atj":{"pathway":"Sugar -> Ethanol -> Jet","baseCostUsdPerLiter":1.95,"co2SavingsKgPerLiter":1.45}}'
   );
   await createButton.click();
   await waitForErrorText(page, /unsupported value/i);
 
-  await page.getByLabel('Preferences JSON (advanced)').fill('{}');
-  await page.getByLabel('Route edits JSON (advanced)').fill(
+  await page.getByLabel('偏好 JSON').fill('{}');
+  await page.getByLabel('航线编辑 JSON').fill(
     '{"sugar-atj":{"pathway":"Sugar -> Ethanol -> Jet","baseCostUsdPerLiter":1.95,"co2SavingsKgPerLiter":1.45}}'
   );
-  await page.getByPlaceholder('Scenario name').fill(scenarioName);
+  await page.getByPlaceholder('情景名称').fill(scenarioName);
   const createRespPromise = page.waitForResponse(
     (resp) => resp.request().method() === 'POST' && resp.url().includes('/api/scenarios'),
     { timeout: 10_000 }
@@ -246,15 +247,15 @@ async function runUiFlow(page) {
 
   await page.waitForSelector(`button:has-text("${scenarioName}")`);
   await page.getByRole('button', { name: scenarioName }).click();
-  await page.getByPlaceholder('Scenario name').fill(updatedScenarioName);
-  await page.getByLabel('Route edits JSON (advanced)').fill(
+  await page.getByPlaceholder('情景名称').fill(updatedScenarioName);
+  await page.getByLabel('航线编辑 JSON').fill(
     '{"sugar-atj":{"pathway":"Sugar -> Ethanol -> Jet","baseCostUsdPerLiter":1.95,"co2SavingsKgPerLiter":1.45}}'
   );
-  const updateButton = page.getByRole('button', { name: 'Update selected' });
+  const updateButton = page.getByRole('button', { name: '更新所选' });
   await page.waitForFunction(
     () => {
       const buttons = Array.from(document.querySelectorAll('button'));
-      const update = buttons.find((button) => button.textContent?.trim() === 'Update selected');
+      const update = buttons.find((button) => button.textContent?.trim() === '更新所选');
       return !!update && !update.disabled;
     },
     undefined,
@@ -280,17 +281,17 @@ async function runUiFlow(page) {
 
   await page.goto('/admin');
   const adminTokenInput = page.getByPlaceholder('x-admin-token');
-  const savePathwaysButton = page.getByRole('button', { name: 'Save pathways' });
-  const savePoliciesButton = page.getByRole('button', { name: 'Save policies' });
-  const triggerMarketRefreshButton = page.getByRole('button', { name: 'Trigger market refresh' });
-  const reloadButton = page.getByRole('button', { name: 'Reload' });
+  const savePathwaysButton = page.getByRole('button', { name: '保存路径' });
+  const savePoliciesButton = page.getByRole('button', { name: '保存政策' });
+  const triggerMarketRefreshButton = page.getByRole('button', { name: '触发市场刷新' });
+  const reloadButton = page.getByRole('button', { name: '重新加载' });
   const pathwaysTextArea = page.locator('textarea').first();
   const policiesTextArea = page.locator('textarea').nth(1);
 
   await page.waitForFunction(
     () => {
       const buttons = Array.from(document.querySelectorAll('button'));
-      const reload = buttons.find((button) => button.textContent?.trim() === 'Reload');
+      const reload = buttons.find((button) => button.textContent?.trim() === '重新加载');
       return !!reload && !reload.disabled;
     },
     undefined,
@@ -316,7 +317,7 @@ async function runUiFlow(page) {
     invalidPathwaysResp.status() === 401 || invalidPathwaysResp.status() === 403,
     `Invalid-token pathways save should fail with 401/403, got ${invalidPathwaysResp.status()}`
   );
-  await waitForErrorText(page, /401|token|forbidden|unauthorized/i);
+  await waitForErrorText(page, /401|token|forbidden|unauthorized|令牌|拒绝/i);
 
   const invalidRefreshRespPromise = page.waitForResponse(
     (resp) => resp.request().method() === 'POST' && resp.url().includes('/api/market/refresh'),
@@ -328,13 +329,13 @@ async function runUiFlow(page) {
     invalidRefreshResp.status() === 401 || invalidRefreshResp.status() === 403,
     `Invalid-token market refresh should fail with 401/403, got ${invalidRefreshResp.status()}`
   );
-  await waitForErrorText(page, /401|token|forbidden|unauthorized/i);
+  await waitForErrorText(page, /401|token|forbidden|unauthorized|令牌|拒绝/i);
 
   await adminTokenInput.fill(adminToken);
   await page.waitForFunction(
     () => {
       const buttons = Array.from(document.querySelectorAll('button'));
-      const refresh = buttons.find((button) => button.textContent?.trim() === 'Trigger market refresh');
+      const refresh = buttons.find((button) => button.textContent?.trim() === '触发市场刷新');
       return !!refresh && !refresh.disabled;
     },
     undefined,
@@ -361,7 +362,7 @@ async function runUiFlow(page) {
   await waitForErrorText(page, /policies must be valid JSON|must be valid JSON/i);
 
   await reloadButton.click();
-  await page.locator('p').filter({ hasText: 'Loaded pathways + policies' }).first().waitFor({
+  await page.locator('p').filter({ hasText: '已加载路径与政策' }).first().waitFor({
     timeout: 10_000
   });
 
@@ -395,7 +396,7 @@ async function runUiFlow(page) {
       !resp.url().includes('/api/scenarios?'),
     { timeout: 10_000 }
   );
-  await page.getByRole('button', { name: 'Delete selected' }).click();
+  await page.getByRole('button', { name: '删除所选' }).click();
   const deleteResp = await deleteRespPromise;
   if (!deleteResp.ok()) {
     throw new Error(`Delete scenario failed: ${deleteResp.status()} ${await deleteResp.text()}`);

@@ -6,13 +6,13 @@ const APP_DIR = new URL('../apps/web/app/', import.meta.url);
 
 const ROUTES = [
   ['', 'JetScope'],
-  ['dashboard/page.tsx', 'Dashboard'],
-  ['crisis/page.tsx', 'Crisis'],
-  ['crisis/eu-jet-reserves/page.tsx', 'EU Jet Fuel Reserve'],
-  ['crisis/saf-tipping-point/page.tsx', 'SAF Tipping Point'],
-  ['sources/page.tsx', 'Sources'],
-  ['research/page.tsx', 'Research'],
-  ['reports/tipping-point-analysis/page.tsx', 'Tipping Point']
+  ['dashboard/page.tsx', '决策驾驶舱'],
+  ['crisis/page.tsx', '危机监测'],
+  ['crisis/eu-jet-reserves/page.tsx', 'EU 航油储备危机'],
+  ['crisis/saf-tipping-point/page.tsx', 'SAF 临界点'],
+  ['sources/page.tsx', '来源'],
+  ['research/page.tsx', '研究信号'],
+  ['reports/tipping-point-analysis/page.tsx', '临界点报告']
 ];
 
 test('current JetScope routes expose canonical product surfaces', async () => {

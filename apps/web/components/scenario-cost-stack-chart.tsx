@@ -21,12 +21,12 @@ function midpoint(low: number, high: number): number {
 export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Props) {
   if (!tippingPoint || tippingPoint.pathways.length === 0) {
     return (
-      <section className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
+      <section className="rounded-2xl border border-slate-200 bg-white/90 p-5">
         <div className="mb-4">
-          <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
-            Scenario cost stack
+          <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
+            情景成本堆栈
           </h4>
-          <p className="mt-2 text-sm text-slate-500">Scenario cost data unavailable.</p>
+          <p className="mt-2 text-sm text-slate-500">情景成本数据暂不可用。</p>
         </div>
       </section>
     );
@@ -45,32 +45,32 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
   const rows = [
     {
       key: 'fossil',
-      label: 'Fossil spot',
+      label: '化石航油现货',
       value: fossilSpot,
-      hint: 'Observed market price',
+      hint: '观察到的市场价格',
     },
     {
       key: 'effective',
-      label: 'Effective fossil',
+      label: '有效化石航油成本',
       value: effectiveFossil,
-      hint: 'Spot plus modeled carbon pressure',
+      hint: '现货价格叠加模型化碳成本压力',
     },
     {
       key: selectedPathway.pathway_key,
-      label: `${selectedPathway.display_name} midpoint`,
+      label: `${selectedPathway.display_name} 中点`,
       value: selectedMidpoint,
-      hint: `Net cost band ${selectedPathway.net_cost_low_usd_per_l.toFixed(2)}–${selectedPathway.net_cost_high_usd_per_l.toFixed(2)}/L`,
+      hint: `净成本区间 ${selectedPathway.net_cost_low_usd_per_l.toFixed(2)}–${selectedPathway.net_cost_high_usd_per_l.toFixed(2)}/L`,
     }
   ];
 
   return (
-    <section className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
+    <section className="rounded-2xl border border-slate-200 bg-white/90 p-5">
       <div className="mb-4">
-        <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
-          Scenario cost stack
+        <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
+          情景成本堆栈
         </h4>
         <p className="mt-2 text-sm text-slate-500">
-          A compact comparison of spot fossil cost, carbon-adjusted fossil cost, and the selected pathway midpoint.
+          紧凑对比化石航油现货成本、碳调整后成本与已选路径中点。
         </p>
       </div>
 
@@ -79,12 +79,12 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
           <div key={row.key}>
             <div className="flex items-center justify-between gap-4 text-sm">
               <div>
-                <div className="font-medium text-white">{row.label}</div>
+                <div className="font-medium text-slate-950">{row.label}</div>
                 <div className="text-xs text-slate-500">{row.hint}</div>
               </div>
-              <div className="font-mono text-white">${row.value.toFixed(2)}/L</div>
+              <div className="font-mono text-slate-950">${row.value.toFixed(2)}/L</div>
             </div>
-            <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-800">
+            <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200">
               <div
                 className={`h-full rounded-full ${barColors[row.key] ?? 'bg-gradient-to-r from-slate-500 to-slate-300'}`}
                 style={{ width: `${Math.max(6, (row.value / maxValue) * 100)}%` }}

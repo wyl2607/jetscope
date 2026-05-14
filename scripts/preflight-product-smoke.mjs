@@ -283,15 +283,15 @@ async function run() {
     const scenariosPage = await fetchText(`${webBase}/scenarios`);
     assert(scenariosPage.status === 200, `GET /scenarios expected 200, got ${scenariosPage.status}`);
     assert(
-      scenariosPage.text.includes('Live scenario registry'),
+      scenariosPage.text.includes('情景库'),
       'Scenarios page should render registry container'
     );
-    assert(scenariosPage.text.includes('Scenario editor'), 'Scenarios page should render editor container');
+    assert(scenariosPage.text.includes('情景编辑器'), 'Scenarios page should render editor container');
 
     const adminPage = await fetchText(`${webBase}/admin`);
     assert(adminPage.status === 200, `GET /admin expected 200, got ${adminPage.status}`);
-    assert(adminPage.text.includes('Pathways admin'), 'Admin page should render pathways card');
-    assert(adminPage.text.includes('Policies admin'), 'Admin page should render policies card');
+    assert(adminPage.text.includes('路径管理'), 'Admin page should render pathways card');
+    assert(adminPage.text.includes('政策管理'), 'Admin page should render policies card');
 
     const dashboardPage = await fetchText(`${webBase}/dashboard`);
     assert(dashboardPage.status === 200, `GET /dashboard expected 200, got ${dashboardPage.status}`);
@@ -302,7 +302,7 @@ async function run() {
 
     const sourcesPage = await fetchText(`${webBase}/sources`);
     assert(sourcesPage.status === 200, `GET /sources expected 200, got ${sourcesPage.status}`);
-    assert(sourcesPage.text.includes('Live source matrix'), 'Sources page should render source matrix card');
+    assert(sourcesPage.text.includes('来源覆盖'), 'Sources page should render source matrix card');
     assert(sourcesPage.text.includes('Brent'), 'Sources page should render Brent row');
 
     const updateScenarioOk = await fetchJson(`${webBase}/api/scenarios/${createdScenarioId}`, {

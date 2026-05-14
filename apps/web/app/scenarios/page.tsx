@@ -9,23 +9,23 @@ import { buildPageMetadata } from '@/lib/seo';
 
 const cards = [
   {
-    title: 'Scenario registry',
-    body: '列出所有情景、状态、创建人、更新时间，以及是否为研究快照。'
+    title: '保存假设',
+    body: '把油价、碳价、补贴和航线成本保存成可复用的决策版本。'
   },
   {
-    title: 'Scenario compare',
-    body: '并排比较当前工作态、保存情景、以及默认政策路径。'
+    title: '比较压力',
+    body: '对照当前市场、储备压力和政策目标，判断哪条路径最先变得可行。'
   },
   {
-    title: 'Sensitivity sweeps',
-    body: '下一步将在这里放 crude / carbon / subsidy sweep 结果。'
+    title: '敏感性扫描',
+    body: '围绕燃油、碳价和补贴做范围扫描，找到最影响结论的输入。'
   }
 ];
 
 export const metadata: Metadata = buildPageMetadata({
-  title: 'Scenarios',
+  title: '情景',
   description:
-    'Manage SAF transition scenarios, compare policy pathways, and monitor readiness signals with persistent registry-backed workflows.',
+    '管理 SAF 转型情景、比较政策路径，并通过持久化情景库工作流监测就绪度信号。',
   path: '/scenarios'
 });
 
@@ -118,9 +118,9 @@ export default async function ScenariosPage() {
 
   return (
     <Shell
-      eyebrow="Scenario workspace"
-      title="Scenario management & transition monitor"
-      description="第二页面承接综合研究仪表盘，并已接入真实 scenario registry（FastAPI + PostgreSQL）用于创建、更新、删除与回填。"
+      eyebrow="情景工作区"
+      title="情景管理与转型监测"
+      description="保存、复用和比较 SAF 转型假设，把实时市场压力转成可讨论的采购、航线和政策情景。"
     >
       <TransitionReadinessDashboard
         initialReserve={reserve}
@@ -133,26 +133,26 @@ export default async function ScenariosPage() {
       <section className="mt-8 grid gap-5 md:grid-cols-3">
         {cards.map((card) => (
           <InfoCard key={card.title} title={card.title}>
-            <p className="text-sm leading-7 text-slate-300">{card.body}</p>
+            <p className="text-sm leading-7 text-slate-700">{card.body}</p>
           </InfoCard>
         ))}
       </section>
 
       <section className="mt-6 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-        <InfoCard title="Why this lives on page two" subtitle="开发分层">
-          <div className="space-y-3 text-sm leading-7 text-slate-300">
-            <p>1. 首页继续承担实时 market snapshot 与 crisis signal 的即时判断任务。</p>
-            <p>2. 第二页面聚焦 canonical tipping-point、pathway、policy 与 scenario registry 的联动展示。</p>
-            <p>3. 保存情景、对比、sweep 结果继续收敛到这一页下半区，不单开新 dashboard 路由。</p>
+        <InfoCard title="页面职责" subtitle="每个页面只回答一个核心问题">
+          <div className="space-y-3 text-sm leading-7 text-slate-700">
+            <p>实时价格在决策驾驶舱，负责回答“现在发生了什么”。</p>
+            <p>危机监测解释压力来源，负责回答“为什么需要行动”。</p>
+            <p>情景工作区保存假设和比较结果，负责回答“下一步怎么选择”。</p>
           </div>
         </InfoCard>
 
-        <InfoCard title="Next product hooks" subtitle="后续接真实数据的接口位">
-          <ul className="space-y-3 text-sm leading-7 text-slate-300">
-            <li>• 国家政策推进：接 `/v1/policies/refuel-eu` 与地区政策 catalog。</li>
-            <li>• 航司采用率：接研究数据库或人工维护的 airline adoption registry。</li>
-            <li>• 路线就绪度：继续沿用 canonical tipping-point 与 airline decision contract。</li>
-            <li>• 时间轴：后台可编辑，支持标记已生效 / 延迟 / 草案。</li>
+        <InfoCard title="数据真实性" subtitle="结论必须带来源与更新时间">
+          <ul className="space-y-3 text-sm leading-7 text-slate-700">
+            <li>• 来源复核在数据来源页，显示每项指标的置信度、延迟和回退状态。</li>
+            <li>• 政策目标、储备和价格趋势只使用本地历史库或已标注的代理指标。</li>
+            <li>• 情景保存用于复盘和团队讨论，不替代真实采购审批。</li>
+            <li>• 多语言入口保持全站一致，翻译覆盖不足时回到已验证页面。</li>
           </ul>
         </InfoCard>
       </section>

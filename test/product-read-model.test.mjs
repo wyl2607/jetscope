@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFile } from 'node:fs/promises';
 
 import { importWebLib } from './helpers/load-web-lib.mjs';
 
@@ -177,7 +178,8 @@ test('getDashboardReadModel summarizes live market, scenario, and risk signals f
     ])
   );
 
-  const { getDashboardReadModel } = await importWebLib('apps/web/lib/product-read-model.ts');
+  const { getDashboardReadModel } = await importWebLib('apps/web/lib/dashboard-read-model.ts');
+  assert.equal(typeof getDashboardReadModel, 'function');
   const readModel = await getDashboardReadModel();
 
   assert.equal(readModel.isFallback, false);
@@ -212,13 +214,82 @@ test('getDashboardReadModel falls back to safe dashboard defaults when the marke
     ])
   );
 
-  const { getDashboardReadModel } = await importWebLib('apps/web/lib/product-read-model.ts');
+  const { getDashboardReadModel } = await importWebLib('apps/web/lib/dashboard-read-model.ts');
   const readModel = await getDashboardReadModel();
 
   assert.equal(readModel.isFallback, true);
   assert.equal(readModel.market.source_status.overall, 'degraded');
   assert.equal(readModel.scenarioCount, 0);
   assert.equal(readModel.topRiskSignal, null);
+  assert.match(readModel.error ?? '', /HTTP 503/);
+});
+
+test('getPriceTrendChartReadModel maps live market history into chart-friendly metrics', async (t) => {
+  installEnv(t, {
+    JETSCOPE_API_BASE_URL: 'https://api.example.com',
+    JETSCOPE_API_PREFIX: '/v1'
+  });
+
+  installFetchStub(
+    t,
+    new Map([
+      [
+        'https://api.example.com/v1/market/history',
+        () =>
+          jsonResponse({
+            metrics: {
+              brent_usd_per_bbl: {
+                metric_key: 'brent_usd_per_bbl',
+                unit: 'USD/bbl',
+                latest_value: 82.4,
+                latest_as_of: '2026-04-23T12:00:00Z',
+                change_pct_1d: 1.2,
+                change_pct_7d: 3.4,
+                change_pct_30d: 5.6,
+                points: [{ as_of: '2026-04-22T12:00:00Z', value: 80.1 }]
+              }
+            }
+          })
+      ]
+    ])
+  );
+
+  const { getPriceTrendChartReadModel } = await importWebLib(
+    'apps/web/lib/price-trend-chart-read-model.ts'
+  );
+  const readModel = await getPriceTrendChartReadModel();
+
+  assert.equal(readModel.isFallback, false);
+  assert.equal(readModel.error, null);
+  assert.equal(readModel.metrics.brent_usd_per_bbl.metric_key, 'brent_usd_per_bbl');
+  assert.equal(readModel.metrics.brent_usd_per_bbl.latest_value, 82.4);
+  assert.equal(readModel.metrics.brent_usd_per_bbl.change_pct_7d, 3.4);
+  assert.equal(readModel.metrics.brent_usd_per_bbl.points.length, 1);
+});
+
+test('getPriceTrendChartReadModel falls back when market history is unavailable', async (t) => {
+  installEnv(t, {
+    JETSCOPE_API_BASE_URL: 'https://api.example.com',
+    JETSCOPE_API_PREFIX: '/v1'
+  });
+
+  installFetchStub(
+    t,
+    new Map([
+      [
+        'https://api.example.com/v1/market/history',
+        () => jsonResponse({ error: 'down' }, 503)
+      ]
+    ])
+  );
+
+  const { getPriceTrendChartReadModel } = await importWebLib(
+    'apps/web/lib/price-trend-chart-read-model.ts'
+  );
+  const readModel = await getPriceTrendChartReadModel();
+
+  assert.equal(readModel.isFallback, true);
+  assert.deepEqual(readModel.metrics, {});
   assert.match(readModel.error ?? '', /HTTP 503/);
 });
 
@@ -278,7 +349,7 @@ test('getGermanyJetFuelReadModel falls back from EU proxy history to global jet 
     ])
   );
 
-  const { getGermanyJetFuelReadModel } = await importWebLib('apps/web/lib/product-read-model.ts');
+  const { getGermanyJetFuelReadModel } = await importWebLib('apps/web/lib/germany-jet-fuel-read-model.ts');
   const readModel = await getGermanyJetFuelReadModel();
   const euProxyMetric = readModel.metrics.find((metric) => metric.metricKey === 'jet_eu_proxy_usd_per_l');
 
@@ -287,5 +358,112 @@ test('getGermanyJetFuelReadModel falls back from EU proxy history to global jet 
   assert.equal(euProxyMetric?.value, 1.04);
   assert.equal(euProxyMetric?.sourceMetricKey, 'jet_usd_per_l');
   assert.equal(euProxyMetric?.changePct7d, 12.1);
-  assert.equal(euProxyMetric?.note, 'Fallback from Jet fuel');
+  assert.equal(euProxyMetric?.note, 'Fallback from 航煤');
+});
+
+test('crisis page uses light semantic data cards instead of gray dark boxes', async () => {
+  const files = [
+    'apps/web/app/crisis/page.tsx',
+    'apps/web/components/reserves-coverage-strip.tsx',
+    'apps/web/components/tipping-event-timeline.tsx',
+    'apps/web/components/research-decision-brief.tsx'
+  ];
+
+  for (const file of files) {
+    const source = await readFile(new URL(`../${file}`, import.meta.url), 'utf8');
+    assert.doesNotMatch(
+      source,
+      /bg-slate-950|bg-slate-900|border-slate-800|text-white|text-slate-300/,
+      `${file} should stay on the light crisis review theme`
+    );
+  }
+
+  const crisisSource = await readFile(new URL('../apps/web/app/crisis/page.tsx', import.meta.url), 'utf8');
+  assert.match(crisisSource, /sourceTypeLabel/);
+  assert.match(crisisSource, /confidenceTone/);
+  assert.match(crisisSource, /marketConfidence/);
+  assert.match(crisisSource, /buildSafWorkbenchHref/);
+  assert.match(crisisSource, /reviewSourcesHref/);
+  assert.match(crisisSource, /sources\?filter=review/);
+  assert.match(crisisSource, /fuel: fallbackFossil\.toFixed\(3\)/);
+  assert.match(crisisSource, /reserve: reserveWeeks\?\.toFixed\(2\)/);
+  assert.match(crisisSource, /border-emerald-200 bg-emerald-50/);
+  assert.match(crisisSource, /border-amber-200 bg-amber-50/);
+  assert.match(crisisSource, /border-sky-200 bg-sky-50/);
+});
+
+test('reserve price trends guard finite chart coordinates and highlight the current SAF breakpoint', async () => {
+  const reserveSource = await readFile(new URL('../apps/web/app/crisis/eu-jet-reserves/page.tsx', import.meta.url), 'utf8');
+  const chartSource = await readFile(new URL('../apps/web/components/price-trends-chart.tsx', import.meta.url), 'utf8');
+
+  assert.match(reserveSource, /CurrentSafBreakpointRow/);
+  assert.match(reserveSource, /当前拐点/);
+  assert.match(reserveSource, /ring-2 ring-amber-300/);
+  assert.match(reserveSource, /历史价格趋势/);
+  assert.match(reserveSource, /本地 market_snapshots 历史库/);
+  assert.match(reserveSource, /阅读方式/);
+  assert.match(reserveSource, /拐点行/);
+  assert.match(reserveSource, /第一性原理证据链/);
+  assert.match(reserveSource, /事实层/);
+  assert.match(reserveSource, /机制层/);
+  assert.match(reserveSource, /置信层/);
+  assert.match(reserveSource, /行动层/);
+  assert.match(reserveSource, /模型边界/);
+  assert.match(reserveSource, /NREL SAF/);
+  assert.match(reserveSource, /IATA Fuel/);
+  assert.match(reserveSource, /EU ETS aviation/);
+  assert.match(reserveSource, /IEA Aviation/);
+  assert.match(chartSource, /finitePoints/);
+  assert.match(chartSource, /Number\.isFinite\(point\.value\)/);
+  assert.match(chartSource, /safeYRange/);
+  assert.match(chartSource, /timeWindow/);
+  assert.match(chartSource, /TIME_WINDOWS/);
+  assert.match(chartSource, /近1天/);
+  assert.match(chartSource, /近7天/);
+  assert.match(chartSource, /近30天/);
+  assert.match(chartSource, /filterPointsByWindow/);
+  assert.match(chartSource, /METRIC_META/);
+  assert.match(chartSource, /左轴/);
+  assert.match(chartSource, /横轴/);
+  assert.match(chartSource, /当前窗口/);
+  assert.match(chartSource, /欧盟航油代理价/);
+  assert.match(chartSource, /coverageDaysFor/);
+  assert.match(chartSource, /formatCoverageDays/);
+  assert.match(chartSource, /数据覆盖/);
+  assert.match(chartSource, /积累中/);
+  assert.match(chartSource, /未用模拟数据补齐/);
+  assert.match(chartSource, /localCoverageDays < item\.days/);
+  assert.doesNotMatch(chartSource, /Brent Crude/);
+  assert.doesNotMatch(chartSource, /eu_ets_price_eur_per_t/);
+  assert.doesNotMatch(chartSource, /const yRange = yMax - yMin;/);
+});
+
+test('scenarios workbench exposes a global language switch and stays product-facing', async () => {
+  const shellSource = await readFile(new URL('../apps/web/components/shell.tsx', import.meta.url), 'utf8');
+  const languageSwitcherSource = await readFile(
+    new URL('../apps/web/components/language-switcher.tsx', import.meta.url),
+    'utf8'
+  );
+  const scenariosSource = await readFile(new URL('../apps/web/app/scenarios/page.tsx', import.meta.url), 'utf8');
+  const registrySource = await readFile(new URL('../apps/web/components/scenario-registry.tsx', import.meta.url), 'utf8');
+  const readinessSource = await readFile(
+    new URL('../apps/web/components/transition-readiness-dashboard.tsx', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(shellSource, /LanguageSwitcher/);
+  assert.match(languageSwitcherSource, /aria-label="语言"/);
+  assert.match(languageSwitcherSource, /中文/);
+  assert.match(languageSwitcherSource, /Deutsch/);
+  assert.match(languageSwitcherSource, /English/);
+  assert.match(languageSwitcherSource, /usePathname/);
+  assert.match(scenariosSource, /页面职责/);
+  assert.match(scenariosSource, /实时价格在决策驾驶舱/);
+  assert.match(scenariosSource, /来源复核在数据来源/);
+  assert.match(scenariosSource, /情景工作区/);
+  assert.match(registrySource, /高级 JSON 设置/);
+  assert.doesNotMatch(
+    `${scenariosSource}\n${registrySource}\n${readinessSource}`,
+    /FastAPI \+ PostgreSQL|第二页|第二页面|canonical|contracts|demo route|\/v1\/policies\/refuel-eu|开发分层|后续接真实数据的接口位|text-slate-300|bg-slate-950|border-slate-800|text-white/
+  );
 });

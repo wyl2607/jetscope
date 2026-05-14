@@ -31,34 +31,34 @@ function toneClasses(tone: 'teal' | 'amber' | 'blue' | 'red' | 'purple') {
   switch (tone) {
     case 'teal':
       return {
-        text: 'text-emerald-300',
-        fill: 'bg-emerald-400',
-        soft: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/20'
+        text: 'text-emerald-700',
+        fill: 'bg-emerald-500',
+        soft: 'bg-emerald-50 text-emerald-700 border-emerald-200'
       };
     case 'amber':
       return {
-        text: 'text-amber-300',
-        fill: 'bg-amber-400',
-        soft: 'bg-amber-500/15 text-amber-300 border-amber-400/20'
+        text: 'text-amber-700',
+        fill: 'bg-amber-500',
+        soft: 'bg-amber-50 text-amber-700 border-amber-200'
       };
     case 'blue':
       return {
-        text: 'text-sky-300',
-        fill: 'bg-sky-400',
-        soft: 'bg-sky-500/15 text-sky-300 border-sky-400/20'
+        text: 'text-sky-700',
+        fill: 'bg-sky-500',
+        soft: 'bg-sky-50 text-sky-700 border-sky-200'
       };
     case 'purple':
       return {
-        text: 'text-violet-300',
-        fill: 'bg-violet-400',
-        soft: 'bg-violet-500/15 text-violet-300 border-violet-400/20'
+        text: 'text-violet-700',
+        fill: 'bg-violet-500',
+        soft: 'bg-violet-50 text-violet-700 border-violet-200'
       };
     case 'red':
     default:
       return {
-        text: 'text-rose-300',
-        fill: 'bg-rose-400',
-        soft: 'bg-rose-500/15 text-rose-300 border-rose-400/20'
+        text: 'text-rose-700',
+        fill: 'bg-rose-500',
+        soft: 'bg-rose-50 text-rose-700 border-rose-200'
       };
   }
 }
@@ -145,7 +145,7 @@ export function TransitionReadinessDashboard({
         });
       } catch (nextError) {
         if (!controller.signal.aborted) {
-          setError(nextError instanceof Error ? nextError.message : 'Failed to refresh dashboard inputs');
+          setError(nextError instanceof Error ? nextError.message : '刷新仪表盘输入失败');
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -176,22 +176,21 @@ export function TransitionReadinessDashboard({
   const reserveSeverity = getReserveSeverity(reserveWeeks);
 
   return (
-    <section className="space-y-6 rounded-[2rem] border border-slate-800 bg-slate-950/80 p-6 shadow-2xl shadow-sky-950/20">
+    <section className="space-y-6 rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/70">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.28em] text-sky-300">Second page · canonical dashboard</p>
-          <h3 className="mt-3 text-2xl font-semibold text-white">SAF 行业转型综合仪表盘</h3>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-            这块面板不再使用本地 demo route 公式，而是直接消费 canonical tipping-point、reserve 和 policy contracts，
-            作为第二个价格/拐点 dashboard 的承载页。
+          <p className="text-xs uppercase tracking-[0.28em] text-sky-700">转型监测</p>
+          <h3 className="mt-3 text-2xl font-semibold text-slate-950">SAF 行业转型综合仪表盘</h3>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-700">
+            这里把燃油价格、碳价、储备压力和政策目标放在同一个工作区，帮助团队判断哪些 SAF 路径已经接近可执行区间。
           </p>
-          <p className="mt-3 text-xs text-slate-500">
-            Reserve source: {initialReserve.source_name} · confidence {Math.round(initialReserve.confidence_score * 100)}%
+          <p className="mt-3 text-xs text-slate-600">
+            储备来源：{initialReserve.source_name} · 置信度 {Math.round(initialReserve.confidence_score * 100)}%
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <SliderCard
-            label="Fossil jet price"
+            label="化石航油价格"
             value={`$${fossilJet.toFixed(2)}/L`}
             min={0.6}
             max={3.0}
@@ -200,7 +199,7 @@ export function TransitionReadinessDashboard({
             onChange={setFossilJet}
           />
           <SliderCard
-            label="Carbon price"
+            label="碳价"
             value={`€${carbon.toFixed(0)}/t`}
             min={0}
             max={250}
@@ -209,7 +208,7 @@ export function TransitionReadinessDashboard({
             onChange={setCarbon}
           />
           <SliderCard
-            label="Reserve weeks"
+            label="储备周数"
             value={`${reserveWeeks.toFixed(1)}w`}
             min={1}
             max={8}
@@ -218,7 +217,7 @@ export function TransitionReadinessDashboard({
             onChange={setReserveWeeks}
           />
           <SliderCard
-            label="Subsidy"
+            label="补贴"
             value={`$${subsidy.toFixed(2)}/L`}
             min={0}
             max={0.6}
@@ -227,7 +226,7 @@ export function TransitionReadinessDashboard({
             onChange={setSubsidy}
           />
           <SelectCard
-            label="Pathway"
+            label="路径"
             value={selectedPathwayKey}
             options={tippingPoint.pathways.map((pathway) => ({
               label: pathway.display_name,
@@ -240,25 +239,25 @@ export function TransitionReadinessDashboard({
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SignalCard
-          label="Fossil jet"
+          label="化石航油"
           value={`$${tippingPoint.inputs.fossil_jet_usd_per_l.toFixed(2)}/L`}
-          sub="Canonical tipping-point input"
+          sub="标准拐点输入"
           tone="amber"
         />
         <SignalCard
-          label="Effective fossil"
+          label="有效化石航油成本"
           value={`$${tippingPoint.effective_fossil_jet_usd_per_l.toFixed(2)}/L`}
-          sub="Spot plus modeled carbon pressure"
+          sub="现货价格叠加碳成本压力"
           tone="blue"
         />
         <SignalCard
-          label="Best pathway"
-          value={derived.bestPathway?.display_name ?? 'n/a'}
-          sub={derived.bestPathway ? `Spread ${derived.bestPathway.spread_low_pct.toFixed(1)}% to ${derived.bestPathway.spread_high_pct.toFixed(1)}%` : 'Waiting for pathway data'}
+          label="最优路径"
+          value={derived.bestPathway?.display_name ?? '无数据'}
+          sub={derived.bestPathway ? `价差 ${derived.bestPathway.spread_low_pct.toFixed(1)}% 至 ${derived.bestPathway.spread_high_pct.toFixed(1)}%` : '等待路径数据'}
           tone="purple"
         />
         <SignalCard
-          label="Transition signal"
+          label="转型信号"
           value={derived.signal.label}
           sub={derived.signal.sub}
           tone={derived.signal.tone}
@@ -266,8 +265,8 @@ export function TransitionReadinessDashboard({
       </div>
 
       {error ? (
-        <div className="rounded-2xl border border-rose-800 bg-rose-950/30 px-4 py-3 text-sm text-rose-200">
-          Failed to refresh live scenario inputs: {error}
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          实时情景引擎暂不可用，模拟器正在显示可编辑的基准输入。
         </div>
       ) : null}
 
@@ -311,8 +310,8 @@ export function TransitionReadinessDashboard({
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <Panel title="各国政策推进进度" subtitle="使用 shared core 的国家单源，灰线为 2030 目标">
-          <div className="mb-3 grid grid-cols-[112px_1fr_52px_74px] gap-2 border-b border-slate-800 pb-2 text-[11px] uppercase tracking-[0.12em] text-slate-500">
+        <Panel title="各国政策推进进度" subtitle="用统一国家目标口径对比当前采用率和 2030 目标">
+          <div className="mb-3 grid grid-cols-[112px_1fr_52px_74px] gap-2 border-b border-slate-200 pb-2 text-[11px] uppercase tracking-[0.12em] text-slate-500">
             <span>国家 / 地区</span>
             <span>当前 / 2030 目标</span>
             <span className="text-right">现状</span>
@@ -326,13 +325,13 @@ export function TransitionReadinessDashboard({
               return (
                 <div
                   key={country.id}
-                  className="grid grid-cols-[112px_1fr_52px_74px] items-center gap-2 border-b border-slate-900/80 py-2 last:border-none"
+                  className="grid grid-cols-[112px_1fr_52px_74px] items-center gap-2 border-b border-slate-100 py-2 last:border-none"
                 >
-                  <div className="text-sm font-medium text-white">
+                  <div className="text-sm font-medium text-slate-950">
                     <span className="mr-1">{country.flag}</span>
                     {country.nameZh}
                   </div>
-                  <div className="relative h-2.5 rounded-full bg-slate-800">
+                  <div className="relative h-2.5 rounded-full bg-slate-100">
                     <div
                       className={`${classes.fill} h-full rounded-full`}
                       style={{ width: `${Math.min((country.currentPct / 14) * 100, 100)}%` }}
@@ -352,9 +351,9 @@ export function TransitionReadinessDashboard({
           </div>
         </Panel>
 
-        <Panel title="关键政策里程碑" subtitle="shared core 里程碑 + live ReFuelEU targets">
+        <Panel title="关键政策里程碑" subtitle="把政策时间线和已知 SAF 掺混目标放在同一视图">
           <div className="relative space-y-4 pl-5">
-            <div className="absolute bottom-1 left-[5px] top-1 w-px bg-slate-800" />
+            <div className="absolute bottom-1 left-[5px] top-1 w-px bg-slate-200" />
             {POLICY_MILESTONES.map((item) => {
               const target = derived.policyTargetsByYear.get(item.year);
               const classes = toneClasses(
@@ -373,8 +372,8 @@ export function TransitionReadinessDashboard({
                   <div className={`absolute left-[-20px] top-1.5 h-3 w-3 rounded-full ${classes.fill}`} />
                   <div className="min-w-[44px] font-mono text-xs text-slate-500">{item.year}</div>
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-white">{item.headlineZh}</div>
-                    <div className="text-xs text-slate-400">
+                    <div className="text-sm font-medium text-slate-950">{item.headlineZh}</div>
+                    <div className="text-xs text-slate-600">
                       {target
                         ? `${item.detailZh} · SAF ${target.saf_share_pct}% / synthetic ${target.synthetic_share_pct}%`
                         : item.detailZh}
@@ -389,8 +388,8 @@ export function TransitionReadinessDashboard({
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <Panel title="主要航空公司 SAF 采用率" subtitle="采用 shared core 单源，保留估算标注">
-          <div className="mb-3 grid grid-cols-[126px_1fr_58px_58px] gap-2 border-b border-slate-800 pb-2 text-[11px] uppercase tracking-[0.12em] text-slate-500">
+        <Panel title="主要航空公司 SAF 采用率" subtitle="对比当前采用率、2030 目标和估算状态">
+          <div className="mb-3 grid grid-cols-[126px_1fr_58px_58px] gap-2 border-b border-slate-200 pb-2 text-[11px] uppercase tracking-[0.12em] text-slate-500">
             <span>航空公司</span>
             <span>当前 / 目标</span>
             <span className="text-right">当前</span>
@@ -404,13 +403,13 @@ export function TransitionReadinessDashboard({
               return (
                 <div
                   key={airline.id}
-                  className="grid grid-cols-[126px_1fr_58px_58px] items-center gap-2 border-b border-slate-900/80 py-2 last:border-none"
+                  className="grid grid-cols-[126px_1fr_58px_58px] items-center gap-2 border-b border-slate-100 py-2 last:border-none"
                 >
                   <div>
-                    <div className="text-sm font-medium text-white">{airline.name}</div>
+                    <div className="text-sm font-medium text-slate-950">{airline.name}</div>
                     <div className="text-[11px] text-slate-500">{airline.alliance}</div>
                   </div>
-                  <div className="relative h-2.5 rounded-full bg-slate-800">
+                  <div className="relative h-2.5 rounded-full bg-slate-100">
                     <div
                       className={`${classes.fill} h-full rounded-full`}
                       style={{ width: `${Math.min((airline.currentPct / 10) * 100, 100)}%` }}
@@ -428,34 +427,34 @@ export function TransitionReadinessDashboard({
           </div>
         </Panel>
 
-        <Panel title="研究提醒" subtitle="展示优先：给第二个 dashboard 的 quick take">
+        <Panel title="研究提醒" subtitle="把当前最需要复核的转型信号压缩成速览">
           <div className="space-y-4">
             <InsightRow
               label="政策平均完成度"
               value={`${derived.countryProgressAverage.toFixed(1)}%`}
-              hint="shared core 国家单源仍显示 2030 目标差距较大"
+              hint="共享核心国家单源仍显示 2030 目标差距较大"
               tone="blue"
             />
             <InsightRow
               label="最接近临界点"
-              value={derived.bestPathway?.display_name ?? 'n/a'}
+              value={derived.bestPathway?.display_name ?? '无数据'}
               hint={
                 derived.bestPathway
-                  ? `当前 spread ${derived.bestPathway.spread_low_pct.toFixed(1)}% to ${derived.bestPathway.spread_high_pct.toFixed(1)}%`
-                  : '等待 pathway response'
+                  ? `当前价差 ${derived.bestPathway.spread_low_pct.toFixed(1)}% 至 ${derived.bestPathway.spread_high_pct.toFixed(1)}%`
+                  : '等待路径响应'
               }
               tone={derived.signal.tone}
             />
             <InsightRow
-              label="当前 reserve signal"
+              label="当前储备信号"
               value={reserveSeverity.level}
-              hint={`${reserveWeeks.toFixed(1)} weeks of modeled coverage`}
+              hint={`${reserveWeeks.toFixed(1)} 周估算覆盖`}
               tone={reserveSeverity.tone}
             />
             <InsightRow
-              label="Refresh status"
-              value={loading ? 'Refreshing' : 'Stable'}
-              hint="Sliders now re-query canonical tipping-point and airline-decision contracts"
+              label="刷新状态"
+              value={loading ? '刷新中' : '稳定'}
+              hint="滑块会重新计算拐点和航司响应信号"
               tone={loading ? 'purple' : 'teal'}
             />
           </div>
@@ -488,10 +487,10 @@ function SliderCard({
   onChange: (value: number) => void;
 }) {
   return (
-    <label className="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3">
+    <label className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs text-slate-400">{label}</span>
-        <span className="font-mono text-sm text-white">{value}</span>
+        <span className="text-xs text-slate-600">{label}</span>
+        <span className="font-mono text-sm text-slate-950">{value}</span>
       </div>
       <input
         className="mt-3 w-full accent-sky-400"
@@ -518,13 +517,13 @@ function SelectCard({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3">
+    <label className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs text-slate-400">{label}</span>
-        <span className="font-mono text-sm text-white">{value.toUpperCase()}</span>
+        <span className="text-xs text-slate-600">{label}</span>
+        <span className="font-mono text-sm text-slate-950">{value.toUpperCase()}</span>
       </div>
       <select
-        className="mt-3 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+        className="mt-3 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950"
         value={value}
         onChange={(event) => onChange(event.target.value)}
       >
@@ -548,11 +547,11 @@ function Panel({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
+    <section className="rounded-2xl border border-slate-200 bg-white p-5">
       <div className="mb-4">
         <div className="flex items-center gap-3">
-          <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">{title}</h4>
-          <div className="h-px flex-1 bg-slate-800" />
+          <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">{title}</h4>
+          <div className="h-px flex-1 bg-slate-200" />
         </div>
         <p className="mt-2 text-sm text-slate-500">{subtitle}</p>
       </div>
@@ -575,10 +574,10 @@ function SignalCard({
   const classes = toneClasses(tone);
 
   return (
-    <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-      <div className="text-[11px] uppercase tracking-[0.14em] text-slate-500">{label}</div>
+    <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+      <div className="text-[11px] uppercase tracking-[0.14em] text-slate-600">{label}</div>
       <div className={`mt-3 text-3xl font-semibold ${classes.text}`}>{value}</div>
-      <div className="mt-2 text-sm text-slate-400">{sub}</div>
+      <div className="mt-2 text-sm text-slate-600">{sub}</div>
     </article>
   );
 }
@@ -597,10 +596,10 @@ function InsightRow({
   const classes = toneClasses(tone);
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
-      <div className="text-xs uppercase tracking-[0.14em] text-slate-500">{label}</div>
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div className="text-xs uppercase tracking-[0.14em] text-slate-600">{label}</div>
       <div className={`mt-2 text-lg font-semibold ${classes.text}`}>{value}</div>
-      <div className="mt-1 text-sm text-slate-400">{hint}</div>
+      <div className="mt-1 text-sm text-slate-600">{hint}</div>
     </div>
   );
 }

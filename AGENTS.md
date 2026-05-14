@@ -18,8 +18,6 @@ product work.
 This repository should stay a normal single-purpose product repo:
 
 | Area | Paths | Default action |
-|---|---|---|
-| Area | Paths | Default action |
 | --- | --- | --- |
 | JetScope product | `apps/`, `infra/`, `packages/`, `test/`, product docs/scripts | Normal product work |
 | Workspace governance | external automation repos and local operator notes | Do not add here |

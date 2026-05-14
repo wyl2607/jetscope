@@ -31,8 +31,8 @@ test('market signal helpers centralize dashboard, reserve, and signal semantics'
   );
 
   assert.equal(banners.length, 2);
-  assert.equal(banners[0].title, 'Jet Fuel Price Alert');
-  assert.equal(banners[1].title, 'SAF Inflection Alert');
+  assert.equal(banners[0].title, '航煤价格预警');
+  assert.equal(banners[1].title, 'SAF 拐点预警');
 
   assert.equal(getReserveSeverity(1.8).level, 'critical');
   assert.equal(getReserveSeverity(3.5).level, 'elevated');
@@ -47,6 +47,6 @@ test('market signal helpers centralize dashboard, reserve, and signal semantics'
     tone: 'amber',
     label: 'Switch window opening'
   });
-  assert.equal(getAirlineDecisionSignalLabel('capacity_stress_dominant'), 'Capacity stress dominant');
-  assert.equal(getPathwayStatusLabel('premium'), 'Fossil still advantaged');
+  assert.equal(getAirlineDecisionSignalLabel('capacity_stress_dominant'), '运力压力主导');
+  assert.equal(getPathwayStatusLabel('premium'), '化石航油仍占优');
 });

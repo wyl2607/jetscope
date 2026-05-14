@@ -18,6 +18,13 @@ const DEFAULT_ROUTE_ID = 'sugar-atj';
 const CRUDE_SOURCES = ['manual', 'brentEia', 'brentFred'] as const;
 const CARBON_SOURCES = ['manual', 'cbamCarbonProxyUsd'] as const;
 const BENCHMARK_MODES = ['crude-proxy', 'live-jet-spot'] as const;
+const fieldClassName =
+  'mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100';
+const textAreaClassName =
+  'mt-1 h-32 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-950 shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100';
+const labelClassName = 'block text-xs font-semibold uppercase tracking-[0.14em] text-slate-600';
+const compactLabelClassName = 'text-xs font-semibold text-slate-600';
+const panelClassName = 'rounded-xl border border-slate-200 bg-slate-50 p-3';
 
 function formatTime(value: string): string {
   const date = new Date(value);
@@ -106,9 +113,9 @@ export function ScenarioRegistry() {
       if (list.length === 0 && !options?.preserveSelection) {
         resetForm();
       }
-      setStatus(`Loaded ${list.length} scenario(s)`);
+      setStatus(`已加载 ${list.length} 个情景`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load scenarios');
+      setError(err instanceof Error ? err.message : '加载情景失败');
     } finally {
       setLoading(false);
     }
@@ -129,14 +136,14 @@ export function ScenarioRegistry() {
     setRouteEditsJson(stringifyJson(item.route_edits));
     const firstRoute = Object.keys(item.route_edits ?? {})[0];
     setPrimaryRouteId(firstRoute || DEFAULT_ROUTE_ID);
-    setStatus(`Loaded scenario "${item.name}" into editor`);
+    setStatus(`已将情景“${item.name}”载入编辑器`);
     setError(null);
   }
 
   async function createScenario() {
     const trimmed = name.trim();
     if (!trimmed) {
-      setError('Scenario name is required');
+      setError('情景名称不能为空');
       return;
     }
 
@@ -157,11 +164,11 @@ export function ScenarioRegistry() {
       if (!response.ok) {
         throw new Error(body?.detail ?? body?.error ?? `HTTP ${response.status}`);
       }
-      setStatus(`Created scenario "${body.name}"`);
+      setStatus(`已创建情景“${body.name}”`);
       await loadScenarios({ preserveSelection: true });
       populateFromScenario(body as ScenarioRecord);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create scenario');
+      setError(err instanceof Error ? err.message : '创建情景失败');
     } finally {
       setSaving(false);
     }
@@ -169,12 +176,12 @@ export function ScenarioRegistry() {
 
   async function updateScenario() {
     if (!selectedId) {
-      setError('Select a scenario first');
+      setError('请先选择一个情景');
       return;
     }
     const trimmed = name.trim();
     if (!trimmed) {
-      setError('Scenario name is required');
+      setError('情景名称不能为空');
       return;
     }
 
@@ -195,11 +202,11 @@ export function ScenarioRegistry() {
       if (!response.ok) {
         throw new Error(body?.detail ?? body?.error ?? `HTTP ${response.status}`);
       }
-      setStatus(`Updated scenario "${body.name}"`);
+      setStatus(`已更新情景“${body.name}”`);
       await loadScenarios({ preserveSelection: true });
       populateFromScenario(body as ScenarioRecord);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update scenario');
+      setError(err instanceof Error ? err.message : '更新情景失败');
     } finally {
       setSaving(false);
     }
@@ -207,7 +214,7 @@ export function ScenarioRegistry() {
 
   async function deleteScenario() {
     if (!selectedId) {
-      setError('Select a scenario first');
+      setError('请先选择一个情景');
       return;
     }
 
@@ -222,11 +229,11 @@ export function ScenarioRegistry() {
       if (!response.ok) {
         throw new Error(body?.detail ?? body?.error ?? `HTTP ${response.status}`);
       }
-      setStatus(`Deleted scenario ${body?.scenario_id ?? selectedId}`);
+      setStatus(`已删除情景 ${body?.scenario_id ?? selectedId}`);
       resetForm();
       await loadScenarios();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete scenario');
+      setError(err instanceof Error ? err.message : '删除情景失败');
     } finally {
       setSaving(false);
     }
@@ -269,54 +276,54 @@ export function ScenarioRegistry() {
 
   return (
     <section className="mt-8 grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
-      <InfoCard title="Live scenario registry" subtitle="FastAPI + PostgreSQL">
+      <InfoCard title="情景库" subtitle="保存团队确认过的转型假设">
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="rounded-lg border border-sky-500/40 bg-sky-500/20 px-3 py-1.5 text-xs font-semibold text-sky-200"
+              className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={() => loadScenarios({ preserveSelection: true })}
               disabled={loading || saving}
             >
-              {loading ? 'Loading...' : 'Refresh list'}
+              {loading ? '加载中...' : '刷新列表'}
             </button>
-            <span className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300">
+            <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-600">
               {status}
             </span>
           </div>
-          <label className="block text-xs uppercase tracking-[0.14em] text-slate-400">
-            Admin token (required for create/update/delete)
+          <label className={labelClassName}>
+            管理令牌（创建/更新/删除必需）
             <input
-              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+              className={fieldClassName}
               value={adminToken}
               onChange={(event) => handleAdminTokenChange(event.target.value)}
               placeholder="x-admin-token"
             />
           </label>
           {error ? (
-            <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+            <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
               {error}
             </p>
           ) : null}
-          <div className="max-h-80 overflow-y-auto rounded-xl border border-slate-800">
+          <div className="max-h-80 overflow-y-auto rounded-xl border border-slate-200 bg-white">
             {scenarios.length === 0 ? (
-              <p className="px-3 py-4 text-sm text-slate-400">No scenarios saved yet.</p>
+              <p className="px-3 py-4 text-sm text-slate-600">尚未保存情景。</p>
             ) : (
               <ul>
                 {scenarios.map((item) => (
-                  <li key={item.id} className="border-b border-slate-900 last:border-none">
+                  <li key={item.id} className="border-b border-slate-100 last:border-none">
                     <button
                       type="button"
                       className={`w-full px-3 py-3 text-left transition ${
-                        selectedId === item.id ? 'bg-sky-500/10' : 'hover:bg-slate-800/60'
+                        selectedId === item.id ? 'bg-sky-50' : 'hover:bg-slate-50'
                       }`}
                       onClick={() => populateFromScenario(item)}
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <span className="font-medium text-white">{item.name}</span>
-                        <span className="text-xs text-slate-400">{formatTime(item.saved_at)}</span>
+                        <span className="font-medium text-slate-950">{item.name}</span>
+                        <span className="text-xs text-slate-500">{formatTime(item.saved_at)}</span>
                       </div>
-                      <p className="mt-1 text-xs text-slate-500">{item.id}</p>
+                      <p className="mt-1 text-xs text-slate-500">版本 {item.id}</p>
                     </button>
                   </li>
                 ))}
@@ -326,25 +333,25 @@ export function ScenarioRegistry() {
         </div>
       </InfoCard>
 
-      <InfoCard title="Scenario editor" subtitle="Create / update / delete">
+      <InfoCard title="情景编辑器" subtitle="创建 / 更新 / 删除">
         <div className="space-y-4">
-          <label className="block text-xs uppercase tracking-[0.14em] text-slate-400">
-            Name
+          <label className={labelClassName}>
+            名称
             <input
-              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+              className={fieldClassName}
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Scenario name"
+              placeholder="情景名称"
             />
           </label>
 
-          <div className="rounded-xl border border-slate-800 p-3">
-            <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Guided preferences</p>
+          <div className={panelClassName}>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">引导式偏好设置</p>
             <div className="mt-3 grid gap-3 md:grid-cols-3">
-              <label className="text-xs text-slate-400">
-                crudeSource
+              <label className={compactLabelClassName}>
+                原油基准
                 <select
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                  className={fieldClassName}
                   value={String(parsedPreferences.crudeSource ?? 'manual')}
                   onChange={(event) => setPreferenceField('crudeSource', event.target.value, false)}
                 >
@@ -355,10 +362,10 @@ export function ScenarioRegistry() {
                   ))}
                 </select>
               </label>
-              <label className="text-xs text-slate-400">
-                carbonSource
+              <label className={compactLabelClassName}>
+                碳价基准
                 <select
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                  className={fieldClassName}
                   value={String(parsedPreferences.carbonSource ?? 'manual')}
                   onChange={(event) => setPreferenceField('carbonSource', event.target.value, false)}
                 >
@@ -369,10 +376,10 @@ export function ScenarioRegistry() {
                   ))}
                 </select>
               </label>
-              <label className="text-xs text-slate-400">
-                benchmarkMode
+              <label className={compactLabelClassName}>
+                对比方式
                 <select
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                  className={fieldClassName}
                   value={String(parsedPreferences.benchmarkMode ?? 'crude-proxy')}
                   onChange={(event) => setPreferenceField('benchmarkMode', event.target.value, false)}
                 >
@@ -385,10 +392,10 @@ export function ScenarioRegistry() {
               </label>
             </div>
             <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <label className="text-xs text-slate-400">
-                carbonPriceUsdPerTonne
+              <label className={compactLabelClassName}>
+                碳价（美元/吨）
                 <input
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                  className={fieldClassName}
                   type="number"
                   value={String(parsedPreferences.carbonPriceUsdPerTonne ?? '')}
                   onChange={(event) =>
@@ -399,10 +406,10 @@ export function ScenarioRegistry() {
                   }
                 />
               </label>
-              <label className="text-xs text-slate-400">
-                subsidyUsdPerLiter
+              <label className={compactLabelClassName}>
+                补贴（美元/升）
                 <input
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                  className={fieldClassName}
                   type="number"
                   step="0.01"
                   value={String(parsedPreferences.subsidyUsdPerLiter ?? '')}
@@ -414,10 +421,10 @@ export function ScenarioRegistry() {
                   }
                 />
               </label>
-              <label className="text-xs text-slate-400">
-                jetProxySlope
+              <label className={compactLabelClassName}>
+                航煤代理斜率
                 <input
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                  className={fieldClassName}
                   type="number"
                   step="0.0001"
                   value={String(parsedPreferences.jetProxySlope ?? '')}
@@ -429,10 +436,10 @@ export function ScenarioRegistry() {
                   }
                 />
               </label>
-              <label className="text-xs text-slate-400">
-                jetProxyIntercept
+              <label className={compactLabelClassName}>
+                航煤代理截距
                 <input
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                  className={fieldClassName}
                   type="number"
                   step="0.01"
                   value={String(parsedPreferences.jetProxyIntercept ?? '')}
@@ -447,21 +454,21 @@ export function ScenarioRegistry() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-800 p-3">
-            <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Guided primary route edit</p>
+          <div className={panelClassName}>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">引导式主航线编辑</p>
             <div className="mt-3 grid gap-3 md:grid-cols-3">
-              <label className="text-xs text-slate-400">
-                route id
+              <label className={compactLabelClassName}>
+                主航线
                 <input
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                  className={fieldClassName}
                   value={primaryRouteId}
                   onChange={(event) => setPrimaryRouteId(event.target.value || DEFAULT_ROUTE_ID)}
                 />
               </label>
-              <label className="text-xs text-slate-400">
-                baseCostUsdPerLiter
+              <label className={compactLabelClassName}>
+                基准成本（美元/升）
                 <input
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                  className={fieldClassName}
                   type="number"
                   step="0.01"
                   value={String(parsedPrimaryRouteEdit.baseCostUsdPerLiter ?? '')}
@@ -473,10 +480,10 @@ export function ScenarioRegistry() {
                   }
                 />
               </label>
-              <label className="text-xs text-slate-400">
-                co2SavingsKgPerLiter
+              <label className={compactLabelClassName}>
+                减排量（kg/L）
                 <input
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                  className={fieldClassName}
                   type="number"
                   step="0.01"
                   value={String(parsedPrimaryRouteEdit.co2SavingsKgPerLiter ?? '')}
@@ -491,62 +498,69 @@ export function ScenarioRegistry() {
             </div>
           </div>
 
-          <label className="block text-xs uppercase tracking-[0.14em] text-slate-400">
-            Preferences JSON (advanced)
-            <textarea
-              className="mt-1 h-32 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-xs text-white"
-              value={preferencesJson}
-              onChange={(event) => setPreferencesJson(event.target.value)}
-            />
-            <span className="mt-1 block text-[11px] normal-case tracking-normal text-slate-500">
-              支持 `schema_version`、source/mode 字段与有限数值（finite number）校验。
-            </span>
-          </label>
+          <details className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
+              高级 JSON 设置
+            </summary>
+            <div className="mt-3 space-y-3">
+              <label className={labelClassName}>
+                偏好 JSON
+                <textarea
+                  className={textAreaClassName}
+                  value={preferencesJson}
+                  onChange={(event) => setPreferencesJson(event.target.value)}
+                />
+                <span className="mt-1 block text-[11px] normal-case tracking-normal text-slate-500">
+                  用于保留来源、模式和有限数值校验，默认无需展开。
+                </span>
+              </label>
 
-          <label className="block text-xs uppercase tracking-[0.14em] text-slate-400">
-            Route edits JSON (advanced)
-            <textarea
-              className="mt-1 h-32 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-xs text-white"
-              value={routeEditsJson}
-              onChange={(event) => setRouteEditsJson(event.target.value)}
-            />
-            <span className="mt-1 block text-[11px] normal-case tracking-normal text-slate-500">
-              每个 route edit 必须是对象；成本和减排字段必须是有限数值。
-            </span>
-          </label>
+              <label className={labelClassName}>
+                航线编辑 JSON
+                <textarea
+                  className={textAreaClassName}
+                  value={routeEditsJson}
+                  onChange={(event) => setRouteEditsJson(event.target.value)}
+                />
+                <span className="mt-1 block text-[11px] normal-case tracking-normal text-slate-500">
+                  用于保留多航线成本和减排假设，默认无需展开。
+                </span>
+              </label>
+            </div>
+          </details>
 
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-200"
+              className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={createScenario}
               disabled={saving || !adminToken}
             >
-              Create
+              创建
             </button>
             <button
               type="button"
-              className="rounded-lg border border-amber-500/40 bg-amber-500/20 px-3 py-1.5 text-xs font-semibold text-amber-200"
+              className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={updateScenario}
               disabled={saving || !selectedScenario || !adminToken}
             >
-              Update selected
+              更新所选
             </button>
             <button
               type="button"
-              className="rounded-lg border border-rose-500/40 bg-rose-500/20 px-3 py-1.5 text-xs font-semibold text-rose-200"
+              className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-800 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={deleteScenario}
               disabled={saving || !selectedScenario || !adminToken}
             >
-              Delete selected
+              删除所选
             </button>
             <button
               type="button"
-              className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-300"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={resetForm}
               disabled={saving}
             >
-              Clear editor
+              清空编辑器
             </button>
           </div>
         </div>
