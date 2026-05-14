@@ -20,26 +20,20 @@ This is the default operational memory for future AI sessions. Do not re-discove
 
 1. `npm run preflight`
 2. `./scripts/publish-to-github.sh`
-3. `ssh usa-vps "cd /opt/jetscope && JETSCOPE_FORCE_DEPLOY=1 JETSCOPE_EXPECT_COMMIT=<local HEAD> APPROVE_JETSCOPE_DEPLOY=<approval-token> ./scripts/auto-deploy.sh --approval-token <approval-token>"`
+3. `ssh <production-host> "cd /opt/jetscope && JETSCOPE_FORCE_DEPLOY=1 JETSCOPE_EXPECT_COMMIT=<local HEAD> APPROVE_JETSCOPE_DEPLOY=<approval-token> ./scripts/auto-deploy.sh --approval-token <approval-token>"`
 
 Development worker sync is now opt-in. It is not part of the default production release path.
 
 ## Operational Rules
 
 - Build green is not enough; release is only complete when the VPS deploy step succeeds.
-- Development node sync and production deploy are separate concerns.
-- Direct node sync and pullback require `APPROVE_JETSCOPE_SYNC` plus `--approval-token`; use `--dry-run` for read-only previews.
-- `mac-mini` and `coco` are the default development sync workers.
-- `windows-pc` sync is opt-in because tar+scp is not a clean mirror cleanup mechanism.
-- `usa-vps:~/jetscope` is a non-production workdir and must be synced only with explicit intent.
-- `usa-vps:/opt/jetscope` remains the production source path and is updated only through commit-pinned deploy.
-- `scripts/sync-excludes.sh` is the shared exclude source for push/pull sync. Update it alongside `.gitignore` when local-only or sensitive paths change.
-- Unix worker sync performs blocked-path readback after rsync; historical excluded remnants cause sync failure and require separate cleanup.
-- Windows opt-in sync now checks a small blocked-path set after extraction, but it still does not delete every possible historical excluded remnant.
-- Push or release work must obey `/Users/yumei/.codex/memories/UNIVERSAL_AI_DEV_POLICY.md`.
+- Development node sync and production deploy are separate concerns; node sync lives in private workspace operations, not this public product repository.
+- Direct node sync and pullback must remain approval-gated outside this repository.
+- `<production-host>:/opt/jetscope` remains the production source path and is updated only through commit-pinned deploy.
+- Push or release work must obey the operator's private release policy in the active workspace.
 - `scripts/publish-to-github.sh` fails closed before pushing if required push gates `scripts/security_check.sh` and `scripts/review_push_guard.sh` are missing, not executable, or fail.
 - `scripts/release.sh` delegates publish safety to `scripts/publish-to-github.sh`, so direct publish and release share the same fail-closed push gates.
-- `scripts/release.sh` only permits the approved production SSH host alias `usa-vps`; do not override `JETSCOPE_VPS_HOST` for production release.
+- `scripts/release.sh` requires `JETSCOPE_VPS_HOST` to be set to the approved production SSH host for production release.
 - `infra/server/health-check.sh` is observe-only by default. Service restart requires `JETSCOPE_HEALTH_ALLOW_RESTART=1`, `JETSCOPE_HEALTH_RESTART_TOKEN`, and matching `APPROVE_JETSCOPE_HEALTH_RESTART` as an explicit operational exception.
 - `.gitignore` is not a node-sync safety boundary; changes to local-only or sensitive ignore rules must be mirrored in `scripts/sync-excludes.sh`.
 - The VPS deploy must target the exact commit that was just published from local.
@@ -85,14 +79,7 @@ APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token 
 # Re-run VPS deploy after confirming current HEAD is already on origin/main
 APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token> --skip-preflight --skip-publish
 
-# Sync development workers before publishing
-APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token> --sync-workers
-
-# Sync all development handoff nodes, excluding the VPS workdir
-APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token> --sync-workers --sync-windows
-
-# Explicitly sync the non-production usa-vps workdir before publishing
-APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token <approval-token> --sync-vps-workdir
+# Node sync is externalized to private workspace operations and is not a public release variant.
 ```
 
 ## Known Gaps

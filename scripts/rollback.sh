@@ -7,7 +7,7 @@ set -euo pipefail
 DEPLOY_DIR="/opt/jetscope"
 LOG="/var/log/jetscope-deploy.log"
 BUILD_LOG="/var/log/jetscope-build.log"
-BUS_WRITE="/Users/yumei/tools/script-core/bin/sc-bus-write"
+BUS_WRITE="${JETSCOPE_BUS_WRITE:-}"
 PRODUCER="jetscope/scripts/rollback.sh"
 APPROVAL_TOKEN=""
 

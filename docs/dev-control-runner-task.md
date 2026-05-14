@@ -10,14 +10,14 @@
 
 - Source/config/tests: `package.json`, `test/release-approval-contract.test.mjs`.
 - Docs: `AGENTS.md`, `OPERATIONS.md`, `PROJECT_PROGRESS.md`, `README.md`, `docs/AUTOMATION_LOOP.md`, `docs/DEPLOYMENT_GUIDE.md`, `scripts/README.md`.
-- High-risk ops: `infra/server/health-check.sh`, `scripts/auto-deploy.sh`, `scripts/pr-approval-gate.mjs`, `scripts/publish-to-github.sh`, `scripts/release.sh`, `scripts/rollback.sh`, `scripts/sync-from-node.sh`, `scripts/sync-to-nodes.sh`.
+- High-risk ops: `infra/server/health-check.sh`, `scripts/auto-deploy.sh`, `scripts/pr-approval-gate.mjs`, `scripts/publish-to-github.sh`, `scripts/release.sh`, `scripts/rollback.sh`.
 
 ## Safe-Local Follow-Up Candidates
 
 - Docs reconciliation: allowed files `AGENTS.md`, `OPERATIONS.md`, `README.md`, `docs/AUTOMATION_LOOP.md`, `docs/DEPLOYMENT_GUIDE.md`, `scripts/README.md`; validation `git diff --check -- AGENTS.md OPERATIONS.md README.md docs/AUTOMATION_LOOP.md docs/DEPLOYMENT_GUIDE.md scripts/README.md`.
 - Approval contract review: allowed files `package.json`, `test/release-approval-contract.test.mjs`, `scripts/pr-approval-gate.mjs`, `scripts/release.sh`, `scripts/publish-to-github.sh`; validation `npm test -- test/release-approval-contract.test.mjs` and `node scripts/pr-approval-gate.mjs --help`.
-- Ops gate syntax audit: allowed files `infra/server/health-check.sh`, `scripts/auto-deploy.sh`, `scripts/publish-to-github.sh`, `scripts/release.sh`, `scripts/rollback.sh`, `scripts/sync-from-node.sh`, `scripts/sync-to-nodes.sh`; validation `bash -n infra/server/health-check.sh scripts/auto-deploy.sh scripts/publish-to-github.sh scripts/release.sh scripts/rollback.sh scripts/sync-from-node.sh scripts/sync-to-nodes.sh`.
-- Sync boundary audit: allowed files `scripts/sync-from-node.sh`, `scripts/sync-to-nodes.sh`, `docs/DEPLOYMENT_GUIDE.md`, `scripts/README.md`; validation `./scripts/sync-to-nodes.sh --help` and `./scripts/sync-from-node.sh --help`.
+- Ops gate syntax audit: allowed files `infra/server/health-check.sh`, `scripts/auto-deploy.sh`, `scripts/publish-to-github.sh`, `scripts/release.sh`, `scripts/rollback.sh`; validation `bash -n infra/server/health-check.sh scripts/auto-deploy.sh scripts/publish-to-github.sh scripts/release.sh scripts/rollback.sh`.
+- Sync boundary audit: node sync scripts are externalized to private workspace operations and should not be restored in this public product repository.
 
 ## Release/Deploy Approval Gate Blockers
 
