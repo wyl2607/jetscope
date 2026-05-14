@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { API_BASE_URL, API_PREFIX, WORKSPACE_SLUG } from '@/lib/api-config';
+import { WORKSPACE_SLUG, buildApiUrl } from '@/lib/api-config';
 
 type ProxyOptions = {
   request: Request;
@@ -14,7 +14,7 @@ function proxyTimeoutMs(): number {
 }
 
 function scenariosBaseUrl(): string {
-  return `${API_BASE_URL}${API_PREFIX}/workspaces/${encodeURIComponent(WORKSPACE_SLUG)}/scenarios`;
+  return buildApiUrl(`/workspaces/${encodeURIComponent(WORKSPACE_SLUG)}/scenarios`);
 }
 
 function jsonError(status: number, error: string, detail?: unknown): NextResponse {

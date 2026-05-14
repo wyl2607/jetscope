@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { API_BASE_URL, API_PREFIX } from '@/lib/api-config';
+import { buildApiUrl } from '@/lib/api-config';
 
 const DEFAULT_PROXY_TIMEOUT_MS = 8000;
 
@@ -26,7 +26,7 @@ export async function proxyToApi(
   apiPath: string
 ): Promise<Response> {
   const requestUrl = new URL(request.url);
-  const url = `${API_BASE_URL}${API_PREFIX}${apiPath}${requestUrl.search}`;
+  const url = `${buildApiUrl(apiPath)}${requestUrl.search}`;
   const headers = new Headers(request.headers);
   // Remove hop-by-hop headers that should not be forwarded
   headers.delete('host');
