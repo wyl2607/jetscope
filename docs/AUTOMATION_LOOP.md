@@ -175,7 +175,7 @@ APPROVE_JETSCOPE_PUBLISH=<approval-token> \
 
 Production deploy also requires `APPROVE_JETSCOPE_DEPLOY` to match `--approval-token` and `JETSCOPE_EXPECT_COMMIT` to match the approved commit. PR merge approval is not deploy approval.
 
-Direct node sync and pullback are also approval-gated. Non-dry-run `sync-to-nodes.sh` and all `sync-from-node.sh` invocations require `APPROVE_JETSCOPE_SYNC` to match `--approval-token`.
+Direct node sync and pullback live outside this public product repository in private workspace operations. They must remain approval-gated and must not be reintroduced here with host-specific paths or aliases.
 
 ## Stop Conditions
 

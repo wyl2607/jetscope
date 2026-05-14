@@ -182,7 +182,7 @@ APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token 
 This release entrypoint now standardizes the expected sequence after a successful improvement:
 - run full local `preflight`
 - publish `main` to GitHub
-- trigger `usa-vps` deployment from `/opt/jetscope` via `bash ./scripts/auto-deploy.sh`
+- trigger the approved production deployment host from `/opt/jetscope` via `bash ./scripts/auto-deploy.sh`
 - require the VPS to deploy the exact local `HEAD` commit, not just “latest when checked”
 
 Development worker sync is opt-in and is not part of the default release path.
