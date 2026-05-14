@@ -45,12 +45,6 @@ a:hover {
   background-color: rgba(255, 255, 255, 0.82) !important;
 }
 
-.jetscope-workbench .bg-black,
-.jetscope-workbench .bg-black\/30,
-.jetscope-workbench .bg-black\/40 {
-  background-color: rgba(241, 247, 253, 0.86) !important;
-}
-
 .jetscope-workbench .bg-slate-800\/20,
 .jetscope-workbench .bg-slate-800\/40,
 .jetscope-workbench .bg-slate-900\/40,
