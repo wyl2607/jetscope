@@ -17,8 +17,7 @@
     "apps/api/data/**",
     "scripts/release.sh",
     "scripts/publish-to-github.sh",
-    "scripts/sync-to-nodes.sh",
-    "scripts/sync-from-node.sh",
+    "private workspace node sync scripts",
     "**/*.log"
   ],
   "verification": [

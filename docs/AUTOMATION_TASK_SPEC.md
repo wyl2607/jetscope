@@ -23,8 +23,7 @@ Every autonomous or parallel-development task must be represented by a bounded t
     ".automation/**",
     ".omx/**",
     "scripts/release.sh",
-    "scripts/sync-to-nodes.sh",
-    "scripts/sync-from-node.sh",
+    "private workspace node sync scripts",
     "prisma/dev.db",
     "**/*.log"
   ],
