@@ -37,7 +37,7 @@
     "audit:python": "echo '[DEPRECATED] root jetscope copy is mirror-only; audit:python from ~/projects/jetscope' >&2 && cd apps/api && if command -v python >/dev/null 2>&1 && python -c 'import pip_audit' 2>/dev/null; then python -m pip_audit -r requirements.txt; elif [ -x .venv/bin/python ] && .venv/bin/python -c 'import pip_audit' 2>/dev/null; then .venv/bin/python -m pip_audit -r requirements.txt; else python3 -m pip_audit -r requirements.txt; fi"
   },
   "devDependencies": {
-    "@playwright/test": "^1.59.1",
+    "@playwright/test": "^1.60.0",
     "concurrently": "^9.2.1"
   },
   "engines": {
