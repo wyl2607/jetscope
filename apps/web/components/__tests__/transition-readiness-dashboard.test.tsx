@@ -7,6 +7,7 @@ describe('TransitionReadinessDashboard', () => {
     const { container } = render(
       <TransitionReadinessDashboard
         initialTippingPoint={{
+          generated_at: new Date().toISOString(),
           signal: 'inflection',
           inputs: {
             fossil_jet_usd_per_l: 1.2,
@@ -28,8 +29,14 @@ describe('TransitionReadinessDashboard', () => {
           ]
         }}
         initialDecision={{
+          generated_at: new Date().toISOString(),
           signal: 'cut_capacity',
-          inputs: { pathway_key: 'hefa' },
+          inputs: {
+            fossil_jet_usd_per_l: 1.2,
+            reserve_weeks: 4,
+            carbon_price_eur_per_t: 80,
+            pathway_key: 'hefa'
+          },
           probabilities: {
             raise_fares: 0.2,
             cut_capacity: 0.3,
@@ -41,6 +48,7 @@ describe('TransitionReadinessDashboard', () => {
         initialReserve={{
           coverage_weeks: 4,
           coverage_days: 28,
+          region: 'eu',
           stress_level: 'normal',
           estimated_supply_gap_pct: 5,
           source_type: 'model',

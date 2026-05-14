@@ -21,7 +21,10 @@ describe('ResearchDecisionBriefCard', () => {
               signal_type: 'policy',
               impact_direction: 'positive',
               confidence: 0.8,
-              title: 'Signal title'
+              title: 'Signal title',
+              summary_cn: '信号摘要',
+              summary_en: 'Signal summary',
+              published_at: new Date().toISOString()
             }
           ]
         }}

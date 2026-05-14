@@ -13,7 +13,10 @@ describe('SourceCoveragePanel', () => {
             source_name: 'mock',
             confidence_score: 0.9,
             lag_minutes: 15,
-            status: 'live'
+            fallback_used: false,
+            status: 'ok',
+            region: 'eu',
+            market_scope: 'jet_fuel'
           }
         ]}
       />

@@ -9,6 +9,7 @@ describe('ReservesCoverageStrip', () => {
         reserve={{
           coverage_weeks: 4,
           coverage_days: 28,
+          region: 'eu',
           stress_level: 'normal',
           estimated_supply_gap_pct: 5,
           source_type: 'model',

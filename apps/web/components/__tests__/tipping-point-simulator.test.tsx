@@ -5,6 +5,7 @@ import { TippingPointSimulator } from '@/components/tipping-point-simulator';
 describe('TippingPointSimulator', () => {
   it('renders without crashing', () => {
     const decision = {
+      signal: 'cut_capacity',
       probabilities: {
         raise_fares: 0.2,
         cut_capacity: 0.3,
@@ -15,8 +16,18 @@ describe('TippingPointSimulator', () => {
     };
 
     const tippingPoint = {
+      generatedAt: new Date().toISOString(),
+      effectiveFossilJetUsdPerL: 1.3,
+      signal: 'inflection',
+      inputs: {
+        fossilJetUsdPerL: 1.2,
+        carbonPriceEurPerT: 80,
+        subsidyUsdPerL: 0.2,
+        blendRatePct: 2
+      },
       pathways: [
         {
+          pathway_key: 'hefa',
           display_name: 'HEFA',
           net_cost_low_usd_per_l: 1.8,
           net_cost_high_usd_per_l: 2.1,

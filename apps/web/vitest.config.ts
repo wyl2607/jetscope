@@ -11,7 +11,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./', import.meta.url)),
-      '@core': fileURLToPath(new URL('../../packages/core/', import.meta.url))
+      '@core': fileURLToPath(new URL('../../packages/core/', import.meta.url)),
+      react: fileURLToPath(new URL('./node_modules/react/', import.meta.url)),
+      'react-dom': fileURLToPath(new URL('./node_modules/react-dom/', import.meta.url))
     }
   }
 });

@@ -14,7 +14,8 @@ describe('TippingEventTimeline', () => {
             observed_at: new Date().toISOString(),
             fossil_price_usd_per_l: 1.2,
             saf_effective_cost_usd_per_l: 1.9,
-            gap_usd_per_l: 0.7
+            gap_usd_per_l: 0.7,
+            metadata: {}
           }
         ]}
       />
