@@ -125,7 +125,7 @@ systemctl restart jetscope-web.service
 sleep 3
 
 # Verify
-WEB_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://saf.meichen.beauty --connect-timeout 5 --max-time 10 2>/dev/null || echo "000")
+WEB_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${JETSCOPE_PUBLIC_URL:-https://saf.meichen.beauty}" --connect-timeout 5 --max-time 10 2>/dev/null || echo "000")
 echo "[$(date -Iseconds)] Rollback complete. Web status: $WEB_STATUS" | tee -a "$LOG"
 
 if [ "$WEB_STATUS" = "200" ] || [ "$WEB_STATUS" = "307" ]; then
