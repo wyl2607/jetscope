@@ -6,7 +6,8 @@ This log records public-safe maintenance evidence for the JetScope repository.
 
 - Reviewed the public repository entry files, product README, API contract, data contract, AI pipeline, and PR template before making documentation changes.
 - Added contributor-facing trust-pack documentation for onboarding, maintainer responsibilities, security reporting, roadmap framing, and changelog history.
-- Kept all changes within public documentation and issue/PR template files only.
+- Kept the OSS trust-pack wave within public documentation and issue/PR
+  template files only.
 - Avoided adding claims about production adoption, external team size, private automation, or security guarantees not supported by the repository.
 - Added release-readiness and reviewer reproducibility documentation: a local
   dry-run release script, release process notes, Codex-for-OSS use guidance,

@@ -1,6 +1,6 @@
 # OSS Issue Backlog
 
-This is a public-safe, maintainer-reviewed issue plan. It is not a substitute
+This is a public-safe, maintainer-drafted issue plan. It is not a substitute
 for GitHub issues; it keeps the next issues concrete until a maintainer opens
 them in the tracker.
 
