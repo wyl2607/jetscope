@@ -74,7 +74,7 @@ For a safe reviewer run, keep:
 That means:
 
 - no external Anthropic call is required
-- no API key is needed for the demo path
+- no live provider credential is needed for the demo path
 - research extraction stays deterministic and budget-safe
 
 See [`docs/AI_PIPELINE.md`](./AI_PIPELINE.md) for the pipeline rules and the mock/live split.

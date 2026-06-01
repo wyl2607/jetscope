@@ -119,7 +119,7 @@ The API uses `JETSCOPE_` environment variables by default. Important variables:
 | `JETSCOPE_AI_RESEARCH_ENABLED` | `false` | Enables daily AI research ingestion loop. |
 | `JETSCOPE_AI_RESEARCH_MOCK_MODE` | `true` | Keeps Claude extraction deterministic and cost-safe by default. |
 | `JETSCOPE_ANTHROPIC_API_KEY` | empty | Anthropic key for live extraction. |
-| `JETSCOPE_NEWSAPI_KEY` | empty | Optional NewsAPI key; Reuters RSS fallback is used otherwise. |
+| `JETSCOPE_NEWSAPI_KEY` | empty | Optional NewsAPI credential; Reuters RSS fallback is used otherwise. |
 
 Selected legacy `SAFVSOIL_*` variables may still be accepted for compatibility with older deployments. New deployments should prefer `JETSCOPE_*` where supported.
 

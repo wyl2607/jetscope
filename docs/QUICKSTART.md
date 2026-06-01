@@ -44,7 +44,7 @@ cd ..\..
 
 1. Copy `.env.example` to `.env` in the repo root.
 2. Keep the provided `JETSCOPE_*` sample values unless you are intentionally changing local behavior.
-3. Do not add real API keys for the quickstart; the demo works in mock-first mode.
+3. Do not add real provider credentials for the quickstart; the demo works in mock-first mode.
 4. If you need a local admin token for protected write routes, replace `JETSCOPE_ADMIN_TOKEN` with any strong random string.
 
 Key values in `.env.example` are already aligned to local development defaults:

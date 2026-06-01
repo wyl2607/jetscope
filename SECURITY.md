@@ -17,7 +17,7 @@ Do not include secrets, tokens, private dataset contents, internal hostnames, or
 
 Never commit or disclose:
 
-- API keys or tokens
+- Provider credentials or tokens
 - `.env` files or local configuration secrets
 - database dumps or local runtime snapshots
 - logs, caches, or operator notes that are not intended for public release
