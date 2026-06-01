@@ -46,11 +46,14 @@ npm run api:dev
 npm run web:lint
 npm run web:typecheck
 npm run web:build
+npm run web:gate
 npm run api:check
 npm run api:test
 npm run api:openapi:check
 npm test
 npm run preflight
+npm run audit:security
+npm run audit:python
 ```
 
 If you changed API behavior, run `npm run api:check`, `npm run api:test`, and `npm run api:openapi:check` at minimum. If you changed web behavior, run the web lint/typecheck/build path. For docs-only edits, run `git diff --check` and the security gate.

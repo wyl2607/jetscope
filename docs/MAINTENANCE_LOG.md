@@ -11,6 +11,9 @@ This log records public-safe maintenance evidence for the JetScope repository.
 - Added release-readiness and reviewer reproducibility documentation: a local
   dry-run release script, release process notes, Codex-for-OSS use guidance,
   quickstart, demo path, `.env.example`, and infrastructure notes.
+- Prepared public-safe next-step artifacts: `docs/OSS_ISSUE_BACKLOG.md`,
+  `docs/RELEASE_NOTES_V0_1_0_ALPHA.md`, and the goal-refactor execution record
+  in `docs/exec-plans/2026-06-01-oss-readiness-goal-refactor.md`.
 - Validation evidence for the local OSS-readiness branch: `bash -n
   scripts/release-dry-run.sh`, `git diff --check origin/main..HEAD`, and
   `scripts/security_check.sh` passed. `gitleaks` was not installed, so the

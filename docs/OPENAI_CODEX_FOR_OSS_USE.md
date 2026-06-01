@@ -4,10 +4,30 @@ JetScope can use Codex safely for public, reviewable maintenance work when the s
 
 ## Safe Use Cases
 
-- Read-only PR review and code review.
-- CI failure triage and log interpretation.
-- Release notes, changelog drafts, and risk notes.
-- Public-source parser drift checks and documentation alignment.
+### PR Review
+
+Use Codex for read-only review of public diffs: security posture, missing tests,
+documentation drift, unsafe claims, and changed-file scope. Codex should report
+findings for a maintainer to accept or reject; it should not approve or merge
+changes on its own.
+
+### CI Failure Triage
+
+Use Codex to inspect failing public CI logs, classify the failure, and suggest
+the smallest safe repair. For code fixes, the output should be a reviewable
+local patch or PR draft, not a hidden remote mutation.
+
+### Release Workflow
+
+Use Codex to draft release notes, changelog entries, validation summaries, and
+risk notes from public commits and local checks. It should respect the release
+dry-run path and never bypass approval-token release controls.
+
+### Data-Source Maintenance
+
+Use Codex to check public source parser drift, source freshness assumptions,
+fallback semantics, and documentation alignment. It must not commit secrets,
+access unauthorized systems, or imply paid/private data access.
 
 ## Operating Rules
 

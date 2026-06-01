@@ -6,6 +6,11 @@ Initial public trust-pack documentation release for the current JetScope product
 
 ### Added
 
+- documented the current API surface for market snapshot, tipping-point analysis, source coverage, source freshness, reserve stress, scenario, and research-signal workflows
+- recorded the current market snapshot and SAF tipping-point surfaces as the initial alpha baseline
+- documented source coverage, provenance, freshness, confidence, and fallback-state expectations
+- documented the mock-first AI research signal path and the safe live-mode boundary
+- documented local Next.js + FastAPI development and Docker/infra review paths
 - contributor guidance in `CONTRIBUTING.md`
 - maintainer responsibilities in `MAINTAINERS.md`
 - vulnerability reporting and no-secrets policy in `SECURITY.md`
