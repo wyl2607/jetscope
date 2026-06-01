@@ -21,6 +21,7 @@
 - [ ] `cd apps/api && python -m pytest`
 - [ ] `git diff --check origin/main...HEAD`
 - [ ] `scripts/security_check.sh`
+- [ ] `scripts/review_push_guard.sh origin/main`
 - [ ] Not applicable, docs/config only
 
 Evidence:
