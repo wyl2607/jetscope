@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run api:dev\" \"npm run web:dev\"",
+    "release:dry-run": "bash ./scripts/release-dry-run.sh",
     "release": "bash ./scripts/release.sh",
     "web:dev": "npm --prefix apps/web run dev",
     "web:build": "npm --prefix apps/web run build",
