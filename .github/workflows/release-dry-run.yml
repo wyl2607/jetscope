@@ -1,0 +1,32 @@
+name: Release Dry Run
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-dry-run:
+    name: Safe release dry run
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Shell syntax check release dry-run script
+        run: bash -n scripts/release-dry-run.sh
+
+      - name: Run safe release dry run (skip preflight)
+        run: npm run release:dry-run -- --skip-preflight
