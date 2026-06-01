@@ -19,7 +19,7 @@
 - [ ] `npm --prefix apps/web run typecheck`
 - [ ] `npm --prefix apps/web run build`
 - [ ] `cd apps/api && python -m pytest`
-- [ ] `git diff --check`
+- [ ] `git diff --check origin/main...HEAD`
 - [ ] `scripts/security_check.sh`
 - [ ] Not applicable, docs/config only
 
