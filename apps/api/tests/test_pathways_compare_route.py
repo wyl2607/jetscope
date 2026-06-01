@@ -78,6 +78,14 @@ def test_compare_rejects_sweep_max_below_min(client):
     assert resp.status_code == 422
 
 
+def test_compare_rejects_non_finite_carbon_price(client):
+    resp = client.get(
+        "/v1/pathways/compare",
+        params={"fossil_jet_usd_per_l": 1.0, "carbon_price_eur_per_t": "1e309"},
+    )
+    assert resp.status_code == 422
+
+
 def test_compare_high_carbon_price_shifts_signal(client):
     # A high carbon price + full blend should make SAF competitive (clear_leader / close_race).
     resp = client.get(

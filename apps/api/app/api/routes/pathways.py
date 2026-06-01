@@ -36,15 +36,18 @@ def compare_pathways_endpoint(
         if points > _CARBON_SWEEP_MAX_POINTS:
             raise HTTPException(status_code=422, detail="carbon sweep resolution exceeds 101 points")
 
-    return build_pathway_comparison_response(
-        fossil_jet_usd_per_l=fossil_jet_usd_per_l,
-        carbon_price_eur_per_t=carbon_price_eur_per_t,
-        subsidy_usd_per_l=subsidy_usd_per_l,
-        blend_rate_pct=blend_rate_pct,
-        carbon_sweep_min=carbon_sweep_min,
-        carbon_sweep_max=carbon_sweep_max,
-        carbon_sweep_step=carbon_sweep_step,
-    )
+    try:
+        return build_pathway_comparison_response(
+            fossil_jet_usd_per_l=fossil_jet_usd_per_l,
+            carbon_price_eur_per_t=carbon_price_eur_per_t,
+            subsidy_usd_per_l=subsidy_usd_per_l,
+            blend_rate_pct=blend_rate_pct,
+            carbon_sweep_min=carbon_sweep_min,
+            carbon_sweep_max=carbon_sweep_max,
+            carbon_sweep_step=carbon_sweep_step,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 DEFAULT_PATHWAYS = [
     {
