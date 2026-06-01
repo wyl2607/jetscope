@@ -19,7 +19,7 @@ services:
 
   api:
     build:
-      context: ./apps/api
+      context: ../apps/api
       dockerfile: Dockerfile
     container_name: saf-signal-api
     restart: unless-stopped
@@ -40,7 +40,7 @@ services:
     restart: unless-stopped
     working_dir: /app
     volumes:
-      - ./apps/web:/app:ro
+      - ../apps/web:/app:ro
       - /app/node_modules
     environment:
       - NODE_ENV=production

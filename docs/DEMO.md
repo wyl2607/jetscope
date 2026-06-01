@@ -91,7 +91,7 @@ See [`docs/AI_PIPELINE.md`](./AI_PIPELINE.md) for the pipeline rules and the moc
 - Market snapshot renders with source metadata.
 - Tipping-point analysis responds to a changed fossil jet input.
 - Source coverage or freshness indicators are visible.
-- Research signals endpoint returns structured rows.
+- Research signals endpoint returns a structured JSON response; an empty list is acceptable when no local seed data exists.
 - No secret material or production credentials are required.
 
 ## If The Reviewer Wants More

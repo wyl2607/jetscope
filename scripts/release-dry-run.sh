@@ -7,6 +7,7 @@ RUN_PREFLIGHT=1
 RUN_SECURITY=1
 RUN_PUSH_GUARD=1
 RUN_DIFF_CHECK=1
+DIFF_BASE="${RELEASE_DRY_RUN_BASE_REF:-origin/main}"
 
 usage() {
   cat <<'EOF'
@@ -18,13 +19,13 @@ Default checks:
   1. npm run preflight
   2. scripts/security_check.sh
   3. scripts/review_push_guard.sh origin/main
-  4. git diff --check
+  4. git diff --check origin/main...HEAD
 
 Options:
   --skip-preflight   Skip npm run preflight for a faster local-only pass
   --skip-security    Skip scripts/security_check.sh
   --skip-push-guard  Skip scripts/review_push_guard.sh origin/main
-  --skip-diff-check  Skip git diff --check
+  --skip-diff-check  Skip git diff --check against the outgoing commit range
   --help             Show this help
 
 Notes:
@@ -85,8 +86,8 @@ fi
 
 if [[ "$RUN_DIFF_CHECK" -eq 1 ]]; then
   echo
-  echo ">>> Local gate 4/4: git diff --check"
-  git diff --check
+  echo ">>> Local gate 4/4: git diff --check ${DIFF_BASE}...HEAD"
+  git diff --check "$DIFF_BASE"...HEAD
 fi
 
 echo
