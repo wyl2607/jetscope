@@ -1,4 +1,5 @@
 import { listCanonicalPathways } from '@core/aviation/pathways';
+import type { PathwaySourceView } from '@/lib/pathways-read-model';
 
 type TippingPointPathway = {
   pathway_key: string;
@@ -13,6 +14,9 @@ type TippingPointPathway = {
 type Props = {
   pathways: TippingPointPathway[];
   selectedPathwayKey: string;
+  /** Optional source-trust metadata keyed by pathway_key. When provided,
+   *  the table renders provenance columns; when omitted it renders as before. */
+  sources?: Record<string, PathwaySourceView>;
 };
 
 const maturityLabels: Record<string, string> = {
@@ -30,7 +34,8 @@ function formatRange(low: number, high: number): string {
   return `$${low.toFixed(2)}–$${high.toFixed(2)}/L`;
 }
 
-export function SafPathwayComparisonTable({ pathways, selectedPathwayKey }: Props) {
+export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, sources }: Props) {
+  const showSources = Boolean(sources);
   return (
     <section className="rounded-2xl border border-slate-200 bg-white/90 p-5">
       <div className="mb-4">
@@ -51,7 +56,8 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey }: Prop
               <th className="py-3 pr-4">CO₂ 减排</th>
               <th className="py-3 pr-4">成熟度</th>
               <th className="py-3 pr-4">状态</th>
-              <th className="py-3">价差</th>
+              <th className="py-3 pr-4">价差</th>
+              {showSources ? <th className="py-3">来源可信度</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -83,9 +89,27 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey }: Prop
                     {canonical ? maturityLabels[canonical.maturityLevel] ?? canonical.maturityLevel : '无数据'}
                   </td>
                   <td className={`py-3 pr-4 font-medium ${statusColor}`}>{pathway.status}</td>
-                  <td className="py-3">
+                  <td className="py-3 pr-4">
                     {pathway.spread_low_pct.toFixed(1)}% 至 {pathway.spread_high_pct.toFixed(1)}%
                   </td>
+                  {showSources ? (
+                    <td className="py-3">
+                      {sources?.[pathway.pathway_key] ? (
+                        <div>
+                          <div className="text-slate-950">
+                            {sources[pathway.pathway_key].sourceType} · {sources[pathway.pathway_key].confidenceLabel}（
+                            {sources[pathway.pathway_key].confidencePct}%）
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            {sources[pathway.pathway_key].freshnessLabel}
+                            {sources[pathway.pathway_key].fallbackUsed ? ' · 回退' : ''}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400">无数据</span>
+                      )}
+                    </td>
+                  ) : null}
                 </tr>
               );
             })}

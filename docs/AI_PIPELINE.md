@@ -63,12 +63,15 @@ Budget guardrail:
 - No Anthropic client initialization
 - No external LLM API call
 - Returns deterministic neutral `OTHER` signal per article
+- Deterministic stub shape is pinned by `apps/api/tests/test_ai_research_boundary.py::test_mock_mode_is_deterministic_and_key_free`
 
 `AI_RESEARCH_MOCK_MODE=false`:
 
 - Uses Anthropic Messages API with model `claude-sonnet-4-6`
 - Applies prompt caching on system prompt
 - Enforces daily token budget
+- Explicit live-mode and DB-backed pre-call budget refusal are pinned by
+  `apps/api/tests/test_ai_research_boundary.py::test_live_mode_is_explicit_and_db_budget_guarded`
 
 ## Environment Variables
 

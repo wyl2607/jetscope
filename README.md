@@ -8,6 +8,8 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-teal.svg)](https://fastapi.tiangolo.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+[Quickstart](docs/QUICKSTART.md) | [Demo](docs/DEMO.md) | [Architecture](#architecture) | [API Contract](docs/API_CONTRACT_V1.md) | [Roadmap](ROADMAP.md) | [Contributing](CONTRIBUTING.md) | [Security](SECURITY.md)
+
 ## Languages
 
 - [English](#english)
@@ -71,6 +73,8 @@ jetscope/
 
 More detail lives in `docs/API_CONTRACT_V1.md`, `docs/DATA_CONTRACT_V1.md`, `docs/AI_PIPELINE.md`, and `docs/REFACTORING_STRATEGY.md`.
 
+Contributor and maintainer documents live in `CONTRIBUTING.md`, `MAINTAINERS.md`, `SECURITY.md`, `ROADMAP.md`, `CHANGELOG.md`, and `docs/MAINTENANCE_LOG.md`.
+
 ### Prerequisites
 
 - Node.js 22+
@@ -115,7 +119,7 @@ The API uses `JETSCOPE_` environment variables by default. Important variables:
 | `JETSCOPE_AI_RESEARCH_ENABLED` | `false` | Enables daily AI research ingestion loop. |
 | `JETSCOPE_AI_RESEARCH_MOCK_MODE` | `true` | Keeps Claude extraction deterministic and cost-safe by default. |
 | `JETSCOPE_ANTHROPIC_API_KEY` | empty | Anthropic key for live extraction. |
-| `JETSCOPE_NEWSAPI_KEY` | empty | Optional NewsAPI key; Reuters RSS fallback is used otherwise. |
+| `JETSCOPE_NEWSAPI_KEY` | empty | Optional NewsAPI credential; Reuters RSS fallback is used otherwise. |
 
 Selected legacy `SAFVSOIL_*` variables may still be accepted for compatibility with older deployments. New deployments should prefer `JETSCOPE_*` where supported.
 
@@ -155,6 +159,12 @@ The full operational gate is:
 npm run preflight
 ```
 
+Release-readiness checks that avoid push, publish, deploy, SSH, and rsync are documented in `docs/RELEASE_PROCESS.md` and can be run with:
+
+```bash
+npm run release:dry-run
+```
+
 `npm run api:check` auto-detects `JETSCOPE_PYTHON_BIN`, `PYTHON_BIN`, the API virtual environment, or the platform default Python interpreter.
 
 ```bash
@@ -190,6 +200,8 @@ Development worker sync is opt-in and is not part of the default release path.
 Project deployment memory now lives in `OPERATIONS.md`. Future work should treat that file as the default operational source of truth.
 
 Production-style Docker and nginx examples are in `infra/` and `docker-compose.prod.yml`.
+
+This repository is open source, but `package.json` intentionally sets `private: true` because JetScope is an application monorepo rather than an npm library package.
 
 ### Repository Hygiene
 
