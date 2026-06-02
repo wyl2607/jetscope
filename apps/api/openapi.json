@@ -425,6 +425,136 @@
         }
       }
     },
+    "/v1/pathways/compare": {
+      "get": {
+        "tags": [
+          "pathways"
+        ],
+        "summary": "Compare Pathways Endpoint",
+        "operationId": "compare_pathways_endpoint_v1_pathways_compare_get",
+        "parameters": [
+          {
+            "name": "fossil_jet_usd_per_l",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Current fossil jet fuel price in USD/L",
+              "title": "Fossil Jet Usd Per L"
+            },
+            "description": "Current fossil jet fuel price in USD/L"
+          },
+          {
+            "name": "carbon_price_eur_per_t",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Carbon price in EUR per metric ton",
+              "default": 0.0,
+              "title": "Carbon Price Eur Per T"
+            },
+            "description": "Carbon price in EUR per metric ton"
+          },
+          {
+            "name": "subsidy_usd_per_l",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Per-liter SAF subsidy in USD",
+              "default": 0.0,
+              "title": "Subsidy Usd Per L"
+            },
+            "description": "Per-liter SAF subsidy in USD"
+          },
+          {
+            "name": "blend_rate_pct",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 100,
+              "minimum": 0,
+              "description": "Blend rate as percent of total fuel burn",
+              "default": 0.0,
+              "title": "Blend Rate Pct"
+            },
+            "description": "Blend rate as percent of total fuel burn"
+          },
+          {
+            "name": "carbon_sweep_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Carbon-price sweep lower bound (EUR/t)",
+              "default": 0.0,
+              "title": "Carbon Sweep Min"
+            },
+            "description": "Carbon-price sweep lower bound (EUR/t)"
+          },
+          {
+            "name": "carbon_sweep_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Carbon-price sweep upper bound (EUR/t); omit to skip the sweep",
+              "title": "Carbon Sweep Max"
+            },
+            "description": "Carbon-price sweep upper bound (EUR/t); omit to skip the sweep"
+          },
+          {
+            "name": "carbon_sweep_step",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Carbon-price sweep step (EUR/t)",
+              "default": 10.0,
+              "title": "Carbon Sweep Step"
+            },
+            "description": "Carbon-price sweep step (EUR/t)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PathwayComparisonResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/pathways": {
       "get": {
         "tags": [
@@ -498,6 +628,104 @@
                     "$ref": "#/components/schemas/PathwaySummary"
                   },
                   "title": "Response Upsert Pathways V1 Pathways Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/policies/eu-ets-pressure": {
+      "get": {
+        "tags": [
+          "policies"
+        ],
+        "summary": "Get Eu Ets Pressure",
+        "operationId": "get_eu_ets_pressure_v1_policies_eu_ets_pressure_get",
+        "parameters": [
+          {
+            "name": "fossil_jet_usd_per_l",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Fossil jet fuel price in USD/L",
+              "title": "Fossil Jet Usd Per L"
+            },
+            "description": "Fossil jet fuel price in USD/L"
+          },
+          {
+            "name": "exempt_blend_pct",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 100,
+              "minimum": 0,
+              "description": "SAF blend share exempt from EU ETS (percent)",
+              "default": 0.0,
+              "title": "Exempt Blend Pct"
+            },
+            "description": "SAF blend share exempt from EU ETS (percent)"
+          },
+          {
+            "name": "eu_ets_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "description": "EU ETS price sweep lower bound (EUR/t)",
+              "default": 0.0,
+              "title": "Eu Ets Min"
+            },
+            "description": "EU ETS price sweep lower bound (EUR/t)"
+          },
+          {
+            "name": "eu_ets_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "description": "EU ETS price sweep upper bound (EUR/t)",
+              "default": 200.0,
+              "title": "Eu Ets Max"
+            },
+            "description": "EU ETS price sweep upper bound (EUR/t)"
+          },
+          {
+            "name": "eu_ets_step",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "EU ETS price sweep step (EUR/t)",
+              "default": 10.0,
+              "title": "Eu Ets Step"
+            },
+            "description": "EU ETS price sweep step (EUR/t)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EuEtsPressureResponse"
                 }
               }
             }
@@ -1269,6 +1497,159 @@
         ],
         "title": "AirlineDecisionResponse"
       },
+      "EuEtsPressureInputs": {
+        "properties": {
+          "fossil_jet_usd_per_l": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Fossil Jet Usd Per L"
+          },
+          "exempt_blend_pct": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Exempt Blend Pct"
+          },
+          "eu_ets_min": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Eu Ets Min"
+          },
+          "eu_ets_max": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Eu Ets Max"
+          },
+          "eu_ets_step": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Eu Ets Step"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fossil_jet_usd_per_l",
+          "exempt_blend_pct",
+          "eu_ets_min",
+          "eu_ets_max",
+          "eu_ets_step"
+        ],
+        "title": "EuEtsPressureInputs"
+      },
+      "EuEtsPressurePoint": {
+        "properties": {
+          "eu_ets_eur_per_t": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Eu Ets Eur Per T"
+          },
+          "carbon_cost_usd_per_l": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Carbon Cost Usd Per L"
+          },
+          "effective_fossil_jet_usd_per_l": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Effective Fossil Jet Usd Per L"
+          },
+          "pressure_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pressure Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "eu_ets_eur_per_t",
+          "carbon_cost_usd_per_l",
+          "effective_fossil_jet_usd_per_l",
+          "pressure_pct"
+        ],
+        "title": "EuEtsPressurePoint"
+      },
+      "EuEtsPressureResponse": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/EuEtsPressureInputs"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/EuEtsPressurePoint"
+            },
+            "type": "array",
+            "title": "Points"
+          },
+          "source": {
+            "$ref": "#/components/schemas/EuEtsPressureSource"
+          },
+          "signal": {
+            "type": "string",
+            "enum": [
+              "low",
+              "moderate",
+              "high",
+              "severe"
+            ],
+            "title": "Signal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at",
+          "inputs",
+          "points",
+          "source",
+          "signal"
+        ],
+        "title": "EuEtsPressureResponse"
+      },
+      "EuEtsPressureSource": {
+        "properties": {
+          "source_type": {
+            "type": "string",
+            "title": "Source Type"
+          },
+          "confidence_score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence Score"
+          },
+          "cadence": {
+            "type": "string",
+            "title": "Cadence"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
+          "fallback_used": {
+            "type": "boolean",
+            "title": "Fallback Used"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_type",
+          "confidence_score",
+          "cadence",
+          "updated_at",
+          "fallback_used"
+        ],
+        "title": "EuEtsPressureSource"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1667,6 +2048,250 @@
           "confidence_score"
         ],
         "title": "MarketSourceDetail"
+      },
+      "PathwayCarbonSweepEntry": {
+        "properties": {
+          "pathway_key": {
+            "type": "string",
+            "title": "Pathway Key"
+          },
+          "effective_saf_cost_usd_per_l": {
+            "type": "number",
+            "title": "Effective Saf Cost Usd Per L"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pathway_key",
+          "effective_saf_cost_usd_per_l"
+        ],
+        "title": "PathwayCarbonSweepEntry"
+      },
+      "PathwayCarbonSweepPoint": {
+        "properties": {
+          "carbon_price_eur_per_t": {
+            "type": "number",
+            "title": "Carbon Price Eur Per T"
+          },
+          "pathways": {
+            "items": {
+              "$ref": "#/components/schemas/PathwayCarbonSweepEntry"
+            },
+            "type": "array",
+            "title": "Pathways"
+          }
+        },
+        "type": "object",
+        "required": [
+          "carbon_price_eur_per_t",
+          "pathways"
+        ],
+        "title": "PathwayCarbonSweepPoint"
+      },
+      "PathwayComparisonInputs": {
+        "properties": {
+          "fossil_jet_usd_per_l": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Fossil Jet Usd Per L"
+          },
+          "carbon_price_eur_per_t": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Carbon Price Eur Per T"
+          },
+          "subsidy_usd_per_l": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Subsidy Usd Per L"
+          },
+          "blend_rate_pct": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Blend Rate Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fossil_jet_usd_per_l",
+          "carbon_price_eur_per_t",
+          "subsidy_usd_per_l",
+          "blend_rate_pct"
+        ],
+        "title": "PathwayComparisonInputs"
+      },
+      "PathwayComparisonResponse": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/PathwayComparisonInputs"
+          },
+          "fossil_jet_usd_per_l": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Fossil Jet Usd Per L"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/PathwayComparisonRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "carbon_sweep": {
+            "items": {
+              "$ref": "#/components/schemas/PathwayCarbonSweepPoint"
+            },
+            "type": "array",
+            "title": "Carbon Sweep"
+          },
+          "signal": {
+            "type": "string",
+            "enum": [
+              "clear_leader",
+              "close_race",
+              "no_advantage",
+              "insufficient_data"
+            ],
+            "title": "Signal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at",
+          "inputs",
+          "fossil_jet_usd_per_l",
+          "rows",
+          "carbon_sweep",
+          "signal"
+        ],
+        "title": "PathwayComparisonResponse"
+      },
+      "PathwayComparisonRow": {
+        "properties": {
+          "pathway_key": {
+            "type": "string",
+            "title": "Pathway Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "min_usd_per_l": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Min Usd Per L"
+          },
+          "max_usd_per_l": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Max Usd Per L"
+          },
+          "midpoint_usd_per_l": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Midpoint Usd Per L"
+          },
+          "carbon_reduction_pct": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Carbon Reduction Pct"
+          },
+          "maturity_level": {
+            "type": "string",
+            "title": "Maturity Level"
+          },
+          "effective_saf_cost_usd_per_l": {
+            "type": "number",
+            "title": "Effective Saf Cost Usd Per L"
+          },
+          "gap_vs_fossil_usd_per_l": {
+            "type": "number",
+            "title": "Gap Vs Fossil Usd Per L"
+          },
+          "spread_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spread Pct"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "below_fossil",
+              "competitive",
+              "inflection",
+              "premium",
+              "not_computable"
+            ],
+            "title": "Status"
+          },
+          "source": {
+            "$ref": "#/components/schemas/PathwaySourceMeta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pathway_key",
+          "name",
+          "min_usd_per_l",
+          "max_usd_per_l",
+          "midpoint_usd_per_l",
+          "carbon_reduction_pct",
+          "maturity_level",
+          "effective_saf_cost_usd_per_l",
+          "gap_vs_fossil_usd_per_l",
+          "spread_pct",
+          "status",
+          "source"
+        ],
+        "title": "PathwayComparisonRow"
+      },
+      "PathwaySourceMeta": {
+        "properties": {
+          "source_type": {
+            "type": "string",
+            "title": "Source Type"
+          },
+          "confidence_score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence Score"
+          },
+          "cadence": {
+            "type": "string",
+            "title": "Cadence"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
+          "fallback_used": {
+            "type": "boolean",
+            "title": "Fallback Used"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_type",
+          "confidence_score",
+          "cadence",
+          "updated_at",
+          "fallback_used"
+        ],
+        "title": "PathwaySourceMeta"
       },
       "PathwaySummary": {
         "properties": {
