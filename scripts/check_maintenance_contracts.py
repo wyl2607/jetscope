@@ -32,6 +32,8 @@ def main() -> int:
             "prompt-file: .github/prompts/codex-daily-audit.md",
             "sandbox: read-only",
             "safety-strategy: read-only",
+            "CODEX_AUDIT_HAS_API_KEY",
+            "Write skipped audit artifact",
             "permissions:",
             "contents: read",
         ],
@@ -47,7 +49,7 @@ def main() -> int:
     require_text(
         "AGENTS.md",
         [
-            "AGENTS.md - Workspace AI Entry",
+            "AGENTS.md - JetScope AI Entry",
             ".evolver/",
             "scripts/review_push_guard.sh origin/main",
         ],
