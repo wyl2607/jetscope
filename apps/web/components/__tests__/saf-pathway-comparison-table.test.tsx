@@ -23,4 +23,35 @@ describe('SafPathwayComparisonTable', () => {
 
     expect(container.firstChild).not.toBeNull();
   });
+
+  it('renders source-trust column when sources provided', () => {
+    const { getByText } = render(
+      <SafPathwayComparisonTable
+        selectedPathwayKey="hefa"
+        pathways={[
+          {
+            pathway_key: 'hefa',
+            display_name: 'HEFA',
+            net_cost_low_usd_per_l: 1.8,
+            net_cost_high_usd_per_l: 2.2,
+            spread_low_pct: 10,
+            spread_high_pct: 20,
+            status: 'inflection'
+          }
+        ]}
+        sources={{
+          hefa: {
+            sourceType: 'market_feed',
+            confidencePct: 80,
+            confidenceLabel: '高',
+            freshnessLabel: '2026-06-01 · daily',
+            fallbackUsed: false
+          }
+        }}
+      />
+    );
+
+    expect(getByText('来源可信度')).not.toBeNull();
+    expect(getByText(/market_feed/)).not.toBeNull();
+  });
 });

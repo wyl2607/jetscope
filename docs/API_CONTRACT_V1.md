@@ -10,6 +10,8 @@ This document describes the public API shape used by the JetScope web product. I
 
 JetScope API responses should make provenance explicit. Product surfaces must be able to distinguish live data, derived proxies, cached values, and deterministic fallback values.
 
+For EU ETS/carbon-cost interpretation assumptions tied to this contract, see [EU_ETS_CARBON_ASSUMPTIONS.md](./EU_ETS_CARBON_ASSUMPTIONS.md).
+
 ## Contract Principles
 
 1. API responses should expose source health, freshness, confidence, or fallback state wherever the product decision depends on data quality.
