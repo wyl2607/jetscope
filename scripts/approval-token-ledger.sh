@@ -25,7 +25,8 @@ approval_token_ledger_dir() {
     return
   fi
 
-  printf '%s\n' "/tmp/jetscope-approval-token-ledger-${USER:-unknown}"
+  echo "ERROR: approval token ledger has no persistent location. Set JETSCOPE_APPROVAL_LEDGER_DIR or run from a writable /var/lib/jetscope or git checkout. Refusing /tmp fallback because it loses replay protection on reboot." >&2
+  return 1
 }
 
 approval_token_hash() {
