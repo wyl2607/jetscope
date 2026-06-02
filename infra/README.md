@@ -17,6 +17,14 @@ This directory contains local infrastructure examples for JetScope. It is intend
 
 ## Local Docker Path
 
+Before any local `up` workflow, run the quick smoke validator:
+
+```bash
+./scripts/docker-quickstart-smoke.sh
+```
+
+The script only runs compose config rendering with placeholder local env values. It does not deploy, publish, push, SSH, or rsync.
+
 The repository root already exposes convenience scripts:
 
 - `npm run docker:up`
