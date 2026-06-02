@@ -10,6 +10,16 @@ This document is public guidance for reviewers and contributors. It does not rep
 
 ## 1. Local Dry Run
 
+A no-secret CI workflow also enforces this discipline on every pull request and on manual dispatch: `.github/workflows/release-dry-run.yml`.
+
+CI path:
+
+- Runs on `pull_request` and `workflow_dispatch`.
+- Uses read-only `contents: read` permissions only.
+- Runs `bash -n scripts/release-dry-run.sh`.
+- Runs `npm run release:dry-run -- --skip-preflight`.
+- Does not push, publish, deploy, or use repository secrets.
+
 Use the dry-run entrypoint to verify local readiness without triggering any side effects:
 
 ```bash
