@@ -12,6 +12,8 @@ import { buildPageMetadata } from '@/lib/seo';
 import { TippingPointWorkbench } from '@/components/tipping-point-workbench';
 import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
 import { loadPathwayComparison } from '@/lib/pathways-read-model';
+import { EuEtsPressurePanel } from '@/components/eu-ets-pressure-panel';
+import { loadEuEtsPressure } from '@/lib/eu-ets-pressure-read-model';
 
 export const dynamic = 'force-dynamic';
 
@@ -89,6 +91,19 @@ export default async function SafTippingPointPage() {
     });
   } catch {
     pathwayComparison = null;
+  }
+
+  let euEtsPressure: Awaited<ReturnType<typeof loadEuEtsPressure>> | null = null;
+  try {
+    euEtsPressure = await loadEuEtsPressure({
+      fossilJetUsdPerL: liveFuel,
+      exemptBlendPct: 6,
+      euEtsMin: 0,
+      euEtsMax: 200,
+      euEtsStep: 50
+    });
+  } catch {
+    euEtsPressure = null;
   }
 
   return (
@@ -205,6 +220,12 @@ export default async function SafTippingPointPage() {
             sources={pathwayComparison.sourceByKey}
           />
         </section>
+      ) : null}
+
+      {euEtsPressure ? (
+        <div className="mb-8">
+          <EuEtsPressurePanel model={euEtsPressure} />
+        </div>
       ) : null}
 
       {/* Model Boundaries */}
