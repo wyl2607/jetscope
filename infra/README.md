@@ -1,0 +1,38 @@
+# Infra Notes
+
+This directory contains local infrastructure examples for JetScope. It is intended for workstation or reviewer use, not for production deployment instructions.
+
+## What It Is For
+
+- local Docker support for services defined in `infra/docker-compose.yml`
+- nginx and app config examples used by local infrastructure experiments
+- developer understanding of how the app is wired together off the host machine
+
+## What It Is Not For
+
+- production deployment guidance
+- remote server access
+- SSH, rsync, or publish workflows
+- secrets management
+
+## Local Docker Path
+
+The repository root already exposes convenience scripts:
+
+- `npm run docker:up`
+- `npm run docker:down`
+
+The compose stack in `infra/docker-compose.yml` currently includes:
+
+- PostgreSQL
+- the FastAPI API container
+- the web container
+- nginx
+
+For a quick reviewer demo, Docker is optional. The normal quickstart path is to run the API and web locally with the defaults in `.env.example`.
+
+## Notes For Reviewers
+
+- Keep `POSTGRES_PASSWORD` and `JETSCOPE_ADMIN_TOKEN` local-only if you use the compose stack.
+- The compose file uses local service names and bridge networking only.
+- If you are evaluating the product, prefer the local SQLite quickstart first and only use Docker when you need to inspect infrastructure wiring.
