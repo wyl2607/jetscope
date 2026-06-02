@@ -160,3 +160,94 @@ def build_eu_reserve_signal_response(db=None) -> ReserveSignalResponse:
         source_name=_reserve_source_name(reserve_stress.source_type),
         confidence_score=reserve_stress.confidence,
     )
+
+
+def build_pathway_comparison_response(
+    *,
+    fossil_jet_usd_per_l: float,
+    carbon_price_eur_per_t: float = 0.0,
+    subsidy_usd_per_l: float = 0.0,
+    blend_rate_pct: float = 0.0,
+    carbon_sweep_min: float = 0.0,
+    carbon_sweep_max: float | None = None,
+    carbon_sweep_step: float = 10.0,
+):
+    """Build the SAF pathway comparison contract.
+
+    ``signal`` is rule-based and deterministic over the computable rows
+    (status != ``not_computable``):
+    - ``insufficient_data``: no computable row.
+    - ``clear_leader``: best row is ``below_fossil`` OR best spread_pct <= 5 and
+      leads the runner-up by >= 10 spread points.
+    - ``close_race``: best spread_pct <= 25 and not a clear leader.
+    - ``no_advantage``: otherwise.
+    """
+    from app.schemas.analysis import (
+        PathwayCarbonSweepEntry,
+        PathwayCarbonSweepPoint,
+        PathwayComparisonInputs,
+        PathwayComparisonResponse,
+        PathwayComparisonRow,
+        PathwaySourceMeta,
+    )
+    from app.services.analysis.pathway_costs import carbon_price_sweep, compare_pathways
+    from app.services.analysis.pathway_sources import get_pathway_source
+
+    raw_rows = compare_pathways(
+        fossil_jet_usd_per_l=fossil_jet_usd_per_l,
+        carbon_price_eur_per_t=carbon_price_eur_per_t,
+        subsidy_usd_per_l=subsidy_usd_per_l,
+        blend_rate_pct=blend_rate_pct,
+    )
+    rows = [
+        PathwayComparisonRow(source=PathwaySourceMeta(**get_pathway_source(row["pathway_key"])), **row)
+        for row in raw_rows
+    ]
+
+    sweep: list = []
+    if carbon_sweep_max is not None:
+        for point in carbon_price_sweep(
+            fossil_jet_usd_per_l=fossil_jet_usd_per_l,
+            carbon_min=carbon_sweep_min,
+            carbon_max=carbon_sweep_max,
+            step=carbon_sweep_step,
+            subsidy_usd_per_l=subsidy_usd_per_l,
+            blend_rate_pct=blend_rate_pct,
+        ):
+            sweep.append(
+                PathwayCarbonSweepPoint(
+                    carbon_price_eur_per_t=point["carbon_price_eur_per_t"],
+                    pathways=[PathwayCarbonSweepEntry(**entry) for entry in point["pathways"]],
+                )
+            )
+
+    signal = _pathway_comparison_signal(rows)
+
+    return PathwayComparisonResponse(
+        generated_at=utcnow(),
+        inputs=PathwayComparisonInputs(
+            fossil_jet_usd_per_l=fossil_jet_usd_per_l,
+            carbon_price_eur_per_t=carbon_price_eur_per_t,
+            subsidy_usd_per_l=subsidy_usd_per_l,
+            blend_rate_pct=blend_rate_pct,
+        ),
+        fossil_jet_usd_per_l=fossil_jet_usd_per_l,
+        rows=rows,
+        carbon_sweep=sweep,
+        signal=signal,
+    )
+
+
+def _pathway_comparison_signal(rows) -> str:
+    computable = [row for row in rows if row.status != "not_computable" and row.spread_pct is not None]
+    if not computable:
+        return "insufficient_data"
+    ordered = sorted(computable, key=lambda row: row.effective_saf_cost_usd_per_l)
+    best = ordered[0]
+    runner_up_spread = ordered[1].spread_pct if len(ordered) > 1 else None
+    leads_clearly = runner_up_spread is not None and (runner_up_spread - best.spread_pct) >= 10
+    if best.status == "below_fossil" or (best.spread_pct <= 5 and leads_clearly):
+        return "clear_leader"
+    if best.spread_pct <= 25:
+        return "close_race"
+    return "no_advantage"
