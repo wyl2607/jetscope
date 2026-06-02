@@ -11,7 +11,8 @@ const PROXY_ROUTES = [
   ['reserves/eu/route.ts', "proxyToApi(request, '/reserves/eu')"],
   ['sources/route.ts', "proxyToApi(request, '/sources/coverage')"],
   ['analysis/tipping-point/route.ts', "proxyToApi(request, '/analysis/tipping-point')"],
-  ['analysis/airline-decision/route.ts', "proxyToApi(request, '/analysis/airline-decision')"]
+  ['analysis/airline-decision/route.ts', "proxyToApi(request, '/analysis/airline-decision')"],
+  ['pathways/compare/route.ts', "proxyToApi(request, '/pathways/compare')"]
 ];
 
 test('web API proxy routes map to concrete FastAPI endpoints', async () => {

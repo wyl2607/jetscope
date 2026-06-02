@@ -13,12 +13,15 @@ jobs:
     name: Read-only maintenance audit
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      CODEX_AUDIT_HAS_API_KEY: ${{ secrets.OPENAI_API_KEY != '' && 'true' || 'false' }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
       - name: Run Codex read-only audit
+        if: ${{ env.CODEX_AUDIT_HAS_API_KEY == 'true' }}
         id: codex
         uses: openai/codex-action@v1
         with:
@@ -28,8 +31,18 @@ jobs:
           sandbox: read-only
           safety-strategy: read-only
 
+      - name: Write skipped audit artifact
+        if: ${{ env.CODEX_AUDIT_HAS_API_KEY != 'true' }}
+        run: |
+          cat > codex-daily-audit.md <<'AUDIT'
+          # Codex Daily Audit
+
+          Skipped because the `OPENAI_API_KEY` repository secret is not configured.
+          Configure that secret to enable the scheduled Codex maintenance audit.
+          AUDIT
+
       - name: Upload audit artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: codex-daily-audit
           path: codex-daily-audit.md
