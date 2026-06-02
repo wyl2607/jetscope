@@ -9,6 +9,8 @@ import { getPriceTrendChartReadModel } from '@/lib/product-read-model';
 import { getSourcesReadModel } from '@/lib/sources-read-model';
 import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
 import { loadPathwayComparison } from '@/lib/pathways-read-model';
+import { EuEtsPressurePanel } from '@/components/eu-ets-pressure-panel';
+import { loadEuEtsPressure } from '@/lib/eu-ets-pressure-read-model';
 import type { Metadata } from 'next';
 import { buildPageMetadata } from '@/lib/seo';
 
@@ -85,6 +87,19 @@ export default async function DashboardPage() {
     });
   } catch {
     pathwayComparison = null;
+  }
+
+  let euEtsPressure: Awaited<ReturnType<typeof loadEuEtsPressure>> | null = null;
+  try {
+    euEtsPressure = await loadEuEtsPressure({
+      fossilJetUsdPerL: market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l ?? 0.9,
+      exemptBlendPct: 6,
+      euEtsMin: 0,
+      euEtsMax: 200,
+      euEtsStep: 50
+    });
+  } catch {
+    euEtsPressure = null;
   }
 
   return (
@@ -244,6 +259,12 @@ export default async function DashboardPage() {
             }))}
             sources={pathwayComparison.sourceByKey}
           />
+        </section>
+      ) : null}
+
+      {euEtsPressure ? (
+        <section className="mt-8">
+          <EuEtsPressurePanel model={euEtsPressure} />
         </section>
       ) : null}
 
