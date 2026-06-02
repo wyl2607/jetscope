@@ -11,7 +11,7 @@
 
 set -uo pipefail
 
-WEB_URL="https://saf.meichen.beauty/"
+WEB_URL="${JETSCOPE_PUBLIC_URL:-https://saf.meichen.beauty/}"
 API_URL="http://127.0.0.1:8000/v1/health"
 LOG="/var/log/jetscope-health.log"
 BUS_WRITE="${JETSCOPE_BUS_WRITE:-}"
