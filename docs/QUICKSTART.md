@@ -80,6 +80,14 @@ Expected local ports:
 
 ## Smoke Checks
 
+Optional Docker quickstart smoke (no deploy/start):
+
+```bash
+./scripts/docker-quickstart-smoke.sh
+```
+
+This validates that `infra/docker-compose.yml` can be rendered with local placeholder values and does not require production secrets.
+
 Use these as the minimal reviewer smoke path:
 
 1. Open the web app at `http://localhost:3000` and confirm the market dashboard loads.

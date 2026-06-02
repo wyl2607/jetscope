@@ -10,6 +10,7 @@ BUILD_LOG="/var/log/jetscope-build.log"
 BUS_WRITE="${JETSCOPE_BUS_WRITE:-}"
 PRODUCER="jetscope/scripts/rollback.sh"
 APPROVAL_TOKEN=""
+TARGET_COMMIT=""
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/approval-token-ledger.sh"
 
@@ -23,12 +24,25 @@ while (($# > 0)); do
             fi
             shift
             ;;
+        --target)
+            TARGET_COMMIT="${2:-}"
+            if [[ -z "$TARGET_COMMIT" ]]; then
+                echo "ERROR: --target requires a commit SHA" >&2
+                exit 1
+            fi
+            shift
+            ;;
         --help|-h)
             cat <<'EOF'
-Usage: ./scripts/rollback.sh --approval-token <token>
+Usage: ./scripts/rollback.sh --approval-token <token> [--target <commit>]
 
 Requires APPROVE_JETSCOPE_ROLLBACK to match --approval-token before mutating production.
 Production checkout must already be clean. Rollback never stashes or reapplies local state.
+
+--target <commit>  Roll back to the given commit (must be an ancestor of HEAD).
+                   Defaults to HEAD~1.
+
+A backup branch (backup/rollback-<timestamp>) is always created before the reset.
 EOF
             exit 0
             ;;
@@ -74,7 +88,18 @@ if [ "$CURRENT_BRANCH" != "main" ]; then
 fi
 
 COMMIT_BEFORE=$(git rev-parse HEAD)
-ROLLBACK_TARGET=$(git rev-parse HEAD~1)
+if [[ -n "$TARGET_COMMIT" ]]; then
+    if ! ROLLBACK_TARGET=$(git rev-parse --verify "${TARGET_COMMIT}^{commit}" 2>/dev/null); then
+        echo "ERROR: --target $TARGET_COMMIT is not a valid commit in this repo." >&2
+        exit 1
+    fi
+    if ! git merge-base --is-ancestor "$ROLLBACK_TARGET" "$COMMIT_BEFORE"; then
+        echo "ERROR: --target $TARGET_COMMIT is not an ancestor of HEAD ($COMMIT_BEFORE); refusing to forward-roll." >&2
+        exit 1
+    fi
+else
+    ROLLBACK_TARGET=$(git rev-parse HEAD~1)
+fi
 
 if [ -n "$(git status --porcelain)" ]; then
     echo "ERROR: rollback requires a clean production checkout; refusing to stash or reapply local state." >&2
@@ -93,8 +118,17 @@ echo "Rolling back to: $(git log --oneline -2 | tail -1)" | tee -a "$LOG"
 
 approval_token_record_once "rollback" "$APPROVAL_TOKEN" "$COMMIT_BEFORE->$ROLLBACK_TARGET"
 
-# Roll back one commit
-git reset --hard HEAD~1 >> "$LOG" 2>&1
+# Create backup branch pointing at COMMIT_BEFORE so the reset is recoverable
+BACKUP_BRANCH="backup/rollback-$(date -u +%Y%m%dT%H%M%SZ)"
+if ! git branch "$BACKUP_BRANCH" "$COMMIT_BEFORE" >> "$LOG" 2>&1; then
+    echo "ERROR: failed to create backup branch $BACKUP_BRANCH; refusing to reset." | tee -a "$LOG" >&2
+    emit_publish_event "failed" "rollback backup branch creation failed" "branch=$BACKUP_BRANCH" "$COMMIT_BEFORE" "$COMMIT_BEFORE"
+    exit 1
+fi
+echo "[$(date -Iseconds)] Backup branch created: $BACKUP_BRANCH -> $COMMIT_BEFORE" | tee -a "$LOG"
+
+# Roll back to the resolved target commit
+git reset --hard "$ROLLBACK_TARGET" >> "$LOG" 2>&1
 
 # Rebuild API
 echo "[$(date -Iseconds)] Rebuilding API..." | tee -a "$LOG"
@@ -110,14 +144,15 @@ rm -rf .next
 nohup "$DEPLOY_DIR/node_modules/.bin/next" build --webpack > "$BUILD_LOG" 2>&1 &
 BUILD_PID=$!
 
-# Wait for build
-while kill -0 "$BUILD_PID" 2>/dev/null; do
-    sleep 10
-done
+# Wait for build and capture its exit code (replaces previous polling loop)
+set +e
+wait "$BUILD_PID"
+BUILD_EXIT=$?
+set -e
 
-if [ ! -f ".next/BUILD_ID" ]; then
-    echo "[$(date -Iseconds)] ERROR: Rollback build failed!" | tee -a "$LOG"
-    emit_publish_event "failed" "rollback build failed" "missing .next/BUILD_ID" "$COMMIT_BEFORE" "$ROLLBACK_TARGET"
+if [ "$BUILD_EXIT" -ne 0 ] || [ ! -f ".next/BUILD_ID" ]; then
+    echo "[$(date -Iseconds)] ERROR: Rollback build failed (exit=$BUILD_EXIT)!" | tee -a "$LOG"
+    emit_publish_event "failed" "rollback build failed" "exit=$BUILD_EXIT missing_build_id=$([ -f .next/BUILD_ID ] && echo no || echo yes)" "$COMMIT_BEFORE" "$ROLLBACK_TARGET"
     exit 1
 fi
 
@@ -125,7 +160,7 @@ systemctl restart jetscope-web.service
 sleep 3
 
 # Verify
-WEB_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://saf.meichen.beauty --connect-timeout 5 --max-time 10 2>/dev/null || echo "000")
+WEB_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${JETSCOPE_PUBLIC_URL:-https://saf.meichen.beauty}" --connect-timeout 5 --max-time 10 2>/dev/null || echo "000")
 echo "[$(date -Iseconds)] Rollback complete. Web status: $WEB_STATUS" | tee -a "$LOG"
 
 if [ "$WEB_STATUS" = "200" ] || [ "$WEB_STATUS" = "307" ]; then
