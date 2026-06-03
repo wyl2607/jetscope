@@ -58,10 +58,20 @@ def test_readiness_reports_database_market_and_source_checks(tmp_path: Path):
     assert payload["environment"]
     assert payload["api_prefix"] == "/v1"
     assert payload["schema_bootstrap_mode"]
-    assert set(payload["checks"]) == {"database", "market_snapshot", "source_coverage"}
+    assert set(payload["checks"]) == {
+        "database",
+        "market_snapshot",
+        "source_coverage",
+        "admin_token",
+        "ai_research_pipeline",
+    }
     assert payload["checks"]["database"]["ok"] is True
     assert payload["checks"]["market_snapshot"]["ok"] is True
     assert payload["checks"]["source_coverage"]["ok"] is False
+    assert payload["checks"]["admin_token"]["ok"] is False
+    assert payload["checks"]["admin_token"]["status"] == "missing"
+    assert payload["checks"]["ai_research_pipeline"]["ok"] is False
+    assert payload["checks"]["ai_research_pipeline"]["status"] == "disabled"
 
 
 def test_readiness_reports_degraded_when_source_coverage_is_partial(tmp_path: Path, monkeypatch):
@@ -88,6 +98,9 @@ def test_readiness_reports_degraded_when_source_coverage_is_partial(tmp_path: Pa
         )
 
     monkeypatch.setattr(health_route, "build_source_coverage_response", _partial_coverage)
+    monkeypatch.setattr(health_route.settings, "admin_token", "configured-token")
+    monkeypatch.setattr(health_route.settings, "ai_research_enabled", True)
+    monkeypatch.setattr(health_route.settings, "ai_research_mock_mode", True)
 
     response = client.get("/v1/readiness")
     assert response.status_code == 200
@@ -101,6 +114,8 @@ def test_readiness_reports_degraded_when_source_coverage_is_partial(tmp_path: Pa
         "status": "degraded",
         "detail": "completeness=0.500; metrics=1",
     }
+    assert payload["checks"]["admin_token"]["ok"] is True
+    assert payload["checks"]["ai_research_pipeline"]["status"] == "mock"
 
 
 def test_readiness_reports_not_ready_when_database_check_fails(tmp_path: Path, monkeypatch):

@@ -154,9 +154,14 @@ test('admin UI keeps a light operations theme', async () => {
 
 test('admin market refresh shows database persistence evidence', async () => {
   const adminSource = await readFile(new URL('../apps/web/components/admin-data-ops.tsx', import.meta.url), 'utf8');
+  const adminPageSource = await readFile(new URL('../apps/web/app/admin/page.tsx', import.meta.url), 'utf8');
   const marketSchema = await readFile(new URL('../apps/api/app/schemas/market.py', import.meta.url), 'utf8');
   const marketRoute = await readFile(new URL('../apps/api/app/api/routes/market.py', import.meta.url), 'utf8');
 
+  assert.match(adminPageSource, /getLaunchReadinessReadModel/);
+  assert.match(adminPageSource, /上线前置状态/);
+  assert.match(adminPageSource, /readiness\.checks\.map/);
+  assert.match(adminPageSource, /check\.actionHref/);
   assert.match(adminSource, /refreshEvidence/);
   assert.match(adminSource, /Promise<unknown>/);
   assert.match(adminSource, /return await response\.json\(\)/);

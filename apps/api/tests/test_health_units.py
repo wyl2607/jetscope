@@ -157,6 +157,10 @@ def test_get_readiness_returns_ready_when_all_checks_pass(monkeypatch):
         ),
     )
     monkeypatch.setattr(health, "utcnow", lambda: fixed_now)
+    monkeypatch.setattr(health.settings, "admin_token", "configured-token")
+    monkeypatch.setattr(health.settings, "ai_research_enabled", True)
+    monkeypatch.setattr(health.settings, "ai_research_mock_mode", False)
+    monkeypatch.setattr(health.settings, "anthropic_api_key", "configured-key")
 
     response = health.get_readiness(db)
 
@@ -171,6 +175,10 @@ def test_get_readiness_returns_ready_when_all_checks_pass(monkeypatch):
     assert response.checks["database"].status == "ok"
     assert response.checks["market_snapshot"].detail == "1 metrics available"
     assert response.checks["source_coverage"].detail == "completeness=0.875; metrics=1"
+    assert response.checks["admin_token"].ok is True
+    assert response.checks["admin_token"].detail == "protected write routes configured"
+    assert response.checks["ai_research_pipeline"].ok is True
+    assert response.checks["ai_research_pipeline"].status == "ok"
 
 
 def test_get_readiness_reports_degraded_when_passing_check_is_degraded(monkeypatch):
@@ -194,6 +202,9 @@ def test_get_readiness_reports_degraded_when_passing_check_is_degraded(monkeypat
             metrics=[SimpleNamespace(metric_key="jet_fuel_usd_per_l")],
         ),
     )
+    monkeypatch.setattr(health.settings, "admin_token", "configured-token")
+    monkeypatch.setattr(health.settings, "ai_research_enabled", True)
+    monkeypatch.setattr(health.settings, "ai_research_mock_mode", True)
 
     response = health.get_readiness(db)
 
@@ -204,6 +215,79 @@ def test_get_readiness_reports_degraded_when_passing_check_is_degraded(monkeypat
     assert response.checks["market_snapshot"].status == "seed"
     assert response.checks["source_coverage"].ok is True
     assert response.checks["source_coverage"].status == "degraded"
+    assert response.checks["admin_token"].status == "ok"
+    assert response.checks["ai_research_pipeline"].status == "mock"
+
+
+def test_get_readiness_blocks_launch_when_admin_or_research_config_missing(monkeypatch):
+    db = FakeDb()
+
+    monkeypatch.setattr(health, "text", lambda sql: sql)
+    monkeypatch.setattr(
+        health,
+        "build_market_snapshot_response",
+        lambda received_db: SimpleNamespace(
+            values={"jet_fuel_usd_per_l": 1.24},
+            source_status=SimpleNamespace(overall="ok"),
+        ),
+    )
+    monkeypatch.setattr(
+        health,
+        "build_source_coverage_response",
+        lambda received_db: SimpleNamespace(
+            completeness=1.0,
+            degraded=False,
+            metrics=[SimpleNamespace(metric_key="jet_fuel_usd_per_l")],
+        ),
+    )
+    monkeypatch.setattr(health.settings, "admin_token", "")
+    monkeypatch.setattr(health.settings, "ai_research_enabled", False)
+
+    response = health.get_readiness(db)
+
+    assert response.ready is False
+    assert response.status == "not_ready"
+    assert response.checks["admin_token"].ok is False
+    assert response.checks["admin_token"].status == "missing"
+    assert "JETSCOPE_ADMIN_TOKEN" in (response.checks["admin_token"].detail or "")
+    assert response.checks["ai_research_pipeline"].ok is False
+    assert response.checks["ai_research_pipeline"].status == "disabled"
+    assert "JETSCOPE_AI_RESEARCH_ENABLED" in (response.checks["ai_research_pipeline"].detail or "")
+
+
+def test_get_readiness_requires_ai_credentials_when_live_research_enabled(monkeypatch):
+    db = FakeDb()
+
+    monkeypatch.setattr(health, "text", lambda sql: sql)
+    monkeypatch.setattr(
+        health,
+        "build_market_snapshot_response",
+        lambda received_db: SimpleNamespace(
+            values={"jet_fuel_usd_per_l": 1.24},
+            source_status=SimpleNamespace(overall="ok"),
+        ),
+    )
+    monkeypatch.setattr(
+        health,
+        "build_source_coverage_response",
+        lambda received_db: SimpleNamespace(
+            completeness=1.0,
+            degraded=False,
+            metrics=[SimpleNamespace(metric_key="jet_fuel_usd_per_l")],
+        ),
+    )
+    monkeypatch.setattr(health.settings, "admin_token", "configured-token")
+    monkeypatch.setattr(health.settings, "ai_research_enabled", True)
+    monkeypatch.setattr(health.settings, "ai_research_mock_mode", False)
+    monkeypatch.setattr(health.settings, "anthropic_api_key", "")
+
+    response = health.get_readiness(db)
+
+    assert response.ready is False
+    assert response.checks["admin_token"].ok is True
+    assert response.checks["ai_research_pipeline"].ok is False
+    assert response.checks["ai_research_pipeline"].status == "missing_credentials"
+    assert "JETSCOPE_ANTHROPIC_API_KEY" in (response.checks["ai_research_pipeline"].detail or "")
 
 
 def test_get_readiness_reports_errors_without_raising(monkeypatch):

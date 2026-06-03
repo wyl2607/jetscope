@@ -14,6 +14,10 @@ from app.services.sources import build_source_coverage_response
 router = APIRouter()
 
 
+def _is_configured(value: str | None) -> bool:
+    return bool((value or "").strip())
+
+
 @router.get("/health")
 def get_health() -> dict:
     return {
@@ -62,8 +66,41 @@ def get_readiness(db: Session = Depends(get_db)) -> ReadinessResponse:
     except Exception as exc:
         checks["source_coverage"] = ReadinessCheck(ok=False, status="error", detail=str(exc))
 
+    admin_token_configured = _is_configured(settings.admin_token)
+    checks["admin_token"] = ReadinessCheck(
+        ok=admin_token_configured,
+        status="ok" if admin_token_configured else "missing",
+        detail=(
+            "protected write routes configured"
+            if admin_token_configured
+            else "JETSCOPE_ADMIN_TOKEN is not configured; protected writes and market refresh are locked"
+        ),
+    )
+
+    if settings.ai_research_enabled:
+        ai_research_configured = settings.ai_research_mock_mode or _is_configured(settings.anthropic_api_key)
+        checks["ai_research_pipeline"] = ReadinessCheck(
+            ok=ai_research_configured,
+            status="mock" if settings.ai_research_mock_mode else ("ok" if ai_research_configured else "missing_credentials"),
+            detail=(
+                "AI research enabled in mock mode"
+                if settings.ai_research_mock_mode
+                else (
+                    "AI research enabled with live extractor credentials"
+                    if ai_research_configured
+                    else "JETSCOPE_ANTHROPIC_API_KEY is required when mock mode is disabled"
+                )
+            ),
+        )
+    else:
+        checks["ai_research_pipeline"] = ReadinessCheck(
+            ok=False,
+            status="disabled",
+            detail="JETSCOPE_AI_RESEARCH_ENABLED is false; research signal generation is disabled",
+        )
+
     ready = all(check.ok for check in checks.values())
-    degraded = any(check.status == "degraded" for check in checks.values())
+    degraded = any(check.status in {"degraded", "mock"} for check in checks.values())
     status = "not_ready"
     if ready:
         status = "degraded" if degraded else "ready"

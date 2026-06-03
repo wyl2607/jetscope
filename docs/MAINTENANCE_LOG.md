@@ -96,6 +96,21 @@ This log records public-safe maintenance evidence for the JetScope repository.
   confirmed `/sources` renders recovery steps, Admin refresh links, row-level
   processing links, no console errors, and no horizontal overflow at the
   desktop viewport.
+- Extended `/v1/readiness` into a launch-prerequisite contract: database,
+  market snapshot, source coverage, admin-token configuration, and AI research
+  pipeline state are now reported as explicit checks without exposing secret
+  values. The web app also proxies `/api/readiness`, and `/admin` now renders a
+  read-only launch readiness panel with action links for missing configuration
+  and degraded checks.
+- Readiness validation: `cd apps/api && .venv/bin/python -m pytest
+  tests/test_health_units.py tests/test_readiness.py tests/test_security_units.py
+  -q`, `node --experimental-strip-types --test
+  test/readiness-read-model.test.mjs test/proxy-route-contract.test.mjs
+  test/admin-validation.test.mjs`, `npm --prefix apps/web run typecheck`,
+  `npm --prefix apps/web run gate`, and focused API readiness/source tests
+  passed. Browser checks confirmed `/admin` shows Not ready, admin token,
+  AI research pipeline, and recovery links with no console errors or desktop
+  horizontal overflow.
 - Added focused source freshness regression coverage for issue #77.
 - Strengthened API contract tests so `/v1/market/snapshot` must expose
   `source_status.freshness_minutes`, confidence, fallback rate, and explicit
