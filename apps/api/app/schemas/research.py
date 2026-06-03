@@ -30,3 +30,12 @@ class ResearchSignalResponse(BaseModel):
     published_at: datetime
     claude_model: str
     prompt_cache_hit: bool
+
+
+class ResearchRefreshResponse(BaseModel):
+    accepted: bool
+    message: str
+    fetched: int = Field(ge=0)
+    extracted: int = Field(ge=0)
+    persisted: int = Field(ge=0)
+    skipped_budget: int = Field(ge=0)

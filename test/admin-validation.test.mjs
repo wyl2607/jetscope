@@ -167,9 +167,14 @@ test('admin market refresh shows database persistence evidence', async () => {
   assert.match(adminSource, /return await response\.json\(\)/);
   assert.match(adminSource, /setPoliciesJson\(stringify\(policiesPayload\)\)/);
   assert.match(adminSource, /\/api\/market\/refresh/);
+  assert.match(adminSource, /\/api\/research\/refresh/);
   assert.match(adminSource, /\/api\/market/);
   assert.match(adminSource, /persisted_metric_count/);
   assert.match(adminSource, /market_snapshots/);
+  assert.match(adminSource, /researchRefreshEvidence/);
+  assert.match(adminSource, /触发研究刷新/);
+  assert.match(adminSource, /JETSCOPE_AI_RESEARCH_ENABLED=true/);
+  assert.match(adminSource, /JETSCOPE_ANTHROPIC_API_KEY/);
   assert.match(adminSource, /本地数据库/);
   assert.match(adminSource, /friendlyAdminError/);
   assert.match(marketSchema, /persisted_metric_count/);

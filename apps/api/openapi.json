@@ -945,6 +945,55 @@
         }
       }
     },
+    "/v1/research/refresh": {
+      "post": {
+        "tags": [
+          "research"
+        ],
+        "summary": "Refresh Research Signals",
+        "operationId": "refresh_research_signals_v1_research_refresh_post",
+        "parameters": [
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchRefreshResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/sources/coverage": {
       "get": {
         "tags": [
@@ -2660,6 +2709,48 @@
           "schema_bootstrap_mode"
         ],
         "title": "ReadinessResponse"
+      },
+      "ResearchRefreshResponse": {
+        "properties": {
+          "accepted": {
+            "type": "boolean",
+            "title": "Accepted"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "fetched": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Fetched"
+          },
+          "extracted": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Extracted"
+          },
+          "persisted": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Persisted"
+          },
+          "skipped_budget": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Skipped Budget"
+          }
+        },
+        "type": "object",
+        "required": [
+          "accepted",
+          "message",
+          "fetched",
+          "extracted",
+          "persisted",
+          "skipped_budget"
+        ],
+        "title": "ResearchRefreshResponse"
       },
       "ResearchSignalResponse": {
         "properties": {

@@ -3,11 +3,14 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.db.session import get_db
-from app.schemas.research import ResearchSignalResponse
+from app.schemas.research import ResearchRefreshResponse, ResearchSignalResponse
+from app.security import require_admin_token
+from app.services.ai_research import run_daily_pipeline
 from app.services.ai_research.signals import SignalRepository
 
 router = APIRouter()
@@ -54,3 +57,31 @@ def list_research_signals(
         )
         for row in rows
     ]
+
+
+@router.post("/refresh", response_model=ResearchRefreshResponse)
+def refresh_research_signals(
+    _auth: None = Depends(require_admin_token),
+    db: Session = Depends(get_db),
+) -> ResearchRefreshResponse:
+    if not settings.ai_research_enabled:
+        raise HTTPException(status_code=409, detail="AI research pipeline is not enabled")
+    if not settings.ai_research_mock_mode and not settings.anthropic_api_key.strip():
+        raise HTTPException(status_code=409, detail="AI research extractor credentials are not configured")
+
+    result = run_daily_pipeline(db)
+    fetched = int(result.get("fetched", 0))
+    extracted = int(result.get("extracted", 0))
+    persisted = int(result.get("persisted", 0))
+    skipped_budget = int(result.get("skipped_budget", 0))
+    return ResearchRefreshResponse(
+        accepted=True,
+        message=(
+            "AI research refresh completed: "
+            f"fetched={fetched}, extracted={extracted}, persisted={persisted}, skipped_budget={skipped_budget}"
+        ),
+        fetched=fetched,
+        extracted=extracted,
+        persisted=persisted,
+        skipped_budget=skipped_budget,
+    )

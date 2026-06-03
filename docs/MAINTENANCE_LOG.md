@@ -111,6 +111,21 @@ This log records public-safe maintenance evidence for the JetScope repository.
   passed. Browser checks confirmed `/admin` shows Not ready, admin token,
   AI research pipeline, and recovery links with no console errors or desktop
   horizontal overflow.
+- Added a protected AI research refresh operation for real admin use:
+  `POST /v1/research/refresh` now requires the admin token, refuses disabled or
+  credential-incomplete research configuration with explicit 409 responses, and
+  returns fetched/extracted/persisted/skipped-budget counts when the pipeline
+  runs. The web app proxies `/api/research/refresh`, and the Admin operations
+  console exposes a locked research refresh button plus read-back evidence.
+- Research refresh validation: `cd apps/api && .venv/bin/python -m pytest
+  tests/test_ai_research.py tests/test_research_units.py
+  tests/test_generate_openapi_units.py -q`, `node --experimental-strip-types
+  --test test/proxy-route-contract.test.mjs test/admin-validation.test.mjs`,
+  `npm --prefix apps/web run typecheck`, `npm --prefix apps/web run gate`, and
+  `cd apps/api && .venv/bin/python generate_openapi.py` passed. Browser checks
+  confirmed `/admin` shows the research refresh button, keeps it locked without
+  a management token, renders research refresh evidence, and has no console
+  errors or desktop horizontal overflow.
 - Added focused source freshness regression coverage for issue #77.
 - Strengthened API contract tests so `/v1/market/snapshot` must expose
   `source_status.freshness_minutes`, confidence, fallback rate, and explicit

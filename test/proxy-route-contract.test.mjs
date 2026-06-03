@@ -8,6 +8,7 @@ const LUFTHANSA_DE_PAGE = new URL('../apps/web/app/de/lufthansa-saf-2026/client-
 const PROXY_ROUTES = [
   ['market/route.ts', "proxyToApi(request, '/market/snapshot')"],
   ['readiness/route.ts', "proxyToApi(request, '/readiness')"],
+  ['research/refresh/route.ts', "proxyToApi(request, '/research/refresh')"],
   ['reserves/route.ts', "proxyToApi(request, '/reserves/eu')"],
   ['reserves/eu/route.ts', "proxyToApi(request, '/reserves/eu')"],
   ['sources/route.ts', "proxyToApi(request, '/sources/coverage')"],
