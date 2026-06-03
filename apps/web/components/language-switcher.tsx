@@ -4,14 +4,21 @@ import { usePathname } from 'next/navigation';
 
 const localeLabels = {
   zh: { zh: '中文', de: 'Deutsch', en: 'English' },
-  de: { zh: 'Chinesisch', de: 'Deutsch', en: 'Englisch' }
+  de: { zh: 'Chinesisch', de: 'Deutsch', en: 'Englisch' },
+  en: { zh: 'Chinese', de: 'German', en: 'English' }
 } as const;
 
 export function toGermanPath(pathname: string): string {
   if (pathname === '/') {
     return '/de';
   }
+  if (pathname === '/en') {
+    return '/de';
+  }
   if (pathname === '/dashboard') {
+    return '/de/dashboard';
+  }
+  if (pathname === '/en/dashboard') {
     return '/de/dashboard';
   }
   if (pathname === '/prices/germany-jet-fuel') {
@@ -24,6 +31,15 @@ export function toGermanPath(pathname: string): string {
 }
 
 export function toChinesePath(pathname: string): string {
+  if (pathname === '/en') {
+    return '/';
+  }
+  if (pathname === '/en/dashboard') {
+    return '/dashboard';
+  }
+  if (pathname.startsWith('/en')) {
+    return '/';
+  }
   if (pathname === '/de') {
     return '/';
   }
@@ -42,10 +58,23 @@ export function toChinesePath(pathname: string): string {
   return pathname || '/';
 }
 
+export function toEnglishPath(pathname: string): string {
+  if (pathname === '/' || pathname === '/de') {
+    return '/en';
+  }
+  if (pathname === '/dashboard' || pathname === '/de/dashboard') {
+    return '/en/dashboard';
+  }
+  if (pathname.startsWith('/en')) {
+    return pathname;
+  }
+  return '/en';
+}
+
 export function LanguageSwitcher() {
   const pathname = usePathname() ?? '/';
-  const currentLocale = pathname.startsWith('/de') ? 'de' : 'zh';
-  const controlLabel = currentLocale === 'de' ? 'Sprache' : '语言';
+  const currentLocale = pathname.startsWith('/de') ? 'de' : pathname.startsWith('/en') ? 'en' : 'zh';
+  const controlLabel = currentLocale === 'de' ? 'Sprache' : currentLocale === 'en' ? 'Language' : '语言';
   const labels = localeLabels[currentLocale];
 
   return (
@@ -64,13 +93,14 @@ export function LanguageSwitcher() {
           if (nextLocale === 'zh') {
             window.location.href = toChinesePath(pathname);
           }
+          if (nextLocale === 'en') {
+            window.location.href = toEnglishPath(pathname);
+          }
         }}
       >
         <option value="zh">{labels.zh}</option>
         <option value="de">{labels.de}</option>
-        <option value="en" disabled>
-          {labels.en}
-        </option>
+        <option value="en">{labels.en}</option>
       </select>
     </div>
   );

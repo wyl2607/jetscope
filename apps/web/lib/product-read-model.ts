@@ -137,13 +137,25 @@ export async function fetchJson<T>(path: string): Promise<T> {
   }
 }
 
-export type DisplayLocale = 'zh' | 'de';
+export type DisplayLocale = 'zh' | 'de' | 'en';
 
 export function metricLabel(metric: string, locale: DisplayLocale = 'zh'): string {
   if (metric === 'brent_usd_per_bbl') return 'Brent';
-  if (metric === 'jet_usd_per_l') return locale === 'de' ? 'Jet-Fuel' : '航煤';
-  if (metric === 'jet_eu_proxy_usd_per_l') return locale === 'de' ? 'EU-Jet-Proxy' : '航煤（欧盟代理）';
-  if (metric === 'carbon_proxy_usd_per_t') return locale === 'de' ? 'Carbon-Proxy' : '碳价代理';
+  if (metric === 'jet_usd_per_l') {
+    if (locale === 'de') return 'Jet-Fuel';
+    if (locale === 'en') return 'Jet fuel';
+    return '航煤';
+  }
+  if (metric === 'jet_eu_proxy_usd_per_l') {
+    if (locale === 'de') return 'EU-Jet-Proxy';
+    if (locale === 'en') return 'EU jet proxy';
+    return '航煤（欧盟代理）';
+  }
+  if (metric === 'carbon_proxy_usd_per_t') {
+    if (locale === 'de') return 'Carbon-Proxy';
+    if (locale === 'en') return 'Carbon proxy';
+    return '碳价代理';
+  }
   return metric;
 }
 

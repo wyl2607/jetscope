@@ -18,6 +18,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.98
     },
     {
+      url: `${BASE_URL}/en`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'hourly',
+      priority: 0.98
+    },
+    {
       url: `${BASE_URL}/dashboard`,
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'hourly',
@@ -25,6 +31,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${BASE_URL}/de/dashboard`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'hourly',
+      priority: 0.93
+    },
+    {
+      url: `${BASE_URL}/en/dashboard`,
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'hourly',
       priority: 0.93

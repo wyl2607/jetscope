@@ -25,4 +25,16 @@ describe('Shell', () => {
     expect(getByText('Analyse')).toBeTruthy();
     expect(queryByText('决策驾驶舱')).toBeNull();
   });
+
+  it('renders English navigation labels for English pages', () => {
+    const { queryByText, getByText } = render(
+      <Shell locale="en" title="Title" eyebrow="Area" description="Description">
+        <div>Content</div>
+      </Shell>
+    );
+
+    expect(getByText('Decision Cockpit')).toBeTruthy();
+    expect(getByText('Home')).toBeTruthy();
+    expect(queryByText('决策驾驶舱')).toBeNull();
+  });
 });

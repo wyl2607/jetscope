@@ -3,7 +3,7 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import Link from 'next/link';
 import { ReactNode } from 'react';
 
-type ShellLocale = 'zh' | 'de';
+type ShellLocale = 'zh' | 'de' | 'en';
 
 const navByLocale = {
   zh: [
@@ -20,6 +20,10 @@ const navByLocale = {
     { href: '/de/dashboard', label: 'Entscheidungscockpit' },
     { href: '/de/prices/germany-jet-fuel', label: 'Preise' },
     { href: '/de/lufthansa-saf-2026', label: 'Analyse' }
+  ],
+  en: [
+    { href: '/en', label: 'Home' },
+    { href: '/en/dashboard', label: 'Decision Cockpit' }
   ]
 } as const satisfies Record<ShellLocale, readonly { href: string; label: string }[]>;
 
@@ -37,8 +41,8 @@ export function Shell({
   locale?: ShellLocale;
 }) {
   const nav = navByLocale[locale];
-  const homeHref = locale === 'de' ? '/de' : '/';
-  const navigationLabel = locale === 'de' ? 'Hauptnavigation' : '主导航';
+  const homeHref = locale === 'de' ? '/de' : locale === 'en' ? '/en' : '/';
+  const navigationLabel = locale === 'de' ? 'Hauptnavigation' : locale === 'en' ? 'Main navigation' : '主导航';
 
   return (
     <div className="jetscope-workbench min-h-screen bg-gradient-to-b from-sky-50 via-slate-50 to-slate-100 text-slate-950">

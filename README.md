@@ -77,6 +77,14 @@ More detail lives in `docs/API_CONTRACT_V1.md`, `docs/DATA_CONTRACT_V1.md`, `doc
 
 Contributor and maintainer documents live in `CONTRIBUTING.md`, `MAINTAINERS.md`, `SECURITY.md`, `ROADMAP.md`, `CHANGELOG.md`, and `docs/MAINTENANCE_LOG.md`.
 
+### Localized Frontend Entrypoints
+
+| Locale | Routes | Notes |
+| --- | --- | --- |
+| Chinese | `/`, `/dashboard`, `/sources`, `/research`, `/reports`, `/scenarios`, `/admin` | Primary operations workspace. |
+| German | `/de`, `/de/dashboard`, `/de/prices/germany-jet-fuel`, `/de/lufthansa-saf-2026` | German market and Lufthansa review slice. |
+| English | `/en`, `/en/dashboard` | English review slice for landing and decision cockpit; deeper workbenches link back to the primary workspace until localized. |
+
 ### Prerequisites
 
 - Node.js 22+

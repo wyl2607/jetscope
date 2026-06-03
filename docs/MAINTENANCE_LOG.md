@@ -147,6 +147,21 @@ This log records public-safe maintenance evidence for the JetScope repository.
   `node --experimental-strip-types --test
   test/preflight-ui-e2e-contract.test.mjs`, and `npm run preflight:e2e`
   passed.
+- Added an English frontend slice: `/en` and `/en/dashboard` now provide a
+  reviewable English landing page and decision cockpit, the language switcher
+  enables English routing, Shell supports English navigation, sitemap and
+  metadata alternates include the English paths, and README documents the
+  current localized route coverage without claiming full-site English parity.
+- English slice validation: initial focused gates failed because English
+  routing, Shell locale support, and `/en` route files were missing. After the
+  implementation, `cd apps/web && npm exec vitest run
+  components/__tests__/language-switcher.test.tsx
+  components/__tests__/shell.test.tsx`, `node --experimental-strip-types
+  --test test/routing.test.mjs test/product-read-model.test.mjs`,
+  `npm --prefix apps/web run gate`, `npm test`, and `git diff --check` passed.
+  Browser checks confirmed `/en` and `/en/dashboard` show English navigation,
+  select `English`, avoid Chinese/German navigation leftovers, and do not
+  overflow horizontally at the current desktop viewport.
 - Added focused source freshness regression coverage for issue #77.
 - Strengthened API contract tests so `/v1/market/snapshot` must expose
   `source_status.freshness_minutes`, confidence, fallback rate, and explicit

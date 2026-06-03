@@ -198,6 +198,9 @@ test('getDashboardReadModel summarizes live market, scenario, and risk signals f
 
   const germanReadModel = await getDashboardReadModel('de');
   assert.equal(germanReadModel.topRiskSignal?.metric, 'Jet-Fuel');
+
+  const englishReadModel = await getDashboardReadModel('en');
+  assert.equal(englishReadModel.topRiskSignal?.metric, 'Jet fuel');
 });
 
 test('getDashboardReadModel falls back to safe dashboard defaults when the market snapshot fails', async (t) => {
