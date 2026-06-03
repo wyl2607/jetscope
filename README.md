@@ -61,6 +61,7 @@ jetscope/
 | --- | --- | --- |
 | `/v1/health` | GET | API health and capability status. |
 | `/v1/readiness` | GET | Launch-prerequisite checks for database, sources, admin token, and AI research configuration. |
+| `/api/health` | GET | Web liveness proxy to `/v1/health`; does not replace launch readiness. |
 | `/v1/market/snapshot` | GET | Current market values, source status, and source detail metadata. |
 | `/v1/market/history` | GET | Historical market series used by dashboard and trend views. |
 | `/v1/market/refresh` | POST | Admin-protected market refresh. |

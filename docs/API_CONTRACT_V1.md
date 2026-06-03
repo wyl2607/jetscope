@@ -41,6 +41,10 @@ The current market pipeline uses public sources and explicit proxies:
 
 Returns service health and capability metadata.
 
+The web application also exposes `GET /api/health` as a dynamic liveness
+proxy to this endpoint. It is intentionally lightweight and must not be treated
+as a launch-readiness or dependency-readiness gate.
+
 ### `GET /v1/readiness`
 
 Returns launch-prerequisite checks. This endpoint may report `not_ready` in a

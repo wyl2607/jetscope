@@ -4,6 +4,10 @@ This log records public-safe maintenance evidence for the JetScope repository.
 
 ## 2026-06-04
 
+- Added a Web liveness proxy: `/api/health` now dynamically forwards to the
+  FastAPI `/v1/health` contract, while `/api/readiness` remains the separate
+  launch-prerequisite gate for database, source, admin-token, and AI research
+  checks.
 - Added localized launch-boundary FAQ pages: `/faq`, `/en/faq`, and
   `/de/faq` now explain launch readiness, source review, AI research disabled
   states, protected scenario writes, and management-token boundaries without
