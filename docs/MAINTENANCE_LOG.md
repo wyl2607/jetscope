@@ -4,6 +4,39 @@ This log records public-safe maintenance evidence for the JetScope repository.
 
 ## 2026-06-03
 
+- Stabilized local reviewer bring-up: API schema bootstrap now creates the
+  SQLite parent directory for relative local database URLs, and Next.js
+  development defaults its server-side API proxy to `http://127.0.0.1:8000`
+  when no explicit API base is configured.
+- Improved first-pass UI operability: the shared shell navigation no longer
+  overflows on a 390px viewport, scenario writes explain the admin-token/name
+  prerequisites, and admin write actions explain why save/refresh controls are
+  locked without a token.
+- Hardened the first German locale slice: the shared shell now renders
+  German navigation on `/de/*`, the language switcher exposes German labels,
+  German market read models render localized metric/fallback labels, and the
+  German dashboard, price monitor, policy timeline, and Lufthansa analysis
+  avoid visible Chinese or raw internal status strings.
+- Validation: `cd apps/api && .venv/bin/python -m pytest
+  tests/test_bootstrap_units.py`, `node --experimental-strip-types --test
+  test/api-config.test.mjs`, `cd apps/web && npm exec vitest run
+  components/__tests__/shell.test.tsx
+  components/__tests__/scenario-registry.test.tsx
+  components/__tests__/admin-data-ops.test.tsx`, and `npm --prefix apps/web
+  run typecheck` passed. Browser checks confirmed `/api/market` works under
+  plain `npm run dev` and that `/`, `/dashboard`, `/scenarios`, and `/admin`
+  have no horizontal overflow at 390px.
+- German locale validation: `cd apps/web && npm exec vitest run
+  components/__tests__/language-switcher.test.tsx
+  components/__tests__/shell.test.tsx
+  components/__tests__/policy-timeline.test.tsx
+  components/__tests__/policy-timeline-with-market-time.test.tsx`,
+  `node --experimental-strip-types --test test/product-read-model.test.mjs`,
+  `npm --prefix apps/web run typecheck`, `npm --prefix apps/web run build`,
+  `git diff --check`, and `scripts/security_check.sh` passed. Browser visible
+  text checks confirmed `/de`, `/de/dashboard`, `/de/prices/germany-jet-fuel`,
+  and `/de/lufthansa-saf-2026` have German navigation/language controls and no
+  visible Chinese text.
 - Added focused source freshness regression coverage for issue #77.
 - Strengthened API contract tests so `/v1/market/snapshot` must expose
   `source_status.freshness_minutes`, confidence, fallback rate, and explicit

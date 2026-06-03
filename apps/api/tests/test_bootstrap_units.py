@@ -104,6 +104,51 @@ def test_apply_schema_bootstrap_create_all_calls_metadata_create_all(monkeypatch
     assert calls == [fake_engine]
 
 
+def test_apply_schema_bootstrap_creates_sqlite_parent_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    db_path = tmp_path / "nested" / "market.db"
+    calls: list[object] = []
+
+    def fake_create_all(*, bind: object) -> None:
+        calls.append(bind)
+
+    fake_engine = object()
+
+    monkeypatch.setattr(
+        bootstrap,
+        "settings",
+        SimpleNamespace(database_url=f"sqlite:///{db_path}", schema_bootstrap_mode="create_all"),
+    )
+    monkeypatch.setattr(bootstrap.Base.metadata, "create_all", fake_create_all)
+
+    result = bootstrap.apply_schema_bootstrap(fake_engine)
+
+    assert result == "create_all"
+    assert calls == [fake_engine]
+    assert db_path.parent.is_dir()
+
+
+def test_apply_schema_bootstrap_handles_relative_sqlite_path(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    calls: list[object] = []
+
+    def fake_create_all(*, bind: object) -> None:
+        calls.append(bind)
+
+    fake_engine = object()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        bootstrap,
+        "settings",
+        SimpleNamespace(database_url="sqlite:///./data/market.db", schema_bootstrap_mode="create_all"),
+    )
+    monkeypatch.setattr(bootstrap.Base.metadata, "create_all", fake_create_all)
+
+    result = bootstrap.apply_schema_bootstrap(fake_engine)
+
+    assert result == "create_all"
+    assert calls == [fake_engine]
+    assert (tmp_path / "data").is_dir()
+
+
 def test_apply_schema_bootstrap_alembic_runs_upgrade_head(monkeypatch: pytest.MonkeyPatch):
     upgrade_calls: list[tuple[object, str]] = []
     fake_config = object()

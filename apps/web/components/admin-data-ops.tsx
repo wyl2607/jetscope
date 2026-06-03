@@ -98,6 +98,7 @@ export function AdminDataOps() {
   const [draftPolicySaf, setDraftPolicySaf] = useState('30');
   const [draftPolicySynthetic, setDraftPolicySynthetic] = useState('12');
   const [draftPolicyLabel, setDraftPolicyLabel] = useState('草案目标');
+  const writeLocked = !adminToken;
 
   async function loadAll() {
     setLoading(true);
@@ -353,9 +354,9 @@ export function AdminDataOps() {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800"
+              className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={savePathways}
-              disabled={loading || saving || !adminToken}
+              disabled={loading || saving || writeLocked}
             >
               保存路径
             </button>
@@ -374,6 +375,11 @@ export function AdminDataOps() {
               placeholder="x-admin-token"
             />
           </label>
+          <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs leading-5 text-slate-600">
+            {writeLocked
+              ? '未输入管理令牌：可以加载、编辑草案和校验 JSON；保存与市场刷新会保持锁定。'
+              : '管理令牌已填写：保存或刷新时会发送 x-admin-token 到本地 API。'}
+          </p>
           <div className="grid gap-3 rounded-xl border border-slate-200 p-3 md:grid-cols-2">
             <label className="text-xs text-slate-600">
               year
@@ -440,17 +446,17 @@ export function AdminDataOps() {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800"
+              className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={savePolicies}
-              disabled={loading || saving || !adminToken}
+              disabled={loading || saving || writeLocked}
             >
               保存政策
             </button>
             <button
               type="button"
-              className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800"
+              className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={triggerMarketRefresh}
-              disabled={loading || saving || !adminToken}
+              disabled={loading || saving || writeLocked}
             >
               触发市场刷新
             </button>

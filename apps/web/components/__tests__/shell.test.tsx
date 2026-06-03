@@ -12,4 +12,17 @@ describe('Shell', () => {
 
     expect(container.firstChild).not.toBeNull();
   });
+
+  it('renders German navigation labels for German pages', () => {
+    const { queryByText, getByText } = render(
+      <Shell locale="de" title="Titel" eyebrow="Bereich" description="Beschreibung">
+        <div>Inhalt</div>
+      </Shell>
+    );
+
+    expect(getByText('Entscheidungscockpit')).toBeTruthy();
+    expect(getByText('Preise')).toBeTruthy();
+    expect(getByText('Analyse')).toBeTruthy();
+    expect(queryByText('决策驾驶舱')).toBeNull();
+  });
 });

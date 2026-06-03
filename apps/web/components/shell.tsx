@@ -3,30 +3,43 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import Link from 'next/link';
 import { ReactNode } from 'react';
 
-const nav = [
-  { href: '/dashboard', label: '决策驾驶舱' },
-  { href: '/crisis', label: '危机监测' },
-  { href: '/scenarios', label: '情景推演' },
-  { href: '/research', label: '研究信号' },
-  { href: '/reports', label: '分析报告' },
-  { href: '/sources', label: '数据来源' },
-  { href: '/admin', label: '管理' }
-] as const;
+type ShellLocale = 'zh' | 'de';
 
-const primaryNav = nav.slice(0, 4);
-const secondaryNav = nav.slice(4);
+const navByLocale = {
+  zh: [
+    { href: '/dashboard', label: '决策驾驶舱' },
+    { href: '/crisis', label: '危机监测' },
+    { href: '/scenarios', label: '情景推演' },
+    { href: '/research', label: '研究信号' },
+    { href: '/reports', label: '分析报告' },
+    { href: '/sources', label: '数据来源' },
+    { href: '/admin', label: '管理' }
+  ],
+  de: [
+    { href: '/de', label: 'Startseite' },
+    { href: '/de/dashboard', label: 'Entscheidungscockpit' },
+    { href: '/de/prices/germany-jet-fuel', label: 'Preise' },
+    { href: '/de/lufthansa-saf-2026', label: 'Analyse' }
+  ]
+} as const satisfies Record<ShellLocale, readonly { href: string; label: string }[]>;
 
 export function Shell({
   title,
   eyebrow,
   description,
-  children
+  children,
+  locale = 'zh'
 }: {
   title: string;
   eyebrow: string;
   description: string;
   children: ReactNode;
+  locale?: ShellLocale;
 }) {
+  const nav = navByLocale[locale];
+  const homeHref = locale === 'de' ? '/de' : '/';
+  const navigationLabel = locale === 'de' ? 'Hauptnavigation' : '主导航';
+
   return (
     <div className="jetscope-workbench min-h-screen bg-gradient-to-b from-sky-50 via-slate-50 to-slate-100 text-slate-950">
       <header className="border-b border-slate-200 bg-white/90 shadow-sm shadow-slate-200/70 backdrop-blur">
@@ -34,14 +47,14 @@ export function Shell({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
               <LanguageSwitcher />
-              <Link href="/" className="text-xs uppercase tracking-[0.22em] text-sky-700">
+              <Link href={homeHref as Route} className="text-xs uppercase tracking-[0.22em] text-sky-700">
                 JetScope
               </Link>
             </div>
             <p className="mt-1 truncate text-lg font-semibold text-slate-950 md:text-xl">{title}</p>
           </div>
-          <nav aria-label="主导航" className="-mx-1 flex gap-1 overflow-x-auto pb-1 text-sm text-slate-700 md:mx-0 md:flex-wrap md:justify-end md:overflow-visible md:pb-0">
-            {[...primaryNav, ...secondaryNav].map((item) => (
+          <nav aria-label={navigationLabel} className="flex max-w-full flex-wrap gap-1 text-sm text-slate-700 md:justify-end">
+            {nav.map((item) => (
               <Link
                 key={item.href}
                 href={item.href as Route}

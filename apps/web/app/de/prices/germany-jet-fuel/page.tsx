@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = buildPageMetadata({
   title: 'Deutschland Kerosinpreis',
   description:
-    'Indexierbare SSR-Seite fuer Deutschland mit Brent, globalem Jet-Fuel, EU-Jet-Proxy, Carbon-Proxy und 1d/7d/30d Aenderung.',
+    'Indexierbare serverseitig gerenderte Seite für Deutschland mit Brent, globalem Jet-Fuel, EU-Jet-Proxy, Carbon-Proxy und 1d/7d/30d-Änderung.',
   path: '/de/prices/germany-jet-fuel'
 });
 
@@ -45,31 +45,42 @@ function formatAsOf(value: string | null): string {
 }
 
 const sourceLinks = [
-  { href: '/sources?focus=brent_usd_per_bbl', label: 'Brent Quellenstatus', key: 'brent_usd_per_bbl' },
-  { href: '/sources?focus=jet_usd_per_l', label: 'Globaler Jet Quellenstatus', key: 'jet_usd_per_l' },
+  { href: '/sources?focus=brent_usd_per_bbl', label: 'Brent-Quellenstatus', key: 'brent_usd_per_bbl' },
+  { href: '/sources?focus=jet_usd_per_l', label: 'Globaler Jet-Quellenstatus', key: 'jet_usd_per_l' },
   {
     href: '/sources?focus=jet_eu_proxy_usd_per_l',
-    label: 'EU Jet Proxy Quellenstatus',
+    label: 'EU-Jet-Proxy-Quellenstatus',
     key: 'jet_eu_proxy_usd_per_l'
   },
-  { href: '/sources?focus=carbon_proxy_usd_per_t', label: 'Carbon Proxy Quellenstatus', key: 'carbon_proxy_usd_per_t' }
+  { href: '/sources?focus=carbon_proxy_usd_per_t', label: 'Carbon-Proxy-Quellenstatus', key: 'carbon_proxy_usd_per_t' }
 ] as const;
 
+function sourceStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    ok: 'OK',
+    degraded: 'eingeschränkt',
+    offline: 'offline',
+    unknown: 'unbekannt'
+  };
+  return labels[status] ?? status;
+}
+
 export default async function GermanGermanyJetFuelPricePage() {
-  const readModel = await getGermanyJetFuelReadModel();
+  const readModel = await getGermanyJetFuelReadModel('de');
 
   return (
     <Shell
+      locale="de"
       eyebrow="Preise · Deutschland"
       title="Deutschland Jet-Fuel Preis-Monitor"
-      description="SSR-Marktseite fuer Deutschland. Zeigt Brent, globales Jet-Fuel, EU Jet Proxy und Carbon Proxy mit 1d/7d/30d Aenderungsfenstern."
+      description="Serverseitig gerenderte Marktseite für Deutschland. Zeigt Brent, globales Jet-Fuel, EU-Jet-Proxy und Carbon-Proxy mit 1d/7d/30d-Änderungsfenstern."
     >
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {readModel.metrics.map((metric) => (
           <InfoCard
             key={metric.metricKey}
             title={metric.label}
-            subtitle={`as_of=${formatAsOf(metric.latestAsOf)} | status=${readModel.overallStatus}`}
+            subtitle={`Stand: ${formatAsOf(metric.latestAsOf)} | Status: ${sourceStatusLabel(readModel.overallStatus)}`}
           >
             <p className="text-3xl font-semibold text-white">{formatMetricValue(metric.value, metric.digits, metric.unit)}</p>
             <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
@@ -92,16 +103,16 @@ export default async function GermanGermanyJetFuelPricePage() {
       </section>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-2">
-        <InfoCard title="Risikohinweis" subtitle="Entscheidungsunterstuetzung, kein Trade-Execution-Feed">
+        <InfoCard title="Risikohinweis" subtitle="Entscheidungsunterstützung, kein Ausführungsfeed">
           <ul className="space-y-2 text-sm leading-7 text-slate-300">
-            <li>• Jet-Preise sind Proxies und koennen von standortspezifischen Vertragswerten in Deutschland abweichen.</li>
-            <li>• Der EU Jet Proxy kann bei Feed-Ausfall voruebergehend auf globale Jet-Serie zurueckfallen.</li>
-            <li>• Carbon Proxy zeigt Policy-Kostendruck und muss mit Route und Blend-Annahmen gelesen werden.</li>
-            <li>• Fuer Beschaffungsentscheidungen bitte immer gegen Lieferantenangebote abgleichen.</li>
+            <li>• Jet-Preise sind Proxies und können von standortspezifischen Vertragswerten in Deutschland abweichen.</li>
+            <li>• Der EU-Jet-Proxy kann bei Datenfeed-Ausfall vorübergehend auf die globale Jet-Serie zurückfallen.</li>
+            <li>• Carbon-Proxy zeigt Richtlinien-Kostendruck und muss mit Route und Beimischungsannahmen gelesen werden.</li>
+            <li>• Für Beschaffungsentscheidungen bitte immer gegen Lieferantenangebote abgleichen.</li>
           </ul>
         </InfoCard>
 
-        <InfoCard title="Quellen" subtitle="Jede Metrik mit Herkunft pruefbar">
+        <InfoCard title="Quellen" subtitle="Jede Metrik mit Herkunft prüfbar">
           <ul className="space-y-3 text-sm text-slate-300">
             {sourceLinks.map((source) => (
               <li key={source.key}>
@@ -112,8 +123,8 @@ export default async function GermanGermanyJetFuelPricePage() {
             ))}
           </ul>
           <p className="mt-4 text-xs text-slate-500">
-            generated_at: {new Date(readModel.generatedAt).toLocaleString('de-DE')}
-            {readModel.isFallback && readModel.error ? ` | fallback due to ${readModel.error}` : ''}
+            Erstellt: {new Date(readModel.generatedAt).toLocaleString('de-DE')}
+            {readModel.isFallback && readModel.error ? ` | Fallback wegen: ${readModel.error}` : ''}
           </p>
         </InfoCard>
       </section>

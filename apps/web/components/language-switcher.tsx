@@ -3,27 +3,38 @@
 import { usePathname } from 'next/navigation';
 
 const localeLabels = {
-  zh: '中文',
-  de: 'Deutsch',
-  en: 'English'
+  zh: { zh: '中文', de: 'Deutsch', en: 'English' },
+  de: { zh: 'Chinesisch', de: 'Deutsch', en: 'Englisch' }
 } as const;
 
-function toGermanPath(pathname: string): string {
+export function toGermanPath(pathname: string): string {
+  if (pathname === '/') {
+    return '/de';
+  }
   if (pathname === '/dashboard') {
     return '/de/dashboard';
   }
   if (pathname === '/prices/germany-jet-fuel') {
     return '/de/prices/germany-jet-fuel';
   }
+  if (pathname === '/analysis/lufthansa-flight-cuts-2026-04') {
+    return '/de/lufthansa-saf-2026';
+  }
   return '/de';
 }
 
-function toChinesePath(pathname: string): string {
+export function toChinesePath(pathname: string): string {
+  if (pathname === '/de') {
+    return '/';
+  }
   if (pathname === '/de/dashboard') {
     return '/dashboard';
   }
   if (pathname === '/de/prices/germany-jet-fuel') {
     return '/prices/germany-jet-fuel';
+  }
+  if (pathname === '/de/lufthansa-saf-2026') {
+    return '/analysis/lufthansa-flight-cuts-2026-04';
   }
   if (pathname.startsWith('/de')) {
     return '/';
@@ -34,12 +45,15 @@ function toChinesePath(pathname: string): string {
 export function LanguageSwitcher() {
   const pathname = usePathname() ?? '/';
   const currentLocale = pathname.startsWith('/de') ? 'de' : 'zh';
+  const controlLabel = currentLocale === 'de' ? 'Sprache' : '语言';
+  const labels = localeLabels[currentLocale];
 
   return (
-    <label className="inline-flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-      <span>语言</span>
+    <div className="inline-flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+      <label htmlFor="jetscope-language-switcher">{controlLabel}</label>
       <select
-        aria-label="语言"
+        id="jetscope-language-switcher"
+        aria-label={controlLabel}
         className="bg-transparent text-xs font-semibold text-slate-950 outline-none"
         value={currentLocale}
         onChange={(event) => {
@@ -52,12 +66,12 @@ export function LanguageSwitcher() {
           }
         }}
       >
-        <option value="zh">{localeLabels.zh}</option>
-        <option value="de">{localeLabels.de}</option>
+        <option value="zh">{labels.zh}</option>
+        <option value="de">{labels.de}</option>
         <option value="en" disabled>
-          {localeLabels.en}
+          {labels.en}
         </option>
       </select>
-    </label>
+    </div>
   );
 }

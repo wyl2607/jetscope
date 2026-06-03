@@ -103,7 +103,7 @@ test('getDashboardReadModel summarizes live market, scenario, and risk signals f
                 latest_as_of: '2026-04-23T12:00:00Z',
                 change_pct_1d: 4.5,
                 change_pct_7d: 8.1,
-                change_pct_30d: 9.9,
+                change_pct_30d: 22.1,
                 points: [{ as_of: '2026-04-22T12:00:00Z', value: 0.98 }]
               }
             }
@@ -188,13 +188,16 @@ test('getDashboardReadModel summarizes live market, scenario, and risk signals f
   assert.deepEqual(readModel.recentScenarioNames, ['Base case', 'EU shock', 'High carbon']);
   assert.equal(readModel.freshnessSignal.level, 'fresh');
   assert.equal(readModel.freshnessSignal.minutes, 30);
-  assert.equal(readModel.topRiskSignal?.metric, 'Brent');
-  assert.equal(readModel.topRiskSignal?.metricKey, 'brent_usd_per_bbl');
-  assert.equal(readModel.topRiskSignal?.window, '1d');
-  assert.equal(readModel.topRiskSignal?.level, 'watch');
+  assert.equal(readModel.topRiskSignal?.metric, '航煤');
+  assert.equal(readModel.topRiskSignal?.metricKey, 'jet_usd_per_l');
+  assert.equal(readModel.topRiskSignal?.window, '30d');
+  assert.equal(readModel.topRiskSignal?.level, 'alert');
   assert.equal(readModel.topRiskSignal?.sampleCount, 1);
   assert.equal(readModel.reserve?.coverage_weeks, 2.6);
   assert.equal(readModel.sourceCoverage?.metrics[0].source_name, 'ICE Jet');
+
+  const germanReadModel = await getDashboardReadModel('de');
+  assert.equal(germanReadModel.topRiskSignal?.metric, 'Jet-Fuel');
 });
 
 test('getDashboardReadModel falls back to safe dashboard defaults when the market snapshot fails', async (t) => {
@@ -350,7 +353,7 @@ test('getGermanyJetFuelReadModel falls back from EU proxy history to global jet 
   );
 
   const { getGermanyJetFuelReadModel } = await importWebLib('apps/web/lib/germany-jet-fuel-read-model.ts');
-  const readModel = await getGermanyJetFuelReadModel();
+  const readModel = await getGermanyJetFuelReadModel('de');
   const euProxyMetric = readModel.metrics.find((metric) => metric.metricKey === 'jet_eu_proxy_usd_per_l');
 
   assert.equal(readModel.isFallback, false);
@@ -358,7 +361,7 @@ test('getGermanyJetFuelReadModel falls back from EU proxy history to global jet 
   assert.equal(euProxyMetric?.value, 1.04);
   assert.equal(euProxyMetric?.sourceMetricKey, 'jet_usd_per_l');
   assert.equal(euProxyMetric?.changePct7d, 12.1);
-  assert.equal(euProxyMetric?.note, 'Fallback from 航煤');
+  assert.equal(euProxyMetric?.note, 'Fallback von Jet-Fuel');
 });
 
 test('crisis page uses light semantic data cards instead of gray dark boxes', async () => {
@@ -452,7 +455,8 @@ test('scenarios workbench exposes a global language switch and stays product-fac
   );
 
   assert.match(shellSource, /LanguageSwitcher/);
-  assert.match(languageSwitcherSource, /aria-label="语言"/);
+  assert.match(languageSwitcherSource, /aria-label=\{controlLabel\}/);
+  assert.match(languageSwitcherSource, /Sprache/);
   assert.match(languageSwitcherSource, /中文/);
   assert.match(languageSwitcherSource, /Deutsch/);
   assert.match(languageSwitcherSource, /English/);

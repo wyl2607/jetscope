@@ -82,6 +82,16 @@ export function ScenarioRegistry() {
     () => scenarios.find((item) => item.id === selectedId) ?? null,
     [scenarios, selectedId]
   );
+  const trimmedName = name.trim();
+  const createDisabled = saving || !adminToken || !trimmedName;
+  const selectedWriteDisabled = saving || !selectedScenario || !adminToken;
+  const writeHint = !adminToken
+    ? '输入管理令牌后可创建、更新或删除情景。'
+    : !trimmedName
+      ? '填写情景名称后可创建新情景。'
+      : selectedScenario
+        ? `已选择“${selectedScenario.name}”，可创建新情景或更新/删除所选情景。`
+        : '可创建新情景；更新或删除需要先从左侧列表选择已有情景。';
   const parsedPreferences = useMemo(() => safeParseObject(preferencesJson), [preferencesJson]);
   const parsedRouteEdits = useMemo(() => safeParseObject(routeEditsJson), [routeEditsJson]);
   const parsedPrimaryRouteEdit = useMemo(() => {
@@ -530,11 +540,14 @@ export function ScenarioRegistry() {
           </details>
 
           <div className="flex flex-wrap gap-2">
+            <p className="basis-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs leading-5 text-slate-600">
+              {writeHint}
+            </p>
             <button
               type="button"
               className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={createScenario}
-              disabled={saving || !adminToken}
+              disabled={createDisabled}
             >
               创建
             </button>
@@ -542,7 +555,7 @@ export function ScenarioRegistry() {
               type="button"
               className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={updateScenario}
-              disabled={saving || !selectedScenario || !adminToken}
+              disabled={selectedWriteDisabled}
             >
               更新所选
             </button>
@@ -550,7 +563,7 @@ export function ScenarioRegistry() {
               type="button"
               className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-800 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={deleteScenario}
-              disabled={saving || !selectedScenario || !adminToken}
+              disabled={selectedWriteDisabled}
             >
               删除所选
             </button>
