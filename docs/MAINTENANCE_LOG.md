@@ -4,6 +4,15 @@ This log records public-safe maintenance evidence for the JetScope repository.
 
 ## 2026-06-04
 
+- Added the English Lufthansa SAF analysis slice: `/en/lufthansa-saf-2026`
+  now presents the Lufthansa flight-cut signal, SAF cost inflection, Germany
+  supply-chain context, review actions, and cross-locale links as a light
+  read-only English surface. English navigation now includes Analysis.
+- Locale-switch and sitemap validation: the language switcher now preserves
+  English/German/Chinese routes for localized source, research, report,
+  readiness, scenario, Germany price, and Lufthansa analysis surfaces instead
+  of dropping users back to locale home pages. The sitemap now includes the
+  published English and German localized route surfaces.
 - Added the English Germany jet-fuel price monitor: `/en/prices/germany-jet-fuel`
   now renders Brent, global jet fuel, EU jet proxy, and carbon proxy movement
   in English with source-review links back to `/en/sources`. English

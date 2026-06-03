@@ -66,6 +66,11 @@ const entryCards: Array<{ title: string; description: string; href: Route }> = [
     title: 'Scenario workbench',
     description: 'Saved assumptions, current market context, risk signal, and protected write boundaries.',
     href: '/en/scenarios' as Route
+  },
+  {
+    title: 'Lufthansa SAF analysis',
+    description: 'English review of the Lufthansa flight-cut signal, SAF breakeven pressure, and Germany supply-chain context.',
+    href: '/en/lufthansa-saf-2026' as Route
   }
 ];
 

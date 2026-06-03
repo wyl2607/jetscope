@@ -15,6 +15,7 @@ const ROUTES = [
   ['en/reports/page.tsx', 'Report Workbench'],
   ['en/admin/page.tsx', 'Launch Readiness'],
   ['en/scenarios/page.tsx', 'Scenario Workbench'],
+  ['en/lufthansa-saf-2026/page.tsx', 'Lufthansa SAF Inflection Review'],
   ['de/page.tsx', 'JetScope Deutschland'],
   ['de/dashboard/page.tsx', 'Entscheidungscockpit'],
   ['de/prices/germany-jet-fuel/page.tsx', 'Deutschland Jet-Fuel Preis-Monitor'],
@@ -40,5 +41,23 @@ test('current JetScope routes expose canonical product surfaces', async () => {
     const source = await readFile(new URL(pagePath, APP_DIR), 'utf8');
 
     assert.match(source, new RegExp(expectedCopy, 'i'), `${pagePath} should include ${expectedCopy}`);
+  }
+});
+
+test('localized sitemap includes published English and German route surfaces', async () => {
+  const source = await readFile(new URL('../apps/web/app/sitemap.ts', import.meta.url), 'utf8');
+  const routes = [
+    '/en/prices/germany-jet-fuel',
+    '/en/lufthansa-saf-2026',
+    '/de/sources',
+    '/de/research',
+    '/de/reports',
+    '/de/admin',
+    '/de/scenarios',
+    '/de/lufthansa-saf-2026'
+  ];
+
+  for (const route of routes) {
+    assert.match(source, new RegExp(`\\$\\{BASE_URL\\}${route}`), `sitemap should include ${route}`);
   }
 });

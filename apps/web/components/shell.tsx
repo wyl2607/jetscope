@@ -34,7 +34,8 @@ const navByLocale = {
     { href: '/en/research', label: 'Research' },
     { href: '/en/reports', label: 'Reports' },
     { href: '/en/admin', label: 'Admin' },
-    { href: '/en/scenarios', label: 'Scenarios' }
+    { href: '/en/scenarios', label: 'Scenarios' },
+    { href: '/en/lufthansa-saf-2026', label: 'Analysis' }
   ]
 } as const satisfies Record<ShellLocale, readonly { href: string; label: string }[]>;
 

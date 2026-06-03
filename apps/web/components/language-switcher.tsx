@@ -22,22 +22,25 @@ export function toGermanPath(pathname: string): string {
     return '/de/dashboard';
   }
   if (pathname === '/en/sources') {
-    return '/de';
+    return '/de/sources';
   }
   if (pathname === '/en/research') {
-    return '/de';
+    return '/de/research';
   }
   if (pathname === '/en/reports') {
-    return '/de';
+    return '/de/reports';
   }
   if (pathname === '/en/admin') {
-    return '/de';
+    return '/de/admin';
   }
   if (pathname === '/en/scenarios') {
-    return '/de';
+    return '/de/scenarios';
   }
   if (pathname === '/en/prices/germany-jet-fuel') {
     return '/de/prices/germany-jet-fuel';
+  }
+  if (pathname === '/en/lufthansa-saf-2026') {
+    return '/de/lufthansa-saf-2026';
   }
   if (pathname === '/prices/germany-jet-fuel') {
     return '/de/prices/germany-jet-fuel';
@@ -73,6 +76,9 @@ export function toChinesePath(pathname: string): string {
   if (pathname === '/en/prices/germany-jet-fuel') {
     return '/prices/germany-jet-fuel';
   }
+  if (pathname === '/en/lufthansa-saf-2026') {
+    return '/analysis/lufthansa-flight-cuts-2026-04';
+  }
   if (pathname.startsWith('/en')) {
     return '/';
   }
@@ -81,6 +87,21 @@ export function toChinesePath(pathname: string): string {
   }
   if (pathname === '/de/dashboard') {
     return '/dashboard';
+  }
+  if (pathname === '/de/sources') {
+    return '/sources';
+  }
+  if (pathname === '/de/research') {
+    return '/research';
+  }
+  if (pathname === '/de/reports') {
+    return '/reports';
+  }
+  if (pathname === '/de/admin') {
+    return '/admin';
+  }
+  if (pathname === '/de/scenarios') {
+    return '/scenarios';
   }
   if (pathname === '/de/prices/germany-jet-fuel') {
     return '/prices/germany-jet-fuel';
@@ -104,10 +125,16 @@ export function toEnglishPath(pathname: string): string {
   if (pathname === '/sources') {
     return '/en/sources';
   }
+  if (pathname === '/de/sources') {
+    return '/en/sources';
+  }
   if (pathname === '/en/sources') {
     return '/en/sources';
   }
   if (pathname === '/research') {
+    return '/en/research';
+  }
+  if (pathname === '/de/research') {
     return '/en/research';
   }
   if (pathname === '/en/research') {
@@ -116,16 +143,25 @@ export function toEnglishPath(pathname: string): string {
   if (pathname === '/reports') {
     return '/en/reports';
   }
+  if (pathname === '/de/reports') {
+    return '/en/reports';
+  }
   if (pathname === '/en/reports') {
     return '/en/reports';
   }
   if (pathname === '/admin') {
     return '/en/admin';
   }
+  if (pathname === '/de/admin') {
+    return '/en/admin';
+  }
   if (pathname === '/en/admin') {
     return '/en/admin';
   }
   if (pathname === '/scenarios') {
+    return '/en/scenarios';
+  }
+  if (pathname === '/de/scenarios') {
     return '/en/scenarios';
   }
   if (pathname === '/en/scenarios') {
@@ -136,6 +172,12 @@ export function toEnglishPath(pathname: string): string {
   }
   if (pathname === '/en/prices/germany-jet-fuel') {
     return '/en/prices/germany-jet-fuel';
+  }
+  if (pathname === '/analysis/lufthansa-flight-cuts-2026-04' || pathname === '/de/lufthansa-saf-2026') {
+    return '/en/lufthansa-saf-2026';
+  }
+  if (pathname === '/en/lufthansa-saf-2026') {
+    return '/en/lufthansa-saf-2026';
   }
   if (pathname.startsWith('/en')) {
     return pathname;

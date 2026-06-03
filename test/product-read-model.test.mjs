@@ -395,6 +395,27 @@ test('German Germany jet fuel price page keeps source review in the German local
   assert.doesNotMatch(germanPriceSource, /href: '\/sources\?focus=/);
 });
 
+test('English Lufthansa SAF analysis page is a localized light review surface', async () => {
+  const englishLufthansaSource = await readFile(
+    new URL('../apps/web/app/en/lufthansa-saf-2026/page.tsx', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(englishLufthansaSource, /Lufthansa SAF Inflection Review/);
+  assert.match(englishLufthansaSource, /locale="en"/);
+  assert.match(englishLufthansaSource, /\/en\/prices\/germany-jet-fuel/);
+  assert.match(englishLufthansaSource, /\/en\/sources\?filter=review/);
+  assert.match(englishLufthansaSource, /\/en\/scenarios/);
+  assert.match(englishLufthansaSource, /\/analysis\/lufthansa-flight-cuts-2026-04/);
+  assert.match(englishLufthansaSource, /\/de\/lufthansa-saf-2026/);
+  assert.doesNotMatch(
+    englishLufthansaSource,
+    /汉莎|削减|航油|德国制造|事件概述|Lufthansa kürzt|Wendepunkt|Kerosin|Deutschland|Chinesische Vollversion/
+  );
+  assert.doesNotMatch(englishLufthansaSource, /text-white|text-slate-300|bg-slate-900|bg-slate-950|border-slate-800/);
+  assert.doesNotMatch(englishLufthansaSource, /<input|AdminDataOps|ScenarioRegistry|x-admin-token/i);
+});
+
 test('crisis page uses light semantic data cards instead of gray dark boxes', async () => {
   const files = [
     'apps/web/app/crisis/page.tsx',

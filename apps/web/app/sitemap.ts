@@ -42,6 +42,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.93
     },
     {
+      url: `${BASE_URL}/en/prices/germany-jet-fuel`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'hourly',
+      priority: 0.91
+    },
+    {
       url: `${BASE_URL}/en/sources`,
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'hourly',
@@ -72,6 +78,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.78
     },
     {
+      url: `${BASE_URL}/en/lufthansa-saf-2026`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.84
+    },
+    {
       url: `${BASE_URL}/prices/germany-jet-fuel`,
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'hourly',
@@ -82,6 +94,42 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'hourly',
       priority: 0.91
+    },
+    {
+      url: `${BASE_URL}/de/sources`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'hourly',
+      priority: 0.89
+    },
+    {
+      url: `${BASE_URL}/de/research`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.84
+    },
+    {
+      url: `${BASE_URL}/de/reports`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.84
+    },
+    {
+      url: `${BASE_URL}/de/admin`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'weekly',
+      priority: 0.44
+    },
+    {
+      url: `${BASE_URL}/de/scenarios`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.77
+    },
+    {
+      url: `${BASE_URL}/de/lufthansa-saf-2026`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.84
     },
     {
       url: `${BASE_URL}/faq`,
