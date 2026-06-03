@@ -21,7 +21,7 @@ export const metadata: Metadata = buildPageMetadata({
 const actionLinks: Array<{ label: string; href: Route; description: string }> = [
   {
     label: 'Open tipping-point report',
-    href: '/reports/tipping-point-analysis' as Route,
+    href: '/en/reports/tipping-point-analysis' as Route,
     description: 'Put research signals back into the reserve, fuel-price, and SAF switching context.'
   },
   {
@@ -31,7 +31,7 @@ const actionLinks: Array<{ label: string; href: Route; description: string }> = 
   },
   {
     label: 'Open admin prerequisites',
-    href: '/admin' as Route,
+    href: '/en/admin' as Route,
     description: 'Use the primary operations console to verify research configuration and protected refresh readiness.'
   }
 ];

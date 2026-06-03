@@ -14,6 +14,7 @@ export const metadata: Metadata = buildPageMetadata({
   path: '/en/reports',
   alternateLanguages: {
     'zh-CN': '/reports',
+    de: '/de/reports',
     en: '/en/reports'
   }
 });
@@ -22,7 +23,7 @@ const reports: Array<{ title: string; description: string; href: Route; status: 
   {
     title: 'Tipping-point report',
     description: 'Primary long-form report tying reserve pressure, fuel economics, airline decision probability, and research signals together.',
-    href: '/reports/tipping-point-analysis' as Route,
+    href: '/en/reports/tipping-point-analysis' as Route,
     status: 'Connected to live read model'
   }
 ];

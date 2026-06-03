@@ -36,6 +36,12 @@ export function toGermanPath(pathname: string): string {
   if (pathname === '/en/reports') {
     return '/de/reports';
   }
+  if (pathname === '/en/reports/tipping-point-analysis') {
+    return '/de/reports/tipping-point-analysis';
+  }
+  if (pathname === '/reports/tipping-point-analysis') {
+    return '/de/reports/tipping-point-analysis';
+  }
   if (pathname === '/en/admin') {
     return '/de/admin';
   }
@@ -76,6 +82,9 @@ export function toChinesePath(pathname: string): string {
   if (pathname === '/en/reports') {
     return '/reports';
   }
+  if (pathname === '/en/reports/tipping-point-analysis') {
+    return '/reports/tipping-point-analysis';
+  }
   if (pathname === '/en/admin') {
     return '/admin';
   }
@@ -108,6 +117,9 @@ export function toChinesePath(pathname: string): string {
   }
   if (pathname === '/de/reports') {
     return '/reports';
+  }
+  if (pathname === '/de/reports/tipping-point-analysis') {
+    return '/reports/tipping-point-analysis';
   }
   if (pathname === '/de/admin') {
     return '/admin';
@@ -163,6 +175,12 @@ export function toEnglishPath(pathname: string): string {
   }
   if (pathname === '/de/reports') {
     return '/en/reports';
+  }
+  if (pathname === '/reports/tipping-point-analysis' || pathname === '/de/reports/tipping-point-analysis') {
+    return '/en/reports/tipping-point-analysis';
+  }
+  if (pathname === '/en/reports/tipping-point-analysis') {
+    return '/en/reports/tipping-point-analysis';
   }
   if (pathname === '/en/reports') {
     return '/en/reports';

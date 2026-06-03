@@ -72,6 +72,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.85
     },
     {
+      url: `${BASE_URL}/en/reports/tipping-point-analysis`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.83
+    },
+    {
       url: `${BASE_URL}/en/admin`,
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'weekly',
@@ -126,6 +132,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.84
     },
     {
+      url: `${BASE_URL}/de/reports/tipping-point-analysis`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.82
+    },
+    {
       url: `${BASE_URL}/de/admin`,
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'weekly',
@@ -166,6 +178,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'daily',
       priority: 0.85
+    },
+    {
+      url: `${BASE_URL}/reports/tipping-point-analysis`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.84
     },
     {
       url: `${BASE_URL}/scenarios`,

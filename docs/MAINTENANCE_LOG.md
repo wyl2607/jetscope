@@ -4,6 +4,12 @@ This log records public-safe maintenance evidence for the JetScope repository.
 
 ## 2026-06-04
 
+- Added localized report detail pages: `/en/reports/tipping-point-analysis`
+  and `/de/reports/tipping-point-analysis` now provide source-backed,
+  locale-specific tipping-point report views instead of routing English and
+  German users back to the primary Chinese report. Reports, research,
+  language-switcher mappings, hreflang metadata, and sitemap entries now keep
+  the report-detail path in the selected locale.
 - Added a Web liveness proxy: `/api/health` now dynamically forwards to the
   FastAPI `/v1/health` contract, while `/api/readiness` remains the separate
   launch-prerequisite gate for database, source, admin-token, and AI research

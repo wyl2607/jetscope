@@ -583,6 +583,7 @@ test('English reports page exposes report readiness without Chinese UI copy', as
   assert.match(englishReportsSource, /Source status/);
   assert.match(englishReportsSource, /Scenario count/);
   assert.match(englishReportsSource, /Launch posture/);
+  assert.match(englishReportsSource, /en\/reports\/tipping-point-analysis/);
   assert.match(englishReportsSource, /en\/sources\?filter=review/);
   assert.match(englishReportsSource, /en\/dashboard/);
   assert.doesNotMatch(
@@ -590,6 +591,30 @@ test('English reports page exposes report readiness without Chinese UI copy', as
     /报告工作台|来源状态|情景数量|上线姿态|复核来源|暂无|需复核|可发布候选/
   );
   assert.doesNotMatch(englishReportsSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
+test('English tipping-point report detail stays localized and source-backed', async () => {
+  const englishReportSource = await readFile(
+    new URL('../apps/web/app/en/reports/tipping-point-analysis/page.tsx', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(englishReportSource, /Tipping-Point Report/);
+  assert.match(englishReportSource, /getDashboardReadModel\('en'\)/);
+  assert.match(englishReportSource, /getEuReserveCoverage/);
+  assert.match(englishReportSource, /getTippingPointEvents/);
+  assert.match(englishReportSource, /getResearchSignals/);
+  assert.match(englishReportSource, /Source confidence/);
+  assert.match(englishReportSource, /Research posture/);
+  assert.match(englishReportSource, /en\/sources\?filter=review/);
+  assert.match(englishReportSource, /en\/scenarios/);
+  assert.match(englishReportSource, /en\/reports/);
+  assert.match(englishReportSource, /reports\/tipping-point-analysis/);
+  assert.doesNotMatch(
+    englishReportSource,
+    /临界点报告|核心论点|来源状态|情景数量|上线姿态|复核来源|暂无|需复核|可发布候选|Bericht|Kipppunkt|Quellenstatus/
+  );
+  assert.doesNotMatch(englishReportSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
 });
 
 test('German reports page exposes report readiness without Chinese or English report copy', async () => {
@@ -600,6 +625,7 @@ test('German reports page exposes report readiness without Chinese or English re
   assert.match(germanReportsSource, /Quellenstatus/);
   assert.match(germanReportsSource, /Berichtskatalog/);
   assert.match(germanReportsSource, /Vor dem Start/);
+  assert.match(germanReportsSource, /de\/reports\/tipping-point-analysis/);
   assert.match(germanReportsSource, /de\/sources\?filter=review/);
   assert.match(germanReportsSource, /de\/dashboard/);
   assert.match(germanReportsSource, /de\/admin/);
@@ -612,6 +638,30 @@ test('German reports page exposes report readiness without Chinese or English re
     /Report Workbench|Report catalog|Pre-launch actions|Review source evidence|Publish candidate|Review needed/
   );
   assert.doesNotMatch(germanReportsSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
+test('German tipping-point report detail stays localized and source-backed', async () => {
+  const germanReportSource = await readFile(
+    new URL('../apps/web/app/de/reports/tipping-point-analysis/page.tsx', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(germanReportSource, /Kipppunktbericht/);
+  assert.match(germanReportSource, /getDashboardReadModel\('de'\)/);
+  assert.match(germanReportSource, /getEuReserveCoverage/);
+  assert.match(germanReportSource, /getTippingPointEvents/);
+  assert.match(germanReportSource, /getResearchSignals/);
+  assert.match(germanReportSource, /Quellenvertrauen/);
+  assert.match(germanReportSource, /Forschungsstatus/);
+  assert.match(germanReportSource, /de\/sources\?filter=review/);
+  assert.match(germanReportSource, /de\/scenarios/);
+  assert.match(germanReportSource, /de\/reports/);
+  assert.match(germanReportSource, /reports\/tipping-point-analysis/);
+  assert.doesNotMatch(
+    germanReportSource,
+    /临界点报告|核心论点|来源状态|情景数量|上线姿态|复核来源|暂无|需复核|可发布候选|Tipping-Point Report|Source confidence|Research posture/
+  );
+  assert.doesNotMatch(germanReportSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
 });
 
 test('English admin page exposes launch readiness without protected write controls', async () => {
@@ -753,8 +803,9 @@ test('English research page exposes research pipeline boundaries without Chinese
   assert.match(englishResearchSource, /Research Workbench/);
   assert.match(englishResearchSource, /AI_RESEARCH_ENABLED/);
   assert.match(englishResearchSource, /research pipeline is disabled/i);
-  assert.match(englishResearchSource, /reports\/tipping-point-analysis/);
+  assert.match(englishResearchSource, /en\/reports\/tipping-point-analysis/);
   assert.match(englishResearchSource, /en\/sources\?filter=review/);
+  assert.match(englishResearchSource, /en\/admin/);
   assert.doesNotMatch(
     englishResearchSource,
     /研究工作台|开启研究流水线|信号总数|复核来源|正向|负向|中性|暂无/

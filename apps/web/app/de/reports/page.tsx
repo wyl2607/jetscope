@@ -24,7 +24,7 @@ const reports: Array<{ title: string; description: string; href: Route; status: 
     title: 'Tipping-Point-Bericht',
     description:
       'Hauptbericht, der Reserve-Druck, Kraftstoffökonomie, Airline-Entscheidungswahrscheinlichkeit und Forschungssignale zusammenführt.',
-    href: '/reports/tipping-point-analysis' as Route,
+    href: '/de/reports/tipping-point-analysis' as Route,
     status: 'Mit aktuellem Read Model verbunden'
   }
 ];
