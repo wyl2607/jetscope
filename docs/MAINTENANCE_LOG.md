@@ -47,6 +47,15 @@ This log records public-safe maintenance evidence for the JetScope repository.
   `git diff --check`, and `scripts/security_check.sh` passed. Browser checks
   confirmed `/reports` shows the report workbench, report links, and a
   degraded-source review hint when local market data is not fully healthy.
+- Upgraded `/research` into a production-honest research workbench: it now
+  shows pipeline status, signal counts, latest signal state, usage boundary,
+  disabled-state enablement copy, report/source review actions, and a signal
+  list without presenting disabled AI research as live analysis.
+- Research validation: `node --experimental-strip-types --test
+  test/product-read-model.test.mjs --test-name-pattern "research page"`,
+  `npm --prefix apps/web run typecheck`, and `npm --prefix apps/web run build`
+  passed. Browser checks confirmed `/research` shows the disabled-state
+  boundary, report/source actions, and no self-link back to the same page.
 - Added focused source freshness regression coverage for issue #77.
 - Strengthened API contract tests so `/v1/market/snapshot` must expose
   `source_status.freshness_minutes`, confidence, fallback rate, and explicit

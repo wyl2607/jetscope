@@ -485,3 +485,17 @@ test('reports landing page is a live report workbench instead of a static index'
   assert.match(reportsSource, /reports\/tipping-point-analysis/);
   assert.doesNotMatch(reportsSource, /bg-slate-900|border-slate-800|text-white|text-slate-300/);
 });
+
+test('research page is an honest signal workbench with disabled-state actions', async () => {
+  const researchSource = await readFile(new URL('../apps/web/app/research/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(researchSource, /研究工作台/);
+  assert.match(researchSource, /AI_RESEARCH_ENABLED/);
+  assert.match(researchSource, /ResearchDecisionBriefCard/);
+  assert.match(researchSource, /showLink=\{false\}/);
+  assert.match(researchSource, /信号总数/);
+  assert.match(researchSource, /开启研究流水线/);
+  assert.match(researchSource, /reports\/tipping-point-analysis/);
+  assert.match(researchSource, /sources\?filter=review/);
+  assert.doesNotMatch(researchSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
