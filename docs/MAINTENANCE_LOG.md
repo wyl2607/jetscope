@@ -2,6 +2,25 @@
 
 This log records public-safe maintenance evidence for the JetScope repository.
 
+## 2026-06-03
+
+- Added focused source freshness regression coverage for issue #77.
+- Strengthened API contract tests so `/v1/market/snapshot` must expose
+  `source_status.freshness_minutes`, confidence, fallback rate, and explicit
+  fallback state.
+- Added source coverage unit assertions for live/proxy and fallback quality
+  metadata, including confidence, lag, source type, fallback flags, and degraded
+  coverage state.
+- Updated the Lane C freshness canary to read `source_status.freshness_minutes`
+  directly instead of silently defaulting from a missing `values.data_freshness`
+  key.
+- Validation: `apps/api/.venv/bin/python -m pytest
+  apps/api/tests/test_market_contract_v1.py apps/api/tests/test_sources_units.py
+  apps/api/tests/test_lane_c_e2e.py -q` passed with 33 tests; full
+  `apps/api/.venv/bin/python -m pytest apps/api/tests -q` passed with 317
+  tests and 3 pre-existing deprecation warnings; `git diff --check` and
+  `scripts/security_check.sh` passed.
+
 ## 2026-06-01
 
 - Reviewed the public repository entry files, product README, API contract, data contract, AI pipeline, and PR template before making documentation changes.
