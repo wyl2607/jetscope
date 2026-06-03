@@ -2620,6 +2620,37 @@
         "type": "object",
         "title": "PreferencesPayload"
       },
+      "ReadinessAction": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "href": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Href"
+          },
+          "config_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Config Keys"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key"
+        ],
+        "title": "ReadinessAction"
+      },
       "ReadinessCheck": {
         "properties": {
           "ok": {
@@ -2640,6 +2671,31 @@
               }
             ],
             "title": "Detail"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "review",
+              "blocker"
+            ],
+            "title": "Severity",
+            "default": "ok"
+          },
+          "blocking": {
+            "type": "boolean",
+            "title": "Blocking",
+            "default": false
+          },
+          "action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReadinessAction"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",

@@ -73,10 +73,43 @@ test('getLaunchReadinessReadModel maps launch checks to operator actions', async
             schema_bootstrap_mode: 'alembic',
             degraded: true,
             checks: {
-              database: { ok: true, status: 'ok' },
-              source_coverage: { ok: true, status: 'degraded', detail: 'completeness=0.714; metrics=7' },
-              admin_token: { ok: false, status: 'missing', detail: 'JETSCOPE_ADMIN_TOKEN is not configured' },
-              ai_research_pipeline: { ok: false, status: 'disabled', detail: 'JETSCOPE_AI_RESEARCH_ENABLED is false' }
+              database: { ok: true, status: 'ok', severity: 'ok', blocking: false },
+              source_coverage: {
+                ok: true,
+                status: 'degraded',
+                severity: 'review',
+                blocking: false,
+                detail: 'completeness=0.714; metrics=7',
+                action: {
+                  key: 'review_source_coverage',
+                  href: '/sources?filter=review',
+                  config_keys: []
+                }
+              },
+              admin_token: {
+                ok: false,
+                status: 'missing',
+                severity: 'blocker',
+                blocking: true,
+                detail: 'JETSCOPE_ADMIN_TOKEN is not configured',
+                action: {
+                  key: 'configure_admin_token',
+                  href: '/admin',
+                  config_keys: ['JETSCOPE_ADMIN_TOKEN']
+                }
+              },
+              ai_research_pipeline: {
+                ok: false,
+                status: 'disabled',
+                severity: 'blocker',
+                blocking: true,
+                detail: 'JETSCOPE_AI_RESEARCH_ENABLED is false',
+                action: {
+                  key: 'enable_ai_research',
+                  href: '/research',
+                  config_keys: ['JETSCOPE_AI_RESEARCH_ENABLED']
+                }
+              }
             }
           })
       ]
@@ -93,13 +126,21 @@ test('getLaunchReadinessReadModel maps launch checks to operator actions', async
   assert.equal(readModel.checks[1].key, 'source_coverage');
   assert.equal(readModel.checks[1].tone, 'review');
   assert.equal(readModel.checks[1].actionHref, '/sources?filter=review');
+  assert.equal(readModel.checks[1].severity, 'review');
+  assert.equal(readModel.checks[1].blocking, false);
+  assert.deepEqual(readModel.checks[1].configKeys, []);
   const admin = readModel.checks.find((check) => check.key === 'admin_token');
   assert.equal(admin?.statusLabel, '缺少配置');
   assert.equal(admin?.tone, 'critical');
   assert.equal(admin?.actionHref, '/admin');
+  assert.equal(admin?.severity, 'blocker');
+  assert.equal(admin?.blocking, true);
+  assert.deepEqual(admin?.configKeys, ['JETSCOPE_ADMIN_TOKEN']);
   const research = readModel.checks.find((check) => check.key === 'ai_research_pipeline');
   assert.equal(research?.statusLabel, '未启用');
   assert.equal(research?.actionHref, '/research');
+  assert.equal(research?.actionLabel, '启用研究流水线');
+  assert.deepEqual(research?.configKeys, ['JETSCOPE_AI_RESEARCH_ENABLED']);
 });
 
 test('getLaunchReadinessReadModel returns a not-ready fallback when API fails', async (t) => {

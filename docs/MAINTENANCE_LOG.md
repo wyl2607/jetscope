@@ -59,6 +59,11 @@ This log records public-safe maintenance evidence for the JetScope repository.
   status, signal counts, disabled/error honesty, and evidence handoffs in
   German while avoiding Chinese research workbench copy and stale English UI
   labels.
+- Upgraded the launch-readiness API contract: `/v1/readiness` checks now carry
+  machine-readable `severity`, `blocking`, and `action` metadata with relevant
+  configuration keys. The Admin readiness table displays launch blockers,
+  review-only checks, and required configuration names instead of relying on
+  free-form detail strings alone.
 - German readiness validation: MiMo/OpenCode provided a read-only checklist
   for the implementation; focused tests first failed on missing route/nav and
   then passed after implementation. Browser checks confirmed `/de/admin`

@@ -162,6 +162,10 @@ test('admin market refresh shows database persistence evidence', async () => {
   assert.match(adminPageSource, /上线前置状态/);
   assert.match(adminPageSource, /readiness\.checks\.map/);
   assert.match(adminPageSource, /check\.actionHref/);
+  assert.match(adminPageSource, /check\.blocking/);
+  assert.match(adminPageSource, /check\.configKeys/);
+  assert.match(adminPageSource, /阻塞上线/);
+  assert.match(adminPageSource, /相关配置/);
   assert.match(adminSource, /refreshEvidence/);
   assert.match(adminSource, /Promise<unknown>/);
   assert.match(adminSource, /return await response\.json\(\)/);

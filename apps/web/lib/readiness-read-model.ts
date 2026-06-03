@@ -6,6 +6,13 @@ type ReadinessCheck = {
   ok: boolean;
   status: string;
   detail?: string | null;
+  severity?: 'ok' | 'review' | 'blocker' | string | null;
+  blocking?: boolean | null;
+  action?: {
+    key?: string | null;
+    href?: string | null;
+    config_keys?: string[] | null;
+  } | null;
 };
 
 type ReadinessResponse = {
@@ -29,6 +36,10 @@ export type LaunchReadinessCheck = {
   detail: string;
   actionLabel: string;
   actionHref: string;
+  actionKey: string | null;
+  severity: string;
+  blocking: boolean;
+  configKeys: string[];
   tone: 'ok' | 'review' | 'critical';
 };
 
@@ -89,6 +100,32 @@ function checkStatusLabel(status: string): string {
 }
 
 function actionFor(key: string, check: ReadinessCheck): Pick<LaunchReadinessCheck, 'actionLabel' | 'actionHref'> {
+  const actionKey = check.action?.key ?? null;
+  const actionHref = check.action?.href ?? null;
+  if (actionKey === 'configure_admin_token') {
+    return { actionLabel: '配置管理令牌', actionHref: actionHref ?? '/admin' };
+  }
+  if (actionKey === 'enable_ai_research') {
+    return { actionLabel: '启用研究流水线', actionHref: actionHref ?? '/research' };
+  }
+  if (actionKey === 'configure_ai_research_credentials') {
+    return { actionLabel: '配置研究凭证', actionHref: actionHref ?? '/research' };
+  }
+  if (actionKey === 'review_ai_research_mock_mode') {
+    return { actionLabel: '复核 Mock 模式', actionHref: actionHref ?? '/research' };
+  }
+  if (actionKey === 'review_market_sources') {
+    return { actionLabel: check.ok ? '查看市场来源' : '修复市场来源', actionHref: actionHref ?? '/sources?filter=review' };
+  }
+  if (actionKey === 'review_source_coverage') {
+    return { actionLabel: check.ok ? '查看来源覆盖' : '修复来源覆盖', actionHref: actionHref ?? '/sources?filter=review' };
+  }
+  if (actionKey === 'inspect_database') {
+    return { actionLabel: '检查数据库', actionHref: actionHref ?? '/admin' };
+  }
+  if (actionHref) {
+    return { actionLabel: '查看处理入口', actionHref };
+  }
   if (key === 'source_coverage') {
     return { actionLabel: check.ok ? '查看来源' : '修复来源', actionHref: '/sources?filter=review' };
   }
@@ -105,9 +142,17 @@ function actionFor(key: string, check: ReadinessCheck): Pick<LaunchReadinessChec
 }
 
 function toneFor(check: ReadinessCheck): LaunchReadinessCheck['tone'] {
+  if (check.severity === 'blocker') return 'critical';
+  if (check.severity === 'review') return 'review';
+  if (check.severity === 'ok') return 'ok';
   if (!check.ok) return 'critical';
   if (check.status === 'degraded' || check.status === 'mock' || check.status === 'seed') return 'review';
   return 'ok';
+}
+
+function severityFor(check: ReadinessCheck): string {
+  if (check.severity) return check.severity;
+  return toneFor(check) === 'critical' ? 'blocker' : toneFor(check);
 }
 
 function normalizeChecks(checks: Record<string, ReadinessCheck> | undefined): LaunchReadinessCheck[] {
@@ -130,6 +175,10 @@ function normalizeChecks(checks: Record<string, ReadinessCheck> | undefined): La
         statusLabel: checkStatusLabel(check.status),
         detail: check.detail || '无详情',
         ...action,
+        actionKey: check.action?.key ?? null,
+        severity: severityFor(check),
+        blocking: Boolean(check.blocking ?? severityFor(check) === 'blocker'),
+        configKeys: check.action?.config_keys ?? [],
         tone: toneFor(check)
       };
     });

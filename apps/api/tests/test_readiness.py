@@ -70,8 +70,21 @@ def test_readiness_reports_database_market_and_source_checks(tmp_path: Path):
     assert payload["checks"]["source_coverage"]["ok"] is False
     assert payload["checks"]["admin_token"]["ok"] is False
     assert payload["checks"]["admin_token"]["status"] == "missing"
+    assert payload["checks"]["admin_token"]["severity"] == "blocker"
+    assert payload["checks"]["admin_token"]["blocking"] is True
+    assert payload["checks"]["admin_token"]["action"] == {
+        "key": "configure_admin_token",
+        "href": "/admin",
+        "config_keys": ["JETSCOPE_ADMIN_TOKEN"],
+    }
     assert payload["checks"]["ai_research_pipeline"]["ok"] is False
     assert payload["checks"]["ai_research_pipeline"]["status"] == "disabled"
+    assert payload["checks"]["ai_research_pipeline"]["severity"] == "blocker"
+    assert payload["checks"]["ai_research_pipeline"]["action"] == {
+        "key": "enable_ai_research",
+        "href": "/research",
+        "config_keys": ["JETSCOPE_AI_RESEARCH_ENABLED"],
+    }
 
 
 def test_readiness_reports_degraded_when_source_coverage_is_partial(tmp_path: Path, monkeypatch):
@@ -109,10 +122,15 @@ def test_readiness_reports_degraded_when_source_coverage_is_partial(tmp_path: Pa
     assert payload["ready"] is True
     assert payload["status"] == "degraded"
     assert payload["degraded"] is True
-    assert payload["checks"]["source_coverage"] == {
-        "ok": True,
-        "status": "degraded",
-        "detail": "completeness=0.500; metrics=1",
+    assert payload["checks"]["source_coverage"]["ok"] is True
+    assert payload["checks"]["source_coverage"]["status"] == "degraded"
+    assert payload["checks"]["source_coverage"]["detail"] == "completeness=0.500; metrics=1"
+    assert payload["checks"]["source_coverage"]["severity"] == "review"
+    assert payload["checks"]["source_coverage"]["blocking"] is False
+    assert payload["checks"]["source_coverage"]["action"] == {
+        "key": "review_source_coverage",
+        "href": "/sources?filter=review",
+        "config_keys": [],
     }
     assert payload["checks"]["admin_token"]["ok"] is True
     assert payload["checks"]["ai_research_pipeline"]["status"] == "mock"
