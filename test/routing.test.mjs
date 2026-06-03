@@ -6,8 +6,10 @@ const APP_DIR = new URL('../apps/web/app/', import.meta.url);
 
 const ROUTES = [
   ['', 'JetScope'],
+  ['faq/page.tsx', '常见问题'],
   ['dashboard/page.tsx', '决策驾驶舱'],
   ['en/page.tsx', 'JetScope Europe'],
+  ['en/faq/page.tsx', 'Frequently Asked Questions'],
   ['en/dashboard/page.tsx', 'Decision Cockpit'],
   ['en/prices/germany-jet-fuel/page.tsx', 'Germany Jet-Fuel Price Monitor'],
   ['en/sources/page.tsx', 'Source Review'],
@@ -17,6 +19,7 @@ const ROUTES = [
   ['en/scenarios/page.tsx', 'Scenario Workbench'],
   ['en/lufthansa-saf-2026/page.tsx', 'Lufthansa SAF Inflection Review'],
   ['de/page.tsx', 'JetScope Deutschland'],
+  ['de/faq/page.tsx', 'Häufige Fragen'],
   ['de/dashboard/page.tsx', 'Entscheidungscockpit'],
   ['de/prices/germany-jet-fuel/page.tsx', 'Deutschland Jet-Fuel Preis-Monitor'],
   ['de/sources/page.tsx', 'Quellenprüfung'],
@@ -49,6 +52,8 @@ test('localized sitemap includes published English and German route surfaces', a
   const routes = [
     '/en/prices/germany-jet-fuel',
     '/en/lufthansa-saf-2026',
+    '/en/faq',
+    '/de/faq',
     '/de/sources',
     '/de/research',
     '/de/reports',
@@ -59,5 +64,20 @@ test('localized sitemap includes published English and German route surfaces', a
 
   for (const route of routes) {
     assert.match(source, new RegExp(`\\$\\{BASE_URL\\}${route}`), `sitemap should include ${route}`);
+  }
+});
+
+test('sitemap only advertises app pages that exist', async () => {
+  const source = await readFile(new URL('../apps/web/app/sitemap.ts', import.meta.url), 'utf8');
+  const routes = [...source.matchAll(/url: `\$\{BASE_URL\}([^`]+)`/g)].map((match) => match[1]);
+
+  assert.ok(routes.length > 0, 'sitemap should declare at least one route');
+
+  for (const route of routes) {
+    const pagePath = route === '/' ? 'page.tsx' : `${route.slice(1)}/page.tsx`;
+    await assert.doesNotReject(
+      () => readFile(new URL(pagePath, APP_DIR), 'utf8'),
+      `sitemap route ${route} should map to ${pagePath}`
+    );
   }
 });

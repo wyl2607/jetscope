@@ -416,6 +416,40 @@ test('English Lufthansa SAF analysis page is a localized light review surface', 
   assert.doesNotMatch(englishLufthansaSource, /<input|AdminDataOps|ScenarioRegistry|x-admin-token/i);
 });
 
+test('localized FAQ pages explain launch boundaries without write controls', async () => {
+  const chineseFaqSource = await readFile(new URL('../apps/web/app/faq/page.tsx', import.meta.url), 'utf8');
+  const englishFaqSource = await readFile(new URL('../apps/web/app/en/faq/page.tsx', import.meta.url), 'utf8');
+  const germanFaqSource = await readFile(new URL('../apps/web/app/de/faq/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(chineseFaqSource, /常见问题/);
+  assert.match(chineseFaqSource, /上线前置状态/);
+  assert.match(chineseFaqSource, /数据来源/);
+  assert.match(chineseFaqSource, /研究信号/);
+  assert.match(chineseFaqSource, /\/admin/);
+  assert.match(chineseFaqSource, /\/sources/);
+
+  assert.match(englishFaqSource, /Frequently Asked Questions/);
+  assert.match(englishFaqSource, /Launch readiness/);
+  assert.match(englishFaqSource, /Source review/);
+  assert.match(englishFaqSource, /Research workbench/);
+  assert.match(englishFaqSource, /\/en\/admin/);
+  assert.match(englishFaqSource, /\/en\/sources/);
+  assert.doesNotMatch(englishFaqSource, /上线前置状态|数据来源|研究信号|Häufige Fragen|Startbereitschaft/);
+
+  assert.match(germanFaqSource, /Häufige Fragen/);
+  assert.match(germanFaqSource, /Startbereitschaft/);
+  assert.match(germanFaqSource, /Quellenprüfung/);
+  assert.match(germanFaqSource, /Forschungswerkstatt/);
+  assert.match(germanFaqSource, /\/de\/admin/);
+  assert.match(germanFaqSource, /\/de\/sources/);
+  assert.doesNotMatch(germanFaqSource, /Frequently Asked Questions|Launch readiness|Source review|上线前置状态|数据来源/);
+
+  for (const source of [chineseFaqSource, englishFaqSource, germanFaqSource]) {
+    assert.doesNotMatch(source, /<input|<textarea|AdminDataOps|ScenarioRegistry|x-admin-token/i);
+    assert.doesNotMatch(source, /text-white|text-slate-300|bg-slate-900|bg-slate-950|border-slate-800/);
+  }
+});
+
 test('crisis page uses light semantic data cards instead of gray dark boxes', async () => {
   const files = [
     'apps/web/app/crisis/page.tsx',

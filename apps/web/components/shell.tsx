@@ -13,7 +13,8 @@ const navByLocale = {
     { href: '/research', label: '研究信号' },
     { href: '/reports', label: '分析报告' },
     { href: '/sources', label: '数据来源' },
-    { href: '/admin', label: '管理' }
+    { href: '/admin', label: '管理' },
+    { href: '/faq', label: '常见问题' }
   ],
   de: [
     { href: '/de', label: 'Startseite' },
@@ -24,7 +25,8 @@ const navByLocale = {
     { href: '/de/reports', label: 'Berichte' },
     { href: '/de/research', label: 'Forschung' },
     { href: '/de/admin', label: 'Bereitschaft' },
-    { href: '/de/lufthansa-saf-2026', label: 'Analyse' }
+    { href: '/de/lufthansa-saf-2026', label: 'Analyse' },
+    { href: '/de/faq', label: 'FAQ' }
   ],
   en: [
     { href: '/en', label: 'Home' },
@@ -35,7 +37,8 @@ const navByLocale = {
     { href: '/en/reports', label: 'Reports' },
     { href: '/en/admin', label: 'Admin' },
     { href: '/en/scenarios', label: 'Scenarios' },
-    { href: '/en/lufthansa-saf-2026', label: 'Analysis' }
+    { href: '/en/lufthansa-saf-2026', label: 'Analysis' },
+    { href: '/en/faq', label: 'FAQ' }
   ]
 } as const satisfies Record<ShellLocale, readonly { href: string; label: string }[]>;
 

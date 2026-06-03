@@ -4,6 +4,15 @@ This log records public-safe maintenance evidence for the JetScope repository.
 
 ## 2026-06-04
 
+- Added localized launch-boundary FAQ pages: `/faq`, `/en/faq`, and
+  `/de/faq` now explain launch readiness, source review, AI research disabled
+  states, protected scenario writes, and management-token boundaries without
+  rendering write controls or token inputs. Shell navigation and language
+  switching now preserve FAQ paths across Chinese, English, and German.
+- Sitemap-404 validation: routing tests now assert that every URL advertised
+  by `apps/web/app/sitemap.ts` maps to an existing app page. The stale `/faq`
+  sitemap entry no longer points to a missing route, and localized FAQ routes
+  are included in the sitemap.
 - Added the English Lufthansa SAF analysis slice: `/en/lufthansa-saf-2026`
   now presents the Lufthansa flight-cut signal, SAF cost inflection, Germany
   supply-chain context, review actions, and cross-locale links as a light

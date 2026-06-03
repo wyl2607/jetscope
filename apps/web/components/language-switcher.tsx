@@ -12,8 +12,14 @@ export function toGermanPath(pathname: string): string {
   if (pathname === '/') {
     return '/de';
   }
+  if (pathname === '/faq') {
+    return '/de/faq';
+  }
   if (pathname === '/en') {
     return '/de';
+  }
+  if (pathname === '/en/faq') {
+    return '/de/faq';
   }
   if (pathname === '/dashboard') {
     return '/de/dashboard';
@@ -55,6 +61,9 @@ export function toChinesePath(pathname: string): string {
   if (pathname === '/en') {
     return '/';
   }
+  if (pathname === '/en/faq') {
+    return '/faq';
+  }
   if (pathname === '/en/dashboard') {
     return '/dashboard';
   }
@@ -84,6 +93,9 @@ export function toChinesePath(pathname: string): string {
   }
   if (pathname === '/de') {
     return '/';
+  }
+  if (pathname === '/de/faq') {
+    return '/faq';
   }
   if (pathname === '/de/dashboard') {
     return '/dashboard';
@@ -118,6 +130,12 @@ export function toChinesePath(pathname: string): string {
 export function toEnglishPath(pathname: string): string {
   if (pathname === '/' || pathname === '/de') {
     return '/en';
+  }
+  if (pathname === '/faq' || pathname === '/de/faq') {
+    return '/en/faq';
+  }
+  if (pathname === '/en/faq') {
+    return '/en/faq';
   }
   if (pathname === '/dashboard' || pathname === '/de/dashboard') {
     return '/en/dashboard';

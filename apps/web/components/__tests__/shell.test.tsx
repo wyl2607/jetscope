@@ -28,6 +28,7 @@ describe('Shell', () => {
     expect(getByText('Berichte')).toBeTruthy();
     expect(getByText('Forschung')).toBeTruthy();
     expect(getByText('Analyse')).toBeTruthy();
+    expect(getByText('FAQ')).toBeTruthy();
     expect(queryByText('决策驾驶舱')).toBeNull();
   });
 
@@ -46,6 +47,7 @@ describe('Shell', () => {
     expect(getByText('Admin')).toBeTruthy();
     expect(getByText('Scenarios')).toBeTruthy();
     expect(getByText('Analysis')).toBeTruthy();
+    expect(getByText('FAQ')).toBeTruthy();
     expect(queryByText('决策驾驶舱')).toBeNull();
   });
 });

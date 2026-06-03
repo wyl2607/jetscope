@@ -42,6 +42,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.93
     },
     {
+      url: `${BASE_URL}/en/faq`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.86
+    },
+    {
       url: `${BASE_URL}/en/prices/germany-jet-fuel`,
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'hourly',
@@ -94,6 +100,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'hourly',
       priority: 0.91
+    },
+    {
+      url: `${BASE_URL}/de/faq`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.86
     },
     {
       url: `${BASE_URL}/de/sources`,
