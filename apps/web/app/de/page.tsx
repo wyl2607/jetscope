@@ -40,6 +40,16 @@ export default function GermanIndexPage() {
             </Link>
           </p>
         </InfoCard>
+        <InfoCard title="Quellenprüfung" subtitle="/de/sources">
+          <p className="text-sm leading-7 text-slate-300">
+            Zeilenbasierte Prüfung von Live-, Proxy- und Fallback-Quellen mit Wiederherstellungsaktionen für Markteingaben.
+          </p>
+          <p className="mt-4 text-sm">
+            <Link className="text-sky-300 underline" href="/de/sources">
+              Quellen öffnen
+            </Link>
+          </p>
+        </InfoCard>
         <InfoCard title="Lufthansa-Analyse (DE)" subtitle="Tiefenanalyse">
           <p className="text-sm leading-7 text-slate-300">
             Tiefenanalyse der Lufthansa-Flugkürzungen 2026 und des SAF-Wendepunkts. Deutsche Fassung mit lokalen Daten zur Energieökonomie und Produktionschancen.

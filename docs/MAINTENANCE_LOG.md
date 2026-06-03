@@ -26,6 +26,17 @@ This log records public-safe maintenance evidence for the JetScope repository.
   German market read models render localized metric/fallback labels, and the
   German dashboard, price monitor, policy timeline, and Lufthansa analysis
   avoid visible Chinese or raw internal status strings.
+- Added the German source review slice: `/de/sources` now renders the source
+  matrix, recovery checklist, filters, focus links, and fallback translation
+  layer in German while preserving the existing source read model and API
+  field names. The German shell and `/de` index now link to the sources
+  surface.
+- German sources validation: source-level tests first failed because
+  `/de/sources` did not exist and German navigation lacked `Quellen`; after
+  implementation, focused routing/product tests and Shell Vitest passed.
+  Browser checks confirmed `/de/sources` selects Deutsch, shows
+  `Quellenprüfung`, has no visible Chinese or English source-review copy, and
+  has no horizontal overflow at 1280px.
 - Validation: `cd apps/api && .venv/bin/python -m pytest
   tests/test_bootstrap_units.py`, `node --experimental-strip-types --test
   test/api-config.test.mjs`, `cd apps/web && npm exec vitest run

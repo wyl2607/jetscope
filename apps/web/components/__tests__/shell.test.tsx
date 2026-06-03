@@ -22,6 +22,7 @@ describe('Shell', () => {
 
     expect(getByText('Entscheidungscockpit')).toBeTruthy();
     expect(getByText('Preise')).toBeTruthy();
+    expect(getByText('Quellen')).toBeTruthy();
     expect(getByText('Analyse')).toBeTruthy();
     expect(queryByText('决策驾驶舱')).toBeNull();
   });

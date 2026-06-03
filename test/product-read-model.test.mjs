@@ -542,6 +542,25 @@ test('English scenarios page reviews saved assumptions without Chinese editor UI
   assert.doesNotMatch(englishScenariosSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
 });
 
+test('German sources page exposes source review without Chinese UI copy', async () => {
+  const germanSourcesSource = await readFile(new URL('../apps/web/app/de/sources/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(germanSourcesSource, /Quellenprüfung/);
+  assert.match(germanSourcesSource, /getSourcesReadModel/);
+  assert.match(germanSourcesSource, /Wiederherstellungsaktionen/);
+  assert.match(germanSourcesSource, /Quellenmatrix/);
+  assert.match(germanSourcesSource, /key: 'review', label: 'Prüfen'/);
+  assert.match(germanSourcesSource, /de\/sources\?filter=review/);
+  assert.match(germanSourcesSource, /\/de\/dashboard/);
+  assert.doesNotMatch(germanSourcesSource, /from '@\/app\/sources|from '@\/app\/en\/sources/);
+  assert.doesNotMatch(
+    germanSourcesSource,
+    /数据来源|来源复核|恢复步骤|需复核|回退|代理|实时|打开 Admin 刷新|正在显示|暂无|管理令牌/
+  );
+  assert.doesNotMatch(germanSourcesSource, /Source Review|Recovery actions|Market input matrix|Needs review|Show review rows/);
+  assert.doesNotMatch(germanSourcesSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
 test('research page is an honest signal workbench with disabled-state actions', async () => {
   const researchSource = await readFile(new URL('../apps/web/app/research/page.tsx', import.meta.url), 'utf8');
 

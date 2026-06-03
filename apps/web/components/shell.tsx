@@ -19,6 +19,7 @@ const navByLocale = {
     { href: '/de', label: 'Startseite' },
     { href: '/de/dashboard', label: 'Entscheidungscockpit' },
     { href: '/de/prices/germany-jet-fuel', label: 'Preise' },
+    { href: '/de/sources', label: 'Quellen' },
     { href: '/de/lufthansa-saf-2026', label: 'Analyse' }
   ],
   en: [
