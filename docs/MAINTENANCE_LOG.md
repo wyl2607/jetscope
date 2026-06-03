@@ -73,6 +73,17 @@ This log records public-safe maintenance evidence for the JetScope repository.
   and `git diff --check` passed. Browser checks confirmed `/dashboard` shows
   localized source freshness/status and `/admin` renders backend table names
   as code elements without backtick text.
+- Installed `gitleaks` 8.30.1 locally and reran the repository security gate.
+  The first full-history scan found 13 secret-like matches only in historical
+  files that are absent from the current tracked tree: removed webhook
+  deployment notes, removed generated Next.js `dist` artifacts, and a retired
+  `public/app.js` bundle. A tracked-content archive scan reported no current
+  leaks. Added scoped `.gitleaksignore` fingerprints for those absent
+  historical files so `scripts/security_check.sh` continues to fail closed on
+  new findings while allowing local release-readiness checks to complete.
+- Security validation: `gitleaks dir` against a temporary `git archive HEAD`
+  reported no leaks in current tracked content. `scripts/review_push_guard.sh
+  origin/main` passed locally with no push or remote mutation.
 - Added focused source freshness regression coverage for issue #77.
 - Strengthened API contract tests so `/v1/market/snapshot` must expose
   `source_status.freshness_minutes`, confidence, fallback rate, and explicit
