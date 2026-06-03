@@ -36,6 +36,9 @@ export function toGermanPath(pathname: string): string {
   if (pathname === '/en/scenarios') {
     return '/de';
   }
+  if (pathname === '/en/prices/germany-jet-fuel') {
+    return '/de/prices/germany-jet-fuel';
+  }
   if (pathname === '/prices/germany-jet-fuel') {
     return '/de/prices/germany-jet-fuel';
   }
@@ -66,6 +69,9 @@ export function toChinesePath(pathname: string): string {
   }
   if (pathname === '/en/scenarios') {
     return '/scenarios';
+  }
+  if (pathname === '/en/prices/germany-jet-fuel') {
+    return '/prices/germany-jet-fuel';
   }
   if (pathname.startsWith('/en')) {
     return '/';
@@ -124,6 +130,12 @@ export function toEnglishPath(pathname: string): string {
   }
   if (pathname === '/en/scenarios') {
     return '/en/scenarios';
+  }
+  if (pathname === '/prices/germany-jet-fuel' || pathname === '/de/prices/germany-jet-fuel') {
+    return '/en/prices/germany-jet-fuel';
+  }
+  if (pathname === '/en/prices/germany-jet-fuel') {
+    return '/en/prices/germany-jet-fuel';
   }
   if (pathname.startsWith('/en')) {
     return pathname;

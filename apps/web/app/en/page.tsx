@@ -38,9 +38,9 @@ const entryCards: Array<{ title: string; description: string; href: Route }> = [
     href: '/en/dashboard' as Route
   },
   {
-    title: 'German market view',
-    description: 'Localized German price surface for Brent, global jet fuel, EU jet proxy, and carbon proxy changes.',
-    href: '/de/prices/germany-jet-fuel' as Route
+    title: 'Germany price monitor',
+    description: 'English price surface for Brent, global jet fuel, EU jet proxy, and carbon proxy changes.',
+    href: '/en/prices/germany-jet-fuel' as Route
   },
   {
     title: 'Source review',

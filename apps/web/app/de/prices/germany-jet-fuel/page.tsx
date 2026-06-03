@@ -45,14 +45,14 @@ function formatAsOf(value: string | null): string {
 }
 
 const sourceLinks = [
-  { href: '/sources?focus=brent_usd_per_bbl', label: 'Brent-Quellenstatus', key: 'brent_usd_per_bbl' },
-  { href: '/sources?focus=jet_usd_per_l', label: 'Globaler Jet-Quellenstatus', key: 'jet_usd_per_l' },
+  { href: '/de/sources?focus=brent_usd_per_bbl', label: 'Brent-Quellenstatus', key: 'brent_usd_per_bbl' },
+  { href: '/de/sources?focus=jet_usd_per_l', label: 'Globaler Jet-Quellenstatus', key: 'jet_usd_per_l' },
   {
-    href: '/sources?focus=jet_eu_proxy_usd_per_l',
+    href: '/de/sources?focus=jet_eu_proxy_usd_per_l',
     label: 'EU-Jet-Proxy-Quellenstatus',
     key: 'jet_eu_proxy_usd_per_l'
   },
-  { href: '/sources?focus=carbon_proxy_usd_per_t', label: 'Carbon-Proxy-Quellenstatus', key: 'carbon_proxy_usd_per_t' }
+  { href: '/de/sources?focus=carbon_proxy_usd_per_t', label: 'Carbon-Proxy-Quellenstatus', key: 'carbon_proxy_usd_per_t' }
 ] as const;
 
 function sourceStatusLabel(status: string) {

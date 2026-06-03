@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react';
 import { vi } from 'vitest';
 import { describe, expect, it } from 'vitest';
-import { LanguageSwitcher, toChinesePath, toEnglishPath } from '@/components/language-switcher';
+import { LanguageSwitcher, toChinesePath, toEnglishPath, toGermanPath } from '@/components/language-switcher';
 
 const mockedPathname = vi.hoisted(() => ({ value: '/' }));
 
@@ -33,7 +33,11 @@ describe('LanguageSwitcher', () => {
     expect(toEnglishPath('/reports')).toBe('/en/reports');
     expect(toEnglishPath('/admin')).toBe('/en/admin');
     expect(toEnglishPath('/scenarios')).toBe('/en/scenarios');
+    expect(toEnglishPath('/prices/germany-jet-fuel')).toBe('/en/prices/germany-jet-fuel');
+    expect(toEnglishPath('/de/prices/germany-jet-fuel')).toBe('/en/prices/germany-jet-fuel');
     expect(toEnglishPath('/de/dashboard')).toBe('/en/dashboard');
+    expect(toGermanPath('/en/prices/germany-jet-fuel')).toBe('/de/prices/germany-jet-fuel');
+    expect(toChinesePath('/en/prices/germany-jet-fuel')).toBe('/prices/germany-jet-fuel');
     expect(toChinesePath('/en/sources')).toBe('/sources');
     expect(toChinesePath('/en/research')).toBe('/research');
     expect(toChinesePath('/en/reports')).toBe('/reports');

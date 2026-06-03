@@ -4,6 +4,15 @@ This log records public-safe maintenance evidence for the JetScope repository.
 
 ## 2026-06-04
 
+- Added the English Germany jet-fuel price monitor: `/en/prices/germany-jet-fuel`
+  now renders Brent, global jet fuel, EU jet proxy, and carbon proxy movement
+  in English with source-review links back to `/en/sources`. English
+  navigation and the language switcher now preserve the price-monitor route
+  across Chinese, German, and English locales.
+- Price-locale validation: focused routing, language-switcher, and product
+  source tests first failed on the missing English price route and then passed
+  after implementation. German price source links now stay under `/de/sources`
+  instead of sending German users back to the primary Chinese source page.
 - Hardened scenario save usability across API and UI: scenario names are now
   trimmed by the FastAPI schema, rejected when blank or longer than 120
   characters, reflected in OpenAPI, and surfaced in the protected Scenario

@@ -29,6 +29,7 @@ const navByLocale = {
   en: [
     { href: '/en', label: 'Home' },
     { href: '/en/dashboard', label: 'Decision Cockpit' },
+    { href: '/en/prices/germany-jet-fuel', label: 'Prices' },
     { href: '/en/sources', label: 'Sources' },
     { href: '/en/research', label: 'Research' },
     { href: '/en/reports', label: 'Reports' },

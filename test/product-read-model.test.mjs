@@ -367,6 +367,34 @@ test('getGermanyJetFuelReadModel falls back from EU proxy history to global jet 
   assert.equal(euProxyMetric?.note, 'Fallback von Jet-Fuel');
 });
 
+test('English Germany jet fuel price page exposes localized market review without Chinese or German copy', async () => {
+  const englishPriceSource = await readFile(
+    new URL('../apps/web/app/en/prices/germany-jet-fuel/page.tsx', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(englishPriceSource, /Germany Jet-Fuel Price Monitor/);
+  assert.match(englishPriceSource, /getGermanyJetFuelReadModel\('en'\)/);
+  assert.match(englishPriceSource, /en\/sources\?focus=jet_eu_proxy_usd_per_l/);
+  assert.match(englishPriceSource, /Decision support, not a trading feed/);
+  assert.match(englishPriceSource, /Source Review/);
+  assert.doesNotMatch(
+    englishPriceSource,
+    /德国航油价格|价格 · 德国|来源状态|风险说明|Deutschland|Risikohinweis|Quellen/
+  );
+  assert.doesNotMatch(englishPriceSource, /text-white|text-slate-300|bg-slate-900|border-slate-800/);
+});
+
+test('German Germany jet fuel price page keeps source review in the German locale', async () => {
+  const germanPriceSource = await readFile(
+    new URL('../apps/web/app/de/prices/germany-jet-fuel/page.tsx', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(germanPriceSource, /de\/sources\?focus=jet_eu_proxy_usd_per_l/);
+  assert.doesNotMatch(germanPriceSource, /href: '\/sources\?focus=/);
+});
+
 test('crisis page uses light semantic data cards instead of gray dark boxes', async () => {
   const files = [
     'apps/web/app/crisis/page.tsx',
