@@ -84,6 +84,18 @@ This log records public-safe maintenance evidence for the JetScope repository.
 - Security validation: `gitleaks dir` against a temporary `git archive HEAD`
   reported no leaks in current tracked content. `scripts/review_push_guard.sh
   origin/main` passed locally with no push or remote mutation.
+- Made `/sources` operationally actionable while preserving degraded-source
+  honesty: the sources read model now derives a review action for live,
+  proxy, fallback, unavailable, and error states; the page surfaces a
+  recovery-step section with Admin refresh and review-filter entry points; and
+  each source row links to either the Admin recovery path or report evidence.
+- Sources action validation: `node --experimental-strip-types --test
+  test/sources-read-model.test.mjs`, `npm --prefix apps/web run typecheck`,
+  `npm --prefix apps/web run build`, `npm --prefix apps/web run gate`,
+  `git diff --check`, and `scripts/security_check.sh` passed. Browser checks
+  confirmed `/sources` renders recovery steps, Admin refresh links, row-level
+  processing links, no console errors, and no horizontal overflow at the
+  desktop viewport.
 - Added focused source freshness regression coverage for issue #77.
 - Strengthened API contract tests so `/v1/market/snapshot` must expose
   `source_status.freshness_minutes`, confidence, fallback rate, and explicit
