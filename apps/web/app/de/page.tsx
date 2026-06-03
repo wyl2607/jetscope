@@ -70,6 +70,16 @@ export default function GermanIndexPage() {
             </Link>
           </p>
         </InfoCard>
+        <InfoCard title="Forschungswerkstatt" subtitle="/de/research">
+          <p className="text-sm leading-7 text-slate-300">
+            Deutsche Prüfung der AI-Research-Pipeline mit ehrlicher Leer- oder Fehlerlage und Rückführung in Evidenzketten.
+          </p>
+          <p className="mt-4 text-sm">
+            <Link className="text-sky-300 underline" href="/de/research">
+              Forschung prüfen
+            </Link>
+          </p>
+        </InfoCard>
         <InfoCard title="Startbereitschaft" subtitle="/de/admin">
           <p className="text-sm leading-7 text-slate-300">
             Lesende Prüfung von Datenbank, Markt-Snapshot, Quellenabdeckung, Admin-Token und AI-Research-Pipeline vor dem Start.

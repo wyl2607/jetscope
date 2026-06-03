@@ -55,6 +55,10 @@ This log records public-safe maintenance evidence for the JetScope repository.
   a localized report workbench for source status, saved scenario context, risk
   signals, launch posture, and evidence-review actions without leaking Chinese
   or stale English report copy.
+- Added the German research slice: `/de/research` now exposes research-pipeline
+  status, signal counts, disabled/error honesty, and evidence handoffs in
+  German while avoiding Chinese research workbench copy and stale English UI
+  labels.
 - German readiness validation: MiMo/OpenCode provided a read-only checklist
   for the implementation; focused tests first failed on missing route/nav and
   then passed after implementation. Browser checks confirmed `/de/admin`

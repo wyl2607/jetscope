@@ -22,6 +22,7 @@ const navByLocale = {
     { href: '/de/sources', label: 'Quellen' },
     { href: '/de/scenarios', label: 'Szenarien' },
     { href: '/de/reports', label: 'Berichte' },
+    { href: '/de/research', label: 'Forschung' },
     { href: '/de/admin', label: 'Bereitschaft' },
     { href: '/de/lufthansa-saf-2026', label: 'Analyse' }
   ],

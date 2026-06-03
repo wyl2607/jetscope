@@ -664,6 +664,28 @@ test('English research page exposes research pipeline boundaries without Chinese
   assert.doesNotMatch(englishResearchSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
 });
 
+test('German research page exposes research pipeline boundaries without Chinese or English UI copy', async () => {
+  const germanResearchSource = await readFile(new URL('../apps/web/app/de/research/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(germanResearchSource, /Forschungswerkstatt/);
+  assert.match(germanResearchSource, /AI_RESEARCH_ENABLED/);
+  assert.match(germanResearchSource, /Forschungspipeline ist deaktiviert/);
+  assert.match(germanResearchSource, /Signalanzahl/);
+  assert.match(germanResearchSource, /Entscheidungsnotiz/);
+  assert.match(germanResearchSource, /de\/sources\?filter=review/);
+  assert.match(germanResearchSource, /de\/reports/);
+  assert.match(germanResearchSource, /de\/admin/);
+  assert.doesNotMatch(
+    germanResearchSource,
+    /研究工作台|开启研究流水线|信号总数|复核来源|正向|负向|中性|暂无|使用动作/
+  );
+  assert.doesNotMatch(
+    germanResearchSource,
+    /Research Workbench|Enable research pipeline|Signal count|Decision brief|Evidence actions|No research signals/
+  );
+  assert.doesNotMatch(germanResearchSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
 test('dashboard and admin avoid leaking raw implementation labels into UI copy', async () => {
   const dashboardSource = await readFile(new URL('../apps/web/app/dashboard/page.tsx', import.meta.url), 'utf8');
   const adminSource = await readFile(new URL('../apps/web/app/admin/page.tsx', import.meta.url), 'utf8');
