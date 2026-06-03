@@ -125,10 +125,10 @@ export default async function EnglishDashboardPage() {
           valueClassName={risk?.level === 'alert' ? 'text-rose-700' : risk?.level === 'watch' ? 'text-amber-700' : 'text-emerald-700'}
         />
         <MetricCard
-          label="Full operations workspace"
-          value="Open primary UI"
-          hint="Research, sources, scenarios, and admin remain available in the Chinese workspace while English coverage is being expanded."
-          cardHref="/dashboard"
+          label="Source review"
+          value="Open evidence"
+          hint="Row-level confidence, fallback state, and recovery actions are available in English."
+          cardHref="/en/sources"
         />
       </section>
 
@@ -153,7 +153,7 @@ export default async function EnglishDashboardPage() {
             </p>
           </div>
           <p className="mt-4 text-sm leading-7 text-slate-700">
-            {sourcePosture} | completeness {Math.round(sourcesReadModel.completeness * 100)}%. Open the primary source review page for row-level recovery actions.
+            {sourcePosture} | completeness {Math.round(sourcesReadModel.completeness * 100)}%. Open Source Review for row-level recovery actions.
           </p>
         </InfoCard>
       </section>

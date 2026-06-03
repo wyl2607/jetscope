@@ -162,6 +162,17 @@ This log records public-safe maintenance evidence for the JetScope repository.
   Browser checks confirmed `/en` and `/en/dashboard` show English navigation,
   select `English`, avoid Chinese/German navigation leftovers, and do not
   overflow horizontally at the current desktop viewport.
+- Added English source review: `/en/sources` now exposes row-level market
+  provenance, confidence, fallback/proxy/live filtering, volatility state, and
+  recovery actions without routing English users back to the Chinese sources
+  workspace. English home, dashboard, language switching, sitemap, and README
+  now point to the localized source review route.
+- English source review validation: focused language/Shell tests, routing and
+  sources read-model tests, `npm --prefix apps/web run gate`, `npm test`,
+  `git diff --check`, `scripts/security_check.sh`, and Browser checks for
+  `/en/sources` passed; Browser confirmed English navigation, selected
+  `English`, no visible Chinese text, recovery actions, the market matrix, and
+  no horizontal overflow.
 - Added focused source freshness regression coverage for issue #77.
 - Strengthened API contract tests so `/v1/market/snapshot` must expose
   `source_status.freshness_minutes`, confidence, fallback rate, and explicit

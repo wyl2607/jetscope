@@ -43,9 +43,9 @@ const entryCards: Array<{ title: string; description: string; href: Route }> = [
     href: '/de/prices/germany-jet-fuel' as Route
   },
   {
-    title: 'Chinese operations surface',
-    description: 'The full source review, research, scenario, and admin workbenches remain available in the primary Chinese UI.',
-    href: '/dashboard' as Route
+    title: 'Source review',
+    description: 'English row-level provenance, confidence, fallback state, and recovery actions for market inputs.',
+    href: '/en/sources' as Route
   }
 ];
 

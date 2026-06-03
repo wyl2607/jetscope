@@ -42,6 +42,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.93
     },
     {
+      url: `${BASE_URL}/en/sources`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'hourly',
+      priority: 0.9
+    },
+    {
       url: `${BASE_URL}/prices/germany-jet-fuel`,
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'hourly',

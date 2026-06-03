@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react';
 import { vi } from 'vitest';
 import { describe, expect, it } from 'vitest';
-import { LanguageSwitcher, toEnglishPath } from '@/components/language-switcher';
+import { LanguageSwitcher, toChinesePath, toEnglishPath } from '@/components/language-switcher';
 
 const mockedPathname = vi.hoisted(() => ({ value: '/' }));
 
@@ -28,7 +28,9 @@ describe('LanguageSwitcher', () => {
   it('enables English routing for production-facing pages', () => {
     expect(toEnglishPath('/')).toBe('/en');
     expect(toEnglishPath('/dashboard')).toBe('/en/dashboard');
+    expect(toEnglishPath('/sources')).toBe('/en/sources');
     expect(toEnglishPath('/de/dashboard')).toBe('/en/dashboard');
+    expect(toChinesePath('/en/sources')).toBe('/sources');
   });
 
   it('localizes the language control label on English pages', () => {
