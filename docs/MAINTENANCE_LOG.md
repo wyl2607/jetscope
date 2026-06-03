@@ -37,6 +37,16 @@ This log records public-safe maintenance evidence for the JetScope repository.
   text checks confirmed `/de`, `/de/dashboard`, `/de/prices/germany-jet-fuel`,
   and `/de/lufthansa-saf-2026` have German navigation/language controls and no
   visible Chinese text.
+- Upgraded `/reports` from a static report index into a live report workbench
+  backed by `getDashboardReadModel()`: it now surfaces source status,
+  scenario count, top risk signal, readiness posture, report entry points, and
+  source-review actions before sending users into the long report.
+- Reports validation: `node --experimental-strip-types --test
+  test/product-read-model.test.mjs --test-name-pattern "reports landing page"`,
+  `npm --prefix apps/web run typecheck`, `npm --prefix apps/web run build`,
+  `git diff --check`, and `scripts/security_check.sh` passed. Browser checks
+  confirmed `/reports` shows the report workbench, report links, and a
+  degraded-source review hint when local market data is not fully healthy.
 - Added focused source freshness regression coverage for issue #77.
 - Strengthened API contract tests so `/v1/market/snapshot` must expose
   `source_status.freshness_minutes`, confidence, fallback rate, and explicit

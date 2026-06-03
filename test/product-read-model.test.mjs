@@ -471,3 +471,17 @@ test('scenarios workbench exposes a global language switch and stays product-fac
     /FastAPI \+ PostgreSQL|第二页|第二页面|canonical|contracts|demo route|\/v1\/policies\/refuel-eu|开发分层|后续接真实数据的接口位|text-slate-300|bg-slate-950|border-slate-800|text-white/
   );
 });
+
+test('reports landing page is a live report workbench instead of a static index', async () => {
+  const reportsSource = await readFile(new URL('../apps/web/app/reports/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(reportsSource, /getDashboardReadModel/);
+  assert.match(reportsSource, /dynamic = 'force-dynamic'/);
+  assert.match(reportsSource, /报告工作台/);
+  assert.match(reportsSource, /来源状态/);
+  assert.match(reportsSource, /情景数量/);
+  assert.match(reportsSource, /复核来源/);
+  assert.match(reportsSource, /topRiskSignal/);
+  assert.match(reportsSource, /reports\/tipping-point-analysis/);
+  assert.doesNotMatch(reportsSource, /bg-slate-900|border-slate-800|text-white|text-slate-300/);
+});
