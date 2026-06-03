@@ -51,6 +51,11 @@ const entryCards: Array<{ title: string; description: string; href: Route }> = [
     title: 'Research workbench',
     description: 'Pipeline status, empty-state honesty, signal counts, and evidence handoffs for AI-assisted research.',
     href: '/en/research' as Route
+  },
+  {
+    title: 'Report workbench',
+    description: 'Source status, saved scenarios, risk signal, and launch posture for report review.',
+    href: '/en/reports' as Route
   }
 ];
 

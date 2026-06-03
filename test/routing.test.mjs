@@ -11,6 +11,7 @@ const ROUTES = [
   ['en/dashboard/page.tsx', 'Decision Cockpit'],
   ['en/sources/page.tsx', 'Source Review'],
   ['en/research/page.tsx', 'Research Workbench'],
+  ['en/reports/page.tsx', 'Report Workbench'],
   ['de/page.tsx', 'JetScope Deutschland'],
   ['de/dashboard/page.tsx', 'Entscheidungscockpit'],
   ['crisis/page.tsx', '危机监测'],
@@ -18,6 +19,7 @@ const ROUTES = [
   ['crisis/saf-tipping-point/page.tsx', 'SAF 临界点'],
   ['sources/page.tsx', '来源'],
   ['research/page.tsx', '研究信号'],
+  ['reports/page.tsx', '报告工作台'],
   ['reports/tipping-point-analysis/page.tsx', '临界点报告']
 ];
 

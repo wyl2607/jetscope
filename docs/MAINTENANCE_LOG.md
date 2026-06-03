@@ -184,6 +184,18 @@ This log records public-safe maintenance evidence for the JetScope repository.
   passed. Browser confirmed `/en/research` selects `English`, shows Research
   navigation, discloses that the research pipeline is disabled, has evidence
   actions, has no visible Chinese text, and has no horizontal overflow.
+- Added English report workbench: `/en/reports` now exposes report readiness
+  from `getDashboardReadModel('en')`, including source status, saved scenario
+  count, top risk signal, launch posture, report catalog, and pre-launch
+  evidence actions without changing API contracts or the primary detailed
+  report route.
+- English report validation: initial focused gates failed because English
+  report routing, language switching, Shell navigation, and the route file were
+  missing. After implementation, focused language/Shell/routing/product gates,
+  `npm --prefix apps/web run gate`, `npm test`, and `git diff --check` passed.
+  Browser confirmed `/en/reports` selects `English`, shows Reports navigation,
+  report catalog, pre-launch actions, source status, no visible Chinese text,
+  and no horizontal overflow.
 - Added focused source freshness regression coverage for issue #77.
 - Strengthened API contract tests so `/v1/market/snapshot` must expose
   `source_status.freshness_minutes`, confidence, fallback rate, and explicit

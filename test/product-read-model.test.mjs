@@ -489,6 +489,23 @@ test('reports landing page is a live report workbench instead of a static index'
   assert.doesNotMatch(reportsSource, /bg-slate-900|border-slate-800|text-white|text-slate-300/);
 });
 
+test('English reports page exposes report readiness without Chinese UI copy', async () => {
+  const englishReportsSource = await readFile(new URL('../apps/web/app/en/reports/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(englishReportsSource, /Report Workbench/);
+  assert.match(englishReportsSource, /getDashboardReadModel\('en'\)/);
+  assert.match(englishReportsSource, /Source status/);
+  assert.match(englishReportsSource, /Scenario count/);
+  assert.match(englishReportsSource, /Launch posture/);
+  assert.match(englishReportsSource, /en\/sources\?filter=review/);
+  assert.match(englishReportsSource, /en\/dashboard/);
+  assert.doesNotMatch(
+    englishReportsSource,
+    /报告工作台|来源状态|情景数量|上线姿态|复核来源|暂无|需复核|可发布候选/
+  );
+  assert.doesNotMatch(englishReportsSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
 test('research page is an honest signal workbench with disabled-state actions', async () => {
   const researchSource = await readFile(new URL('../apps/web/app/research/page.tsx', import.meta.url), 'utf8');
 
