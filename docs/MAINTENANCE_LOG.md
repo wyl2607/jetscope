@@ -2,6 +2,20 @@
 
 This log records public-safe maintenance evidence for the JetScope repository.
 
+## 2026-06-04
+
+- Localized the English and German launch-readiness admin surfaces to consume
+  the machine-readable `LaunchReadinessCheck` contract: blocker/review impact
+  badges now come from `blocking` and `severity`, and required configuration
+  names render from `configKeys` without exposing secret values or protected
+  write controls.
+- Readiness i18n validation: the focused admin read-model test first failed
+  on missing `blocking`/`configKeys` usage, then passed after the UI update.
+  `npm --prefix apps/web run gate`, `npm test`, `git diff --check`, and
+  `scripts/security_check.sh` passed. Browser checks confirmed `/en/admin`
+  and `/de/admin` show localized blocker/review/config labels, expose no
+  token inputs, and have no horizontal overflow at desktop and 390px widths.
+
 ## 2026-06-03
 
 - Stabilized local reviewer bring-up: API schema bootstrap now creates the

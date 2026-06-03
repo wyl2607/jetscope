@@ -536,6 +536,12 @@ test('English admin page exposes launch readiness without protected write contro
   assert.match(englishAdminSource, /Admin token/);
   assert.match(englishAdminSource, /AI research pipeline/);
   assert.match(englishAdminSource, /Protected operations/);
+  assert.match(englishAdminSource, /check\.blocking/);
+  assert.match(englishAdminSource, /check\.severity/);
+  assert.match(englishAdminSource, /check\.configKeys/);
+  assert.match(englishAdminSource, /Blocks launch/);
+  assert.match(englishAdminSource, /Review needed/);
+  assert.match(englishAdminSource, /Related config/);
   assert.match(englishAdminSource, /en\/sources\?filter=review/);
   assert.match(englishAdminSource, /en\/research/);
   assert.doesNotMatch(englishAdminSource, /AdminDataOps/);
@@ -621,6 +627,12 @@ test('German admin page exposes launch readiness without protected write control
   assert.match(germanAdminSource, /Admin-Token/);
   assert.match(germanAdminSource, /AI-Research-Pipeline/);
   assert.match(germanAdminSource, /Geschützte Operationen/);
+  assert.match(germanAdminSource, /check\.blocking/);
+  assert.match(germanAdminSource, /check\.severity/);
+  assert.match(germanAdminSource, /check\.configKeys/);
+  assert.match(germanAdminSource, /Blockiert Start/);
+  assert.match(germanAdminSource, /Prüfung nötig/);
+  assert.match(germanAdminSource, /Relevante Konfiguration/);
   assert.match(germanAdminSource, /de\/sources\?filter=review/);
   assert.match(germanAdminSource, /\/de\/dashboard/);
   assert.doesNotMatch(germanAdminSource, /AdminDataOps|<input|type="password"/);

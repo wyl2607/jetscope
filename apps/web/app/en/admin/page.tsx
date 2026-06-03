@@ -57,6 +57,18 @@ function readinessToneClass(tone: LaunchReadinessCheck['tone']): string {
   return 'border-emerald-200 bg-emerald-50 text-emerald-700';
 }
 
+function launchImpactLabel(check: LaunchReadinessCheck): string {
+  if (check.blocking) return 'Blocks launch';
+  if (check.severity === 'review') return 'Review needed';
+  return 'Ready for launch';
+}
+
+function launchImpactClass(check: LaunchReadinessCheck): string {
+  if (check.blocking) return 'border-rose-200 bg-rose-50 text-rose-700';
+  if (check.severity === 'review') return 'border-amber-200 bg-amber-50 text-amber-700';
+  return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+}
+
 function actionFor(check: LaunchReadinessCheck): { label: string; href: Route } {
   if (check.key === 'source_coverage') {
     return { label: check.ok ? 'Open sources' : 'Fix sources', href: '/en/sources?filter=review' as Route };
@@ -132,12 +144,29 @@ export default async function EnglishAdminPage() {
               {readiness.checks.map((check) => {
                 const action = actionFor(check);
                 return (
-                  <div key={check.key} className="grid gap-3 py-3 text-sm md:grid-cols-[minmax(9rem,12rem)_minmax(10rem,12rem)_1fr_auto] md:items-start">
+                  <div key={check.key} className="grid gap-3 py-3 text-sm md:grid-cols-[minmax(9rem,12rem)_minmax(11rem,13rem)_1fr_auto] md:items-start">
                     <p className="font-semibold text-slate-950">{checkLabels[check.key] ?? check.key}</p>
-                    <span className={`inline-flex w-fit rounded-md border px-2.5 py-1 text-xs font-semibold ${readinessToneClass(check.tone)}`}>
-                      {checkStatusLabel(check.status)}
-                    </span>
-                    <p className="leading-6 text-slate-700">{safeDetail(check.detail)}</p>
+                    <div className="flex flex-col items-start gap-1.5">
+                      <span className={`inline-flex w-fit rounded-md border px-2.5 py-1 text-xs font-semibold ${readinessToneClass(check.tone)}`}>
+                        {checkStatusLabel(check.status)}
+                      </span>
+                      <span className={`inline-flex w-fit rounded-md border px-2.5 py-1 text-xs font-semibold ${launchImpactClass(check)}`}>
+                        {launchImpactLabel(check)}
+                      </span>
+                    </div>
+                    <div className="space-y-2 leading-6 text-slate-700">
+                      <p>{safeDetail(check.detail)}</p>
+                      {check.configKeys.length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-600">
+                          <span className="font-semibold text-slate-700">Related config:</span>
+                          {check.configKeys.map((configKey) => (
+                            <code key={configKey} className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[0.72rem] text-slate-700">
+                              {configKey}
+                            </code>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
                     <Link
                       href={action.href}
                       className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-center text-xs font-semibold text-sky-800 hover:border-sky-300 hover:bg-sky-50"
