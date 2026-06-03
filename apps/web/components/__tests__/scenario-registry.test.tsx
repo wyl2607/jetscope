@@ -17,4 +17,13 @@ describe('ScenarioRegistry', () => {
     expect(tokenInput).toHaveAttribute('autocomplete', 'off');
     expect(tokenInput).toHaveAttribute('spellcheck', 'false');
   });
+
+  it('shows the scenario name limit before protected writes', () => {
+    render(<ScenarioRegistry />);
+
+    const nameInput = screen.getByLabelText(/名称/) as HTMLInputElement;
+
+    expect(nameInput).toHaveAttribute('maxlength', '120');
+    expect(screen.getByText(/0\/120 个字符/)).toBeInTheDocument();
+  });
 });

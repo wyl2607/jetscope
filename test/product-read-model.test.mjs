@@ -469,6 +469,9 @@ test('scenarios workbench exposes a global language switch and stays product-fac
   assert.match(scenariosSource, /来源复核在数据来源/);
   assert.match(scenariosSource, /情景工作区/);
   assert.match(registrySource, /高级 JSON 设置/);
+  assert.match(registrySource, /SCENARIO_NAME_MAX_LENGTH = 120/);
+  assert.match(registrySource, /scenario-name-limit/);
+  assert.match(readinessSource, /min-w-0/);
   assert.doesNotMatch(
     `${scenariosSource}\n${registrySource}\n${readinessSource}`,
     /FastAPI \+ PostgreSQL|第二页|第二页面|canonical|contracts|demo route|\/v1\/policies\/refuel-eu|开发分层|后续接真实数据的接口位|text-slate-300|bg-slate-950|border-slate-800|text-white/

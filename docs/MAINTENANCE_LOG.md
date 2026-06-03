@@ -4,6 +4,15 @@ This log records public-safe maintenance evidence for the JetScope repository.
 
 ## 2026-06-04
 
+- Hardened scenario save usability across API and UI: scenario names are now
+  trimmed by the FastAPI schema, rejected when blank or longer than 120
+  characters, reflected in OpenAPI, and surfaced in the protected Scenario
+  Registry with a visible length limit before users attempt a write.
+- Scenario validation: focused API schema tests first failed on the missing
+  scenario-name contract and then passed after adding trim/min/max rules.
+  OpenAPI was regenerated, Scenario Registry component tests passed, and
+  browser checks confirmed `/scenarios` shows the 120-character limit, keeps
+  the admin-token input masked, and no longer overflows horizontally at 390px.
 - Localized the English and German launch-readiness admin surfaces to consume
   the machine-readable `LaunchReadinessCheck` contract: blocker/review impact
   badges now come from `blocking` and `severity`, and required configuration

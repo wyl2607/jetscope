@@ -15,6 +15,7 @@ type ScenarioRecord = {
 
 const EMPTY_OBJECT_JSON = '{}';
 const DEFAULT_ROUTE_ID = 'sugar-atj';
+const SCENARIO_NAME_MAX_LENGTH = 120;
 const CRUDE_SOURCES = ['manual', 'brentEia', 'brentFred'] as const;
 const CARBON_SOURCES = ['manual', 'cbamCarbonProxyUsd'] as const;
 const BENCHMARK_MODES = ['crude-proxy', 'live-jet-spot'] as const;
@@ -83,12 +84,17 @@ export function ScenarioRegistry() {
     [scenarios, selectedId]
   );
   const trimmedName = name.trim();
-  const createDisabled = saving || !adminToken || !trimmedName;
-  const selectedWriteDisabled = saving || !selectedScenario || !adminToken;
+  const nameTooLong = trimmedName.length > SCENARIO_NAME_MAX_LENGTH;
+  const nameReady = Boolean(trimmedName) && !nameTooLong;
+  const createDisabled = saving || !adminToken || !nameReady;
+  const updateDisabled = saving || !selectedScenario || !adminToken || !nameReady;
+  const deleteDisabled = saving || !selectedScenario || !adminToken;
   const writeHint = !adminToken
     ? '输入管理令牌后可创建、更新或删除情景。'
     : !trimmedName
       ? '填写情景名称后可创建新情景。'
+      : nameTooLong
+        ? `情景名称最长 ${SCENARIO_NAME_MAX_LENGTH} 个字符，请缩短后再保存。`
       : selectedScenario
         ? `已选择“${selectedScenario.name}”，可创建新情景或更新/删除所选情景。`
         : '可创建新情景；更新或删除需要先从左侧列表选择已有情景。';
@@ -156,6 +162,10 @@ export function ScenarioRegistry() {
       setError('情景名称不能为空');
       return;
     }
+    if (trimmed.length > SCENARIO_NAME_MAX_LENGTH) {
+      setError(`情景名称最长 ${SCENARIO_NAME_MAX_LENGTH} 个字符`);
+      return;
+    }
 
     setSaving(true);
     setError(null);
@@ -192,6 +202,10 @@ export function ScenarioRegistry() {
     const trimmed = name.trim();
     if (!trimmed) {
       setError('情景名称不能为空');
+      return;
+    }
+    if (trimmed.length > SCENARIO_NAME_MAX_LENGTH) {
+      setError(`情景名称最长 ${SCENARIO_NAME_MAX_LENGTH} 个字符`);
       return;
     }
 
@@ -354,8 +368,18 @@ export function ScenarioRegistry() {
               className={fieldClassName}
               value={name}
               onChange={(event) => setName(event.target.value)}
+              maxLength={SCENARIO_NAME_MAX_LENGTH}
+              aria-describedby="scenario-name-limit"
               placeholder="情景名称"
             />
+            <span
+              id="scenario-name-limit"
+              className={`mt-1 block text-[11px] normal-case tracking-normal ${
+                nameTooLong ? 'text-rose-700' : 'text-slate-500'
+              }`}
+            >
+              {trimmedName.length}/{SCENARIO_NAME_MAX_LENGTH} 个字符
+            </span>
           </label>
 
           <div className={panelClassName}>
@@ -558,7 +582,7 @@ export function ScenarioRegistry() {
               type="button"
               className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={updateScenario}
-              disabled={selectedWriteDisabled}
+              disabled={updateDisabled}
             >
               更新所选
             </button>
@@ -566,7 +590,7 @@ export function ScenarioRegistry() {
               type="button"
               className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-800 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={deleteScenario}
-              disabled={selectedWriteDisabled}
+              disabled={deleteDisabled}
             >
               删除所选
             </button>

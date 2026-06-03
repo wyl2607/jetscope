@@ -238,6 +238,10 @@ Returns source quality and coverage metadata for the Sources page.
 | `/v1/workspaces/{workspace_slug}/scenarios/{scenario_id}` | PUT, DELETE | Requires admin token. |
 | `/v1/workspaces/{workspace_slug}/preferences` | GET, PUT, DELETE | Write operations require admin token. |
 
+Scenario `name` values are trimmed by the API and must remain non-empty with a
+maximum length of 120 characters. This keeps the protected scenario registry
+usable for reviewers and API clients, not only browser users.
+
 ## Confidence Semantics
 
 | Range | Meaning | Product behavior |

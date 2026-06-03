@@ -3025,6 +3025,8 @@
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
             "title": "Name"
           },
           "preferences": {
@@ -3048,6 +3050,8 @@
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
             "title": "Name"
           },
           "preferences": {
