@@ -8,6 +8,8 @@ This log records public-safe maintenance evidence for the JetScope repository.
 - Strengthened API contract tests so `/v1/market/snapshot` must expose
   `source_status.freshness_minutes`, confidence, fallback rate, and explicit
   fallback state.
+- Added a stale fallback regression using an old refresh run so stale source
+  age and fallback state remain visible together.
 - Added source coverage unit assertions for live/proxy and fallback quality
   metadata, including confidence, lag, source type, fallback flags, and degraded
   coverage state.
