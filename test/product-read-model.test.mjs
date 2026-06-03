@@ -506,6 +506,28 @@ test('English reports page exposes report readiness without Chinese UI copy', as
   assert.doesNotMatch(englishReportsSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
 });
 
+test('German reports page exposes report readiness without Chinese or English report copy', async () => {
+  const germanReportsSource = await readFile(new URL('../apps/web/app/de/reports/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(germanReportsSource, /Berichtswerkstatt/);
+  assert.match(germanReportsSource, /getDashboardReadModel\('de'\)/);
+  assert.match(germanReportsSource, /Quellenstatus/);
+  assert.match(germanReportsSource, /Berichtskatalog/);
+  assert.match(germanReportsSource, /Vor dem Start/);
+  assert.match(germanReportsSource, /de\/sources\?filter=review/);
+  assert.match(germanReportsSource, /de\/dashboard/);
+  assert.match(germanReportsSource, /de\/admin/);
+  assert.doesNotMatch(
+    germanReportsSource,
+    /报告工作台|来源状态|情景数量|上线姿态|复核来源|暂无|需复核|可发布候选/
+  );
+  assert.doesNotMatch(
+    germanReportsSource,
+    /Report Workbench|Report catalog|Pre-launch actions|Review source evidence|Publish candidate|Review needed/
+  );
+  assert.doesNotMatch(germanReportsSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
 test('English admin page exposes launch readiness without protected write controls', async () => {
   const englishAdminSource = await readFile(new URL('../apps/web/app/en/admin/page.tsx', import.meta.url), 'utf8');
 

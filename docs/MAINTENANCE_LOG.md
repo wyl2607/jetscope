@@ -51,6 +51,10 @@ This log records public-safe maintenance evidence for the JetScope repository.
   `getDashboardReadModel('de')`, routes source/dashboard/readiness links back
   into the German locale, and keeps create/update/delete operations in the
   protected primary scenario editor.
+- Added the German report-readiness slice: `/de/reports` now gives German users
+  a localized report workbench for source status, saved scenario context, risk
+  signals, launch posture, and evidence-review actions without leaking Chinese
+  or stale English report copy.
 - German readiness validation: MiMo/OpenCode provided a read-only checklist
   for the implementation; focused tests first failed on missing route/nav and
   then passed after implementation. Browser checks confirmed `/de/admin`

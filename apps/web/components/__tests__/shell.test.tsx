@@ -25,6 +25,7 @@ describe('Shell', () => {
     expect(getByText('Quellen')).toBeTruthy();
     expect(getByText('Bereitschaft')).toBeTruthy();
     expect(getByText('Szenarien')).toBeTruthy();
+    expect(getByText('Berichte')).toBeTruthy();
     expect(getByText('Analyse')).toBeTruthy();
     expect(queryByText('决策驾驶舱')).toBeNull();
   });

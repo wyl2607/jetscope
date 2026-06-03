@@ -19,6 +19,7 @@ const ROUTES = [
   ['de/sources/page.tsx', 'Quellenprüfung'],
   ['de/admin/page.tsx', 'Startbereitschaft'],
   ['de/scenarios/page.tsx', 'Szenario-Workbench'],
+  ['de/reports/page.tsx', 'Berichtswerkstatt'],
   ['crisis/page.tsx', '危机监测'],
   ['crisis/eu-jet-reserves/page.tsx', 'EU 航油储备危机'],
   ['crisis/saf-tipping-point/page.tsx', 'SAF 临界点'],
