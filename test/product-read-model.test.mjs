@@ -506,6 +506,24 @@ test('English reports page exposes report readiness without Chinese UI copy', as
   assert.doesNotMatch(englishReportsSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
 });
 
+test('English admin page exposes launch readiness without protected write controls', async () => {
+  const englishAdminSource = await readFile(new URL('../apps/web/app/en/admin/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(englishAdminSource, /Launch Readiness/);
+  assert.match(englishAdminSource, /getLaunchReadinessReadModel/);
+  assert.match(englishAdminSource, /Admin token/);
+  assert.match(englishAdminSource, /AI research pipeline/);
+  assert.match(englishAdminSource, /Protected operations/);
+  assert.match(englishAdminSource, /en\/sources\?filter=review/);
+  assert.match(englishAdminSource, /en\/research/);
+  assert.doesNotMatch(englishAdminSource, /AdminDataOps/);
+  assert.doesNotMatch(
+    englishAdminSource,
+    /管理台|上线前置状态|假设与数据接入管理|管理令牌|缺少配置|未启用|打开研究工作台/
+  );
+  assert.doesNotMatch(englishAdminSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
 test('research page is an honest signal workbench with disabled-state actions', async () => {
   const researchSource = await readFile(new URL('../apps/web/app/research/page.tsx', import.meta.url), 'utf8');
 

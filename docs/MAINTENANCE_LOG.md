@@ -196,6 +196,18 @@ This log records public-safe maintenance evidence for the JetScope repository.
   Browser confirmed `/en/reports` selects `English`, shows Reports navigation,
   report catalog, pre-launch actions, source status, no visible Chinese text,
   and no horizontal overflow.
+- Added English launch-readiness admin surface: `/en/admin` now reads
+  `getLaunchReadinessReadModel()` and displays API readiness, backend
+  prerequisites, admin-token status, source/research recovery links, and a
+  clear protected-operations boundary without importing `AdminDataOps`, asking
+  for secrets, or changing readiness/API contracts.
+- English admin validation: initial focused gates failed because English admin
+  routing, language switching, Shell navigation, and the route file were
+  missing. After implementation, focused language/Shell/routing/product gates,
+  `npm --prefix apps/web run gate`, `npm test`, and `git diff --check` passed.
+  Browser confirmed `/en/admin` selects `English`, shows Admin navigation,
+  launch-readiness checks, admin-token status, no token input, no visible
+  Chinese text, and no horizontal overflow.
 - Added focused source freshness regression coverage for issue #77.
 - Strengthened API contract tests so `/v1/market/snapshot` must expose
   `source_status.freshness_minutes`, confidence, fallback rate, and explicit

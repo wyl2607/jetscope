@@ -56,6 +56,11 @@ const entryCards: Array<{ title: string; description: string; href: Route }> = [
     title: 'Report workbench',
     description: 'Source status, saved scenarios, risk signal, and launch posture for report review.',
     href: '/en/reports' as Route
+  },
+  {
+    title: 'Launch readiness',
+    description: 'Read-only prerequisite checks for admin token, source coverage, AI research, and backend readiness.',
+    href: '/en/admin' as Route
   }
 ];
 
