@@ -45,9 +45,31 @@ function formatAsOf(value: string | null) {
   return date.toLocaleString();
 }
 
+function sourceStatusLabel(status: string) {
+  if (status === 'ok') return '正常';
+  if (status === 'degraded') return '降级';
+  if (status === 'offline') return '离线';
+  if (status === 'unknown') return '未知';
+  return status;
+}
+
+function freshnessLabel(level: string) {
+  if (level === 'fresh') return '新鲜';
+  if (level === 'stale') return '偏旧';
+  if (level === 'critical') return '严重过期';
+  return level;
+}
+
+function riskLevelLabel(level: string) {
+  if (level === 'normal') return '正常';
+  if (level === 'watch') return '观察';
+  if (level === 'alert') return '警报';
+  return level;
+}
+
 function dashboardFallbackHint(readModel: DashboardReadModel) {
   if (!readModel.isFallback) {
-    return `来源状态： ${readModel.market.source_status.overall} | 新鲜度=${readModel.freshnessSignal.level} (${readModel.freshnessSignal.minutes}m)`;
+    return `来源状态：${sourceStatusLabel(readModel.market.source_status.overall)} · 数据新鲜度：${freshnessLabel(readModel.freshnessSignal.level)}（${readModel.freshnessSignal.minutes} 分钟）`;
   }
 
   return '本地 API 暂不可用，正在使用内置决策模型，确保驾驶舱仍可审阅。';
@@ -73,7 +95,7 @@ export default async function DashboardPage() {
   const riskHint =
     risk == null
       ? '暂无历史风险信号'
-      : `级别=${risk.level} | 截至=${formatAsOf(risk.latestAsOf)} | 样本=${risk.sampleCount}`;
+      : `级别：${riskLevelLabel(risk.level)} · 截至：${formatAsOf(risk.latestAsOf)} · 样本：${risk.sampleCount}`;
 
   const alertBanners = computeDashboardAlertBanners(readModel.market, risk);
 
@@ -157,7 +179,7 @@ export default async function DashboardPage() {
         <MetricCard
           label="情景模式"
           value={`${readModel.scenarioCount}`}
-          hint={readModel.scenarioCount > 0 ? '已有保存情景，可用于对比。' : '暂无保存情景；需要 what-if 案例时可从 Scenarios 开始。'}
+          hint={readModel.scenarioCount > 0 ? '已有保存情景，可用于对比。' : '暂无保存情景；需要假设推演时可从情景工作区开始。'}
         />
         <MetricCard label="管理控制" value="必需" hint="路线成本、政策参数、来源维护" />
         <MetricCard
@@ -175,7 +197,7 @@ export default async function DashboardPage() {
         <MetricCard
           label="德国航油价格页"
           value="打开实时页面"
-          hint="SSR 市场页，展示 Brent、全球航油、EU 航油代理价、碳价及 1d/7d/30d 变化"
+          hint="服务端市场页，展示 Brent、全球航油、EU 航油代理价、碳价及 1d/7d/30d 变化"
           cardHref="/prices/germany-jet-fuel"
         />
       </section>

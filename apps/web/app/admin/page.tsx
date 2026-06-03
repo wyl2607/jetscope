@@ -37,10 +37,10 @@ export default function AdminPage() {
 
         <InfoCard title="后端数据合同" subtitle="FastAPI / 本地 SQLite 或 PostgreSQL">
           <div className="space-y-3 text-sm leading-7 text-slate-700">
-            <p>`route_catalog`：维护默认路线定义</p>
-            <p>`policy_parameters`：维护政策/补贴/ mandate</p>
-            <p>`market_snapshots`：保存定时任务抓取结果</p>
-            <p>`scenarios`：版本化假设，支持对比与导出</p>
+            <p><code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700">route_catalog</code>：维护默认路线定义</p>
+            <p><code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700">policy_parameters</code>：维护政策、补贴与 mandate 参数</p>
+            <p><code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700">market_snapshots</code>：保存定时任务抓取结果</p>
+            <p><code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700">scenarios</code>：版本化假设，支持对比与导出</p>
           </div>
         </InfoCard>
       </section>

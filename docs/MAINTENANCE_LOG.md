@@ -64,6 +64,15 @@ This log records public-safe maintenance evidence for the JetScope repository.
   tests/test_bootstrap_units.py tests/test_market_contract_v1.py
   tests/test_sources_units.py tests/test_lane_c_e2e.py -q` passed with 40
   tests.
+- Polished the Chinese dashboard/admin copy so primary UI no longer exposes
+  raw `degraded/stale`-style status codes, SSR shorthand, or markdown-style
+  backtick table names as user-facing text.
+- Dashboard/admin validation: `node --experimental-strip-types --test
+  test/product-read-model.test.mjs --test-name-pattern "dashboard and admin"`,
+  `npm --prefix apps/web run typecheck`, `npm --prefix apps/web run build`,
+  and `git diff --check` passed. Browser checks confirmed `/dashboard` shows
+  localized source freshness/status and `/admin` renders backend table names
+  as code elements without backtick text.
 - Added focused source freshness regression coverage for issue #77.
 - Strengthened API contract tests so `/v1/market/snapshot` must expose
   `source_status.freshness_minutes`, confidence, fallback rate, and explicit

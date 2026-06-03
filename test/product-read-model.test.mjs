@@ -499,3 +499,16 @@ test('research page is an honest signal workbench with disabled-state actions', 
   assert.match(researchSource, /sources\?filter=review/);
   assert.doesNotMatch(researchSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
 });
+
+test('dashboard and admin avoid leaking raw implementation labels into UI copy', async () => {
+  const dashboardSource = await readFile(new URL('../apps/web/app/dashboard/page.tsx', import.meta.url), 'utf8');
+  const adminSource = await readFile(new URL('../apps/web/app/admin/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(dashboardSource, /sourceStatusLabel/);
+  assert.match(dashboardSource, /freshnessLabel/);
+  assert.match(dashboardSource, /riskLevelLabel/);
+  assert.doesNotMatch(dashboardSource, /来源状态： \$\{readModel\.market\.source_status\.overall\}/);
+  assert.doesNotMatch(dashboardSource, /新鲜度=\$\{readModel\.freshnessSignal\.level\}/);
+  assert.match(adminSource, /<code className=/);
+  assert.doesNotMatch(adminSource, /<p>`route_catalog`/);
+});
