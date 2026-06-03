@@ -12,6 +12,15 @@ This log records public-safe maintenance evidence for the JetScope repository.
   overflows on a 390px viewport, scenario writes explain the admin-token/name
   prerequisites, and admin write actions explain why save/refresh controls are
   locked without a token.
+- Hardened protected write inputs: Scenario Registry, Admin Data Ops, and the
+  SAF tipping-point workbench now mask management tokens, disable browser
+  autocomplete, and disable spellcheck while preserving the existing
+  `x-admin-token` API contract.
+- Protected input validation: focused Vitest coverage first failed against the
+  old text inputs, then passed after the fix. Browser checks confirmed
+  `/scenarios`, `/admin`, and `/crisis/saf-tipping-point` expose only masked
+  token inputs with `autocomplete=off`, `spellcheck=false`, and no horizontal
+  overflow at 1280px.
 - Hardened the first German locale slice: the shared shell now renders
   German navigation on `/de/*`, the language switcher exposes German labels,
   German market read models render localized metric/fallback labels, and the

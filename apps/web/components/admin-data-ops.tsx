@@ -414,6 +414,9 @@ export function AdminDataOps() {
             管理令牌（写操作必需）
             <input
               className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
               value={adminToken}
               onChange={(event) => handleAdminTokenChange(event.target.value)}
               placeholder="x-admin-token"

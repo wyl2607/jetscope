@@ -305,6 +305,9 @@ export function ScenarioRegistry() {
             管理令牌（创建/更新/删除必需）
             <input
               className={fieldClassName}
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
               value={adminToken}
               onChange={(event) => handleAdminTokenChange(event.target.value)}
               placeholder="x-admin-token"
