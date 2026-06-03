@@ -117,6 +117,7 @@ The API uses `JETSCOPE_` environment variables by default. Important variables:
 | `JETSCOPE_DATABASE_URL` | `sqlite:///./data/market.db` | SQLAlchemy database URL. |
 | `JETSCOPE_ADMIN_TOKEN` | empty | Required for admin-protected write routes. |
 | `JETSCOPE_MARKET_REFRESH_INTERVAL_SECONDS` | `600` | Background market refresh interval. |
+| `JETSCOPE_MARKET_SOURCE_TIMEOUT_SECONDS` | `12` | Per-public-source timeout for admin-triggered market refreshes before explicit fallback evidence is recorded. |
 | `JETSCOPE_SCHEMA_BOOTSTRAP_MODE` | `alembic` | Database bootstrap strategy. |
 | `JETSCOPE_AI_RESEARCH_ENABLED` | `false` | Enables daily AI research ingestion loop. |
 | `JETSCOPE_AI_RESEARCH_MOCK_MODE` | `true` | Keeps Claude extraction deterministic and cost-safe by default. |

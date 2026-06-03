@@ -138,6 +138,7 @@ curl -X POST http://127.0.0.1:8000/v1/research/refresh \
 - `curl` returns empty research data: this is expected if no local seed data exists and `JETSCOPE_AI_RESEARCH_MOCK_MODE=true` is still the default.
 - `/v1/readiness` returns `not_ready`: this is expected until `JETSCOPE_ADMIN_TOKEN` and AI research prerequisites are configured.
 - Protected write routes return `401` or `403`: set a non-empty `JETSCOPE_ADMIN_TOKEN` in `apps/api/.env` or your shell and send it as `x-admin-token`.
+- Admin-triggered market refresh is slow or times out: lower `JETSCOPE_MARKET_SOURCE_TIMEOUT_SECONDS` for local/reviewer runs so public sources degrade to explicit fallback evidence quickly.
 
 ## Timeboxed Reviewer Path
 

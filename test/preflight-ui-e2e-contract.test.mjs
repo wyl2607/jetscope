@@ -64,7 +64,7 @@ test('UI preflight keeps isolated test database and disabled background refresh'
     'UI preflight must disable the background market refresh loop'
   );
   assertContains(
-    "SAFVSOIL_MARKET_REFRESH_TIMEOUT_MS: '1500'",
-    'UI preflight must bound market refresh latency for release-gate stability'
+    "JETSCOPE_MARKET_SOURCE_TIMEOUT_SECONDS: '0.25'",
+    'UI preflight must bound API market source latency for release-gate stability'
   );
 });

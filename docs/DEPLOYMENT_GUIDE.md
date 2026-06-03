@@ -52,6 +52,7 @@ sqlite3 "${TMPDIR:-/tmp}/jetscope_dev.sqlite3" ".tables"
 ```bash
 export JETSCOPE_DATABASE_URL="sqlite:///${TMPDIR:-/tmp}/jetscope_dev.sqlite3"
 export JETSCOPE_MARKET_REFRESH_INTERVAL_SECONDS="600"
+export JETSCOPE_MARKET_SOURCE_TIMEOUT_SECONDS="12"
 ```
 
 ### Step 1d: Run Local Checks

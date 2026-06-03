@@ -134,6 +134,19 @@ This log records public-safe maintenance evidence for the JetScope repository.
 - Documentation validation: focused API research/readiness tests, web proxy and
   admin/readiness read-model tests, `git diff --check`, and
   `scripts/security_check.sh` passed after the documentation update.
+- Stabilized the release UI E2E market-refresh path: API market source fetches
+  now honor `JETSCOPE_MARKET_SOURCE_TIMEOUT_SECONDS` and the legacy
+  `SAFVSOIL_MARKET_REFRESH_TIMEOUT_MS` value, while the E2E harness passes the
+  bounded timeout to the API process instead of the web proxy process. This
+  keeps valid-token admin refresh coverage deterministic without hiding
+  degraded public sources.
+- Market-refresh E2E validation: the initial `npm run preflight` failed at
+  `preflight:e2e` with `Market refresh with valid token failed: 504 {"error":
+  "Upstream API timed out"}`. After the timeout fix,
+  `cd apps/api && .venv/bin/python -m pytest tests/test_market_units.py -q`,
+  `node --experimental-strip-types --test
+  test/preflight-ui-e2e-contract.test.mjs`, and `npm run preflight:e2e`
+  passed.
 - Added focused source freshness regression coverage for issue #77.
 - Strengthened API contract tests so `/v1/market/snapshot` must expose
   `source_status.freshness_minutes`, confidence, fallback rate, and explicit
