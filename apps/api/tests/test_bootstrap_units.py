@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import sys
 import types
 from pathlib import Path
@@ -13,7 +14,11 @@ if str(API_ROOT) not in sys.path:
     sys.path.insert(0, str(API_ROOT))
 
 
-if "alembic" not in sys.modules:
+def _module_available(name: str) -> bool:
+    return importlib.util.find_spec(name) is not None
+
+
+if "alembic" not in sys.modules and not _module_available("alembic"):
     alembic_module = types.ModuleType("alembic")
     command_module = types.ModuleType("alembic.command")
     config_module = types.ModuleType("alembic.config")
@@ -38,7 +43,7 @@ if "alembic" not in sys.modules:
     sys.modules["alembic.config"] = config_module
 
 
-if "sqlalchemy" not in sys.modules:
+if "sqlalchemy" not in sys.modules and not _module_available("sqlalchemy"):
     sqlalchemy_module = types.ModuleType("sqlalchemy")
     engine_module = types.ModuleType("sqlalchemy.engine")
     orm_module = types.ModuleType("sqlalchemy.orm")
@@ -58,7 +63,7 @@ if "sqlalchemy" not in sys.modules:
     sys.modules["sqlalchemy.orm"] = orm_module
 
 
-if "app.core.config" not in sys.modules:
+if "app.core.config" not in sys.modules and not _module_available("app.core.config"):
     config_module = types.ModuleType("app.core.config")
     config_module.settings = SimpleNamespace(
         database_url="sqlite:///./data/market.db",

@@ -56,6 +56,14 @@ This log records public-safe maintenance evidence for the JetScope repository.
   `npm --prefix apps/web run typecheck`, and `npm --prefix apps/web run build`
   passed. Browser checks confirmed `/research` shows the disabled-state
   boundary, report/source actions, and no self-link back to the same page.
+- Fixed API bootstrap unit test isolation: the bootstrap tests now only install
+  fake Alembic/SQLAlchemy/config modules when the real modules are unavailable,
+  preventing `sys.modules` pollution from breaking database contract tests in
+  the same pytest process.
+- API isolation validation: `cd apps/api && .venv/bin/python -m pytest
+  tests/test_bootstrap_units.py tests/test_market_contract_v1.py
+  tests/test_sources_units.py tests/test_lane_c_e2e.py -q` passed with 40
+  tests.
 - Added focused source freshness regression coverage for issue #77.
 - Strengthened API contract tests so `/v1/market/snapshot` must expose
   `source_status.freshness_minutes`, confidence, fallback rate, and explicit
