@@ -561,6 +561,13 @@ test('German sources page exposes source review without Chinese UI copy', async 
   assert.doesNotMatch(germanSourcesSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
 });
 
+test('German dashboard keeps source drill-through in the German locale', async () => {
+  const germanDashboardSource = await readFile(new URL('../apps/web/app/de/dashboard/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(germanDashboardSource, /de\/sources\?focus=/);
+  assert.doesNotMatch(germanDashboardSource, /`\/sources\?focus=/);
+});
+
 test('research page is an honest signal workbench with disabled-state actions', async () => {
   const researchSource = await readFile(new URL('../apps/web/app/research/page.tsx', import.meta.url), 'utf8');
 

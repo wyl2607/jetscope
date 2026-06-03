@@ -37,6 +37,10 @@ This log records public-safe maintenance evidence for the JetScope repository.
   Browser checks confirmed `/de/sources` selects Deutsch, shows
   `Quellenprüfung`, has no visible Chinese or English source-review copy, and
   has no horizontal overflow at 1280px.
+- Fixed German dashboard source drill-through: top-risk source links now stay
+  in the German locale with `/de/sources?focus=...` instead of falling back to
+  the primary Chinese sources route. A source-level regression test now locks
+  that locale boundary.
 - Validation: `cd apps/api && .venv/bin/python -m pytest
   tests/test_bootstrap_units.py`, `node --experimental-strip-types --test
   test/api-config.test.mjs`, `cd apps/web && npm exec vitest run

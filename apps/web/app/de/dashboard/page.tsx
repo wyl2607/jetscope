@@ -75,7 +75,7 @@ export default async function GermanDashboardPage() {
     risk == null
       ? 'n/a'
       : `${risk.metric} ${risk.window} ${risk.changePct > 0 ? '+' : ''}${risk.changePct.toFixed(2)}%`;
-  const riskHref = risk == null ? undefined : `/sources?focus=${encodeURIComponent(risk.metricKey)}`;
+  const riskHref = risk == null ? undefined : `/de/sources?focus=${encodeURIComponent(risk.metricKey)}`;
   const riskHint =
     risk == null
       ? 'Noch kein belastbares History-Signal'
