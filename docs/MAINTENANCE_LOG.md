@@ -41,6 +41,17 @@ This log records public-safe maintenance evidence for the JetScope repository.
   in the German locale with `/de/sources?focus=...` instead of falling back to
   the primary Chinese sources route. A source-level regression test now locks
   that locale boundary.
+- Added the German launch-readiness slice: `/de/admin` now gives German users
+  a read-only view of database, market snapshot, source coverage, admin-token,
+  and AI research prerequisites. It reuses `getLaunchReadinessReadModel()`,
+  maps readiness labels/status/details in the display layer, and does not
+  import protected write controls or render a token input.
+- German readiness validation: MiMo/OpenCode provided a read-only checklist
+  for the implementation; focused tests first failed on missing route/nav and
+  then passed after implementation. Browser checks confirmed `/de/admin`
+  selects Deutsch, shows `Startbereitschaft` and `Geschützte Operationen`, has
+  no visible Chinese or stale English admin copy, renders no token input, and
+  has no horizontal overflow at 1280px.
 - Validation: `cd apps/api && .venv/bin/python -m pytest
   tests/test_bootstrap_units.py`, `node --experimental-strip-types --test
   test/api-config.test.mjs`, `cd apps/web && npm exec vitest run

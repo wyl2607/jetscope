@@ -568,6 +568,28 @@ test('German dashboard keeps source drill-through in the German locale', async (
   assert.doesNotMatch(germanDashboardSource, /`\/sources\?focus=/);
 });
 
+test('German admin page exposes launch readiness without protected write controls', async () => {
+  const germanAdminSource = await readFile(new URL('../apps/web/app/de/admin/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(germanAdminSource, /Startbereitschaft/);
+  assert.match(germanAdminSource, /getLaunchReadinessReadModel/);
+  assert.match(germanAdminSource, /Admin-Token/);
+  assert.match(germanAdminSource, /AI-Research-Pipeline/);
+  assert.match(germanAdminSource, /Geschützte Operationen/);
+  assert.match(germanAdminSource, /de\/sources\?filter=review/);
+  assert.match(germanAdminSource, /\/de\/dashboard/);
+  assert.doesNotMatch(germanAdminSource, /AdminDataOps|<input|type="password"/);
+  assert.doesNotMatch(
+    germanAdminSource,
+    /管理台|上线前置状态|假设与数据接入管理|管理令牌|缺少配置|未启用|打开研究工作台/
+  );
+  assert.doesNotMatch(
+    germanAdminSource,
+    /Launch Readiness|Protected operations|Missing configuration|Open sources|Open research|Not ready/
+  );
+  assert.doesNotMatch(germanAdminSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
 test('research page is an honest signal workbench with disabled-state actions', async () => {
   const researchSource = await readFile(new URL('../apps/web/app/research/page.tsx', import.meta.url), 'utf8');
 

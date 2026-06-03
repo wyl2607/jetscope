@@ -17,6 +17,7 @@ const ROUTES = [
   ['de/page.tsx', 'JetScope Deutschland'],
   ['de/dashboard/page.tsx', 'Entscheidungscockpit'],
   ['de/sources/page.tsx', 'Quellenprüfung'],
+  ['de/admin/page.tsx', 'Startbereitschaft'],
   ['crisis/page.tsx', '危机监测'],
   ['crisis/eu-jet-reserves/page.tsx', 'EU 航油储备危机'],
   ['crisis/saf-tipping-point/page.tsx', 'SAF 临界点'],
