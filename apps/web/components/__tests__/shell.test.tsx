@@ -36,6 +36,7 @@ describe('Shell', () => {
     expect(getByText('Decision Cockpit')).toBeTruthy();
     expect(getByText('Home')).toBeTruthy();
     expect(getByText('Sources')).toBeTruthy();
+    expect(getByText('Research')).toBeTruthy();
     expect(queryByText('决策驾驶舱')).toBeNull();
   });
 });

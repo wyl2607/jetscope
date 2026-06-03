@@ -29,8 +29,10 @@ describe('LanguageSwitcher', () => {
     expect(toEnglishPath('/')).toBe('/en');
     expect(toEnglishPath('/dashboard')).toBe('/en/dashboard');
     expect(toEnglishPath('/sources')).toBe('/en/sources');
+    expect(toEnglishPath('/research')).toBe('/en/research');
     expect(toEnglishPath('/de/dashboard')).toBe('/en/dashboard');
     expect(toChinesePath('/en/sources')).toBe('/sources');
+    expect(toChinesePath('/en/research')).toBe('/research');
   });
 
   it('localizes the language control label on English pages', () => {

@@ -10,6 +10,7 @@ const ROUTES = [
   ['en/page.tsx', 'JetScope Europe'],
   ['en/dashboard/page.tsx', 'Decision Cockpit'],
   ['en/sources/page.tsx', 'Source Review'],
+  ['en/research/page.tsx', 'Research Workbench'],
   ['de/page.tsx', 'JetScope Deutschland'],
   ['de/dashboard/page.tsx', 'Entscheidungscockpit'],
   ['crisis/page.tsx', '危机监测'],

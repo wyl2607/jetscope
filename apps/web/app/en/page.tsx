@@ -46,6 +46,11 @@ const entryCards: Array<{ title: string; description: string; href: Route }> = [
     title: 'Source review',
     description: 'English row-level provenance, confidence, fallback state, and recovery actions for market inputs.',
     href: '/en/sources' as Route
+  },
+  {
+    title: 'Research workbench',
+    description: 'Pipeline status, empty-state honesty, signal counts, and evidence handoffs for AI-assisted research.',
+    href: '/en/research' as Route
   }
 ];
 

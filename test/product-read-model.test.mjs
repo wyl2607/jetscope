@@ -503,6 +503,21 @@ test('research page is an honest signal workbench with disabled-state actions', 
   assert.doesNotMatch(researchSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
 });
 
+test('English research page exposes research pipeline boundaries without Chinese UI copy', async () => {
+  const englishResearchSource = await readFile(new URL('../apps/web/app/en/research/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(englishResearchSource, /Research Workbench/);
+  assert.match(englishResearchSource, /AI_RESEARCH_ENABLED/);
+  assert.match(englishResearchSource, /research pipeline is disabled/i);
+  assert.match(englishResearchSource, /reports\/tipping-point-analysis/);
+  assert.match(englishResearchSource, /en\/sources\?filter=review/);
+  assert.doesNotMatch(
+    englishResearchSource,
+    /研究工作台|开启研究流水线|信号总数|复核来源|正向|负向|中性|暂无/
+  );
+  assert.doesNotMatch(englishResearchSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
 test('dashboard and admin avoid leaking raw implementation labels into UI copy', async () => {
   const dashboardSource = await readFile(new URL('../apps/web/app/dashboard/page.tsx', import.meta.url), 'utf8');
   const adminSource = await readFile(new URL('../apps/web/app/admin/page.tsx', import.meta.url), 'utf8');

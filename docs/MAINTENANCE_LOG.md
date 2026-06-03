@@ -173,6 +173,17 @@ This log records public-safe maintenance evidence for the JetScope repository.
   `/en/sources` passed; Browser confirmed English navigation, selected
   `English`, no visible Chinese text, recovery actions, the market matrix, and
   no horizontal overflow.
+- Added English research workbench: `/en/research` now exposes AI research
+  pipeline status, disabled-state honesty, signal counts, latest-signal
+  evidence, report/source/admin handoffs, and an English signal list without
+  mutating the research API contract or canonical signal fields.
+- English research validation: initial focused gates failed because English
+  research routing, language switching, Shell navigation, and the route file
+  were missing. After implementation, focused language/Shell/routing/product
+  gates, `npm --prefix apps/web run gate`, `npm test`, and `git diff --check`
+  passed. Browser confirmed `/en/research` selects `English`, shows Research
+  navigation, discloses that the research pipeline is disabled, has evidence
+  actions, has no visible Chinese text, and has no horizontal overflow.
 - Added focused source freshness regression coverage for issue #77.
 - Strengthened API contract tests so `/v1/market/snapshot` must expose
   `source_status.freshness_minutes`, confidence, fallback rate, and explicit

@@ -24,6 +24,9 @@ export function toGermanPath(pathname: string): string {
   if (pathname === '/en/sources') {
     return '/de';
   }
+  if (pathname === '/en/research') {
+    return '/de';
+  }
   if (pathname === '/prices/germany-jet-fuel') {
     return '/de/prices/germany-jet-fuel';
   }
@@ -42,6 +45,9 @@ export function toChinesePath(pathname: string): string {
   }
   if (pathname === '/en/sources') {
     return '/sources';
+  }
+  if (pathname === '/en/research') {
+    return '/research';
   }
   if (pathname.startsWith('/en')) {
     return '/';
@@ -76,6 +82,12 @@ export function toEnglishPath(pathname: string): string {
   }
   if (pathname === '/en/sources') {
     return '/en/sources';
+  }
+  if (pathname === '/research') {
+    return '/en/research';
+  }
+  if (pathname === '/en/research') {
+    return '/en/research';
   }
   if (pathname.startsWith('/en')) {
     return pathname;
