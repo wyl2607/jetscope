@@ -524,6 +524,24 @@ test('English admin page exposes launch readiness without protected write contro
   assert.doesNotMatch(englishAdminSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
 });
 
+test('English scenarios page reviews saved assumptions without Chinese editor UI', async () => {
+  const englishScenariosSource = await readFile(new URL('../apps/web/app/en/scenarios/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(englishScenariosSource, /Scenario Workbench/);
+  assert.match(englishScenariosSource, /getDashboardReadModel\('en'\)/);
+  assert.match(englishScenariosSource, /Saved scenarios/);
+  assert.match(englishScenariosSource, /Scenario assumptions/);
+  assert.match(englishScenariosSource, /Protected write boundary/);
+  assert.match(englishScenariosSource, /en\/dashboard/);
+  assert.match(englishScenariosSource, /en\/sources\?filter=review/);
+  assert.doesNotMatch(englishScenariosSource, /ScenarioRegistry/);
+  assert.doesNotMatch(
+    englishScenariosSource,
+    /情景工作区|情景管理|保存假设|管理令牌|创建|更新|删除|高级 JSON 设置|暂无/
+  );
+  assert.doesNotMatch(englishScenariosSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
 test('research page is an honest signal workbench with disabled-state actions', async () => {
   const researchSource = await readFile(new URL('../apps/web/app/research/page.tsx', import.meta.url), 'utf8');
 

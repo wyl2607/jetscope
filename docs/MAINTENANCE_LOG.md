@@ -208,6 +208,20 @@ This log records public-safe maintenance evidence for the JetScope repository.
   Browser confirmed `/en/admin` selects `English`, shows Admin navigation,
   launch-readiness checks, admin-token status, no token input, no visible
   Chinese text, and no horizontal overflow.
+- Added English scenario workbench: `/en/scenarios` now reads
+  `getDashboardReadModel('en')` and presents saved scenario count, current
+  market context, top risk signal, protected write boundaries, recent
+  assumptions, and review workflow links without importing the Chinese
+  `ScenarioRegistry` editor or changing scenario API contracts.
+- English scenario validation: initial focused gates failed because English
+  scenario routing, language switching, Shell navigation, and the route file
+  were missing. After implementation, focused language/Shell/routing/product
+  gates passed. The first web gate caught a real nullable `latestAsOf`
+  type issue; after adding safe formatting, `npm --prefix apps/web run gate`,
+  `npm test`, and `git diff --check` passed. Browser confirmed
+  `/en/scenarios` selects `English`, shows Scenarios navigation, scenario
+  assumptions, protected write boundary, no token input, no visible Chinese
+  text, and no horizontal overflow.
 - Added focused source freshness regression coverage for issue #77.
 - Strengthened API contract tests so `/v1/market/snapshot` must expose
   `source_status.freshness_minutes`, confidence, fallback rate, and explicit

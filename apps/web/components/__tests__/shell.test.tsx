@@ -39,6 +39,7 @@ describe('Shell', () => {
     expect(getByText('Research')).toBeTruthy();
     expect(getByText('Reports')).toBeTruthy();
     expect(getByText('Admin')).toBeTruthy();
+    expect(getByText('Scenarios')).toBeTruthy();
     expect(queryByText('决策驾驶舱')).toBeNull();
   });
 });

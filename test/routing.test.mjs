@@ -13,6 +13,7 @@ const ROUTES = [
   ['en/research/page.tsx', 'Research Workbench'],
   ['en/reports/page.tsx', 'Report Workbench'],
   ['en/admin/page.tsx', 'Launch Readiness'],
+  ['en/scenarios/page.tsx', 'Scenario Workbench'],
   ['de/page.tsx', 'JetScope Deutschland'],
   ['de/dashboard/page.tsx', 'Entscheidungscockpit'],
   ['crisis/page.tsx', '危机监测'],
@@ -22,6 +23,7 @@ const ROUTES = [
   ['research/page.tsx', '研究信号'],
   ['reports/page.tsx', '报告工作台'],
   ['admin/page.tsx', '上线前置状态'],
+  ['scenarios/page.tsx', '情景工作区'],
   ['reports/tipping-point-analysis/page.tsx', '临界点报告']
 ];
 

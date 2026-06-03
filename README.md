@@ -83,7 +83,7 @@ Contributor and maintainer documents live in `CONTRIBUTING.md`, `MAINTAINERS.md`
 | --- | --- | --- |
 | Chinese | `/`, `/dashboard`, `/sources`, `/research`, `/reports`, `/scenarios`, `/admin` | Primary operations workspace. |
 | German | `/de`, `/de/dashboard`, `/de/prices/germany-jet-fuel`, `/de/lufthansa-saf-2026` | German market and Lufthansa review slice. |
-| English | `/en`, `/en/dashboard`, `/en/sources`, `/en/research`, `/en/reports`, `/en/admin` | English review slice for landing, decision cockpit, source review, research pipeline status, report readiness, and read-only launch readiness; scenarios still link back to the primary workspace until localized. |
+| English | `/en`, `/en/dashboard`, `/en/sources`, `/en/research`, `/en/reports`, `/en/admin`, `/en/scenarios` | English review slice for landing, decision cockpit, source review, research pipeline status, report readiness, read-only launch readiness, and scenario review; protected writes still link back to the primary workspace. |
 
 ### Prerequisites
 

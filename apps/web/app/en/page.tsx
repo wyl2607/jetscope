@@ -61,6 +61,11 @@ const entryCards: Array<{ title: string; description: string; href: Route }> = [
     title: 'Launch readiness',
     description: 'Read-only prerequisite checks for admin token, source coverage, AI research, and backend readiness.',
     href: '/en/admin' as Route
+  },
+  {
+    title: 'Scenario workbench',
+    description: 'Saved assumptions, current market context, risk signal, and protected write boundaries.',
+    href: '/en/scenarios' as Route
   }
 ];
 
