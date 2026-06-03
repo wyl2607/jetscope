@@ -139,6 +139,7 @@ Minimum public checks can use documented API endpoints:
 ```bash
 export JETSCOPE_API_BASE_URL="https://<your-api-host>"
 curl -fsS "$JETSCOPE_API_BASE_URL/v1/health"
+curl -fsS "$JETSCOPE_API_BASE_URL/v1/readiness"
 curl -fsS "$JETSCOPE_API_BASE_URL/v1/market/snapshot"
 ```
 
@@ -155,14 +156,17 @@ export JETSCOPE_API_BASE_URL="https://<your-api-host>"
 # 1. API health check
 curl -fsS "$JETSCOPE_API_BASE_URL/v1/health" | jq '.'
 
-# 2. All 7 market values present
+# 2. Launch prerequisite disclosure
+curl -fsS "$JETSCOPE_API_BASE_URL/v1/readiness" | jq '.status, .checks'
+
+# 3. All 7 market values present
 curl -fsS "$JETSCOPE_API_BASE_URL/v1/market/snapshot" | jq '.values | keys | length'
 # Expected: 7
 
-# 3. Source status exposed
+# 4. Source status exposed
 curl -fsS "$JETSCOPE_API_BASE_URL/v1/market/snapshot" | jq '.source_status'
 
-# 4. Source detail metadata exposed
+# 5. Source detail metadata exposed
 curl -fsS "$JETSCOPE_API_BASE_URL/v1/market/snapshot" | jq '.source_details | keys'
 ```
 
@@ -210,6 +214,9 @@ export JETSCOPE_API_BASE_URL="https://<your-api-host>"
 export JETSCOPE_DATABASE_URL="postgresql+psycopg://<user>:<password>@<postgres-host>:5432/<database>"
 export JETSCOPE_ADMIN_TOKEN="<provided-by-secret-manager>"
 export JETSCOPE_SCHEMA_BOOTSTRAP_MODE="alembic"
+export JETSCOPE_AI_RESEARCH_ENABLED="true"
+export JETSCOPE_AI_RESEARCH_MOCK_MODE="false"
+export JETSCOPE_ANTHROPIC_API_KEY="<provided-by-secret-manager>"
 ```
 
 ## Maintenance Notes

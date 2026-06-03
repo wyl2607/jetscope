@@ -126,6 +126,14 @@ This log records public-safe maintenance evidence for the JetScope repository.
   confirmed `/admin` shows the research refresh button, keeps it locked without
   a management token, renders research refresh evidence, and has no console
   errors or desktop horizontal overflow.
+- Aligned public configuration and contract docs with the new launch readiness
+  and research refresh behavior: README, API contract, API README, Quickstart,
+  AI pipeline notes, deployment guide, and `.env.example` now describe
+  `/v1/readiness`, protected `/v1/research/refresh`, and the expected
+  quickstart `not_ready` state without including real credentials.
+- Documentation validation: focused API research/readiness tests, web proxy and
+  admin/readiness read-model tests, `git diff --check`, and
+  `scripts/security_check.sh` passed after the documentation update.
 - Added focused source freshness regression coverage for issue #77.
 - Strengthened API contract tests so `/v1/market/snapshot` must expose
   `source_status.freshness_minutes`, confidence, fallback rate, and explicit

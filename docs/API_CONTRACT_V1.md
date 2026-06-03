@@ -41,6 +41,34 @@ The current market pipeline uses public sources and explicit proxies:
 
 Returns service health and capability metadata.
 
+### `GET /v1/readiness`
+
+Returns launch-prerequisite checks. This endpoint may report `not_ready` in a
+local quickstart when protected admin writes or AI research are intentionally
+not configured. It reports configuration presence and status, not secret values.
+
+Response shape:
+
+```json
+{
+  "ready": false,
+  "status": "not_ready",
+  "generated_at": "2026-06-03T12:00:00Z",
+  "service": "api",
+  "environment": "development",
+  "api_prefix": "/v1",
+  "schema_bootstrap_mode": "alembic",
+  "degraded": true,
+  "checks": {
+    "database": { "ok": true, "status": "ok", "detail": null },
+    "market_snapshot": { "ok": true, "status": "degraded", "detail": "7 metrics available" },
+    "source_coverage": { "ok": true, "status": "degraded", "detail": "completeness=1.000; metrics=7" },
+    "admin_token": { "ok": false, "status": "missing", "detail": "JETSCOPE_ADMIN_TOKEN is not configured; protected writes and market refresh are locked" },
+    "ai_research_pipeline": { "ok": false, "status": "disabled", "detail": "JETSCOPE_AI_RESEARCH_ENABLED is false; research signal generation is disabled" }
+  }
+}
+```
+
 ### `GET /v1/market/snapshot`
 
 Returns current market values and source metadata.
@@ -168,6 +196,33 @@ Response item shape:
   "published_at": "2026-04-24T10:00:00Z",
   "claude_model": "claude-sonnet-4-6",
   "prompt_cache_hit": true
+}
+```
+
+### `POST /v1/research/refresh`
+
+Admin-protected route that manually runs the AI research pipeline after the
+environment is configured.
+
+Required header:
+
+```text
+x-admin-token: <JETSCOPE_ADMIN_TOKEN>
+```
+
+The route returns HTTP `409` when `JETSCOPE_AI_RESEARCH_ENABLED=false`, or when
+live extraction is requested without `JETSCOPE_ANTHROPIC_API_KEY`.
+
+Response shape:
+
+```json
+{
+  "accepted": true,
+  "message": "AI research refresh completed: fetched=3, extracted=2, persisted=2, skipped_budget=1",
+  "fetched": 3,
+  "extracted": 2,
+  "persisted": 2,
+  "skipped_budget": 1
 }
 ```
 

@@ -60,6 +60,7 @@ jetscope/
 | Endpoint | Method | Description |
 | --- | --- | --- |
 | `/v1/health` | GET | API health and capability status. |
+| `/v1/readiness` | GET | Launch-prerequisite checks for database, sources, admin token, and AI research configuration. |
 | `/v1/market/snapshot` | GET | Current market values, source status, and source detail metadata. |
 | `/v1/market/history` | GET | Historical market series used by dashboard and trend views. |
 | `/v1/market/refresh` | POST | Admin-protected market refresh. |
@@ -68,6 +69,7 @@ jetscope/
 | `/v1/analysis/tipping-point/events` | GET | Persisted tipping event timeline. |
 | `/v1/reserves/eu` | GET | EU reserve stress signal. |
 | `/v1/research/signals` | GET | Structured AI research signals with filters for time, type, and limit. |
+| `/v1/research/refresh` | POST | Admin-protected manual AI research refresh with pipeline counters. |
 | `/v1/sources/coverage` | GET | Source coverage, quality, and provenance status. |
 | `/v1/workspaces/{workspace_slug}/scenarios` | GET/POST | Scenario list and creation. Write operations require an admin token. |
 
@@ -120,6 +122,8 @@ The API uses `JETSCOPE_` environment variables by default. Important variables:
 | `JETSCOPE_AI_RESEARCH_MOCK_MODE` | `true` | Keeps Claude extraction deterministic and cost-safe by default. |
 | `JETSCOPE_ANTHROPIC_API_KEY` | empty | Anthropic key for live extraction. |
 | `JETSCOPE_NEWSAPI_KEY` | empty | Optional NewsAPI credential; Reuters RSS fallback is used otherwise. |
+
+`GET /v1/readiness` reports `not_ready` until protected admin writes and AI research prerequisites are configured. It reports whether prerequisites exist, but never returns secret values.
 
 Selected legacy `SAFVSOIL_*` variables may still be accepted for compatibility with older deployments. New deployments should prefer `JETSCOPE_*` where supported.
 
