@@ -27,6 +27,12 @@ export function toGermanPath(pathname: string): string {
   if (pathname === '/en/dashboard') {
     return '/de/dashboard';
   }
+  if (pathname === '/crisis') {
+    return '/de/crisis';
+  }
+  if (pathname === '/en/crisis') {
+    return '/de/crisis';
+  }
   if (pathname === '/en/sources') {
     return '/de/sources';
   }
@@ -73,6 +79,9 @@ export function toChinesePath(pathname: string): string {
   if (pathname === '/en/dashboard') {
     return '/dashboard';
   }
+  if (pathname === '/en/crisis') {
+    return '/crisis';
+  }
   if (pathname === '/en/sources') {
     return '/sources';
   }
@@ -108,6 +117,9 @@ export function toChinesePath(pathname: string): string {
   }
   if (pathname === '/de/dashboard') {
     return '/dashboard';
+  }
+  if (pathname === '/de/crisis') {
+    return '/crisis';
   }
   if (pathname === '/de/sources') {
     return '/sources';
@@ -151,6 +163,15 @@ export function toEnglishPath(pathname: string): string {
   }
   if (pathname === '/dashboard' || pathname === '/de/dashboard') {
     return '/en/dashboard';
+  }
+  if (pathname === '/crisis') {
+    return '/en/crisis';
+  }
+  if (pathname === '/de/crisis') {
+    return '/en/crisis';
+  }
+  if (pathname === '/en/crisis') {
+    return '/en/crisis';
   }
   if (pathname === '/sources') {
     return '/en/sources';

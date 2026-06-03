@@ -30,16 +30,34 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.95
     },
     {
+      url: `${BASE_URL}/crisis`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'hourly',
+      priority: 0.94
+    },
+    {
       url: `${BASE_URL}/de/dashboard`,
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'hourly',
       priority: 0.93
     },
     {
+      url: `${BASE_URL}/de/crisis`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'hourly',
+      priority: 0.92
+    },
+    {
       url: `${BASE_URL}/en/dashboard`,
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'hourly',
       priority: 0.93
+    },
+    {
+      url: `${BASE_URL}/en/crisis`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'hourly',
+      priority: 0.92
     },
     {
       url: `${BASE_URL}/en/faq`,

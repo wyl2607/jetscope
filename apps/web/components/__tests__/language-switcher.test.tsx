@@ -34,6 +34,8 @@ describe('LanguageSwitcher', () => {
     expect(toEnglishPath('/de/sources')).toBe('/en/sources');
     expect(toEnglishPath('/research')).toBe('/en/research');
     expect(toEnglishPath('/de/research')).toBe('/en/research');
+    expect(toEnglishPath('/crisis')).toBe('/en/crisis');
+    expect(toEnglishPath('/de/crisis')).toBe('/en/crisis');
     expect(toEnglishPath('/reports')).toBe('/en/reports');
     expect(toEnglishPath('/de/reports')).toBe('/en/reports');
     expect(toEnglishPath('/reports/tipping-point-analysis')).toBe('/en/reports/tipping-point-analysis');
@@ -52,6 +54,8 @@ describe('LanguageSwitcher', () => {
     expect(toGermanPath('/en/faq')).toBe('/de/faq');
     expect(toGermanPath('/en/sources')).toBe('/de/sources');
     expect(toGermanPath('/en/research')).toBe('/de/research');
+    expect(toGermanPath('/crisis')).toBe('/de/crisis');
+    expect(toGermanPath('/en/crisis')).toBe('/de/crisis');
     expect(toGermanPath('/en/reports')).toBe('/de/reports');
     expect(toGermanPath('/en/reports/tipping-point-analysis')).toBe('/de/reports/tipping-point-analysis');
     expect(toGermanPath('/reports/tipping-point-analysis')).toBe('/de/reports/tipping-point-analysis');
@@ -62,6 +66,7 @@ describe('LanguageSwitcher', () => {
     expect(toChinesePath('/en/faq')).toBe('/faq');
     expect(toChinesePath('/en/sources')).toBe('/sources');
     expect(toChinesePath('/en/research')).toBe('/research');
+    expect(toChinesePath('/en/crisis')).toBe('/crisis');
     expect(toChinesePath('/en/reports')).toBe('/reports');
     expect(toChinesePath('/en/reports/tipping-point-analysis')).toBe('/reports/tipping-point-analysis');
     expect(toChinesePath('/en/admin')).toBe('/admin');
@@ -69,6 +74,7 @@ describe('LanguageSwitcher', () => {
     expect(toChinesePath('/de/sources')).toBe('/sources');
     expect(toChinesePath('/de/faq')).toBe('/faq');
     expect(toChinesePath('/de/research')).toBe('/research');
+    expect(toChinesePath('/de/crisis')).toBe('/crisis');
     expect(toChinesePath('/de/reports')).toBe('/reports');
     expect(toChinesePath('/de/reports/tipping-point-analysis')).toBe('/reports/tipping-point-analysis');
     expect(toChinesePath('/de/admin')).toBe('/admin');

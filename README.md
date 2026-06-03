@@ -68,6 +68,7 @@ jetscope/
 | `/v1/analysis/tipping-point` | GET | SAF/fossil tipping point calculation. |
 | `/v1/analysis/airline-decision` | GET | Procurement decision analysis for an airline-style scenario. |
 | `/v1/analysis/tipping-point/events` | GET | Persisted tipping event timeline. |
+| `/v1/analysis/crisis-brief` | GET | Read-only crisis brief aggregating market source status, EU reserve stress, tipping events, research posture, and review actions. |
 | `/v1/reserves/eu` | GET | EU reserve stress signal. |
 | `/v1/research/signals` | GET | Structured AI research signals with filters for time, type, and limit. |
 | `/v1/research/refresh` | POST | Admin-protected manual AI research refresh with pipeline counters. |
@@ -82,9 +83,9 @@ Contributor and maintainer documents live in `CONTRIBUTING.md`, `MAINTAINERS.md`
 
 | Locale | Routes | Notes |
 | --- | --- | --- |
-| Chinese | `/`, `/faq`, `/dashboard`, `/sources`, `/research`, `/reports`, `/scenarios`, `/admin` | Primary operations workspace plus launch-boundary FAQ. |
-| German | `/de`, `/de/faq`, `/de/dashboard`, `/de/prices/germany-jet-fuel`, `/de/sources`, `/de/scenarios`, `/de/reports`, `/de/reports/tipping-point-analysis`, `/de/research`, `/de/admin`, `/de/lufthansa-saf-2026` | German FAQ, market, source, readiness, scenario, report, research, and Lufthansa review slice. |
-| English | `/en`, `/en/faq`, `/en/dashboard`, `/en/prices/germany-jet-fuel`, `/en/sources`, `/en/research`, `/en/reports`, `/en/reports/tipping-point-analysis`, `/en/admin`, `/en/scenarios`, `/en/lufthansa-saf-2026` | English FAQ and review slice for landing, decision cockpit, Germany price monitor, source review, research pipeline status, report readiness, read-only launch readiness, scenario review, and Lufthansa SAF analysis; protected writes still link back to the primary workspace. |
+| Chinese | `/`, `/faq`, `/dashboard`, `/crisis`, `/sources`, `/research`, `/reports`, `/scenarios`, `/admin` | Primary operations workspace plus launch-boundary FAQ and crisis monitor. |
+| German | `/de`, `/de/faq`, `/de/dashboard`, `/de/crisis`, `/de/prices/germany-jet-fuel`, `/de/sources`, `/de/scenarios`, `/de/reports`, `/de/reports/tipping-point-analysis`, `/de/research`, `/de/admin`, `/de/lufthansa-saf-2026` | German FAQ, market, crisis, source, readiness, scenario, report, research, and Lufthansa review slice. |
+| English | `/en`, `/en/faq`, `/en/dashboard`, `/en/crisis`, `/en/prices/germany-jet-fuel`, `/en/sources`, `/en/research`, `/en/reports`, `/en/reports/tipping-point-analysis`, `/en/admin`, `/en/scenarios`, `/en/lufthansa-saf-2026` | English FAQ and review slice for landing, decision cockpit, crisis monitor, Germany price monitor, source review, research pipeline status, report readiness, read-only launch readiness, scenario review, and Lufthansa SAF analysis; protected writes still link back to the primary workspace. |
 
 ### Prerequisites
 

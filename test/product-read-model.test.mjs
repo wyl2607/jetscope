@@ -230,6 +230,98 @@ test('getDashboardReadModel falls back to safe dashboard defaults when the marke
   assert.match(readModel.error ?? '', /HTTP 503/);
 });
 
+test('getCrisisBriefReadModel consumes the crisis brief API and localizes action links', async (t) => {
+  installEnv(t, {
+    JETSCOPE_API_BASE_URL: 'https://api.example.com',
+    JETSCOPE_API_PREFIX: '/v1'
+  });
+
+  installFetchStub(
+    t,
+    new Map([
+      [
+        'https://api.example.com/v1/analysis/crisis-brief?limit=20',
+        () =>
+          jsonResponse({
+            generated_at: '2026-06-04T12:00:00Z',
+            market_generated_at: '2026-06-04T11:58:00Z',
+            fossil_jet_usd_per_l: 0.845,
+            source_status: {
+              overall: 'degraded',
+              confidence: 0.72,
+              freshness_minutes: 2,
+              fallback_rate: 14,
+              is_fallback: true
+            },
+            reserve: {
+              generated_at: '2026-06-04T11:55:00Z',
+              region: 'eu',
+              coverage_days: 24,
+              coverage_weeks: 3.43,
+              stress_level: 'elevated',
+              estimated_supply_gap_pct: 9.5,
+              source_type: 'official',
+              source_name: 'IEA Oil Market Report',
+              confidence_score: 0.85
+            },
+            tipping_events: [
+              {
+                id: 'event-1',
+                event_type: 'ALERT',
+                saf_pathway: 'hefa',
+                fossil_price_usd_per_l: 1.12,
+                saf_effective_cost_usd_per_l: 1.2,
+                gap_usd_per_l: -0.08,
+                observed_at: '2026-06-04T10:00:00Z',
+                metadata: {}
+              }
+            ],
+            research: {
+              status: 'signal_backed',
+              signal_count: 2,
+              top_signal_title: 'Policy signal',
+              top_signal_confidence: 0.91,
+              latest_published_at: '2026-06-03T10:00:00Z'
+            },
+            actions: [
+              {
+                id: 'review_sources',
+                label: 'Review source evidence',
+                href: '/sources?filter=review',
+                reason: 'review sources'
+              },
+              {
+                id: 'open_report',
+                label: 'Open tipping-point report',
+                href: '/reports/tipping-point-analysis',
+                reason: 'open report'
+              },
+              {
+                id: 'review_scenarios',
+                label: 'Review scenarios',
+                href: '/scenarios',
+                reason: 'review scenarios'
+              }
+            ]
+          })
+      ]
+    ])
+  );
+
+  const { getCrisisBriefReadModel } = await importWebLib('apps/web/lib/crisis-brief-read-model.ts');
+  const readModel = await getCrisisBriefReadModel('de');
+
+  assert.equal(readModel.error, null);
+  assert.equal(readModel.fossilJetUsdPerL, 0.845);
+  assert.equal(readModel.reserve.coverage_weeks, 3.43);
+  assert.equal(readModel.tippingEvents[0].event_type, 'ALERT');
+  assert.equal(readModel.research.status, 'signal_backed');
+  assert.deepEqual(
+    readModel.actions.map((action) => action.href),
+    ['/de/sources?filter=review', '/de/reports/tipping-point-analysis', '/de/scenarios']
+  );
+});
+
 test('getPriceTrendChartReadModel maps live market history into chart-friendly metrics', async (t) => {
   installEnv(t, {
     JETSCOPE_API_BASE_URL: 'https://api.example.com',
@@ -479,6 +571,57 @@ test('crisis page uses light semantic data cards instead of gray dark boxes', as
   assert.match(crisisSource, /border-emerald-200 bg-emerald-50/);
   assert.match(crisisSource, /border-amber-200 bg-amber-50/);
   assert.match(crisisSource, /border-sky-200 bg-sky-50/);
+});
+
+test('localized crisis pages are source-backed and stay in their locale', async () => {
+  const englishCrisisSource = await readFile(new URL('../apps/web/app/en/crisis/page.tsx', import.meta.url), 'utf8');
+  const germanCrisisSource = await readFile(new URL('../apps/web/app/de/crisis/page.tsx', import.meta.url), 'utf8');
+  const shellSource = await readFile(new URL('../apps/web/components/shell.tsx', import.meta.url), 'utf8');
+
+  assert.match(englishCrisisSource, /Fuel Stress Brief/);
+  assert.match(englishCrisisSource, /getCrisisBriefReadModel\('en'\)/);
+  assert.match(englishCrisisSource, /FastAPI crisis-brief contract/);
+  assert.match(englishCrisisSource, /Reserve stress/);
+  assert.match(englishCrisisSource, /Source confidence/);
+  assert.match(englishCrisisSource, /Tipping events/);
+  assert.match(englishCrisisSource, /Research posture/);
+  assert.match(englishCrisisSource, /en\/sources\?filter=review/);
+  assert.match(englishCrisisSource, /en\/reports\/tipping-point-analysis/);
+  assert.match(englishCrisisSource, /en\/scenarios/);
+  assert.doesNotMatch(englishCrisisSource, /getDashboardReadModel|getEuReserveCoverage|getTippingPointEvents|getResearchSignals/);
+  assert.doesNotMatch(
+    englishCrisisSource,
+    /危机监测|储备压力|来源可信度|研究姿态|Krisenbrief|Reservestress|Quellenvertrauen|Forschungsstatus/
+  );
+
+  assert.match(germanCrisisSource, /Krisenbrief/);
+  assert.match(germanCrisisSource, /getCrisisBriefReadModel\('de'\)/);
+  assert.match(germanCrisisSource, /FastAPI-Crisis-Brief-Vertrag/);
+  assert.match(germanCrisisSource, /Reservestress/);
+  assert.match(germanCrisisSource, /Quellenvertrauen/);
+  assert.match(germanCrisisSource, /Kippereignisse/);
+  assert.match(germanCrisisSource, /Forschungsstatus/);
+  assert.match(germanCrisisSource, /de\/sources\?filter=review/);
+  assert.match(germanCrisisSource, /de\/reports\/tipping-point-analysis/);
+  assert.match(germanCrisisSource, /de\/scenarios/);
+  assert.doesNotMatch(germanCrisisSource, /getDashboardReadModel|getEuReserveCoverage|getTippingPointEvents|getResearchSignals/);
+  assert.doesNotMatch(
+    germanCrisisSource,
+    /危机监测|储备压力|来源可信度|研究姿态|Fuel Stress Brief|Reserve stress|Source confidence|Research posture/
+  );
+
+  assert.match(shellSource, /\/en\/crisis/);
+  assert.match(shellSource, /Crisis Monitor/);
+  assert.match(shellSource, /\/de\/crisis/);
+  assert.match(shellSource, /Krisenmonitor/);
+  assert.doesNotMatch(
+    `${englishCrisisSource}\n${germanCrisisSource}`,
+    /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/
+  );
+
+  const crisisBriefSource = await readFile(new URL('../apps/web/lib/crisis-brief-read-model.ts', import.meta.url), 'utf8');
+  assert.match(crisisBriefSource, /analysis\/crisis-brief/);
+  assert.match(crisisBriefSource, /localizeHref/);
 });
 
 test('reserve price trends guard finite chart coordinates and highlight the current SAF breakpoint', async () => {

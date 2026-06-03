@@ -4,6 +4,13 @@ This log records public-safe maintenance evidence for the JetScope repository.
 
 ## 2026-06-04
 
+- Added the crisis brief contract and localized monitor pages:
+  `/v1/analysis/crisis-brief` now provides a read-only aggregation of market
+  source status, EU reserve stress, tipping events, research posture, and
+  review actions; `/en/crisis` and `/de/crisis` consume that contract without
+  reusing Chinese-only crisis components. Shell navigation, language
+  switching, sitemap entries, route tests, OpenAPI, and read-model coverage now
+  preserve the crisis path across Chinese, English, and German.
 - Added localized report detail pages: `/en/reports/tipping-point-analysis`
   and `/de/reports/tipping-point-analysis` now provide source-backed,
   locale-specific tipping-point report views instead of routing English and

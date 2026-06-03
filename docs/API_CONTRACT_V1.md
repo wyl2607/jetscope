@@ -165,6 +165,64 @@ Query parameters:
 | `since` | ISO datetime | Optional lower bound. |
 | `limit` | integer | Optional, 1 to 100, default `100`. |
 
+### `GET /v1/analysis/crisis-brief`
+
+Returns a read-only operating brief for the crisis monitor. The endpoint
+aggregates the current market source status, EU reserve stress signal, recent
+tipping events, research posture, and review actions so localized web pages do
+not duplicate backend aggregation logic.
+
+Query parameters:
+
+| Parameter | Type | Rule |
+| --- | --- | --- |
+| `since` | ISO datetime | Optional lower bound for tipping events; defaults to the last 42 days. |
+| `limit` | integer | Optional, 1 to 50, default `20`. |
+
+Response shape:
+
+```json
+{
+  "generated_at": "2026-06-04T12:00:00Z",
+  "market_generated_at": "2026-06-04T11:58:00Z",
+  "fossil_jet_usd_per_l": 0.845,
+  "source_status": {
+    "overall": "degraded",
+    "confidence": 0.72,
+    "freshness_minutes": 2,
+    "fallback_rate": 14.0,
+    "is_fallback": true
+  },
+  "reserve": {
+    "generated_at": "2026-06-04T11:55:00Z",
+    "region": "eu",
+    "coverage_days": 24,
+    "coverage_weeks": 3.43,
+    "stress_level": "elevated",
+    "estimated_supply_gap_pct": 9.5,
+    "source_type": "official",
+    "source_name": "IEA Oil Market Report",
+    "confidence_score": 0.85
+  },
+  "tipping_events": [],
+  "research": {
+    "status": "disabled",
+    "signal_count": 0,
+    "top_signal_title": null,
+    "top_signal_confidence": null,
+    "latest_published_at": null
+  },
+  "actions": [
+    {
+      "id": "review_sources",
+      "label": "Review source evidence",
+      "href": "/sources?filter=review",
+      "reason": "Check fallback, proxy, degraded, and volatile rows before using crisis signals operationally."
+    }
+  ]
+}
+```
+
 ### `GET /v1/reserves/eu`
 
 Returns EU reserve coverage and stress signal used by the crisis surface.

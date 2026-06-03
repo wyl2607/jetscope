@@ -11,6 +11,7 @@ const ROUTES = [
   ['en/page.tsx', 'JetScope Europe'],
   ['en/faq/page.tsx', 'Frequently Asked Questions'],
   ['en/dashboard/page.tsx', 'Decision Cockpit'],
+  ['en/crisis/page.tsx', 'Fuel Stress Brief'],
   ['en/prices/germany-jet-fuel/page.tsx', 'Germany Jet-Fuel Price Monitor'],
   ['en/sources/page.tsx', 'Source Review'],
   ['en/research/page.tsx', 'Research Workbench'],
@@ -22,6 +23,7 @@ const ROUTES = [
   ['de/page.tsx', 'JetScope Deutschland'],
   ['de/faq/page.tsx', 'Häufige Fragen'],
   ['de/dashboard/page.tsx', 'Entscheidungscockpit'],
+  ['de/crisis/page.tsx', 'Krisenbrief'],
   ['de/prices/germany-jet-fuel/page.tsx', 'Deutschland Jet-Fuel Preis-Monitor'],
   ['de/sources/page.tsx', 'Quellenprüfung'],
   ['de/admin/page.tsx', 'Startbereitschaft'],
@@ -52,11 +54,14 @@ test('current JetScope routes expose canonical product surfaces', async () => {
 test('localized sitemap includes published English and German route surfaces', async () => {
   const source = await readFile(new URL('../apps/web/app/sitemap.ts', import.meta.url), 'utf8');
   const routes = [
+    '/crisis',
+    '/en/crisis',
     '/en/prices/germany-jet-fuel',
     '/en/lufthansa-saf-2026',
     '/en/faq',
     '/reports/tipping-point-analysis',
     '/de/faq',
+    '/de/crisis',
     '/de/sources',
     '/de/research',
     '/en/reports/tipping-point-analysis',

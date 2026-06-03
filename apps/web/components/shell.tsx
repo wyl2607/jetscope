@@ -19,6 +19,7 @@ const navByLocale = {
   de: [
     { href: '/de', label: 'Startseite' },
     { href: '/de/dashboard', label: 'Entscheidungscockpit' },
+    { href: '/de/crisis', label: 'Krisenmonitor' },
     { href: '/de/prices/germany-jet-fuel', label: 'Preise' },
     { href: '/de/sources', label: 'Quellen' },
     { href: '/de/scenarios', label: 'Szenarien' },
@@ -31,6 +32,7 @@ const navByLocale = {
   en: [
     { href: '/en', label: 'Home' },
     { href: '/en/dashboard', label: 'Decision Cockpit' },
+    { href: '/en/crisis', label: 'Crisis Monitor' },
     { href: '/en/prices/germany-jet-fuel', label: 'Prices' },
     { href: '/en/sources', label: 'Sources' },
     { href: '/en/research', label: 'Research' },

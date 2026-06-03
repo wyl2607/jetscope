@@ -285,6 +285,70 @@
         }
       }
     },
+    "/v1/analysis/crisis-brief": {
+      "get": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Get Crisis Brief",
+        "operationId": "get_crisis_brief_v1_analysis_crisis_brief_get",
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter tipping events observed at or after this ISO8601 timestamp",
+              "title": "Since"
+            },
+            "description": "Filter tipping events observed at or after this ISO8601 timestamp"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrisisBriefResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/market/snapshot": {
       "get": {
         "tags": [
@@ -1545,6 +1609,151 @@
           "signal"
         ],
         "title": "AirlineDecisionResponse"
+      },
+      "CrisisBriefAction": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "review_sources",
+              "open_report",
+              "review_scenarios"
+            ],
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "href": {
+            "type": "string",
+            "title": "Href"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "href",
+          "reason"
+        ],
+        "title": "CrisisBriefAction"
+      },
+      "CrisisBriefResearchPosture": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "disabled",
+              "empty",
+              "signal_backed"
+            ],
+            "title": "Status"
+          },
+          "signal_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Signal Count"
+          },
+          "top_signal_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Signal Title"
+          },
+          "top_signal_confidence": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Signal Confidence"
+          },
+          "latest_published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Published At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "signal_count"
+        ],
+        "title": "CrisisBriefResearchPosture"
+      },
+      "CrisisBriefResponse": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "market_generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Market Generated At"
+          },
+          "fossil_jet_usd_per_l": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Fossil Jet Usd Per L"
+          },
+          "source_status": {
+            "$ref": "#/components/schemas/SourceStatus"
+          },
+          "reserve": {
+            "$ref": "#/components/schemas/ReserveSignalResponse"
+          },
+          "tipping_events": {
+            "items": {
+              "$ref": "#/components/schemas/TippingEventResponse"
+            },
+            "type": "array",
+            "title": "Tipping Events"
+          },
+          "research": {
+            "$ref": "#/components/schemas/CrisisBriefResearchPosture"
+          },
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/CrisisBriefAction"
+            },
+            "type": "array",
+            "title": "Actions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at",
+          "market_generated_at",
+          "fossil_jet_usd_per_l",
+          "source_status",
+          "reserve",
+          "research"
+        ],
+        "title": "CrisisBriefResponse"
       },
       "EuEtsPressureInputs": {
         "properties": {
