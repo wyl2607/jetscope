@@ -50,6 +50,16 @@ export default function GermanIndexPage() {
             </Link>
           </p>
         </InfoCard>
+        <InfoCard title="Szenario-Workbench" subtitle="/de/scenarios">
+          <p className="text-sm leading-7 text-slate-300">
+            Lesende Prüfung gespeicherter SAF-Annahmen mit Marktkontext, Risikosignal und geschützter Schreibgrenze.
+          </p>
+          <p className="mt-4 text-sm">
+            <Link className="text-sky-300 underline" href="/de/scenarios">
+              Szenarien prüfen
+            </Link>
+          </p>
+        </InfoCard>
         <InfoCard title="Startbereitschaft" subtitle="/de/admin">
           <p className="text-sm leading-7 text-slate-300">
             Lesende Prüfung von Datenbank, Markt-Snapshot, Quellenabdeckung, Admin-Token und AI-Research-Pipeline vor dem Start.

@@ -568,6 +568,29 @@ test('German dashboard keeps source drill-through in the German locale', async (
   assert.doesNotMatch(germanDashboardSource, /`\/sources\?focus=/);
 });
 
+test('German scenarios page reviews saved assumptions without Chinese editor UI', async () => {
+  const germanScenariosSource = await readFile(new URL('../apps/web/app/de/scenarios/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(germanScenariosSource, /Szenario-Workbench/);
+  assert.match(germanScenariosSource, /getDashboardReadModel\('de'\)/);
+  assert.match(germanScenariosSource, /Gespeicherte Szenarien/);
+  assert.match(germanScenariosSource, /Szenarioannahmen/);
+  assert.match(germanScenariosSource, /Geschützte Schreibgrenze/);
+  assert.match(germanScenariosSource, /de\/dashboard/);
+  assert.match(germanScenariosSource, /de\/sources\?filter=review/);
+  assert.match(germanScenariosSource, /de\/admin/);
+  assert.doesNotMatch(germanScenariosSource, /ScenarioRegistry|<input|type="password"/);
+  assert.doesNotMatch(
+    germanScenariosSource,
+    /情景工作区|情景管理|保存假设|管理令牌|创建|更新|删除|高级 JSON 设置|暂无/
+  );
+  assert.doesNotMatch(
+    germanScenariosSource,
+    /Scenario Workbench|Saved scenarios|Scenario assumptions|Protected write boundary|No saved assumptions/
+  );
+  assert.doesNotMatch(germanScenariosSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
 test('German admin page exposes launch readiness without protected write controls', async () => {
   const germanAdminSource = await readFile(new URL('../apps/web/app/de/admin/page.tsx', import.meta.url), 'utf8');
 

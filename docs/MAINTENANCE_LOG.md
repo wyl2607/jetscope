@@ -46,6 +46,11 @@ This log records public-safe maintenance evidence for the JetScope repository.
   and AI research prerequisites. It reuses `getLaunchReadinessReadModel()`,
   maps readiness labels/status/details in the display layer, and does not
   import protected write controls or render a token input.
+- Added the German scenario-review slice: `/de/scenarios` now mirrors the
+  English saved-assumption review surface in German, calls
+  `getDashboardReadModel('de')`, routes source/dashboard/readiness links back
+  into the German locale, and keeps create/update/delete operations in the
+  protected primary scenario editor.
 - German readiness validation: MiMo/OpenCode provided a read-only checklist
   for the implementation; focused tests first failed on missing route/nav and
   then passed after implementation. Browser checks confirmed `/de/admin`
