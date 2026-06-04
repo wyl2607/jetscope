@@ -21,6 +21,8 @@ SignalTypeParam = Literal[
     "POLICY_CHANGE",
     "PRICE_SHOCK",
     "CAPACITY_ANNOUNCEMENT",
+    "TECHNOLOGY_BREAKTHROUGH",
+    "GRID_INFRASTRUCTURE",
     "OTHER",
 ]
 

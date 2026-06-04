@@ -9,9 +9,11 @@ ResearchSignalType = Literal[
     "POLICY_CHANGE",
     "PRICE_SHOCK",
     "CAPACITY_ANNOUNCEMENT",
+    "TECHNOLOGY_BREAKTHROUGH",
+    "GRID_INFRASTRUCTURE",
     "OTHER",
 ]
-ResearchImpactDirection = Literal["BEARISH_SAF", "BULLISH_SAF", "NEUTRAL"]
+ResearchImpactDirection = Literal["BEARISH", "BULLISH", "NEUTRAL"]
 
 
 class ResearchSignalResponse(BaseModel):

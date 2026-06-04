@@ -1074,6 +1074,8 @@
                     "POLICY_CHANGE",
                     "PRICE_SHOCK",
                     "CAPACITY_ANNOUNCEMENT",
+                    "TECHNOLOGY_BREAKTHROUGH",
+                    "GRID_INFRASTRUCTURE",
                     "OTHER"
                   ],
                   "type": "string"
@@ -3478,6 +3480,8 @@
               "POLICY_CHANGE",
               "PRICE_SHOCK",
               "CAPACITY_ANNOUNCEMENT",
+              "TECHNOLOGY_BREAKTHROUGH",
+              "GRID_INFRASTRUCTURE",
               "OTHER"
             ],
             "title": "Signal Type"
@@ -3492,8 +3496,8 @@
           "impact_direction": {
             "type": "string",
             "enum": [
-              "BEARISH_SAF",
-              "BULLISH_SAF",
+              "BEARISH",
+              "BULLISH",
               "NEUTRAL"
             ],
             "title": "Impact Direction"

@@ -83,7 +83,7 @@ def test_claude_extractor_real_mode_uses_cache_control(monkeypatch: pytest.Monke
 
     class FakeBlock:
         text = (
-            '{"signal_type":"POLICY_CHANGE","entities":["EU"],"impact_direction":"BULLISH_SAF",'
+            '{"signal_type":"POLICY_CHANGE","entities":["EU"],"impact_direction":"BULLISH",'
             '"confidence":0.82,"summary_en":"Policy expansion","summary_cn":"政策扩张"}'
         )
         input = None
@@ -223,7 +223,7 @@ def test_signal_repository_upsert_dedup_by_url(session_factory):
                 {
                     "signal_type": "PRICE_SHOCK",
                     "entities": ["Brent"],
-                    "impact_direction": "BEARISH_SAF",
+                    "impact_direction": "BEARISH",
                     "confidence": 0.9,
                     "summary_en": "second",
                     "summary_cn": "second",
@@ -355,7 +355,7 @@ def test_research_route_filters_since_limit_signal_type(client: TestClient, sess
                     source_url="https://example.com/new1",
                     signal_type="POLICY_CHANGE",
                     entities=["EU"],
-                    impact_direction="BULLISH_SAF",
+                    impact_direction="BULLISH",
                     confidence=0.8,
                     summary_en="new1",
                     summary_cn="new1",
@@ -372,7 +372,7 @@ def test_research_route_filters_since_limit_signal_type(client: TestClient, sess
                     source_url="https://example.com/new2",
                     signal_type="PRICE_SHOCK",
                     entities=["Market"],
-                    impact_direction="BEARISH_SAF",
+                    impact_direction="BEARISH",
                     confidence=0.9,
                     summary_en="new2",
                     summary_cn="new2",

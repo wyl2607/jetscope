@@ -13,7 +13,7 @@ def _payload() -> dict:
         "updated_at": "2026-06-01T10:05:00Z",
         "source_url": "https://example.com/article",
         "signal_type": "POLICY_CHANGE",
-        "impact_direction": "BULLISH_SAF",
+        "impact_direction": "BULLISH",
         "confidence": 0.72,
         "summary_en": "Policy support expanded.",
         "summary_cn": "政策支持扩大。",
@@ -30,7 +30,7 @@ def test_research_signal_response_parses_valid_payload_and_defaults_entities():
 
     assert model.id == "signal-1"
     assert model.signal_type == "POLICY_CHANGE"
-    assert model.impact_direction == "BULLISH_SAF"
+    assert model.impact_direction == "BULLISH"
     assert model.entities == []
     assert model.created_at.tzinfo is not None
 
