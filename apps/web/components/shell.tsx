@@ -9,6 +9,7 @@ const navByLocale = {
   zh: [
     { href: '/dashboard', label: '决策驾驶舱' },
     { href: '/crisis', label: '危机监测' },
+    { href: '/grid', label: '电网平价' },
     { href: '/scenarios', label: '情景推演' },
     { href: '/research', label: '研究信号' },
     { href: '/reports', label: '分析报告' },
