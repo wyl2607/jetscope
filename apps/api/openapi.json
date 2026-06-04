@@ -349,6 +349,111 @@
         }
       }
     },
+    "/v1/analysis/grid-parity": {
+      "get": {
+        "tags": [
+          "grid"
+        ],
+        "summary": "Get Grid Parity Analysis",
+        "operationId": "get_grid_parity_analysis_v1_analysis_grid_parity_get",
+        "parameters": [
+          {
+            "name": "carbon_price_eur_per_t",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "description": "EU ETS carbon price in EUR per metric ton",
+              "default": 65.0,
+              "title": "Carbon Price Eur Per T"
+            },
+            "description": "EU ETS carbon price in EUR per metric ton"
+          },
+          {
+            "name": "gas_fuel_eur_per_mwh_th",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Gas fuel cost in EUR per MWh thermal",
+              "default": 30.0,
+              "title": "Gas Fuel Eur Per Mwh Th"
+            },
+            "description": "Gas fuel cost in EUR per MWh thermal"
+          },
+          {
+            "name": "coal_fuel_eur_per_mwh_th",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Coal fuel cost in EUR per MWh thermal",
+              "default": 12.0,
+              "title": "Coal Fuel Eur Per Mwh Th"
+            },
+            "description": "Coal fuel cost in EUR per MWh thermal"
+          },
+          {
+            "name": "fossil_reference_key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Fossil reference plant key (gas_ccgt | hard_coal)",
+              "default": "gas_ccgt",
+              "title": "Fossil Reference Key"
+            },
+            "description": "Fossil reference plant key (gas_ccgt | hard_coal)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GridParityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analysis/grid-parity/history": {
+      "get": {
+        "tags": [
+          "grid"
+        ],
+        "summary": "Get Grid Parity History",
+        "operationId": "get_grid_parity_history_v1_analysis_grid_parity_history_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GridHistoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/market/snapshot": {
       "get": {
         "tags": [
@@ -1907,6 +2012,335 @@
           "fallback_used"
         ],
         "title": "EuEtsPressureSource"
+      },
+      "FossilReference": {
+        "properties": {
+          "plant_key": {
+            "type": "string",
+            "title": "Plant Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "efficiency": {
+            "type": "number",
+            "maximum": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Efficiency"
+          },
+          "fuel_cost_eur_per_mwh_th": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Fuel Cost Eur Per Mwh Th"
+          },
+          "var_o_m_eur_per_mwh": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Var O M Eur Per Mwh"
+          },
+          "emission_intensity_t_per_mwh": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Emission Intensity T Per Mwh"
+          },
+          "marginal_cost_eur_per_mwh": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Marginal Cost Eur Per Mwh"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plant_key",
+          "name",
+          "efficiency",
+          "fuel_cost_eur_per_mwh_th",
+          "var_o_m_eur_per_mwh",
+          "emission_intensity_t_per_mwh",
+          "marginal_cost_eur_per_mwh"
+        ],
+        "title": "FossilReference"
+      },
+      "GridCarbonSweepEntry": {
+        "properties": {
+          "tech_key": {
+            "type": "string",
+            "title": "Tech Key"
+          },
+          "gap_vs_fossil_eur_per_mwh": {
+            "type": "number",
+            "title": "Gap Vs Fossil Eur Per Mwh"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "uneconomic",
+              "inflection",
+              "marginal_switch",
+              "dominant"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tech_key",
+          "gap_vs_fossil_eur_per_mwh",
+          "status"
+        ],
+        "title": "GridCarbonSweepEntry"
+      },
+      "GridCarbonSweepPoint": {
+        "properties": {
+          "carbon_price_eur_per_t": {
+            "type": "number",
+            "title": "Carbon Price Eur Per T"
+          },
+          "fossil_marginal_cost_eur_per_mwh": {
+            "type": "number",
+            "title": "Fossil Marginal Cost Eur Per Mwh"
+          },
+          "techs": {
+            "items": {
+              "$ref": "#/components/schemas/GridCarbonSweepEntry"
+            },
+            "type": "array",
+            "title": "Techs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "carbon_price_eur_per_t",
+          "fossil_marginal_cost_eur_per_mwh",
+          "techs"
+        ],
+        "title": "GridCarbonSweepPoint"
+      },
+      "GridHistoryPoint": {
+        "properties": {
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          },
+          "carbon_price_eur_per_t": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Carbon Price Eur Per T"
+          },
+          "fossil_marginal_cost_eur_per_mwh": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Fossil Marginal Cost Eur Per Mwh"
+          },
+          "solar_lcoe_eur_per_mwh": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Solar Lcoe Eur Per Mwh"
+          },
+          "solar_gap_eur_per_mwh": {
+            "type": "number",
+            "title": "Solar Gap Eur Per Mwh"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "uneconomic",
+              "inflection",
+              "marginal_switch",
+              "dominant"
+            ],
+            "title": "Status"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence"
+          },
+          "fallback": {
+            "type": "boolean",
+            "title": "Fallback"
+          }
+        },
+        "type": "object",
+        "required": [
+          "year",
+          "carbon_price_eur_per_t",
+          "fossil_marginal_cost_eur_per_mwh",
+          "solar_lcoe_eur_per_mwh",
+          "solar_gap_eur_per_mwh",
+          "status",
+          "source",
+          "confidence",
+          "fallback"
+        ],
+        "title": "GridHistoryPoint"
+      },
+      "GridHistoryResponse": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region"
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/GridHistoryPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at",
+          "region",
+          "disclaimer",
+          "points"
+        ],
+        "title": "GridHistoryResponse"
+      },
+      "GridParityInputs": {
+        "properties": {
+          "carbon_price_eur_per_t": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Carbon Price Eur Per T"
+          },
+          "gas_fuel_eur_per_mwh_th": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Gas Fuel Eur Per Mwh Th"
+          },
+          "coal_fuel_eur_per_mwh_th": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Coal Fuel Eur Per Mwh Th"
+          },
+          "fossil_reference_key": {
+            "type": "string",
+            "title": "Fossil Reference Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "carbon_price_eur_per_t",
+          "gas_fuel_eur_per_mwh_th",
+          "coal_fuel_eur_per_mwh_th",
+          "fossil_reference_key"
+        ],
+        "title": "GridParityInputs"
+      },
+      "GridParityResponse": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/GridParityInputs"
+          },
+          "fossil_reference": {
+            "$ref": "#/components/schemas/FossilReference"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/GridParityRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "carbon_sweep": {
+            "items": {
+              "$ref": "#/components/schemas/GridCarbonSweepPoint"
+            },
+            "type": "array",
+            "title": "Carbon Sweep"
+          },
+          "signal": {
+            "type": "string",
+            "enum": [
+              "clear_leader",
+              "close_race",
+              "no_advantage"
+            ],
+            "title": "Signal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at",
+          "inputs",
+          "fossil_reference",
+          "rows",
+          "carbon_sweep",
+          "signal"
+        ],
+        "title": "GridParityResponse"
+      },
+      "GridParityRow": {
+        "properties": {
+          "tech_key": {
+            "type": "string",
+            "title": "Tech Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "lcoe_mid_eur_per_mwh": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Lcoe Mid Eur Per Mwh"
+          },
+          "maturity_level": {
+            "type": "string",
+            "title": "Maturity Level"
+          },
+          "gap_vs_fossil_eur_per_mwh": {
+            "type": "number",
+            "title": "Gap Vs Fossil Eur Per Mwh"
+          },
+          "spread_pct": {
+            "type": "number",
+            "title": "Spread Pct"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "uneconomic",
+              "inflection",
+              "marginal_switch",
+              "dominant"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tech_key",
+          "name",
+          "lcoe_mid_eur_per_mwh",
+          "maturity_level",
+          "gap_vs_fossil_eur_per_mwh",
+          "spread_pct",
+          "status"
+        ],
+        "title": "GridParityRow"
       },
       "HTTPValidationError": {
         "properties": {
