@@ -32,6 +32,7 @@ The product connects market prices, EU policy, carbon costs, reserve coverage, S
 | --- | --- |
 | Market dashboard | Tracks aviation fuel, Brent proxy, EU ETS carbon price, German premium, Rotterdam proxy, SAF proxy, freshness, and source health. |
 | SAF tipping point analysis | Models when fossil jet fuel plus carbon exposure crosses SAF effective cost. |
+| Grid-parity analysis | Models when renewable electricity (solar/wind LCOE) crosses fossil generation cost plus EU ETS carbon, with an interactive carbon-price slider. Shares one cost-crossover engine with the SAF tipping point. |
 | Airline decision matrix | Combines fuel price, reserve stress, carbon exposure, and SAF pathway cost into procurement signals. |
 | EU reserve stress view | Shows European reserve coverage pressure and crisis indicators. |
 | Scenario registry | Saves and compares procurement assumptions and route edits. |
@@ -55,6 +56,29 @@ jetscope/
 └── test/                     # Node contract and read-model tests
 ```
 
+#### Architecture highlight: one cost-crossover engine, two decarbonization domains
+
+The economic question behind both products is identical: *when does the clean
+option become cheaper than the fossil option once the same EU ETS carbon price
+is applied?* That logic lives in a single domain-agnostic core
+(`apps/api/app/services/analysis/crossover.py`), consumed by two domains.
+
+```mermaid
+graph TD
+    CO2["EU ETS carbon price (shared lever)"] --> CROSS
+    CROSS["crossover.py<br/>(gap → status: dominant / marginal / inflection / uneconomic)"]
+    CROSS --> SAF["SAF tipping point<br/>(net SAF cost vs fossil jet)"]
+    CROSS --> GRID["Grid parity<br/>(renewable LCOE vs fossil marginal cost)"]
+    NEWS["Fuel/energy news"] --> AI["Claude signal extractor<br/>(mock-first, switchable to live)"]
+    SAF --> WEB["Next.js read models + pages"]
+    GRID --> WEB
+    AI --> WEB
+```
+
+The AI research pipeline (`ai_research/claude_pipeline.py`) is mock-first by
+default and switches to a real Claude extraction path via configuration, so the
+repository stays reproducible without credentials.
+
 ### Core API Surface
 
 | Endpoint | Method | Description |
@@ -68,6 +92,8 @@ jetscope/
 | `/v1/analysis/tipping-point` | GET | SAF/fossil tipping point calculation. |
 | `/v1/analysis/airline-decision` | GET | Procurement decision analysis for an airline-style scenario. |
 | `/v1/analysis/tipping-point/events` | GET | Persisted tipping event timeline. |
+| `/v1/analysis/grid-parity` | GET | Renewable-vs-fossil grid-parity calculation with a carbon-price sweep. |
+| `/v1/analysis/grid-parity/history` | GET | Historical grid cost-crossover series (provenance-annotated static baseline). |
 | `/v1/analysis/crisis-brief` | GET | Read-only crisis brief aggregating market source status, EU reserve stress, tipping events, research posture, and review actions. |
 | `/v1/reserves/eu` | GET | EU reserve stress signal. |
 | `/v1/research/signals` | GET | Structured AI research signals with filters for time, type, and limit. |
@@ -83,7 +109,7 @@ Contributor and maintainer documents live in `CONTRIBUTING.md`, `MAINTAINERS.md`
 
 | Locale | Routes | Notes |
 | --- | --- | --- |
-| Chinese | `/`, `/faq`, `/dashboard`, `/crisis`, `/sources`, `/research`, `/reports`, `/scenarios`, `/admin` | Primary operations workspace plus launch-boundary FAQ and crisis monitor. |
+| Chinese | `/`, `/faq`, `/dashboard`, `/crisis`, `/grid`, `/sources`, `/research`, `/reports`, `/scenarios`, `/admin` | Primary operations workspace plus launch-boundary FAQ, crisis monitor, and interactive grid-parity analysis. |
 | German | `/de`, `/de/faq`, `/de/dashboard`, `/de/crisis`, `/de/prices/germany-jet-fuel`, `/de/sources`, `/de/scenarios`, `/de/reports`, `/de/reports/tipping-point-analysis`, `/de/research`, `/de/admin`, `/de/lufthansa-saf-2026` | German FAQ, market, crisis, source, readiness, scenario, report, research, and Lufthansa review slice. |
 | English | `/en`, `/en/faq`, `/en/dashboard`, `/en/crisis`, `/en/prices/germany-jet-fuel`, `/en/sources`, `/en/research`, `/en/reports`, `/en/reports/tipping-point-analysis`, `/en/admin`, `/en/scenarios`, `/en/lufthansa-saf-2026` | English FAQ and review slice for landing, decision cockpit, crisis monitor, Germany price monitor, source review, research pipeline status, report readiness, read-only launch readiness, scenario review, and Lufthansa SAF analysis; protected writes still link back to the primary workspace. |
 
