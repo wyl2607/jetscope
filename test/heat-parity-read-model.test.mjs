@@ -128,3 +128,53 @@ test('loadHeatParity throws on non-ok response', async (t) => {
   const { loadHeatParity } = await importReadModel();
   await assert.rejects(() => loadHeatParity({ carbonPriceEurPerT: 10 }), /heat-parity request failed: 500/);
 });
+
+function sampleSensitivityResponse() {
+  return {
+    generated_at: '2026-06-01T00:00:00Z',
+    gas_price_eur_per_mwh_th: 75,
+    cops: [2.5, 3.0, 3.5, 4.0],
+    elec_prices: [240, 300, 360],
+    cells: [
+      { cop: 3.0, elec_price_eur_per_mwh_el: 300, hp_heat_cost_eur_per_mwh: 100, breakeven_carbon_price_eur_per_t: 85 }
+    ],
+    disclaimer: 'Personal portfolio project.'
+  };
+}
+
+test('loadHeatSensitivity hits heat sensitivity endpoint with gas price query', async (t) => {
+  const previousBase = process.env.JETSCOPE_API_BASE_URL;
+  const previousPrefix = process.env.JETSCOPE_API_PREFIX;
+  process.env.JETSCOPE_API_BASE_URL = 'https://api.example.com';
+  process.env.JETSCOPE_API_PREFIX = '/v1';
+  const originalFetch = global.fetch;
+  let capturedUrl = '';
+  global.fetch = async (input) => {
+    capturedUrl = String(input);
+    return jsonResponse(sampleSensitivityResponse());
+  };
+  t.after(() => {
+    global.fetch = originalFetch;
+    if (previousBase === undefined) delete process.env.JETSCOPE_API_BASE_URL;
+    else process.env.JETSCOPE_API_BASE_URL = previousBase;
+    if (previousPrefix === undefined) delete process.env.JETSCOPE_API_PREFIX;
+    else process.env.JETSCOPE_API_PREFIX = previousPrefix;
+  });
+
+  const { loadHeatSensitivity } = await importReadModel();
+  const body = await loadHeatSensitivity({ gasPriceEurPerMwhTh: 70 });
+  assert.match(capturedUrl, /\/analysis\/heat-parity\/sensitivity\?/);
+  assert.match(capturedUrl, /gas_price=70/);
+  assert.equal(body.cells.length, 1);
+  assert.equal(body.cops.length, 4);
+});
+
+test('loadHeatSensitivity throws on non-ok response', async (t) => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => jsonResponse({}, 500);
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+  const { loadHeatSensitivity } = await importReadModel();
+  await assert.rejects(() => loadHeatSensitivity({ gasPriceEurPerMwhTh: 70 }), /heat-sensitivity request failed: 500/);
+});

@@ -7,6 +7,8 @@ from app.schemas.heat import (
     HeatParityInputs,
     HeatParityResponse,
     HeatPumpReference,
+    HeatSensitivityCell,
+    HeatSensitivityResponse,
 )
 from app.services.analysis.heat_costs import (
     DEFAULT_CARBON_PRICE_EUR_PER_T,
@@ -20,6 +22,12 @@ from app.services.analysis.heat_parity import (
     compute_heat_parity_rows,
     heat_carbon_price_sweep,
     heat_parity_signal,
+)
+from app.services.analysis.heat_sensitivity import (
+    COP_VALUES,
+    HEAT_SENSITIVITY_DISCLAIMER,
+    compute_heat_sensitivity,
+    elec_price_scan,
 )
 
 router = APIRouter()
@@ -84,4 +92,31 @@ def get_heat_parity_analysis(
         rows=rows,
         carbon_sweep=sweep,
         signal=heat_parity_signal(rows),
+    )
+
+
+@router.get("/heat-parity/sensitivity", response_model=HeatSensitivityResponse)
+def get_heat_sensitivity(
+    gas_price: float = Query(
+        DEFAULT_GAS_PRICE_EUR_PER_MWH_TH,
+        ge=0,
+        description="Residential gas price in EUR per MWh thermal",
+    ),
+) -> HeatSensitivityResponse:
+    points = compute_heat_sensitivity(gas_price_eur_per_mwh_th=gas_price)
+    return HeatSensitivityResponse(
+        generated_at=datetime.now(timezone.utc),
+        gas_price_eur_per_mwh_th=gas_price,
+        cops=list(COP_VALUES),
+        elec_prices=list(elec_price_scan()),
+        cells=[
+            HeatSensitivityCell(
+                cop=point.cop,
+                elec_price_eur_per_mwh_el=point.elec_price_eur_per_mwh_el,
+                hp_heat_cost_eur_per_mwh=point.hp_heat_cost_eur_per_mwh,
+                breakeven_carbon_price_eur_per_t=point.breakeven_carbon_price_eur_per_t,
+            )
+            for point in points
+        ],
+        disclaimer=HEAT_SENSITIVITY_DISCLAIMER,
     )

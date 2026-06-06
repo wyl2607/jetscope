@@ -121,3 +121,54 @@ export async function loadHeatParity(
     clearTimeout(timeout);
   }
 }
+
+export type HeatSensitivityCell = {
+  cop: number;
+  elec_price_eur_per_mwh_el: number;
+  hp_heat_cost_eur_per_mwh: number;
+  breakeven_carbon_price_eur_per_t: number;
+};
+
+export type HeatSensitivityResponse = {
+  generated_at: string;
+  gas_price_eur_per_mwh_th: number;
+  cops: number[];
+  elec_prices: number[];
+  cells: HeatSensitivityCell[];
+  disclaimer: string;
+};
+
+export type HeatSensitivityQuery = {
+  gasPriceEurPerMwhTh?: number;
+};
+
+function buildHeatSensitivityUrl(query: HeatSensitivityQuery): string {
+  const params = new URLSearchParams();
+  if (query.gasPriceEurPerMwhTh !== undefined) params.set('gas_price', String(query.gasPriceEurPerMwhTh));
+  const qs = params.toString();
+  const path =
+    typeof window === 'undefined'
+      ? buildApiUrl('/analysis/heat-parity/sensitivity')
+      : '/api/analysis/heat-parity/sensitivity';
+  return qs ? `${path}?${qs}` : path;
+}
+
+export async function loadHeatSensitivity(
+  query: HeatSensitivityQuery = {},
+  options: { timeoutMs?: number } = {}
+): Promise<HeatSensitivityResponse> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(buildHeatSensitivityUrl(query), {
+      signal: controller.signal,
+      headers: { accept: 'application/json' }
+    });
+    if (!res.ok) {
+      throw new Error(`heat-sensitivity request failed: ${res.status}`);
+    }
+    return (await res.json()) as HeatSensitivityResponse;
+  } finally {
+    clearTimeout(timeout);
+  }
+}

@@ -59,3 +59,19 @@ class HeatParityResponse(BaseModel):
     rows: list[HeatParityRow]
     carbon_sweep: list[HeatCarbonSweepPoint]
     signal: HeatParitySignal
+
+
+class HeatSensitivityCell(BaseModel):
+    cop: float = Field(gt=0)
+    elec_price_eur_per_mwh_el: float = Field(gt=0)
+    hp_heat_cost_eur_per_mwh: float = Field(gt=0)
+    breakeven_carbon_price_eur_per_t: float = Field(ge=0)
+
+
+class HeatSensitivityResponse(BaseModel):
+    generated_at: datetime
+    gas_price_eur_per_mwh_th: float = Field(ge=0)
+    cops: list[float]
+    elec_prices: list[float]
+    cells: list[HeatSensitivityCell]
+    disclaimer: str

@@ -658,6 +658,52 @@
         }
       }
     },
+    "/v1/analysis/heat-parity/sensitivity": {
+      "get": {
+        "tags": [
+          "heat"
+        ],
+        "summary": "Get Heat Sensitivity",
+        "operationId": "get_heat_sensitivity_v1_analysis_heat_parity_sensitivity_get",
+        "parameters": [
+          {
+            "name": "gas_price",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Residential gas price in EUR per MWh thermal",
+              "default": 75.0,
+              "title": "Gas Price"
+            },
+            "description": "Residential gas price in EUR per MWh thermal"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeatSensitivityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/market/snapshot": {
       "get": {
         "tags": [
@@ -2936,6 +2982,87 @@
           "cop"
         ],
         "title": "HeatPumpReference"
+      },
+      "HeatSensitivityCell": {
+        "properties": {
+          "cop": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Cop"
+          },
+          "elec_price_eur_per_mwh_el": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Elec Price Eur Per Mwh El"
+          },
+          "hp_heat_cost_eur_per_mwh": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Hp Heat Cost Eur Per Mwh"
+          },
+          "breakeven_carbon_price_eur_per_t": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Breakeven Carbon Price Eur Per T"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cop",
+          "elec_price_eur_per_mwh_el",
+          "hp_heat_cost_eur_per_mwh",
+          "breakeven_carbon_price_eur_per_t"
+        ],
+        "title": "HeatSensitivityCell"
+      },
+      "HeatSensitivityResponse": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "gas_price_eur_per_mwh_th": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Gas Price Eur Per Mwh Th"
+          },
+          "cops": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Cops"
+          },
+          "elec_prices": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Elec Prices"
+          },
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/HeatSensitivityCell"
+            },
+            "type": "array",
+            "title": "Cells"
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at",
+          "gas_price_eur_per_mwh_th",
+          "cops",
+          "elec_prices",
+          "cells",
+          "disclaimer"
+        ],
+        "title": "HeatSensitivityResponse"
       },
       "MarketHistoryBackfillResponse": {
         "properties": {

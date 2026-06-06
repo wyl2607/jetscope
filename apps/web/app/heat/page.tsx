@@ -1,7 +1,13 @@
 import type { Metadata } from 'next';
 import { HeatParityWorkbench } from '@/components/heat-parity-workbench';
+import { HeatSensitivityMatrix } from '@/components/heat-sensitivity-matrix';
 import { Shell } from '@/components/shell';
-import { type HeatParityResponse, loadHeatParity } from '@/lib/heat-parity-read-model';
+import {
+  type HeatParityResponse,
+  type HeatSensitivityResponse,
+  loadHeatParity,
+  loadHeatSensitivity
+} from '@/lib/heat-parity-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
@@ -15,10 +21,16 @@ export const metadata: Metadata = buildPageMetadata({
 
 export default async function HeatParityPage() {
   let parity: HeatParityResponse | null = null;
+  let sensitivity: HeatSensitivityResponse | null = null;
   try {
     parity = await loadHeatParity();
   } catch {
     parity = null;
+  }
+  try {
+    sensitivity = await loadHeatSensitivity();
+  } catch {
+    sensitivity = null;
   }
 
   return (
@@ -30,6 +42,8 @@ export default async function HeatParityPage() {
       {parity ? (
         <div className="space-y-6">
           <HeatParityWorkbench initial={parity} />
+
+          {sensitivity && <HeatSensitivityMatrix initial={sensitivity} />}
 
           <article className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Methodology</p>
