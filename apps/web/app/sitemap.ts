@@ -36,6 +36,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.94
     },
     {
+      url: `${BASE_URL}/grid`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.93
+    },
+    {
+      url: `${BASE_URL}/heat`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.91
+    },
+    {
       url: `${BASE_URL}/de/dashboard`,
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'hourly',

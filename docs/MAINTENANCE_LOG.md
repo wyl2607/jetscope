@@ -4,6 +4,9 @@ This log records public-safe maintenance evidence for the JetScope repository.
 
 ## 2026-06-06
 
+- Published the existing `/grid` and `/heat` workspaces through README
+  capability/API/route discovery, sitemap entries, and routing-contract tests
+  while keeping runtime behavior unchanged.
 - Added the heat-pump vs gas-boiler parity domain at
   `/v1/analysis/heat-parity` and `/heat`, reusing the shared crossover engine
   with ETS2-driven carbon-price sensitivity, air-source and ground-source heat
