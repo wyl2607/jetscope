@@ -64,6 +64,24 @@ export type GridHistoryResponse = {
   points: GridHistoryPoint[];
 };
 
+export type GridLcoeSensitivityCell = {
+  discount_rate: number;
+  full_load_hours: number;
+  lcoe_eur_per_mwh: number;
+  breakeven_carbon_price_eur_per_t: number;
+};
+
+export type GridLcoeSensitivityResponse = {
+  generated_at: string;
+  tech_key: string;
+  tech_name: string;
+  fossil_reference_key: string;
+  discount_rates: number[];
+  full_load_hours: number[];
+  cells: GridLcoeSensitivityCell[];
+  disclaimer: string;
+};
+
 const STATUS_LABELS: Record<GridParityStatus, string> = {
   uneconomic: '不经济',
   inflection: '拐点临近',
@@ -103,6 +121,12 @@ export type GridParityQuery = {
   fossilReferenceKey?: string;
 };
 
+export type GridLcoeSensitivityQuery = {
+  techKey?: string;
+  fossilReferenceKey?: string;
+  gasFuelEurPerMwhTh?: number;
+};
+
 function buildGridParityUrl(query: GridParityQuery): string {
   const params = new URLSearchParams();
   if (query.carbonPriceEurPerT !== undefined) params.set('carbon_price_eur_per_t', String(query.carbonPriceEurPerT));
@@ -111,6 +135,16 @@ function buildGridParityUrl(query: GridParityQuery): string {
   if (query.fossilReferenceKey !== undefined) params.set('fossil_reference_key', query.fossilReferenceKey);
   const qs = params.toString();
   return qs ? `${buildApiUrl('/analysis/grid-parity')}?${qs}` : buildApiUrl('/analysis/grid-parity');
+}
+
+function buildGridLcoeSensitivityUrl(query: GridLcoeSensitivityQuery): string {
+  const params = new URLSearchParams();
+  if (query.techKey !== undefined) params.set('tech_key', query.techKey);
+  if (query.fossilReferenceKey !== undefined) params.set('fossil_reference_key', query.fossilReferenceKey);
+  if (query.gasFuelEurPerMwhTh !== undefined) params.set('gas_fuel_eur_per_mwh_th', String(query.gasFuelEurPerMwhTh));
+  const qs = params.toString();
+  const path = buildApiUrl('/analysis/grid-parity/lcoe-sensitivity');
+  return qs ? `${path}?${qs}` : path;
 }
 
 export async function loadGridParity(
@@ -147,6 +181,26 @@ export async function loadGridHistory(
       throw new Error(`grid-parity history request failed: ${res.status}`);
     }
     return (await res.json()) as GridHistoryResponse;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export async function loadGridLcoeSensitivity(
+  query: GridLcoeSensitivityQuery = {},
+  options: { timeoutMs?: number } = {}
+): Promise<GridLcoeSensitivityResponse> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(buildGridLcoeSensitivityUrl(query), {
+      signal: controller.signal,
+      headers: { accept: 'application/json' }
+    });
+    if (!res.ok) {
+      throw new Error(`lcoe-sensitivity request failed: ${res.status}`);
+    }
+    return (await res.json()) as GridLcoeSensitivityResponse;
   } finally {
     clearTimeout(timeout);
   }

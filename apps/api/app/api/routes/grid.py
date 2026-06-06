@@ -7,6 +7,8 @@ from fastapi import APIRouter, HTTPException, Query
 from app.schemas.grid import (
     GridHistoryPoint,
     GridHistoryResponse,
+    GridLcoeSensitivityCell,
+    GridLcoeSensitivityResponse,
     GridParityInputs,
     GridParityResponse,
 )
@@ -20,6 +22,13 @@ from app.services.analysis.grid_costs import (
     fossil_reference_schema,
     fuel_cost_for_plant,
     get_fossil_plant,
+)
+from app.services.analysis.grid_lcoe_sensitivity import (
+    DEFAULT_LCOE_SENSITIVITY_DISCOUNT_RATES,
+    LCOE_SENSITIVITY_DISCLAIMER,
+    compute_lcoe_sensitivity,
+    full_load_hour_scan,
+    get_lcoe_sensitivity_tech,
 )
 from app.services.analysis.grid_parity import (
     GRID_SPREAD_THRESHOLDS,
@@ -129,4 +138,50 @@ def get_grid_parity_history() -> GridHistoryResponse:
         region=meta["region"],
         disclaimer=meta["disclaimer"],
         points=points,
+    )
+
+
+@router.get("/grid-parity/lcoe-sensitivity", response_model=GridLcoeSensitivityResponse)
+def get_grid_lcoe_sensitivity(
+    tech_key: str = Query("solar_pv", description="Renewable technology key"),
+    fossil_reference_key: str = Query(
+        DEFAULT_FOSSIL_REFERENCE_KEY, description="Fossil reference plant key (gas_ccgt | hard_coal)"
+    ),
+    gas_fuel_eur_per_mwh_th: float = Query(
+        DEFAULT_GAS_FUEL_EUR_PER_MWH_TH, ge=0, description="Gas fuel cost in EUR per MWh thermal"
+    ),
+) -> GridLcoeSensitivityResponse:
+    try:
+        tech = get_lcoe_sensitivity_tech(tech_key)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"Unknown tech_key: {tech_key}") from exc
+    try:
+        get_fossil_plant(fossil_reference_key)
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=404, detail=f"Unknown fossil_reference_key: {fossil_reference_key}"
+        ) from exc
+
+    points = compute_lcoe_sensitivity(
+        tech_key=tech.tech_key,
+        fossil_plant_key=fossil_reference_key,
+        fuel_cost_eur_per_mwh_th=gas_fuel_eur_per_mwh_th,
+    )
+    return GridLcoeSensitivityResponse(
+        generated_at=datetime.now(timezone.utc),
+        tech_key=tech.tech_key,
+        tech_name=tech.name,
+        fossil_reference_key=fossil_reference_key,
+        discount_rates=list(DEFAULT_LCOE_SENSITIVITY_DISCOUNT_RATES),
+        full_load_hours=list(full_load_hour_scan(tech)),
+        cells=[
+            GridLcoeSensitivityCell(
+                discount_rate=point.discount_rate,
+                full_load_hours=point.full_load_hours,
+                lcoe_eur_per_mwh=point.lcoe_eur_per_mwh,
+                breakeven_carbon_price_eur_per_t=point.breakeven_carbon_price_eur_per_t,
+            )
+            for point in points
+        ],
+        disclaimer=LCOE_SENSITIVITY_DISCLAIMER,
     )

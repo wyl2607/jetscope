@@ -40,6 +40,26 @@ function sampleResponse() {
   };
 }
 
+function sampleLcoeSensitivityResponse() {
+  return {
+    generated_at: '2026-06-01T00:00:00Z',
+    tech_key: 'solar_pv',
+    tech_name: 'Solar PV (utility)',
+    fossil_reference_key: 'gas_ccgt',
+    discount_rates: [0.03, 0.05, 0.07, 0.09],
+    full_load_hours: [800, 1000, 1200],
+    cells: [
+      {
+        discount_rate: 0.05,
+        full_load_hours: 1000,
+        lcoe_eur_per_mwh: 57.5,
+        breakeven_carbon_price_eur_per_t: 0
+      }
+    ],
+    disclaimer: 'Illustrative public ranges.'
+  };
+}
+
 test('label and tone helpers map statuses and signals', async () => {
   const { gridStatusLabel, gridSignalLabel, gridStatusTone } = await importReadModel();
   assert.equal(gridStatusLabel('dominant'), '清洁占优');
@@ -84,4 +104,43 @@ test('loadGridParity throws on non-ok response', async (t) => {
   });
   const { loadGridParity } = await importReadModel();
   await assert.rejects(() => loadGridParity({ carbonPriceEurPerT: 10 }), /grid-parity request failed: 500/);
+});
+
+test('loadGridLcoeSensitivity hits lcoe-sensitivity endpoint and parses cells', async (t) => {
+  const previousBase = process.env.JETSCOPE_API_BASE_URL;
+  const previousPrefix = process.env.JETSCOPE_API_PREFIX;
+  process.env.JETSCOPE_API_BASE_URL = 'https://api.example.com';
+  process.env.JETSCOPE_API_PREFIX = '/v1';
+  const originalFetch = global.fetch;
+  let capturedUrl = '';
+  global.fetch = async (input) => {
+    capturedUrl = String(input);
+    return jsonResponse(sampleLcoeSensitivityResponse());
+  };
+  t.after(() => {
+    global.fetch = originalFetch;
+    if (previousBase === undefined) delete process.env.JETSCOPE_API_BASE_URL;
+    else process.env.JETSCOPE_API_BASE_URL = previousBase;
+    if (previousPrefix === undefined) delete process.env.JETSCOPE_API_PREFIX;
+    else process.env.JETSCOPE_API_PREFIX = previousPrefix;
+  });
+
+  const { loadGridLcoeSensitivity } = await importReadModel();
+  const body = await loadGridLcoeSensitivity({ techKey: 'solar_pv', fossilReferenceKey: 'gas_ccgt' });
+  assert.match(capturedUrl, /\/analysis\/grid-parity\/lcoe-sensitivity\?/);
+  assert.match(capturedUrl, /tech_key=solar_pv/);
+  assert.match(capturedUrl, /fossil_reference_key=gas_ccgt/);
+  assert.equal(body.cells.length, 1);
+  assert.equal(body.cells[0].discount_rate, 0.05);
+  assert.equal(body.cells[0].full_load_hours, 1000);
+});
+
+test('loadGridLcoeSensitivity throws on non-ok response', async (t) => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => jsonResponse({}, 404);
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+  const { loadGridLcoeSensitivity } = await importReadModel();
+  await assert.rejects(() => loadGridLcoeSensitivity({ techKey: 'unknown' }), /lcoe-sensitivity request failed: 404/);
 });

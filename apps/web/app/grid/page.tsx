@@ -4,10 +4,12 @@ import { buildPageMetadata } from '@/lib/seo';
 import { GridParityWorkbench } from '@/components/grid-parity-workbench';
 import {
   type GridHistoryResponse,
+  type GridLcoeSensitivityResponse,
   type GridParityResponse,
   gridStatusLabel,
   gridStatusTone,
   loadGridHistory,
+  loadGridLcoeSensitivity,
   loadGridParity
 } from '@/lib/grid-parity-read-model';
 
@@ -41,9 +43,60 @@ function GapSparkline({ history }: { history: GridHistoryResponse }) {
   );
 }
 
+function LcoeSensitivityMatrix({ sensitivity }: { sensitivity: GridLcoeSensitivityResponse }) {
+  const cellByKey = new Map(
+    sensitivity.cells.map((cell) => [`${cell.full_load_hours}:${cell.discount_rate}`, cell])
+  );
+
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white/90 p-6">
+      <div className="mb-4">
+        <h3 className="text-lg font-medium text-slate-950">LCOE 敏感性</h3>
+        <p className="mt-1 text-sm text-slate-600">
+          交叉点碳价 = 光伏击败燃气发电所需的最低 EU ETS 碳价。
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm text-slate-700">
+          <thead>
+            <tr className="border-b border-slate-300 text-left">
+              <th className="py-2 pr-4">满负荷小时</th>
+              {sensitivity.discount_rates.map((rate) => (
+                <th key={rate} className="py-2 pr-4 text-right">
+                  {(rate * 100).toFixed(0)}% WACC
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sensitivity.full_load_hours.map((hours) => (
+              <tr key={hours} className="border-b border-slate-200">
+                <td className="py-2 pr-4 font-mono">{hours.toLocaleString('zh-CN')}</td>
+                {sensitivity.discount_rates.map((rate) => {
+                  const cell = cellByKey.get(`${hours}:${rate}`);
+                  return (
+                    <td key={`${hours}:${rate}`} className="py-2 pr-4 text-right font-mono">
+                      {cell ? `€${cell.breakeven_carbon_price_eur_per_t.toFixed(0)}/t` : '—'}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-xs text-slate-500">
+        默认技术：{sensitivity.tech_name}；格内数值为交叉点碳价（€/t）。
+      </p>
+      <p className="mt-2 text-xs text-slate-400">{sensitivity.disclaimer}</p>
+    </article>
+  );
+}
+
 export default async function GridParityPage() {
   let parity: GridParityResponse | null = null;
   let history: GridHistoryResponse | null = null;
+  let lcoeSensitivity: GridLcoeSensitivityResponse | null = null;
   try {
     parity = await loadGridParity();
   } catch {
@@ -53,6 +106,11 @@ export default async function GridParityPage() {
     history = await loadGridHistory();
   } catch {
     history = null;
+  }
+  try {
+    lcoeSensitivity = await loadGridLcoeSensitivity();
+  } catch {
+    lcoeSensitivity = null;
   }
 
   return (
@@ -107,6 +165,8 @@ export default async function GridParityPage() {
               <p className="mt-4 text-xs text-slate-400">{history.disclaimer}</p>
             </article>
           )}
+
+          {lcoeSensitivity && <LcoeSensitivityMatrix sensitivity={lcoeSensitivity} />}
         </div>
       ) : (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800">

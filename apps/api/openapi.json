@@ -454,6 +454,76 @@
         }
       }
     },
+    "/v1/analysis/grid-parity/lcoe-sensitivity": {
+      "get": {
+        "tags": [
+          "grid"
+        ],
+        "summary": "Get Grid Lcoe Sensitivity",
+        "operationId": "get_grid_lcoe_sensitivity_v1_analysis_grid_parity_lcoe_sensitivity_get",
+        "parameters": [
+          {
+            "name": "tech_key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Renewable technology key",
+              "default": "solar_pv",
+              "title": "Tech Key"
+            },
+            "description": "Renewable technology key"
+          },
+          {
+            "name": "fossil_reference_key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Fossil reference plant key (gas_ccgt | hard_coal)",
+              "default": "gas_ccgt",
+              "title": "Fossil Reference Key"
+            },
+            "description": "Fossil reference plant key (gas_ccgt | hard_coal)"
+          },
+          {
+            "name": "gas_fuel_eur_per_mwh_th",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Gas fuel cost in EUR per MWh thermal",
+              "default": 30.0,
+              "title": "Gas Fuel Eur Per Mwh Th"
+            },
+            "description": "Gas fuel cost in EUR per MWh thermal"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GridLcoeSensitivityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/market/snapshot": {
       "get": {
         "tags": [
@@ -2214,6 +2284,96 @@
           "points"
         ],
         "title": "GridHistoryResponse"
+      },
+      "GridLcoeSensitivityCell": {
+        "properties": {
+          "discount_rate": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Discount Rate"
+          },
+          "full_load_hours": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Full Load Hours"
+          },
+          "lcoe_eur_per_mwh": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Lcoe Eur Per Mwh"
+          },
+          "breakeven_carbon_price_eur_per_t": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Breakeven Carbon Price Eur Per T"
+          }
+        },
+        "type": "object",
+        "required": [
+          "discount_rate",
+          "full_load_hours",
+          "lcoe_eur_per_mwh",
+          "breakeven_carbon_price_eur_per_t"
+        ],
+        "title": "GridLcoeSensitivityCell"
+      },
+      "GridLcoeSensitivityResponse": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "tech_key": {
+            "type": "string",
+            "title": "Tech Key"
+          },
+          "tech_name": {
+            "type": "string",
+            "title": "Tech Name"
+          },
+          "fossil_reference_key": {
+            "type": "string",
+            "title": "Fossil Reference Key"
+          },
+          "discount_rates": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Discount Rates"
+          },
+          "full_load_hours": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Full Load Hours"
+          },
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/GridLcoeSensitivityCell"
+            },
+            "type": "array",
+            "title": "Cells"
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at",
+          "tech_key",
+          "tech_name",
+          "fossil_reference_key",
+          "discount_rates",
+          "full_load_hours",
+          "cells",
+          "disclaimer"
+        ],
+        "title": "GridLcoeSensitivityResponse"
       },
       "GridParityInputs": {
         "properties": {

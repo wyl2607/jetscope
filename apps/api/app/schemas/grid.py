@@ -81,3 +81,21 @@ class GridHistoryResponse(BaseModel):
     region: str
     disclaimer: str
     points: list[GridHistoryPoint]
+
+
+class GridLcoeSensitivityCell(BaseModel):
+    discount_rate: float = Field(gt=0)
+    full_load_hours: int = Field(gt=0)
+    lcoe_eur_per_mwh: float = Field(gt=0)
+    breakeven_carbon_price_eur_per_t: float = Field(ge=0)
+
+
+class GridLcoeSensitivityResponse(BaseModel):
+    generated_at: datetime
+    tech_key: str
+    tech_name: str
+    fossil_reference_key: str
+    discount_rates: list[float]
+    full_load_hours: list[int]
+    cells: list[GridLcoeSensitivityCell]
+    disclaimer: str
