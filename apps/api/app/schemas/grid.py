@@ -83,6 +83,12 @@ class GridHistoryResponse(BaseModel):
     points: list[GridHistoryPoint]
 
 
+class GridHistorySeedResponse(BaseModel):
+    accepted: bool
+    inserted_metric_count: int
+    message: str
+
+
 class GridLcoeSensitivityCell(BaseModel):
     discount_rate: float = Field(gt=0)
     full_load_hours: int = Field(gt=0)

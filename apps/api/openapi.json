@@ -454,6 +454,55 @@
         }
       }
     },
+    "/v1/analysis/grid-parity/history/seed": {
+      "post": {
+        "tags": [
+          "grid"
+        ],
+        "summary": "Seed Grid Parity History",
+        "operationId": "seed_grid_parity_history_v1_analysis_grid_parity_history_seed_post",
+        "parameters": [
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GridHistorySeedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/analysis/grid-parity/lcoe-sensitivity": {
       "get": {
         "tags": [
@@ -2297,6 +2346,29 @@
           "points"
         ],
         "title": "GridHistoryResponse"
+      },
+      "GridHistorySeedResponse": {
+        "properties": {
+          "accepted": {
+            "type": "boolean",
+            "title": "Accepted"
+          },
+          "inserted_metric_count": {
+            "type": "integer",
+            "title": "Inserted Metric Count"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "accepted",
+          "inserted_metric_count",
+          "message"
+        ],
+        "title": "GridHistorySeedResponse"
       },
       "GridLcoeSensitivityCell": {
         "properties": {
