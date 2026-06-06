@@ -102,6 +102,7 @@ repository stays reproducible without credentials.
 | `/v1/workspaces/{workspace_slug}/scenarios` | GET/POST | Scenario list and creation. Write operations require an admin token. |
 
 More detail lives in `docs/API_CONTRACT_V1.md`, `docs/DATA_CONTRACT_V1.md`, `docs/AI_PIPELINE.md`, and `docs/REFACTORING_STRATEGY.md`.
+The grid LCOE and dual-domain crossover methodology lives in `docs/GRID_LCOE_METHODOLOGY.md`.
 
 Contributor and maintainer documents live in `CONTRIBUTING.md`, `MAINTAINERS.md`, `SECURITY.md`, `ROADMAP.md`, `CHANGELOG.md`, and `docs/MAINTENANCE_LOG.md`.
 
