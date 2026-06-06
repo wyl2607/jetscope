@@ -1,24 +1,23 @@
-import json
 from datetime import datetime, timezone
-from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
 
+from app.db.session import get_db
 from app.schemas.grid import (
-    GridHistoryPoint,
     GridHistoryResponse,
+    GridHistorySeedResponse,
     GridLcoeSensitivityCell,
     GridLcoeSensitivityResponse,
     GridParityInputs,
     GridParityResponse,
 )
-from app.services.analysis.crossover import compute_crossover
+from app.security import require_admin_token
 from app.services.analysis.grid_costs import (
     DEFAULT_CARBON_PRICE_EUR_PER_T,
     DEFAULT_COAL_FUEL_EUR_PER_MWH_TH,
     DEFAULT_FOSSIL_REFERENCE_KEY,
     DEFAULT_GAS_FUEL_EUR_PER_MWH_TH,
-    fossil_marginal_cost,
     fossil_reference_schema,
     fuel_cost_for_plant,
     get_fossil_plant,
@@ -31,18 +30,13 @@ from app.services.analysis.grid_lcoe_sensitivity import (
     get_lcoe_sensitivity_tech,
 )
 from app.services.analysis.grid_parity import (
-    GRID_SPREAD_THRESHOLDS,
-    GRID_STATUS_LABELS,
     compute_grid_parity_rows,
     grid_carbon_price_sweep,
     grid_parity_signal,
 )
+from app.services.grid_history import build_grid_history_response, seed_grid_baseline_history
 
 router = APIRouter()
-
-_BASELINE_PATH = (
-    Path(__file__).resolve().parents[2] / "services" / "analysis" / "grid_baseline.json"
-)
 
 
 @router.get("/grid-parity", response_model=GridParityResponse)
@@ -104,40 +98,20 @@ def get_grid_parity_analysis(
 
 
 @router.get("/grid-parity/history", response_model=GridHistoryResponse)
-def get_grid_parity_history() -> GridHistoryResponse:
-    baseline = json.loads(_BASELINE_PATH.read_text(encoding="utf-8"))
-    meta = baseline["meta"]
-    points: list[GridHistoryPoint] = []
-    for entry in baseline["history"]:
-        reference = fossil_marginal_cost(
-            "gas_ccgt",
-            fuel_cost_eur_per_mwh_th=entry["gas_fuel_eur_per_mwh_th"],
-            carbon_price_eur_per_t=entry["carbon_price_eur_per_t"],
-        )
-        crossover = compute_crossover(
-            clean_cost=entry["solar_lcoe_eur_per_mwh"],
-            reference_cost=reference,
-            thresholds=GRID_SPREAD_THRESHOLDS,
-            labels=GRID_STATUS_LABELS,
-        )
-        points.append(
-            GridHistoryPoint(
-                year=entry["year"],
-                carbon_price_eur_per_t=entry["carbon_price_eur_per_t"],
-                fossil_marginal_cost_eur_per_mwh=reference,
-                solar_lcoe_eur_per_mwh=entry["solar_lcoe_eur_per_mwh"],
-                solar_gap_eur_per_mwh=crossover.gap,
-                status=crossover.status,  # type: ignore[arg-type]
-                source=entry["source"],
-                confidence=entry["confidence"],
-                fallback=entry["fallback"],
-            )
-        )
-    return GridHistoryResponse(
-        generated_at=datetime.now(timezone.utc),
-        region=meta["region"],
-        disclaimer=meta["disclaimer"],
-        points=points,
+def get_grid_parity_history(db: Session = Depends(get_db)) -> GridHistoryResponse:
+    return build_grid_history_response(db)
+
+
+@router.post("/grid-parity/history/seed", response_model=GridHistorySeedResponse)
+def seed_grid_parity_history(
+    _auth: None = Depends(require_admin_token),
+    db: Session = Depends(get_db),
+) -> GridHistorySeedResponse:
+    inserted = seed_grid_baseline_history(db)
+    return GridHistorySeedResponse(
+        accepted=True,
+        inserted_metric_count=inserted,
+        message=f"Seeded {inserted} grid baseline metric history rows.",
     )
 
 

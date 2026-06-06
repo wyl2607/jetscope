@@ -2,6 +2,23 @@
 
 This log records public-safe maintenance evidence for the JetScope repository.
 
+## 2026-06-06
+
+- Added DB-backed grid-parity history storage through the existing
+  `MarketSnapshot` table, using the fixed
+  `grid_baseline_ember_ise` source key and three grid metric keys for carbon
+  price, gas fuel, and solar LCOE.
+- Added an admin-gated `/v1/analysis/grid-parity/history/seed` endpoint.
+  Seeding reads `grid_baseline.json`, inserts only missing
+  `(source_key, metric_key, as_of)` rows, and is safe to rerun without
+  duplicating history.
+- Preserved the public grid history response shape: an empty DB falls back to
+  the JSON baseline with `fallback=true`, while seeded DB rows return
+  `fallback=false` and recompute crossover status through the shared grid cost
+  and crossover engines.
+- Validation: full API pytest, OpenAPI freshness, grid read-model contract,
+  `git diff --check`, and `scripts/security_check.sh` passed for this branch.
+
 ## 2026-06-04
 
 - Added the crisis brief contract and localized monitor pages:
