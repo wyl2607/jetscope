@@ -498,6 +498,19 @@
               "title": "Gas Fuel Eur Per Mwh Th"
             },
             "description": "Gas fuel cost in EUR per MWh thermal"
+          },
+          {
+            "name": "coal_fuel_eur_per_mwh_th",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Coal fuel cost in EUR per MWh thermal",
+              "default": 12.0,
+              "title": "Coal Fuel Eur Per Mwh Th"
+            },
+            "description": "Coal fuel cost in EUR per MWh thermal"
           }
         ],
         "responses": {
