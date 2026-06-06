@@ -4,6 +4,15 @@ This log records public-safe maintenance evidence for the JetScope repository.
 
 ## 2026-06-06
 
+- Added the heat-pump vs gas-boiler parity domain at
+  `/v1/analysis/heat-parity` and `/heat`, reusing the shared crossover engine
+  with ETS2-driven carbon-price sensitivity, air-source and ground-source heat
+  pump baselines, generated OpenAPI, and a Chinese navigation entry.
+- Heat parity validation: focused acceptance tests first failed on missing API
+  and web read-model modules, then passed after implementation. Full API
+  pytest, OpenAPI freshness, root Node tests, Web typecheck/lint/build, and
+  `scripts/security_check.sh` passed for this branch. Default calibration:
+  air-source breakeven `85.00 €/t`; ground-source breakeven `0.00 €/t`.
 - Added DB-backed grid-parity history storage through the existing
   `MarketSnapshot` table, using the fixed
   `grid_baseline_ember_ise` source key and three grid metric keys for carbon

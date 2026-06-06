@@ -586,6 +586,78 @@
         }
       }
     },
+    "/v1/analysis/heat-parity": {
+      "get": {
+        "tags": [
+          "heat"
+        ],
+        "summary": "Get Heat Parity Analysis",
+        "operationId": "get_heat_parity_analysis_v1_analysis_heat_parity_get",
+        "parameters": [
+          {
+            "name": "carbon_price",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "description": "EU ETS2 carbon price in EUR per metric ton for heating fuels",
+              "default": 45.0,
+              "title": "Carbon Price"
+            },
+            "description": "EU ETS2 carbon price in EUR per metric ton for heating fuels"
+          },
+          {
+            "name": "elec_price",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Residential electricity price in EUR per MWh electric",
+              "default": 300.0,
+              "title": "Elec Price"
+            },
+            "description": "Residential electricity price in EUR per MWh electric"
+          },
+          {
+            "name": "gas_price",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Residential gas price in EUR per MWh thermal",
+              "default": 75.0,
+              "title": "Gas Price"
+            },
+            "description": "Residential gas price in EUR per MWh thermal"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeatParityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/market/snapshot": {
       "get": {
         "tags": [
@@ -2196,6 +2268,44 @@
         ],
         "title": "FossilReference"
       },
+      "GasBoilerReference": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "efficiency": {
+            "type": "number",
+            "maximum": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Efficiency"
+          },
+          "gas_price_eur_per_mwh_th": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Gas Price Eur Per Mwh Th"
+          },
+          "emission_intensity_t_per_mwh_th": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Emission Intensity T Per Mwh Th"
+          },
+          "heat_cost_eur_per_mwh": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Heat Cost Eur Per Mwh"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "efficiency",
+          "gas_price_eur_per_mwh_th",
+          "emission_intensity_t_per_mwh_th",
+          "heat_cost_eur_per_mwh"
+        ],
+        "title": "GasBoilerReference"
+      },
       "GridCarbonSweepEntry": {
         "properties": {
           "tech_key": {
@@ -2601,6 +2711,231 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HeatCarbonSweepEntry": {
+        "properties": {
+          "tech_key": {
+            "type": "string",
+            "title": "Tech Key"
+          },
+          "gap_vs_gas_eur_per_mwh": {
+            "type": "number",
+            "title": "Gap Vs Gas Eur Per Mwh"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "uneconomic",
+              "inflection",
+              "marginal_switch",
+              "dominant"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tech_key",
+          "gap_vs_gas_eur_per_mwh",
+          "status"
+        ],
+        "title": "HeatCarbonSweepEntry"
+      },
+      "HeatCarbonSweepPoint": {
+        "properties": {
+          "carbon_price_eur_per_t": {
+            "type": "number",
+            "title": "Carbon Price Eur Per T"
+          },
+          "gas_heat_cost_eur_per_mwh": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Gas Heat Cost Eur Per Mwh"
+          },
+          "techs": {
+            "items": {
+              "$ref": "#/components/schemas/HeatCarbonSweepEntry"
+            },
+            "type": "array",
+            "title": "Techs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "carbon_price_eur_per_t",
+          "gas_heat_cost_eur_per_mwh",
+          "techs"
+        ],
+        "title": "HeatCarbonSweepPoint"
+      },
+      "HeatParityInputs": {
+        "properties": {
+          "carbon_price_eur_per_t": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Carbon Price Eur Per T"
+          },
+          "elec_price_eur_per_mwh_el": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Elec Price Eur Per Mwh El"
+          },
+          "gas_price_eur_per_mwh_th": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Gas Price Eur Per Mwh Th"
+          }
+        },
+        "type": "object",
+        "required": [
+          "carbon_price_eur_per_t",
+          "elec_price_eur_per_mwh_el",
+          "gas_price_eur_per_mwh_th"
+        ],
+        "title": "HeatParityInputs"
+      },
+      "HeatParityResponse": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/HeatParityInputs"
+          },
+          "gas_boiler_reference": {
+            "$ref": "#/components/schemas/GasBoilerReference"
+          },
+          "heat_pump_references": {
+            "items": {
+              "$ref": "#/components/schemas/HeatPumpReference"
+            },
+            "type": "array",
+            "title": "Heat Pump References"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/HeatParityRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "carbon_sweep": {
+            "items": {
+              "$ref": "#/components/schemas/HeatCarbonSweepPoint"
+            },
+            "type": "array",
+            "title": "Carbon Sweep"
+          },
+          "signal": {
+            "type": "string",
+            "enum": [
+              "clear_leader",
+              "close_race",
+              "no_advantage"
+            ],
+            "title": "Signal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at",
+          "inputs",
+          "gas_boiler_reference",
+          "heat_pump_references",
+          "rows",
+          "carbon_sweep",
+          "signal"
+        ],
+        "title": "HeatParityResponse"
+      },
+      "HeatParityRow": {
+        "properties": {
+          "tech_key": {
+            "type": "string",
+            "title": "Tech Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "cop": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Cop"
+          },
+          "hp_heat_cost_eur_per_mwh": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Hp Heat Cost Eur Per Mwh"
+          },
+          "gas_heat_cost_eur_per_mwh": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Gas Heat Cost Eur Per Mwh"
+          },
+          "gap_vs_gas_eur_per_mwh": {
+            "type": "number",
+            "title": "Gap Vs Gas Eur Per Mwh"
+          },
+          "spread_pct": {
+            "type": "number",
+            "title": "Spread Pct"
+          },
+          "breakeven_carbon_price_eur_per_t": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Breakeven Carbon Price Eur Per T"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "uneconomic",
+              "inflection",
+              "marginal_switch",
+              "dominant"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tech_key",
+          "name",
+          "cop",
+          "hp_heat_cost_eur_per_mwh",
+          "gas_heat_cost_eur_per_mwh",
+          "gap_vs_gas_eur_per_mwh",
+          "spread_pct",
+          "breakeven_carbon_price_eur_per_t",
+          "status"
+        ],
+        "title": "HeatParityRow"
+      },
+      "HeatPumpReference": {
+        "properties": {
+          "tech_key": {
+            "type": "string",
+            "title": "Tech Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "cop": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Cop"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tech_key",
+          "name",
+          "cop"
+        ],
+        "title": "HeatPumpReference"
       },
       "MarketHistoryBackfillResponse": {
         "properties": {
