@@ -150,6 +150,9 @@ def get_grid_lcoe_sensitivity(
     gas_fuel_eur_per_mwh_th: float = Query(
         DEFAULT_GAS_FUEL_EUR_PER_MWH_TH, ge=0, description="Gas fuel cost in EUR per MWh thermal"
     ),
+    coal_fuel_eur_per_mwh_th: float = Query(
+        DEFAULT_COAL_FUEL_EUR_PER_MWH_TH, ge=0, description="Coal fuel cost in EUR per MWh thermal"
+    ),
 ) -> GridLcoeSensitivityResponse:
     try:
         tech = get_lcoe_sensitivity_tech(tech_key)
@@ -162,10 +165,15 @@ def get_grid_lcoe_sensitivity(
             status_code=404, detail=f"Unknown fossil_reference_key: {fossil_reference_key}"
         ) from exc
 
+    fuel_cost = fuel_cost_for_plant(
+        fossil_reference_key,
+        gas_fuel_eur_per_mwh_th=gas_fuel_eur_per_mwh_th,
+        coal_fuel_eur_per_mwh_th=coal_fuel_eur_per_mwh_th,
+    )
     points = compute_lcoe_sensitivity(
         tech_key=tech.tech_key,
         fossil_plant_key=fossil_reference_key,
-        fuel_cost_eur_per_mwh_th=gas_fuel_eur_per_mwh_th,
+        fuel_cost_eur_per_mwh_th=fuel_cost,
     )
     return GridLcoeSensitivityResponse(
         generated_at=datetime.now(timezone.utc),
