@@ -1,5 +1,7 @@
 import { Shell } from '@/components/shell';
 import { ResearchDecisionBriefCard } from '@/components/research-decision-brief';
+import { TransitionLadder } from '@/components/transition-ladder';
+import { type TransitionSummaryResponse, loadTransitionSummary } from '@/lib/transition-read-model';
 import { getEuReserveCoverage, getTippingPointEvents } from '@/lib/portfolio-read-model';
 import {
   AI_RESEARCH_ENABLED,
@@ -81,6 +83,13 @@ export default async function HomePage() {
   const signalCount = signalsResult.signals.length;
   const researchBrief = buildResearchDecisionBrief(signalsResult);
 
+  let transition: TransitionSummaryResponse | null = null;
+  try {
+    transition = await loadTransitionSummary();
+  } catch {
+    transition = null;
+  }
+
   return (
     <Shell
       eyebrow="Phase C 作品集入口"
@@ -137,6 +146,12 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
+
+      {transition && (
+        <section className="mt-8">
+          <TransitionLadder summary={transition} />
+        </section>
+      )}
 
       <section className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">

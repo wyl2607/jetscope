@@ -704,6 +704,27 @@
         }
       }
     },
+    "/v1/analysis/transition-summary": {
+      "get": {
+        "tags": [
+          "transition"
+        ],
+        "summary": "Get Transition Summary",
+        "operationId": "get_transition_summary_v1_analysis_transition_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransitionSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/market/snapshot": {
       "get": {
         "tags": [
@@ -4771,6 +4792,99 @@
           "signal"
         ],
         "title": "TippingPointResponse"
+      },
+      "TransitionDomain": {
+        "properties": {
+          "domain_key": {
+            "type": "string",
+            "title": "Domain Key"
+          },
+          "domain_name": {
+            "type": "string",
+            "title": "Domain Name"
+          },
+          "carbon_driver": {
+            "type": "string",
+            "title": "Carbon Driver"
+          },
+          "reference_carbon_price_eur_per_t": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Reference Carbon Price Eur Per T"
+          },
+          "techs": {
+            "items": {
+              "$ref": "#/components/schemas/TransitionTech"
+            },
+            "type": "array",
+            "title": "Techs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain_key",
+          "domain_name",
+          "carbon_driver",
+          "reference_carbon_price_eur_per_t",
+          "techs"
+        ],
+        "title": "TransitionDomain"
+      },
+      "TransitionSummaryResponse": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer"
+          },
+          "domains": {
+            "items": {
+              "$ref": "#/components/schemas/TransitionDomain"
+            },
+            "type": "array",
+            "title": "Domains"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at",
+          "disclaimer",
+          "domains"
+        ],
+        "title": "TransitionSummaryResponse"
+      },
+      "TransitionTech": {
+        "properties": {
+          "tech_key": {
+            "type": "string",
+            "title": "Tech Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "breakeven_carbon_price_eur_per_t": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Breakeven Carbon Price Eur Per T"
+          },
+          "competitive_at_reference": {
+            "type": "boolean",
+            "title": "Competitive At Reference"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tech_key",
+          "name",
+          "breakeven_carbon_price_eur_per_t",
+          "competitive_at_reference"
+        ],
+        "title": "TransitionTech"
       },
       "ValidationError": {
         "properties": {
