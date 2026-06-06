@@ -4,7 +4,10 @@ This is the shortest reviewer path through JetScope's current product shape. It 
 
 ## Demo Goal
 
-Show that JetScope can explain the SAF decision surface without secrets or production infrastructure:
+Show that JetScope can explain the SAF and grid decision surfaces without secrets or production infrastructure.
+Frame the demo as a dual-domain decarbonization review: the same EU ETS carbon price drives both the
+SAF tipping-point and grid-parity fronts, and both domains reuse the same cost-crossover engine with
+different business units.
 
 - market snapshot freshness and provenance
 - SAF tipping-point logic
@@ -78,6 +81,32 @@ That means:
 - research extraction stays deterministic and budget-safe
 
 See [`docs/AI_PIPELINE.md`](./AI_PIPELINE.md) for the pipeline rules and the mock/live split.
+
+### 6. Review Grid Parity And LCOE Sensitivity
+
+Open `/grid` and confirm the grid-parity surface shows renewable LCOE against
+the fossil marginal electricity cost plus EU ETS carbon cost.
+
+What to look for:
+
+- the point where renewable LCOE crosses the fossil reference
+- the carbon-price slider recalculating the grid-parity result in real time
+- the historical cost-crossover trend for the grid baseline
+
+Then use the LCOE sensitivity matrix. Switch between Solar PV (utility),
+Onshore Wind, and Offshore Wind, and watch how WACC x full-load hours moves the
+breakeven carbon price. Higher WACC should push the breakeven price upward;
+higher full-load hours should pull it downward.
+
+The key baseline conclusion is real, not just illustrative UI copy: Solar PV at
+`5%` WACC and `1,000` full-load hours is `57.54 EUR/MWh`, below the default gas
+CCGT zero-carbon marginal cost of about `58.55 EUR/MWh`, so the computed
+breakeven is clamped to `0.00 EUR/tCO2`.
+
+The raw contracts are `GET /v1/analysis/grid-parity` and
+`GET /v1/analysis/grid-parity/lcoe-sensitivity`. The methodology, assumptions,
+and interpretation boundaries are in
+[`docs/GRID_LCOE_METHODOLOGY.md`](./GRID_LCOE_METHODOLOGY.md).
 
 ## Suggested Talk Track
 
