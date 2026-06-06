@@ -127,6 +127,10 @@ export type GridLcoeSensitivityQuery = {
   gasFuelEurPerMwhTh?: number;
 };
 
+function buildGridEndpoint(apiPath: string, proxyPath: string): string {
+  return typeof window === 'undefined' ? buildApiUrl(apiPath) : proxyPath;
+}
+
 function buildGridParityUrl(query: GridParityQuery): string {
   const params = new URLSearchParams();
   if (query.carbonPriceEurPerT !== undefined) params.set('carbon_price_eur_per_t', String(query.carbonPriceEurPerT));
@@ -134,7 +138,8 @@ function buildGridParityUrl(query: GridParityQuery): string {
   if (query.coalFuelEurPerMwhTh !== undefined) params.set('coal_fuel_eur_per_mwh_th', String(query.coalFuelEurPerMwhTh));
   if (query.fossilReferenceKey !== undefined) params.set('fossil_reference_key', query.fossilReferenceKey);
   const qs = params.toString();
-  return qs ? `${buildApiUrl('/analysis/grid-parity')}?${qs}` : buildApiUrl('/analysis/grid-parity');
+  const path = buildGridEndpoint('/analysis/grid-parity', '/api/analysis/grid-parity');
+  return qs ? `${path}?${qs}` : path;
 }
 
 function buildGridLcoeSensitivityUrl(query: GridLcoeSensitivityQuery): string {
@@ -143,7 +148,10 @@ function buildGridLcoeSensitivityUrl(query: GridLcoeSensitivityQuery): string {
   if (query.fossilReferenceKey !== undefined) params.set('fossil_reference_key', query.fossilReferenceKey);
   if (query.gasFuelEurPerMwhTh !== undefined) params.set('gas_fuel_eur_per_mwh_th', String(query.gasFuelEurPerMwhTh));
   const qs = params.toString();
-  const path = buildApiUrl('/analysis/grid-parity/lcoe-sensitivity');
+  const path = buildGridEndpoint(
+    '/analysis/grid-parity/lcoe-sensitivity',
+    '/api/analysis/grid-parity/lcoe-sensitivity'
+  );
   return qs ? `${path}?${qs}` : path;
 }
 
@@ -173,7 +181,7 @@ export async function loadGridHistory(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(buildApiUrl('/analysis/grid-parity/history'), {
+    const res = await fetch(buildGridEndpoint('/analysis/grid-parity/history', '/api/analysis/grid-parity/history'), {
       signal: controller.signal,
       headers: { accept: 'application/json' }
     });

@@ -60,6 +60,27 @@ function sampleLcoeSensitivityResponse() {
   };
 }
 
+function sampleHistoryResponse() {
+  return {
+    generated_at: '2026-06-01T00:00:00Z',
+    region: 'EU',
+    disclaimer: 'Illustrative public history.',
+    points: [
+      {
+        year: 2024,
+        carbon_price_eur_per_t: 65,
+        fossil_marginal_cost_eur_per_mwh: 83,
+        solar_lcoe_eur_per_mwh: 56,
+        solar_gap_eur_per_mwh: -27,
+        status: 'dominant',
+        source: 'grid_baseline_ember_ise',
+        confidence: 0.72,
+        fallback: false
+      }
+    ]
+  };
+}
+
 test('label and tone helpers map statuses and signals', async () => {
   const { gridStatusLabel, gridSignalLabel, gridStatusTone } = await importReadModel();
   assert.equal(gridStatusLabel('dominant'), '清洁占优');
@@ -96,6 +117,27 @@ test('loadGridParity hits grid-parity endpoint with carbon price query', async (
   assert.equal(body.signal, 'clear_leader');
 });
 
+test('loadGridParity uses same-origin proxy in browser runtime', async (t) => {
+  const previousWindow = global.window;
+  global.window = {};
+  const originalFetch = global.fetch;
+  let capturedUrl = '';
+  global.fetch = async (input) => {
+    capturedUrl = String(input);
+    return jsonResponse(sampleResponse());
+  };
+  t.after(() => {
+    global.fetch = originalFetch;
+    if (previousWindow === undefined) delete global.window;
+    else global.window = previousWindow;
+  });
+
+  const { loadGridParity } = await importReadModel();
+  await loadGridParity({ carbonPriceEurPerT: 90 });
+  assert.match(capturedUrl, /^\/api\/analysis\/grid-parity\?/);
+  assert.match(capturedUrl, /carbon_price_eur_per_t=90/);
+});
+
 test('loadGridParity throws on non-ok response', async (t) => {
   const originalFetch = global.fetch;
   global.fetch = async () => jsonResponse({}, 500);
@@ -104,6 +146,27 @@ test('loadGridParity throws on non-ok response', async (t) => {
   });
   const { loadGridParity } = await importReadModel();
   await assert.rejects(() => loadGridParity({ carbonPriceEurPerT: 10 }), /grid-parity request failed: 500/);
+});
+
+test('loadGridHistory uses same-origin proxy in browser runtime', async (t) => {
+  const previousWindow = global.window;
+  global.window = {};
+  const originalFetch = global.fetch;
+  let capturedUrl = '';
+  global.fetch = async (input) => {
+    capturedUrl = String(input);
+    return jsonResponse(sampleHistoryResponse());
+  };
+  t.after(() => {
+    global.fetch = originalFetch;
+    if (previousWindow === undefined) delete global.window;
+    else global.window = previousWindow;
+  });
+
+  const { loadGridHistory } = await importReadModel();
+  const body = await loadGridHistory();
+  assert.equal(capturedUrl, '/api/analysis/grid-parity/history');
+  assert.equal(body.points.length, 1);
 });
 
 test('loadGridLcoeSensitivity hits lcoe-sensitivity endpoint and parses cells', async (t) => {
@@ -133,6 +196,27 @@ test('loadGridLcoeSensitivity hits lcoe-sensitivity endpoint and parses cells', 
   assert.equal(body.cells.length, 1);
   assert.equal(body.cells[0].discount_rate, 0.05);
   assert.equal(body.cells[0].full_load_hours, 1000);
+});
+
+test('loadGridLcoeSensitivity uses same-origin proxy in browser runtime', async (t) => {
+  const previousWindow = global.window;
+  global.window = {};
+  const originalFetch = global.fetch;
+  let capturedUrl = '';
+  global.fetch = async (input) => {
+    capturedUrl = String(input);
+    return jsonResponse(sampleLcoeSensitivityResponse());
+  };
+  t.after(() => {
+    global.fetch = originalFetch;
+    if (previousWindow === undefined) delete global.window;
+    else global.window = previousWindow;
+  });
+
+  const { loadGridLcoeSensitivity } = await importReadModel();
+  await loadGridLcoeSensitivity({ techKey: 'onshore_wind' });
+  assert.match(capturedUrl, /^\/api\/analysis\/grid-parity\/lcoe-sensitivity\?/);
+  assert.match(capturedUrl, /tech_key=onshore_wind/);
 });
 
 test('loadGridLcoeSensitivity throws on non-ok response', async (t) => {

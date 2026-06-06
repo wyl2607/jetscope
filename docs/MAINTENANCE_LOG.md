@@ -27,6 +27,9 @@ This log records public-safe maintenance evidence for the JetScope repository.
   and crossover engines.
 - Validation: full API pytest, OpenAPI freshness, grid read-model contract,
   `git diff --check`, and `scripts/security_check.sh` passed for this branch.
+- Added same-origin Web API proxies for grid parity, grid history, and grid
+  LCOE sensitivity so browser-side `/grid` interactions no longer direct-fetch
+  the cross-port FastAPI origin during local Next development.
 
 ## 2026-06-04
 
