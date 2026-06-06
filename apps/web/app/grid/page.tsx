@@ -118,6 +118,22 @@ export default async function GridParityPage() {
           )}
 
           {lcoeSensitivity && <LcoeSensitivityMatrix initial={lcoeSensitivity} />}
+
+          <article className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Methodology</p>
+            <h3 className="mt-2 text-lg font-medium text-slate-950">方法论</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              LCOE 自底向上算法用 CRF 将 CAPEX、固定运维和满负荷小时折算到 €/MWh；交叉点碳价表示化石边际成本被 EU ETS 碳成本推高到与可再生 LCOE 相交时的价格。
+            </p>
+            <a
+              href="https://github.com/wyl2607/jetscope/blob/main/docs/GRID_LCOE_METHODOLOGY.md"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 inline-flex rounded-full border border-emerald-300 bg-white px-4 py-2 text-sm font-medium text-emerald-800 transition hover:border-emerald-400 hover:bg-emerald-100"
+            >
+              打开 docs/GRID_LCOE_METHODOLOGY.md
+            </a>
+          </article>
         </div>
       ) : (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800">
