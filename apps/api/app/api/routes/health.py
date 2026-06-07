@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import re
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
@@ -16,6 +17,43 @@ router = APIRouter()
 
 def _is_configured(value: str | None) -> bool:
     return bool((value or "").strip())
+
+
+def _sanitize_error_detail(error: str) -> str:
+    sanitized = error
+
+    if not sanitized:
+        return sanitized
+
+    for secret in (
+        settings.admin_token,
+        settings.anthropic_api_key,
+        settings.database_url,
+    ):
+        if secret:
+            sanitized = sanitized.replace(secret, "[redacted-secret]")
+
+    sanitized = re.sub(
+        r"(?i)\bbearer\s+[^\s,;\"']+",
+        "Bearer [redacted-secret]",
+        sanitized,
+    )
+    sanitized = re.sub(
+        r"(?i)([?&](?:token|access_token|refresh_token))=[^&\s\"']+",
+        r"\1=[redacted-secret]",
+        sanitized,
+    )
+    sanitized = re.sub(
+        r"(?i)([a-z][a-z0-9+.-]*://[^/\s:]+:)[^@\s/?]+(@)",
+        r"\1[redacted-secret]\2",
+        sanitized,
+    )
+
+    return sanitized
+
+
+def _error_detail(exc: Exception) -> str:
+    return _sanitize_error_detail(str(exc))
 
 
 def _readiness_action(key: str, href: str | None = None, config_keys: list[str] | None = None) -> ReadinessAction:
@@ -71,7 +109,7 @@ def get_readiness(db: Session = Depends(get_db)) -> ReadinessResponse:
         checks["database"] = _readiness_check(
             ok=False,
             status="error",
-            detail=str(exc),
+            detail=_error_detail(exc),
             action=_readiness_action(
                 "inspect_database",
                 "/admin",
@@ -97,7 +135,7 @@ def get_readiness(db: Session = Depends(get_db)) -> ReadinessResponse:
         checks["market_snapshot"] = _readiness_check(
             ok=False,
             status="error",
-            detail=str(exc),
+            detail=_error_detail(exc),
             action=_readiness_action("review_market_sources", "/sources?filter=review"),
         )
 
@@ -118,7 +156,7 @@ def get_readiness(db: Session = Depends(get_db)) -> ReadinessResponse:
         checks["source_coverage"] = _readiness_check(
             ok=False,
             status="error",
-            detail=str(exc),
+            detail=_error_detail(exc),
             action=_readiness_action("review_source_coverage", "/sources?filter=review"),
         )
 
