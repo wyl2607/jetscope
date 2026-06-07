@@ -165,6 +165,76 @@ Query parameters:
 | `since` | ISO datetime | Optional lower bound. |
 | `limit` | integer | Optional, 1 to 100, default `100`. |
 
+### `GET /v1/analysis/grid-parity`
+
+Compares grid-powered renewable pathways against fossil baseline costs.
+
+Key query parameters:
+
+| Parameter | Type | Rule |
+| --- | --- | --- |
+| `time_horizon_years` | number | Optional, 1 to 40. |
+| `discount_rate_pct` | number | Optional, 0 to 100. |
+| `carbon_price_eur_per_t` | number | Optional, default `0`. |
+
+### `GET /v1/analysis/grid-parity/history`
+
+Returns calibration and historical inputs used by grid parity calculations.
+
+Key query parameters:
+
+| Parameter | Type | Rule |
+| --- | --- | --- |
+| `years_back` | integer | Optional, 1 to 20, default `10`. |
+
+### `POST /v1/analysis/grid-parity/history/seed`
+
+Admin-protected idempotent seed for `MarketSnapshot` history inputs used by grid parity calculations.
+
+Required header:
+
+```text
+x-admin-token: <JETSCOPE_ADMIN_TOKEN>
+```
+
+No request body is required; the route is safe to call repeatedly in local bootstrap and CI.
+
+### `GET /v1/analysis/grid-parity/lcoe-sensitivity`
+
+Returns a sensitivity sweep for grid LCOE assumptions.
+
+Key query parameters:
+
+| Parameter | Type | Rule |
+| --- | --- | --- |
+| `capex_shock_pct` | number | Optional, default `0`. |
+| `wacc_delta_pct` | number | Optional, default `0`. |
+| `load_factor_delta_pct` | number | Optional, default `0`. |
+
+### `GET /v1/analysis/heat-parity`
+
+Compares fossil and heat-pump/electrified pathways under local energy policy assumptions.
+
+Key query parameters:
+
+| Parameter | Type | Rule |
+| --- | --- | --- |
+| `fossil_heat_price` | number | Required, greater than `0`. |
+| `heat_policy_subsidy_usd_per_m2` | number | Optional, default `0`. |
+| `insulation_premium_factor` | number | Optional, default `1`. |
+
+### `GET /v1/analysis/heat-parity/sensitivity`
+
+Returns a sensitivity sweep for residential heat assumptions.
+
+Key query parameters:
+
+| Parameter | Type | Rule |
+| --- | --- | --- |
+| `climate_band` | string | Optional, defaults to current assumptions (`temperate`). |
+| `energy_price_shock_pct` | number | Optional, default `0`. |
+| `carbon_price_eur_per_t` | number | Optional, default `0`. |
+
 ### `GET /v1/analysis/crisis-brief`
 
 Returns a read-only operating brief for the crisis monitor. The endpoint
@@ -299,6 +369,8 @@ Returns source quality and coverage metadata for the Sources page.
 | `/v1/workspaces/{workspace_slug}/scenarios` | GET, POST | POST requires admin token. |
 | `/v1/workspaces/{workspace_slug}/scenarios/{scenario_id}` | PUT, DELETE | Requires admin token. |
 | `/v1/workspaces/{workspace_slug}/preferences` | GET, PUT, DELETE | Write operations require admin token. |
+
+Workspace preference and scenario write routes are route-protected with `x-admin-token` and must return `401` when the token is absent or invalid in shared integration tests. Route tests also enforce workspace isolation so scenario and preference mutations only affect their explicit `workspace_slug` and cannot bleed across workspaces.
 
 Scenario `name` values are trimmed by the API and must remain non-empty with a
 maximum length of 120 characters. This keeps the protected scenario registry
