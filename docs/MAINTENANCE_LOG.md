@@ -4,6 +4,9 @@ This log records public-safe maintenance evidence for the JetScope repository.
 
 ## 2026-06-06
 
+- Published the existing `/grid` and `/heat` workspaces through README
+  capability/API/route discovery, sitemap entries, and routing-contract tests
+  while keeping runtime behavior unchanged.
 - Added the heat-pump vs gas-boiler parity domain at
   `/v1/analysis/heat-parity` and `/heat`, reusing the shared crossover engine
   with ETS2-driven carbon-price sensitivity, air-source and ground-source heat
@@ -27,6 +30,9 @@ This log records public-safe maintenance evidence for the JetScope repository.
   and crossover engines.
 - Validation: full API pytest, OpenAPI freshness, grid read-model contract,
   `git diff --check`, and `scripts/security_check.sh` passed for this branch.
+- Added same-origin Web API proxies for grid parity, grid history, and grid
+  LCOE sensitivity so browser-side `/grid` interactions no longer direct-fetch
+  the cross-port FastAPI origin during local Next development.
 
 ## 2026-06-04
 

@@ -34,6 +34,8 @@ const ROUTES = [
   ['crisis/page.tsx', '危机监测'],
   ['crisis/eu-jet-reserves/page.tsx', 'EU 航油储备危机'],
   ['crisis/saf-tipping-point/page.tsx', 'SAF 临界点'],
+  ['grid/page.tsx', '电网平价分析'],
+  ['heat/page.tsx', '供暖平价分析'],
   ['sources/page.tsx', '来源'],
   ['research/page.tsx', '研究信号'],
   ['reports/page.tsx', '报告工作台'],
@@ -55,6 +57,8 @@ test('localized sitemap includes published English and German route surfaces', a
   const source = await readFile(new URL('../apps/web/app/sitemap.ts', import.meta.url), 'utf8');
   const routes = [
     '/crisis',
+    '/grid',
+    '/heat',
     '/en/crisis',
     '/en/prices/germany-jet-fuel',
     '/en/lufthansa-saf-2026',

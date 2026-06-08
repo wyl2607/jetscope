@@ -372,3 +372,46 @@ def test_get_readiness_reports_errors_without_raising(monkeypatch):
     assert response.checks["market_snapshot"].severity == "blocker"
     assert response.checks["source_coverage"].detail == "coverage source missing"
     assert response.checks["source_coverage"].severity == "blocker"
+
+
+def test_get_readiness_redacts_secret_like_values_from_error_details(monkeypatch):
+    db = FakeDb()
+
+    dummy_admin = "dummy-admin-token-value"
+    dummy_api_key = "sk-dummy-anthropic-value"
+    dummy_bearer = "Bearer dummy-bearer-value"
+    dummy_db_url = "postgresql://user:dummy-password@example/db"
+    dummy_url_token = "?token=dummy-url-token"
+
+    def fail_database(sql):
+        raise RuntimeError(
+            f"cannot open database for URL {dummy_db_url}{dummy_url_token}, {dummy_bearer}"
+        )
+
+    def fail_market(_db):
+        raise ValueError(f"market API key is {dummy_api_key}")
+
+    def fail_coverage(_db):
+        raise LookupError(f"source fetch failed: {dummy_url_token}")
+
+    monkeypatch.setattr(db, "execute", fail_database)
+    monkeypatch.setattr(health, "text", lambda sql: sql)
+    monkeypatch.setattr(health, "build_market_snapshot_response", fail_market)
+    monkeypatch.setattr(health, "build_source_coverage_response", fail_coverage)
+    monkeypatch.setattr(health.settings, "admin_token", dummy_admin)
+    monkeypatch.setattr(health.settings, "anthropic_api_key", dummy_api_key)
+    monkeypatch.setattr(health.settings, "database_url", dummy_db_url)
+    monkeypatch.setattr(health.settings, "ai_research_enabled", True)
+    monkeypatch.setattr(health.settings, "ai_research_mock_mode", False)
+
+    response = health.get_readiness(db)
+
+    assert response.ready is False
+    assert response.status == "not_ready"
+    assert response.degraded is False
+    assert dummy_admin not in (response.checks["admin_token"].detail or "")
+    assert dummy_api_key not in (response.checks["market_snapshot"].detail or "")
+    assert dummy_db_url not in (response.checks["database"].detail or "")
+    assert "dummy-url-token" not in (response.checks["source_coverage"].detail or "")
+    assert response.checks["database"].action.config_keys == ["JETSCOPE_DATABASE_URL", "JETSCOPE_SCHEMA_BOOTSTRAP_MODE"]
+    assert response.checks["database"].status == "error"

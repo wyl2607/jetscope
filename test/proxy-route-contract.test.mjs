@@ -17,6 +17,9 @@ const PROXY_ROUTES = [
   ['analysis/heat-parity/route.ts', "proxyToApi(request, '/analysis/heat-parity')"],
   ['analysis/heat-parity/sensitivity/route.ts', "proxyToApi(request, '/analysis/heat-parity/sensitivity')"],
   ['analysis/transition-summary/route.ts', "proxyToApi(request, '/analysis/transition-summary')"],
+  ['analysis/grid-parity/route.ts', "proxyToApi(request, '/analysis/grid-parity')"],
+  ['analysis/grid-parity/history/route.ts', "proxyToApi(request, '/analysis/grid-parity/history')"],
+  ['analysis/grid-parity/lcoe-sensitivity/route.ts', "proxyToApi(request, '/analysis/grid-parity/lcoe-sensitivity')"],
   ['analysis/airline-decision/route.ts', "proxyToApi(request, '/analysis/airline-decision')"],
   ['pathways/compare/route.ts', "proxyToApi(request, '/pathways/compare')"],
   ['policies/eu-ets-pressure/route.ts', "proxyToApi(request, '/policies/eu-ets-pressure')"]

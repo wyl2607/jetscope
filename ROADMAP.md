@@ -4,6 +4,9 @@ This roadmap is intentionally conservative. It is limited to the product surface
 
 ## v0.1.x
 
+- include grid parity, grid history, and grid LCOE sensitivity slices in local demoable product scope
+- include heat parity and heat sensitivity slices in analysis surface
+- add protected workspace preference/scenario contract tests (token gating + workspace isolation)
 - make local setup and demo reproduction clear for outside reviewers
 - stabilize the current API contract for market snapshots, source coverage, and analysis endpoints
 - keep source provenance, freshness, confidence, and fallback state visible
@@ -12,10 +15,11 @@ This roadmap is intentionally conservative. It is limited to the product surface
 
 ## v0.2.x
 
+- prioritize browser proxy/UI QA for SAF + grid + heat pages
 - harden public data-source handling and fallback semantics
-- document and test SAF pathway assumptions against the product read models
-- validate EU ETS and carbon-cost assumptions with source-aware fixtures
-- reduce contract drift between API, data shapes, and web read models
+- reduce API/doc contract drift (routes, auth, workspace contracts, readiness semantics)
+- add data pipeline E2E coverage for history seed, snapshot refresh, and analysis paths
+- document source-aware assumptions used by grid/heat calculations
 
 ## v0.3.x
 
@@ -23,6 +27,7 @@ This roadmap is intentionally conservative. It is limited to the product surface
 - add a public sample scenario library for repeatable demos and comparisons
 - expand release artifacts with clearer validation, changelog, and risk notes
 - improve source provenance across public inputs and derived metrics
+- expand sample/localized scenario support for external contributors
 
 ## Directional Themes
 
