@@ -61,13 +61,10 @@ new_impact_enum = sa.Enum(
     create_constraint=True,
 )
 
-SIGNAL_TYPE_INDEX = "ix_esg_signals_signal_type_created_at"
-
-
 def upgrade() -> None:
     # Drop the custom DESC index so the batch table-recreate does not
     # reflect and duplicate it, then rebuild it at the end.
-    op.execute(sa.text(f"DROP INDEX {SIGNAL_TYPE_INDEX}"))
+    op.execute(sa.text("DROP INDEX ix_esg_signals_signal_type_created_at"))
 
     # Step 1: widen signal_type and relax impact_direction to a plain
     # string so legacy SAF values can be remapped without violating a
@@ -101,14 +98,14 @@ def upgrade() -> None:
 
     op.execute(
         sa.text(
-            f"CREATE INDEX {SIGNAL_TYPE_INDEX} "
+            "CREATE INDEX ix_esg_signals_signal_type_created_at "
             "ON esg_signals (signal_type, created_at DESC)"
         )
     )
 
 
 def downgrade() -> None:
-    op.execute(sa.text(f"DROP INDEX {SIGNAL_TYPE_INDEX}"))
+    op.execute(sa.text("DROP INDEX ix_esg_signals_signal_type_created_at"))
 
     # Collapse the energy/grid categories the old taxonomy cannot express
     # before narrowing the CHECK constraint.
@@ -147,7 +144,7 @@ def downgrade() -> None:
 
     op.execute(
         sa.text(
-            f"CREATE INDEX {SIGNAL_TYPE_INDEX} "
+            "CREATE INDEX ix_esg_signals_signal_type_created_at "
             "ON esg_signals (signal_type, created_at DESC)"
         )
     )
