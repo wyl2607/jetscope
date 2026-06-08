@@ -29,6 +29,7 @@ def _sanitize_error_detail(error: str) -> str:
         settings.admin_token,
         settings.anthropic_api_key,
         settings.database_url,
+        settings.newsapi_key,
     ):
         if secret:
             sanitized = sanitized.replace(secret, "[redacted-secret]")
@@ -39,7 +40,7 @@ def _sanitize_error_detail(error: str) -> str:
         sanitized,
     )
     sanitized = re.sub(
-        r"(?i)([?&](?:token|access_token|refresh_token))=[^&\s\"']+",
+        r"(?i)([?&](?:token|access_token|refresh_token|api_key|apikey))=[^&\s\"']+",
         r"\1=[redacted-secret]",
         sanitized,
     )

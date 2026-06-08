@@ -382,6 +382,7 @@ def test_get_readiness_redacts_secret_like_values_from_error_details(monkeypatch
     dummy_bearer = "Bearer dummy-bearer-value"
     dummy_db_url = "postgresql://user:dummy-password@example/db"
     dummy_url_token = "?token=dummy-url-token"
+    dummy_newsapi = "newsapi-secret-key-123"  # gitleaks:allow - test fixture, not a real secret
 
     def fail_database(sql):
         raise RuntimeError(
@@ -389,10 +390,10 @@ def test_get_readiness_redacts_secret_like_values_from_error_details(monkeypatch
         )
 
     def fail_market(_db):
-        raise ValueError(f"market API key is {dummy_api_key}")
+        raise ValueError(f"market API key is {dummy_api_key}, news={dummy_newsapi}")
 
     def fail_coverage(_db):
-        raise LookupError(f"source fetch failed: {dummy_url_token}")
+        raise LookupError(f"source fetch failed: {dummy_url_token}&api_key=leaked-key")
 
     monkeypatch.setattr(db, "execute", fail_database)
     monkeypatch.setattr(health, "text", lambda sql: sql)
@@ -401,6 +402,7 @@ def test_get_readiness_redacts_secret_like_values_from_error_details(monkeypatch
     monkeypatch.setattr(health.settings, "admin_token", dummy_admin)
     monkeypatch.setattr(health.settings, "anthropic_api_key", dummy_api_key)
     monkeypatch.setattr(health.settings, "database_url", dummy_db_url)
+    monkeypatch.setattr(health.settings, "newsapi_key", dummy_newsapi)
     monkeypatch.setattr(health.settings, "ai_research_enabled", True)
     monkeypatch.setattr(health.settings, "ai_research_mock_mode", False)
 
@@ -411,7 +413,9 @@ def test_get_readiness_redacts_secret_like_values_from_error_details(monkeypatch
     assert response.degraded is False
     assert dummy_admin not in (response.checks["admin_token"].detail or "")
     assert dummy_api_key not in (response.checks["market_snapshot"].detail or "")
+    assert dummy_newsapi not in (response.checks["market_snapshot"].detail or "")
     assert dummy_db_url not in (response.checks["database"].detail or "")
     assert "dummy-url-token" not in (response.checks["source_coverage"].detail or "")
+    assert "leaked-key" not in (response.checks["source_coverage"].detail or "")
     assert response.checks["database"].action.config_keys == ["JETSCOPE_DATABASE_URL", "JETSCOPE_SCHEMA_BOOTSTRAP_MODE"]
     assert response.checks["database"].status == "error"
