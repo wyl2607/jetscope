@@ -65,7 +65,7 @@ def test_mock_mode_returns_deterministic_signal_without_external_client() -> Non
 def test_normalizers_clamp_invalid_model_payload_values() -> None:
     assert ClaudeSignalExtractor._normalize_signal_type(" policy_change ") == "POLICY_CHANGE"
     assert ClaudeSignalExtractor._normalize_signal_type("not-a-type") == "OTHER"
-    assert ClaudeSignalExtractor._normalize_impact_direction(" bullish_saf ") == "BULLISH_SAF"
+    assert ClaudeSignalExtractor._normalize_impact_direction(" bullish ") == "BULLISH"
     assert ClaudeSignalExtractor._normalize_impact_direction(None) == "NEUTRAL"
     assert ClaudeSignalExtractor._normalize_confidence("1.7") == 1.0
     assert ClaudeSignalExtractor._normalize_confidence("bad") == 0.5
@@ -84,7 +84,7 @@ def test_real_mode_parses_json_text_and_tracks_tokens(monkeypatch: pytest.Monkey
         input = None
         text = (
             '{"signal_type":"PRICE_SHOCK","entities":[" Neste ","EU"],'
-            '"impact_direction":"BEARISH_SAF","confidence":"0.77",'
+            '"impact_direction":"BEARISH","confidence":"0.77",'
             '"summary_en":"Prices jumped","summary_cn":"价格上涨"}'
         )
 
@@ -115,7 +115,7 @@ def test_real_mode_parses_json_text_and_tracks_tokens(monkeypatch: pytest.Monkey
     assert len(signals) == 1
     assert signals[0].signal_type == "PRICE_SHOCK"
     assert signals[0].entities == ["Neste", "EU"]
-    assert signals[0].impact_direction == "BEARISH_SAF"
+    assert signals[0].impact_direction == "BEARISH"
     assert signals[0].confidence == pytest.approx(0.77)
     assert signals[0].prompt_cache_hit is True
     assert signals[0].tokens_used == 22

@@ -57,6 +57,14 @@ type RefreshEvidence = {
   snapshotOverall: string;
 };
 
+type ResearchRefreshEvidence = {
+  fetched: number;
+  extracted: number;
+  persisted: number;
+  skippedBudget: number;
+  message: string;
+};
+
 async function readJson(response: Response): Promise<unknown> {
   try {
     return await response.json();
@@ -78,6 +86,12 @@ function friendlyAdminError(body: unknown, status: number, fallback: string): st
   if (status === 401 || raw.includes('Invalid admin token')) {
     return '管理令牌不匹配，后端拒绝写入。';
   }
+  if (status === 409 && raw.includes('AI research pipeline is not enabled')) {
+    return 'AI 研究流水线未启用。请用 JETSCOPE_AI_RESEARCH_ENABLED=true 重启 API 后再触发研究刷新。';
+  }
+  if (status === 409 && raw.includes('AI research extractor credentials are not configured')) {
+    return 'AI 研究 live extractor 缺少凭证。请配置 JETSCOPE_ANTHROPIC_API_KEY，或在非生产环境启用 mock mode 后再试。';
+  }
   return raw || `${fallback}（HTTP ${status}）`;
 }
 
@@ -89,6 +103,7 @@ export function AdminDataOps() {
   const [status, setStatus] = useState('就绪');
   const [error, setError] = useState<string | null>(null);
   const [refreshEvidence, setRefreshEvidence] = useState<RefreshEvidence | null>(null);
+  const [researchRefreshEvidence, setResearchRefreshEvidence] = useState<ResearchRefreshEvidence | null>(null);
   const [adminToken, setAdminToken] = useState('');
   const [draftPathwayId, setDraftPathwayId] = useState('new-pathway');
   const [draftPathwayName, setDraftPathwayName] = useState('New Pathway');
@@ -98,6 +113,7 @@ export function AdminDataOps() {
   const [draftPolicySaf, setDraftPolicySaf] = useState('30');
   const [draftPolicySynthetic, setDraftPolicySynthetic] = useState('12');
   const [draftPolicyLabel, setDraftPolicyLabel] = useState('草案目标');
+  const writeLocked = !adminToken;
 
   async function loadAll() {
     setLoading(true);
@@ -211,6 +227,35 @@ export function AdminDataOps() {
       setStatus(`市场刷新已写入本地数据库：market_snapshots ${persistedMetricCount} 行，状态 ${sourceStatus}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : '触发市场刷新失败');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function triggerResearchRefresh() {
+    setSaving(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/research/refresh', {
+        method: 'POST',
+        headers: { 'x-admin-token': adminToken }
+      });
+      const body = await readJson(response);
+      if (!response.ok) {
+        throw new Error(friendlyAdminError(body, response.status, '触发研究刷新失败'));
+      }
+      const refreshBody = bodyRecord(body);
+      const evidence = {
+        fetched: Number(refreshBody.fetched ?? 0),
+        extracted: Number(refreshBody.extracted ?? 0),
+        persisted: Number(refreshBody.persisted ?? 0),
+        skippedBudget: Number(refreshBody.skipped_budget ?? 0),
+        message: String(refreshBody.message ?? 'AI 研究刷新已完成')
+      };
+      setResearchRefreshEvidence(evidence);
+      setStatus(`AI 研究刷新完成：抓取 ${evidence.fetched}，抽取 ${evidence.extracted}，写入 ${evidence.persisted}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '触发研究刷新失败');
     } finally {
       setSaving(false);
     }
@@ -353,9 +398,9 @@ export function AdminDataOps() {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800"
+              className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={savePathways}
-              disabled={loading || saving || !adminToken}
+              disabled={loading || saving || writeLocked}
             >
               保存路径
             </button>
@@ -369,11 +414,19 @@ export function AdminDataOps() {
             管理令牌（写操作必需）
             <input
               className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
               value={adminToken}
               onChange={(event) => handleAdminTokenChange(event.target.value)}
               placeholder="x-admin-token"
             />
           </label>
+          <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs leading-5 text-slate-600">
+            {writeLocked
+              ? '未输入管理令牌：可以加载、编辑草案和校验 JSON；保存与市场刷新会保持锁定。'
+              : '管理令牌已填写：保存或刷新时会发送 x-admin-token 到本地 API。'}
+          </p>
           <div className="grid gap-3 rounded-xl border border-slate-200 p-3 md:grid-cols-2">
             <label className="text-xs text-slate-600">
               year
@@ -440,19 +493,27 @@ export function AdminDataOps() {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800"
+              className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={savePolicies}
-              disabled={loading || saving || !adminToken}
+              disabled={loading || saving || writeLocked}
             >
               保存政策
             </button>
             <button
               type="button"
-              className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800"
+              className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={triggerMarketRefresh}
-              disabled={loading || saving || !adminToken}
+              disabled={loading || saving || writeLocked}
             >
               触发市场刷新
+            </button>
+            <button
+              type="button"
+              className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-800 transition hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={triggerResearchRefresh}
+              disabled={loading || saving || writeLocked}
+            >
+              触发研究刷新
             </button>
             <button
               type="button"
@@ -497,6 +558,37 @@ export function AdminDataOps() {
               <p className="mt-2">
                 等待刷新。成功后这里会显示 `/api/market/refresh` 写入 FastAPI 本地数据库，再由
                 `/api/market` 读回的证据。
+              </p>
+            )}
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-6 text-slate-700">
+            <p className="font-semibold text-slate-950">研究刷新证据</p>
+            {researchRefreshEvidence ? (
+              <div className="mt-2 grid gap-2 md:grid-cols-2">
+                <p>
+                  抓取文章：
+                  <span className="font-mono text-slate-950">{researchRefreshEvidence.fetched}</span>
+                </p>
+                <p>
+                  抽取信号：
+                  <span className="font-mono text-slate-950">{researchRefreshEvidence.extracted}</span>
+                </p>
+                <p>
+                  写入信号：
+                  <span className="font-mono text-slate-950">{researchRefreshEvidence.persisted}</span>
+                </p>
+                <p>
+                  预算跳过：
+                  <span className="font-mono text-slate-950">{researchRefreshEvidence.skippedBudget}</span>
+                </p>
+                <p className="md:col-span-2">
+                  后端消息：
+                  <span className="font-mono text-slate-950">{researchRefreshEvidence.message}</span>
+                </p>
+              </div>
+            ) : (
+              <p className="mt-2">
+                等待刷新。成功后这里会显示 `/api/research/refresh` 调用 AI research pipeline 后返回的抓取、抽取与写入计数。
               </p>
             )}
           </div>

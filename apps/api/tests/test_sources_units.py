@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+import pytest
+
 from app.schemas.market import MarketSnapshotResponse, MarketSourceDetail, SourceStatus
 from app.services import sources
 
@@ -51,6 +53,56 @@ def test_build_source_coverage_response_backfills_missing_metrics(monkeypatch):
     assert by_key["brent_usd_per_bbl"].source_type == "official"
     assert by_key["jet_usd_per_l"].status == "seed"
     assert by_key["jet_usd_per_l"].fallback_used is True
+
+
+def test_build_source_coverage_response_preserves_live_and_fallback_quality_metadata(monkeypatch):
+    details = {
+        "brent": MarketSourceDetail(
+            source="eia",
+            status="ok",
+            region="global",
+            market_scope="physical_spot_benchmark",
+            confidence_score=0.88,
+            fallback_used=False,
+            lag_minutes=1440,
+        ),
+        "carbon": MarketSourceDetail(
+            source="cbam+ecb",
+            status="fallback",
+            region="eu",
+            market_scope="regulatory_proxy",
+            confidence_score=0.7,
+            fallback_used=True,
+            lag_minutes=10080,
+            note="CBAM refreshed with ECB FX",
+        ),
+    }
+
+    monkeypatch.setattr(
+        sources,
+        "build_market_snapshot_response",
+        lambda _db: _snapshot(details),
+    )
+
+    response = sources.build_source_coverage_response(db=object())
+    by_key = {metric.metric_key: metric for metric in response.metrics}
+
+    brent = by_key["brent_usd_per_bbl"]
+    assert brent.status == "ok"
+    assert brent.source_type == "official"
+    assert brent.fallback_used is False
+    assert brent.confidence_score == pytest.approx(0.88)
+    assert brent.lag_minutes == 1440
+
+    carbon = by_key["carbon_proxy_usd_per_t"]
+    assert carbon.status == "fallback"
+    assert carbon.source_type == "derived"
+    assert carbon.fallback_used is True
+    assert carbon.confidence_score == pytest.approx(0.7)
+    assert carbon.note == "CBAM refreshed with ECB FX"
+
+    assert response.completeness == 2 / 7
+    assert response.degraded is True
 
 
 def test_build_source_coverage_response_is_not_degraded_for_full_non_fallback_coverage(monkeypatch):

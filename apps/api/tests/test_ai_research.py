@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from app.api.routes import research as research_route
 from app.api.router import api_router
 from app.db.base import Base
 from app.db.session import get_db
@@ -82,7 +83,7 @@ def test_claude_extractor_real_mode_uses_cache_control(monkeypatch: pytest.Monke
 
     class FakeBlock:
         text = (
-            '{"signal_type":"POLICY_CHANGE","entities":["EU"],"impact_direction":"BULLISH_SAF",'
+            '{"signal_type":"POLICY_CHANGE","entities":["EU"],"impact_direction":"BULLISH",'
             '"confidence":0.82,"summary_en":"Policy expansion","summary_cn":"政策扩张"}'
         )
         input = None
@@ -222,7 +223,7 @@ def test_signal_repository_upsert_dedup_by_url(session_factory):
                 {
                     "signal_type": "PRICE_SHOCK",
                     "entities": ["Brent"],
-                    "impact_direction": "BEARISH_SAF",
+                    "impact_direction": "BEARISH",
                     "confidence": 0.9,
                     "summary_en": "second",
                     "summary_cn": "second",
@@ -354,7 +355,7 @@ def test_research_route_filters_since_limit_signal_type(client: TestClient, sess
                     source_url="https://example.com/new1",
                     signal_type="POLICY_CHANGE",
                     entities=["EU"],
-                    impact_direction="BULLISH_SAF",
+                    impact_direction="BULLISH",
                     confidence=0.8,
                     summary_en="new1",
                     summary_cn="new1",
@@ -371,7 +372,7 @@ def test_research_route_filters_since_limit_signal_type(client: TestClient, sess
                     source_url="https://example.com/new2",
                     signal_type="PRICE_SHOCK",
                     entities=["Market"],
-                    impact_direction="BEARISH_SAF",
+                    impact_direction="BEARISH",
                     confidence=0.9,
                     summary_en="new2",
                     summary_cn="new2",
@@ -431,3 +432,52 @@ def test_research_route_defaults_to_recent_window(client: TestClient, session_fa
     payload = response.json()
     assert len(payload) == 1
     assert payload[0]["source_url"] == "https://example.com/default-window"
+
+
+def test_research_refresh_requires_enabled_pipeline(client: TestClient, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(research_route.settings, "admin_token", "admin-token")
+    monkeypatch.setattr(research_route.settings, "ai_research_enabled", False)
+
+    response = client.post("/v1/research/refresh", headers={"x-admin-token": "admin-token"})
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "AI research pipeline is not enabled"
+
+
+def test_research_refresh_requires_live_credentials_when_mock_disabled(client: TestClient, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(research_route.settings, "admin_token", "admin-token")
+    monkeypatch.setattr(research_route.settings, "ai_research_enabled", True)
+    monkeypatch.setattr(research_route.settings, "ai_research_mock_mode", False)
+    monkeypatch.setattr(research_route.settings, "anthropic_api_key", "")
+
+    response = client.post("/v1/research/refresh", headers={"x-admin-token": "admin-token"})
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "AI research extractor credentials are not configured"
+
+
+def test_research_refresh_runs_pipeline_when_enabled(client: TestClient, monkeypatch: pytest.MonkeyPatch):
+    received: dict[str, object] = {}
+
+    def fake_run_daily_pipeline(db):
+        received["db"] = db
+        return {"fetched": 3, "extracted": 2, "persisted": 2, "skipped_budget": 1}
+
+    monkeypatch.setattr(research_route.settings, "admin_token", "admin-token")
+    monkeypatch.setattr(research_route.settings, "ai_research_enabled", True)
+    monkeypatch.setattr(research_route.settings, "ai_research_mock_mode", True)
+    monkeypatch.setattr(research_route, "run_daily_pipeline", fake_run_daily_pipeline)
+
+    response = client.post("/v1/research/refresh", headers={"x-admin-token": "admin-token"})
+
+    assert response.status_code == 200
+    assert received["db"] is not None
+    payload = response.json()
+    assert payload == {
+        "accepted": True,
+        "message": "AI research refresh completed: fetched=3, extracted=2, persisted=2, skipped_budget=1",
+        "fetched": 3,
+        "extracted": 2,
+        "persisted": 2,
+        "skipped_budget": 1,
+    }

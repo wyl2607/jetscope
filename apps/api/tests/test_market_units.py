@@ -7,6 +7,56 @@ import pytest
 from app.services import market
 
 
+def test_fetch_text_uses_configured_market_source_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeResponse:
+        text = "ok"
+
+        def raise_for_status(self) -> None:
+            return None
+
+    def fake_get(url: str, *, timeout: float, headers: dict[str, str], follow_redirects: bool) -> FakeResponse:
+        captured.update(
+            {
+                "url": url,
+                "timeout": timeout,
+                "headers": headers,
+                "follow_redirects": follow_redirects,
+            }
+        )
+        return FakeResponse()
+
+    monkeypatch.setenv("JETSCOPE_MARKET_SOURCE_TIMEOUT_SECONDS", "0.25")
+    monkeypatch.delenv("SAFVSOIL_MARKET_REFRESH_TIMEOUT_MS", raising=False)
+    monkeypatch.setattr(market.httpx, "get", fake_get)
+
+    assert market._fetch_text("https://example.test/source") == "ok"
+    assert captured["timeout"] == 0.25
+
+
+def test_fetch_json_supports_legacy_market_refresh_timeout_ms(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, object]:
+            return {"ok": True}
+
+    def fake_get(url: str, *, timeout: float, headers: dict[str, str], follow_redirects: bool) -> FakeResponse:
+        captured.update({"url": url, "timeout": timeout, "headers": headers, "follow_redirects": follow_redirects})
+        return FakeResponse()
+
+    monkeypatch.delenv("JETSCOPE_MARKET_SOURCE_TIMEOUT_SECONDS", raising=False)
+    monkeypatch.setenv("SAFVSOIL_MARKET_REFRESH_TIMEOUT_MS", "250")
+    monkeypatch.setattr(market.httpx, "get", fake_get)
+
+    assert market._fetch_json("https://example.test/source") == {"ok": True}
+    assert captured["timeout"] == 0.25
+
+
 def test_parse_fred_csv_uses_last_valid_row_and_skips_missing_values() -> None:
     csv_payload = """DATE,VALUE
 2026-01-01,.

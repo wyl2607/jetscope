@@ -23,6 +23,7 @@ def clear_config_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "JETSCOPE_WORKSPACE_SLUG",
         "JETSCOPE_ADMIN_TOKEN",
         "JETSCOPE_MARKET_REFRESH_INTERVAL_SECONDS",
+        "JETSCOPE_MARKET_SOURCE_TIMEOUT_SECONDS",
         "JETSCOPE_ENABLE_SQLITE_ROUTES",
         "JETSCOPE_PHASE0_DEPRECATION_GATE",
         "JETSCOPE_SCHEMA_BOOTSTRAP_MODE",
@@ -49,6 +50,7 @@ def test_settings_defaults_when_env_missing(clear_config_env: None) -> None:
     assert settings.database_url == "sqlite:///./data/market.db"
     assert settings.enable_sqlite_routes is False
     assert settings.schema_bootstrap_mode == "alembic"
+    assert settings.market_source_timeout_seconds == 12.0
     assert settings.ai_research_daily_token_budget == 500000
     assert settings.ai_research_mock_mode is True
 
@@ -57,12 +59,14 @@ def test_settings_reads_prefixed_env_vars(clear_config_env: None, monkeypatch: p
     monkeypatch.setenv("JETSCOPE_DATABASE_URL", "sqlite:///./tmp/config_test.db")
     monkeypatch.setenv("JETSCOPE_ENABLE_SQLITE_ROUTES", "true")
     monkeypatch.setenv("JETSCOPE_MARKET_REFRESH_INTERVAL_SECONDS", "123")
+    monkeypatch.setenv("JETSCOPE_MARKET_SOURCE_TIMEOUT_SECONDS", "0.5")
 
     settings = Settings(_env_file=None)
 
     assert settings.database_url == "sqlite:///./tmp/config_test.db"
     assert settings.enable_sqlite_routes is True
     assert settings.market_refresh_interval_seconds == 123
+    assert settings.market_source_timeout_seconds == 0.5
 
 
 def test_settings_alias_choices_prefer_jetscope_alias(clear_config_env: None, monkeypatch: pytest.MonkeyPatch) -> None:

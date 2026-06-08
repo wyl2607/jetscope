@@ -4,6 +4,7 @@ import {
   fetchJson,
   metricLabel,
   FALLBACK_VALUES,
+  type DisplayLocale,
   type AirlineDecisionResponse,
   type MarketHistory,
   type MarketSnapshot,
@@ -192,7 +193,7 @@ function computeTopRiskSignal(history: MarketHistory | null): DashboardReadModel
   };
 }
 
-export async function getDashboardReadModel(): Promise<DashboardReadModel> {
+export async function getDashboardReadModel(locale: DisplayLocale = 'zh'): Promise<DashboardReadModel> {
   try {
     const [market, scenarios, history, reserve, tippingPoint, airlineDecision, sourceCoverage] = await Promise.all([
       fetchJson<MarketSnapshot>('/market/snapshot'),
@@ -220,7 +221,7 @@ export async function getDashboardReadModel(): Promise<DashboardReadModel> {
           ? null
           : {
               ...topRiskSignal,
-              metric: metricLabel(topRiskSignal.metric)
+              metric: metricLabel(topRiskSignal.metric, locale)
             },
       isFallback: false,
       error: null

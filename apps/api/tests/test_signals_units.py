@@ -187,7 +187,7 @@ def test_persist_signals_creates_new_signal(monkeypatch):
         extracted=_extracted(
             signal_type="PRICE_SHOCK",
             entities=["Brent"],
-            impact_direction="BEARISH_SAF",
+            impact_direction="BEARISH",
             confidence=0.92,
             prompt_cache_hit=True,
         ),
@@ -231,7 +231,7 @@ def test_persist_signals_updates_existing_signal(monkeypatch):
         extracted=_extracted(
             signal_type="POLICY_CHANGE",
             entities=["EU"],
-            impact_direction="BULLISH_SAF",
+            impact_direction="BULLISH",
             confidence=0.77,
             summary_en="new",
             summary_cn="新",

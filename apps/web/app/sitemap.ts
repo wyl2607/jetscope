@@ -18,16 +18,100 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.98
     },
     {
+      url: `${BASE_URL}/en`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'hourly',
+      priority: 0.98
+    },
+    {
       url: `${BASE_URL}/dashboard`,
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'hourly',
       priority: 0.95
     },
     {
+      url: `${BASE_URL}/crisis`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'hourly',
+      priority: 0.94
+    },
+    {
       url: `${BASE_URL}/de/dashboard`,
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'hourly',
       priority: 0.93
+    },
+    {
+      url: `${BASE_URL}/de/crisis`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'hourly',
+      priority: 0.92
+    },
+    {
+      url: `${BASE_URL}/en/dashboard`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'hourly',
+      priority: 0.93
+    },
+    {
+      url: `${BASE_URL}/en/crisis`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'hourly',
+      priority: 0.92
+    },
+    {
+      url: `${BASE_URL}/en/faq`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.86
+    },
+    {
+      url: `${BASE_URL}/en/prices/germany-jet-fuel`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'hourly',
+      priority: 0.91
+    },
+    {
+      url: `${BASE_URL}/en/sources`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'hourly',
+      priority: 0.9
+    },
+    {
+      url: `${BASE_URL}/en/research`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.86
+    },
+    {
+      url: `${BASE_URL}/en/reports`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.85
+    },
+    {
+      url: `${BASE_URL}/en/reports/tipping-point-analysis`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.83
+    },
+    {
+      url: `${BASE_URL}/en/admin`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'weekly',
+      priority: 0.45
+    },
+    {
+      url: `${BASE_URL}/en/scenarios`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.78
+    },
+    {
+      url: `${BASE_URL}/en/lufthansa-saf-2026`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.84
     },
     {
       url: `${BASE_URL}/prices/germany-jet-fuel`,
@@ -40,6 +124,54 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'hourly',
       priority: 0.91
+    },
+    {
+      url: `${BASE_URL}/de/faq`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.86
+    },
+    {
+      url: `${BASE_URL}/de/sources`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'hourly',
+      priority: 0.89
+    },
+    {
+      url: `${BASE_URL}/de/research`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.84
+    },
+    {
+      url: `${BASE_URL}/de/reports`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.84
+    },
+    {
+      url: `${BASE_URL}/de/reports/tipping-point-analysis`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.82
+    },
+    {
+      url: `${BASE_URL}/de/admin`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'weekly',
+      priority: 0.44
+    },
+    {
+      url: `${BASE_URL}/de/scenarios`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.77
+    },
+    {
+      url: `${BASE_URL}/de/lufthansa-saf-2026`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.84
     },
     {
       url: `${BASE_URL}/faq`,
@@ -64,6 +196,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'daily',
       priority: 0.85
+    },
+    {
+      url: `${BASE_URL}/reports/tipping-point-analysis`,
+      lastModified: STABLE_LAST_MODIFIED,
+      changeFrequency: 'daily',
+      priority: 0.84
     },
     {
       url: `${BASE_URL}/scenarios`,

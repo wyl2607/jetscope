@@ -9,6 +9,10 @@ This pipeline runs a daily loop:
 3. Persist to `esg_signals`
 4. Expose via `GET /v1/research/signals`
 
+Operators can also trigger a protected manual refresh with `POST
+/v1/research/refresh` after configuring `JETSCOPE_ADMIN_TOKEN` and enabling the
+research pipeline.
+
 Default merge posture is budget-safe:
 
 - `AI_RESEARCH_ENABLED=false`
@@ -73,12 +77,25 @@ Budget guardrail:
 - Explicit live-mode and DB-backed pre-call budget refusal are pinned by
   `apps/api/tests/test_ai_research_boundary.py::test_live_mode_is_explicit_and_db_budget_guarded`
 
+## Manual Refresh
+
+`POST /v1/research/refresh` requires `x-admin-token` matching
+`JETSCOPE_ADMIN_TOKEN`.
+
+The route refuses to run when:
+
+- `JETSCOPE_AI_RESEARCH_ENABLED=false`
+- `JETSCOPE_AI_RESEARCH_MOCK_MODE=false` and `JETSCOPE_ANTHROPIC_API_KEY` is not configured
+
+Successful responses return counters for fetched articles, extracted signals,
+persisted signals, and budget-skipped articles.
+
 ## Environment Variables
 
 ```bash
-ANTHROPIC_API_KEY=
-NEWSAPI_KEY=
-AI_RESEARCH_ENABLED=false
-AI_RESEARCH_DAILY_TOKEN_BUDGET=500000
-AI_RESEARCH_MOCK_MODE=true
+JETSCOPE_ANTHROPIC_API_KEY=
+JETSCOPE_NEWSAPI_KEY=
+JETSCOPE_AI_RESEARCH_ENABLED=false
+JETSCOPE_AI_RESEARCH_DAILY_TOKEN_BUDGET=500000
+JETSCOPE_AI_RESEARCH_MOCK_MODE=true
 ```

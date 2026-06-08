@@ -37,7 +37,7 @@ function formatRange(low: number, high: number): string {
 export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, sources }: Props) {
   const showSources = Boolean(sources);
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white/90 p-5">
+    <section className="min-w-0 rounded-2xl border border-slate-200 bg-white/90 p-4 sm:p-5">
       <div className="mb-4">
         <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
           SAF 路径对比

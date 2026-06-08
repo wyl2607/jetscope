@@ -103,19 +103,32 @@ curl http://127.0.0.1:8000/v1/health
 curl http://127.0.0.1:8000/v1/market/snapshot
 ```
 
-4. Check the tipping-point analysis endpoint with a sample input:
+4. Check readiness. A clean quickstart may report `not_ready` because the admin token and AI research pipeline are intentionally not configured:
+
+```bash
+curl http://127.0.0.1:8000/v1/readiness
+```
+
+5. Check the tipping-point analysis endpoint with a sample input:
 
 ```bash
 curl "http://127.0.0.1:8000/v1/analysis/tipping-point?fossil_jet_usd_per_l=0.9&carbon_price_eur_per_t=90"
 ```
 
-5. Check research signals in mock-first mode:
+6. Check research signals in mock-first mode:
 
 ```bash
 curl http://127.0.0.1:8000/v1/research/signals
 ```
 
-6. If you need to verify the API contract surface, compare the responses against [`docs/API_CONTRACT_V1.md`](./API_CONTRACT_V1.md), [`docs/DATA_CONTRACT_V1.md`](./DATA_CONTRACT_V1.md), and [`docs/AI_PIPELINE.md`](./AI_PIPELINE.md).
+7. If you configure an admin token and enable AI research, the protected manual refresh endpoint is:
+
+```bash
+curl -X POST http://127.0.0.1:8000/v1/research/refresh \
+  -H "x-admin-token: <your-local-admin-token>"
+```
+
+8. If you need to verify the API contract surface, compare the responses against [`docs/API_CONTRACT_V1.md`](./API_CONTRACT_V1.md), [`docs/DATA_CONTRACT_V1.md`](./DATA_CONTRACT_V1.md), and [`docs/AI_PIPELINE.md`](./AI_PIPELINE.md).
 
 ## Common Failures
 
@@ -123,7 +136,9 @@ curl http://127.0.0.1:8000/v1/research/signals
 - Port `8000` or `3000` is already in use: stop the other process or change the local port in your shell session.
 - The API starts but returns SQLite path errors: ensure `apps/api/.env` or your shell environment points at a writable SQLite path.
 - `curl` returns empty research data: this is expected if no local seed data exists and `JETSCOPE_AI_RESEARCH_MOCK_MODE=true` is still the default.
+- `/v1/readiness` returns `not_ready`: this is expected until `JETSCOPE_ADMIN_TOKEN` and AI research prerequisites are configured.
 - Protected write routes return `401` or `403`: set a non-empty `JETSCOPE_ADMIN_TOKEN` in `apps/api/.env` or your shell and send it as `x-admin-token`.
+- Admin-triggered market refresh is slow or times out: lower `JETSCOPE_MARKET_SOURCE_TIMEOUT_SECONDS` for local/reviewer runs so public sources degrade to explicit fallback evidence quickly.
 
 ## Timeboxed Reviewer Path
 
@@ -131,5 +146,5 @@ If you only have a few minutes, do this in order:
 
 1. Start `npm run dev`.
 2. Open the web UI and check that the market snapshot renders.
-3. Call `/v1/market/snapshot`, `/v1/analysis/tipping-point`, and `/v1/research/signals`.
+3. Call `/v1/readiness`, `/v1/market/snapshot`, `/v1/analysis/tipping-point`, and `/v1/research/signals`.
 4. Confirm the mock-first AI behavior from [`docs/AI_PIPELINE.md`](./AI_PIPELINE.md).

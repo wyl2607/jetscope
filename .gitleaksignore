@@ -1,0 +1,16 @@
+# Historical findings in files that are no longer present in the tracked tree.
+# Keep these fingerprints scoped to removed webhook docs, generated Next.js
+# artifacts, and the retired public app bundle so current-tree scans can still
+# fail closed on new findings.
+40c8ca2a5aab25b677599355b0e320d0902cb341:WEBHOOK_DEPLOYMENT_EXECUTION_GUIDE.md:generic-api-key:35
+40c8ca2a5aab25b677599355b0e320d0902cb341:WEBHOOK_DEPLOYMENT_SUMMARY.md:generic-api-key:111
+40c8ca2a5aab25b677599355b0e320d0902cb341:WEBHOOK_DEPLOYMENT_GUIDE.md:generic-api-key:36
+40c8ca2a5aab25b677599355b0e320d0902cb341:WEBHOOK_DEPLOYMENT_FINAL_SUMMARY.md:generic-api-key:127
+40c8ca2a5aab25b677599355b0e320d0902cb341:WEBHOOK_FILES_MANIFEST.md:generic-api-key:95
+40c8ca2a5aab25b677599355b0e320d0902cb341:apps/web/dist/cache/.rscinfo:generic-api-key:1
+40c8ca2a5aab25b677599355b0e320d0902cb341:apps/web/dist/cache/.previewinfo:generic-api-key:1
+40c8ca2a5aab25b677599355b0e320d0902cb341:apps/web/dist/prerender-manifest.json:generic-api-key:312
+40c8ca2a5aab25b677599355b0e320d0902cb341:apps/web/dist/prerender-manifest.json:generic-api-key:313
+40c8ca2a5aab25b677599355b0e320d0902cb341:apps/web/dist/server/server-reference-manifest.json:generic-api-key:1
+40c8ca2a5aab25b677599355b0e320d0902cb341:public/app.js:generic-api-key:20
+fef0383b6027f601f30ea0f20f4c8c62940789f1:public/app.js:generic-api-key:20
