@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     workspace_slug: str = "default"
     admin_token: str = ""
     market_refresh_interval_seconds: int = 600
+    market_source_timeout_seconds: float = 12.0
     enable_sqlite_routes: bool = False
     phase0_deprecation_gate: str = "not-ready"
     schema_bootstrap_mode: str = Field(

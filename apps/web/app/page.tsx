@@ -1,5 +1,7 @@
 import { Shell } from '@/components/shell';
 import { ResearchDecisionBriefCard } from '@/components/research-decision-brief';
+import { TransitionLadder } from '@/components/transition-ladder';
+import { type TransitionSummaryResponse, loadTransitionSummary } from '@/lib/transition-read-model';
 import { getEuReserveCoverage, getTippingPointEvents } from '@/lib/portfolio-read-model';
 import {
   AI_RESEARCH_ENABLED,
@@ -57,6 +59,12 @@ const CTA_CARDS = [
     tone: 'border-emerald-600/40 bg-emerald-500/10'
   },
   {
+    title: '电网平价',
+    description: '比较可再生 LCOE 与化石发电+EU ETS 碳成本的交叉点，可交互调节碳价与 WACC。',
+    href: '/grid' as Route,
+    tone: 'border-emerald-500/40 bg-sky-500/10'
+  },
+  {
     title: '分析报告',
     description: '为招聘方、评审者和业务读者准备的结构化投资与产品论证。',
     href: '/reports/tipping-point-analysis' as Route,
@@ -74,6 +82,13 @@ export default async function HomePage() {
   const latestEvent = events[0] ?? null;
   const signalCount = signalsResult.signals.length;
   const researchBrief = buildResearchDecisionBrief(signalsResult);
+
+  let transition: TransitionSummaryResponse | null = null;
+  try {
+    transition = await loadTransitionSummary();
+  } catch {
+    transition = null;
+  }
 
   return (
     <Shell
@@ -110,6 +125,33 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
+
+      <section className="mt-8 rounded-2xl border border-emerald-600/30 bg-slate-900/70 p-6">
+        <p className="text-xs uppercase tracking-[0.16em] text-emerald-200">双域叙事</p>
+        <p className="mt-3 text-base leading-7 text-slate-200">
+          同一 EU ETS 碳价正在同时推动天上的 SAF 转折点与地上的电网平价：它把化石燃料的排放成本显性化，也让低碳替代方案更快跨过经营理性线。
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link
+            href="/grid"
+            className="rounded-full border border-emerald-500/60 px-4 py-2 text-sm font-semibold !text-emerald-100 transition hover:border-emerald-300 hover:!text-white"
+          >
+            查看电网平价
+          </Link>
+          <Link
+            href="/crisis/saf-tipping-point"
+            className="rounded-full border border-sky-500/60 px-4 py-2 text-sm font-semibold !text-sky-100 transition hover:border-sky-300 hover:!text-white"
+          >
+            查看 SAF 转折点
+          </Link>
+        </div>
+      </section>
+
+      {transition && (
+        <section className="mt-8">
+          <TransitionLadder summary={transition} />
+        </section>
+      )}
 
       <section className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
@@ -162,7 +204,7 @@ export default async function HomePage() {
         <ResearchDecisionBriefCard brief={researchBrief} compact />
       </section>
 
-      <section className="mt-8 grid gap-4 md:grid-cols-3">
+      <section className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         {CTA_CARDS.map((card) => (
           <Link
             key={card.title}

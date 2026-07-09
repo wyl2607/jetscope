@@ -57,6 +57,9 @@ export default async function SourcesPage({
   const activeFilter = normalizeSourceFilter(Array.isArray(filterRaw) ? filterRaw[0] : filterRaw);
   const readModel = await getSourcesReadModel();
   const visibleRows = readModel.rows.filter((row) => rowMatchesSourceFilter(row, activeFilter));
+  const reviewRows = readModel.rows.filter((row) => rowMatchesSourceFilter(row, 'review'));
+  const actionRows = reviewRows.filter((row) => row.reviewAction.priority !== 'normal').slice(0, 4);
+  const hasActionRows = actionRows.length > 0;
   const sourceFilterHref = (filter: SourceFilter) => {
     const params = new URLSearchParams();
     if (filter !== 'all') params.set('filter', filter);
@@ -123,6 +126,12 @@ export default async function SourcesPage({
     return state;
   };
 
+  const actionToneClass = (priority: SourceRow['reviewAction']['priority']) => {
+    if (priority === 'critical') return 'border-rose-200 bg-rose-50 text-rose-700';
+    if (priority === 'review') return 'border-amber-200 bg-amber-50 text-amber-700';
+    return 'border-slate-200 bg-slate-50 text-slate-700';
+  };
+
   const sourceTypeLabel = (sourceType: string) => {
     if (sourceType === 'market primary') return '市场主要来源';
     if (sourceType === 'public proxy') return '公开代理';
@@ -164,6 +173,61 @@ export default async function SourcesPage({
           title="来源覆盖"
           subtitle={`${readModel.coverageMetrics.length} 个 canonical metrics · 最近更新 ${new Date(readModel.generatedAt).toLocaleString()}`}
         />
+      </div>
+      <div className="mb-6">
+        <InfoCard
+          title="恢复步骤"
+          subtitle={hasActionRows ? '把降级来源转成可执行处理清单' : '当前没有必须处理的降级来源'}
+        >
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold text-slate-700">
+              需复核 {reviewRows.length}
+            </span>
+            <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold text-slate-700">
+              优先处理 {actionRows.length}
+            </span>
+            <Link
+              href={'/admin' as Route}
+              className="rounded-md border border-sky-200 bg-sky-50 px-3 py-1.5 font-semibold text-sky-800 hover:bg-sky-100"
+            >
+              打开 Admin 刷新
+            </Link>
+            <Link
+              href={'/sources?filter=review' as Route}
+              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 font-semibold text-slate-700 hover:border-sky-300 hover:bg-sky-50"
+            >
+              只看需复核
+            </Link>
+          </div>
+          {hasActionRows ? (
+            <ol className="mt-4 divide-y divide-slate-200 border-y border-slate-200">
+              {actionRows.map((row) => (
+                <li key={row.metricKey} className="grid gap-3 py-3 text-sm md:grid-cols-[minmax(10rem,14rem)_1fr_auto] md:items-start">
+                  <div>
+                    <p className="font-semibold text-slate-950">{row.surface}</p>
+                    <p className="mt-1 text-xs text-slate-500">{row.source} · {statusLabel(row.status)}</p>
+                  </div>
+                  <div>
+                    <span className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-semibold ${actionToneClass(row.reviewAction.priority)}`}>
+                      {row.reviewAction.label}
+                    </span>
+                    <p className="mt-2 leading-6 text-slate-700">{row.reviewAction.detail}</p>
+                  </div>
+                  <Link
+                    href={row.reviewAction.href as Route}
+                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-center text-xs font-semibold text-sky-800 hover:border-sky-300 hover:bg-sky-50"
+                  >
+                    处理入口
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="mt-4 border-y border-slate-200 py-3 text-sm leading-6 text-slate-700">
+              当前来源没有回退或降级行；代理来源仍应在重大采购、定价、披露前做人工复核。
+            </p>
+          )}
+        </InfoCard>
       </div>
       <InfoCard title="市场输入矩阵" subtitle={`总体状态：${readModel.overallStatus}`}>
         <p className="mb-3 text-xs text-slate-600">
@@ -269,16 +333,26 @@ export default async function SourcesPage({
                     )}
                   </td>
                   <td className="py-3 pr-4">
-                    <Link
-                      href={sourceFocusHref(row.metricKey)}
-                      className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-sky-800 hover:border-sky-300 hover:bg-sky-50"
-                    >
-                      聚焦
-                    </Link>
+                    <div className="flex min-w-24 flex-col gap-2">
+                      <Link
+                        href={sourceFocusHref(row.metricKey)}
+                        className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-center text-xs font-semibold text-sky-800 hover:border-sky-300 hover:bg-sky-50"
+                      >
+                        聚焦
+                      </Link>
+                      <Link
+                        href={row.reviewAction.href as Route}
+                        className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-center text-xs font-semibold text-slate-700 hover:border-sky-300 hover:bg-sky-50"
+                      >
+                        {row.reviewAction.priority === 'normal' ? '留证' : '处理'}
+                      </Link>
+                    </div>
                   </td>
                   <td className="py-3">
                     <span className="block text-slate-700">{row.degradedReason}</span>
                     {row.note !== row.degradedReason ? <span className="mt-1 block text-xs text-slate-500">{row.note}</span> : null}
+                    <span className="mt-2 block text-xs font-semibold text-slate-600">{row.reviewAction.label}</span>
+                    <span className="mt-1 block text-xs leading-5 text-slate-500">{row.reviewAction.detail}</span>
                   </td>
                 </tr>
               ))}
