@@ -35,6 +35,7 @@ Defaults:
 - API prefix: `/v1`
 - DB: `sqlite:///./data/market.db`
 - admin token: empty by default; must be configured before using protected write routes
+- readiness: `/v1/readiness` is allowed to report `not_ready` in the quickstart until admin and research prerequisites are configured
 - schema bootstrap mode: `alembic`
 
 ## Key environment variables
@@ -71,10 +72,15 @@ npm run api:migrate
 These routes require header `x-admin-token` matching `JETSCOPE_ADMIN_TOKEN`:
 
 - `POST /v1/market/refresh`
+- `POST /v1/research/refresh`
 - `PUT /v1/pathways`
 - `PUT /v1/policies/refuel-eu`
 - `POST/PUT/DELETE /v1/workspaces/{workspace_slug}/scenarios*`
 - `PUT/DELETE /v1/workspaces/{workspace_slug}/preferences`
+
+`GET /v1/readiness` reports whether `JETSCOPE_ADMIN_TOKEN`,
+`JETSCOPE_AI_RESEARCH_ENABLED`, and live research credentials are configured,
+but it never returns their values.
 
 ## Runtime note
 

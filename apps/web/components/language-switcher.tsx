@@ -3,27 +3,147 @@
 import { usePathname } from 'next/navigation';
 
 const localeLabels = {
-  zh: '中文',
-  de: 'Deutsch',
-  en: 'English'
+  zh: { zh: '中文', de: 'Deutsch', en: 'English' },
+  de: { zh: 'Chinesisch', de: 'Deutsch', en: 'Englisch' },
+  en: { zh: 'Chinese', de: 'German', en: 'English' }
 } as const;
 
-function toGermanPath(pathname: string): string {
+export function toGermanPath(pathname: string): string {
+  if (pathname === '/') {
+    return '/de';
+  }
+  if (pathname === '/faq') {
+    return '/de/faq';
+  }
+  if (pathname === '/en') {
+    return '/de';
+  }
+  if (pathname === '/en/faq') {
+    return '/de/faq';
+  }
   if (pathname === '/dashboard') {
     return '/de/dashboard';
+  }
+  if (pathname === '/en/dashboard') {
+    return '/de/dashboard';
+  }
+  if (pathname === '/crisis') {
+    return '/de/crisis';
+  }
+  if (pathname === '/en/crisis') {
+    return '/de/crisis';
+  }
+  if (pathname === '/en/sources') {
+    return '/de/sources';
+  }
+  if (pathname === '/en/research') {
+    return '/de/research';
+  }
+  if (pathname === '/en/reports') {
+    return '/de/reports';
+  }
+  if (pathname === '/en/reports/tipping-point-analysis') {
+    return '/de/reports/tipping-point-analysis';
+  }
+  if (pathname === '/reports/tipping-point-analysis') {
+    return '/de/reports/tipping-point-analysis';
+  }
+  if (pathname === '/en/admin') {
+    return '/de/admin';
+  }
+  if (pathname === '/en/scenarios') {
+    return '/de/scenarios';
+  }
+  if (pathname === '/en/prices/germany-jet-fuel') {
+    return '/de/prices/germany-jet-fuel';
+  }
+  if (pathname === '/en/lufthansa-saf-2026') {
+    return '/de/lufthansa-saf-2026';
   }
   if (pathname === '/prices/germany-jet-fuel') {
     return '/de/prices/germany-jet-fuel';
   }
+  if (pathname === '/analysis/lufthansa-flight-cuts-2026-04') {
+    return '/de/lufthansa-saf-2026';
+  }
   return '/de';
 }
 
-function toChinesePath(pathname: string): string {
+export function toChinesePath(pathname: string): string {
+  if (pathname === '/en') {
+    return '/';
+  }
+  if (pathname === '/en/faq') {
+    return '/faq';
+  }
+  if (pathname === '/en/dashboard') {
+    return '/dashboard';
+  }
+  if (pathname === '/en/crisis') {
+    return '/crisis';
+  }
+  if (pathname === '/en/sources') {
+    return '/sources';
+  }
+  if (pathname === '/en/research') {
+    return '/research';
+  }
+  if (pathname === '/en/reports') {
+    return '/reports';
+  }
+  if (pathname === '/en/reports/tipping-point-analysis') {
+    return '/reports/tipping-point-analysis';
+  }
+  if (pathname === '/en/admin') {
+    return '/admin';
+  }
+  if (pathname === '/en/scenarios') {
+    return '/scenarios';
+  }
+  if (pathname === '/en/prices/germany-jet-fuel') {
+    return '/prices/germany-jet-fuel';
+  }
+  if (pathname === '/en/lufthansa-saf-2026') {
+    return '/analysis/lufthansa-flight-cuts-2026-04';
+  }
+  if (pathname.startsWith('/en')) {
+    return '/';
+  }
+  if (pathname === '/de') {
+    return '/';
+  }
+  if (pathname === '/de/faq') {
+    return '/faq';
+  }
   if (pathname === '/de/dashboard') {
     return '/dashboard';
   }
+  if (pathname === '/de/crisis') {
+    return '/crisis';
+  }
+  if (pathname === '/de/sources') {
+    return '/sources';
+  }
+  if (pathname === '/de/research') {
+    return '/research';
+  }
+  if (pathname === '/de/reports') {
+    return '/reports';
+  }
+  if (pathname === '/de/reports/tipping-point-analysis') {
+    return '/reports/tipping-point-analysis';
+  }
+  if (pathname === '/de/admin') {
+    return '/admin';
+  }
+  if (pathname === '/de/scenarios') {
+    return '/scenarios';
+  }
   if (pathname === '/de/prices/germany-jet-fuel') {
     return '/prices/germany-jet-fuel';
+  }
+  if (pathname === '/de/lufthansa-saf-2026') {
+    return '/analysis/lufthansa-flight-cuts-2026-04';
   }
   if (pathname.startsWith('/de')) {
     return '/';
@@ -31,15 +151,109 @@ function toChinesePath(pathname: string): string {
   return pathname || '/';
 }
 
+export function toEnglishPath(pathname: string): string {
+  if (pathname === '/' || pathname === '/de') {
+    return '/en';
+  }
+  if (pathname === '/faq' || pathname === '/de/faq') {
+    return '/en/faq';
+  }
+  if (pathname === '/en/faq') {
+    return '/en/faq';
+  }
+  if (pathname === '/dashboard' || pathname === '/de/dashboard') {
+    return '/en/dashboard';
+  }
+  if (pathname === '/crisis') {
+    return '/en/crisis';
+  }
+  if (pathname === '/de/crisis') {
+    return '/en/crisis';
+  }
+  if (pathname === '/en/crisis') {
+    return '/en/crisis';
+  }
+  if (pathname === '/sources') {
+    return '/en/sources';
+  }
+  if (pathname === '/de/sources') {
+    return '/en/sources';
+  }
+  if (pathname === '/en/sources') {
+    return '/en/sources';
+  }
+  if (pathname === '/research') {
+    return '/en/research';
+  }
+  if (pathname === '/de/research') {
+    return '/en/research';
+  }
+  if (pathname === '/en/research') {
+    return '/en/research';
+  }
+  if (pathname === '/reports') {
+    return '/en/reports';
+  }
+  if (pathname === '/de/reports') {
+    return '/en/reports';
+  }
+  if (pathname === '/reports/tipping-point-analysis' || pathname === '/de/reports/tipping-point-analysis') {
+    return '/en/reports/tipping-point-analysis';
+  }
+  if (pathname === '/en/reports/tipping-point-analysis') {
+    return '/en/reports/tipping-point-analysis';
+  }
+  if (pathname === '/en/reports') {
+    return '/en/reports';
+  }
+  if (pathname === '/admin') {
+    return '/en/admin';
+  }
+  if (pathname === '/de/admin') {
+    return '/en/admin';
+  }
+  if (pathname === '/en/admin') {
+    return '/en/admin';
+  }
+  if (pathname === '/scenarios') {
+    return '/en/scenarios';
+  }
+  if (pathname === '/de/scenarios') {
+    return '/en/scenarios';
+  }
+  if (pathname === '/en/scenarios') {
+    return '/en/scenarios';
+  }
+  if (pathname === '/prices/germany-jet-fuel' || pathname === '/de/prices/germany-jet-fuel') {
+    return '/en/prices/germany-jet-fuel';
+  }
+  if (pathname === '/en/prices/germany-jet-fuel') {
+    return '/en/prices/germany-jet-fuel';
+  }
+  if (pathname === '/analysis/lufthansa-flight-cuts-2026-04' || pathname === '/de/lufthansa-saf-2026') {
+    return '/en/lufthansa-saf-2026';
+  }
+  if (pathname === '/en/lufthansa-saf-2026') {
+    return '/en/lufthansa-saf-2026';
+  }
+  if (pathname.startsWith('/en')) {
+    return pathname;
+  }
+  return '/en';
+}
+
 export function LanguageSwitcher() {
   const pathname = usePathname() ?? '/';
-  const currentLocale = pathname.startsWith('/de') ? 'de' : 'zh';
+  const currentLocale = pathname.startsWith('/de') ? 'de' : pathname.startsWith('/en') ? 'en' : 'zh';
+  const controlLabel = currentLocale === 'de' ? 'Sprache' : currentLocale === 'en' ? 'Language' : '语言';
+  const labels = localeLabels[currentLocale];
 
   return (
-    <label className="inline-flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-      <span>语言</span>
+    <div className="inline-flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+      <label htmlFor="jetscope-language-switcher">{controlLabel}</label>
       <select
-        aria-label="语言"
+        id="jetscope-language-switcher"
+        aria-label={controlLabel}
         className="bg-transparent text-xs font-semibold text-slate-950 outline-none"
         value={currentLocale}
         onChange={(event) => {
@@ -50,14 +264,15 @@ export function LanguageSwitcher() {
           if (nextLocale === 'zh') {
             window.location.href = toChinesePath(pathname);
           }
+          if (nextLocale === 'en') {
+            window.location.href = toEnglishPath(pathname);
+          }
         }}
       >
-        <option value="zh">{localeLabels.zh}</option>
-        <option value="de">{localeLabels.de}</option>
-        <option value="en" disabled>
-          {localeLabels.en}
-        </option>
+        <option value="zh">{labels.zh}</option>
+        <option value="de">{labels.de}</option>
+        <option value="en">{labels.en}</option>
       </select>
-    </label>
+    </div>
   );
 }
