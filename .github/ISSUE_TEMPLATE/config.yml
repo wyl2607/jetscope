@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/wyl2607/jetscope/security/advisories/new
+    about: Open a confidential vulnerability report.

@@ -2,6 +2,8 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     analysis,
+    grid,
+    heat,
     health,
     market,
     pathways,
@@ -11,6 +13,7 @@ from app.api.routes import (
     research,
     scenarios,
     sources,
+    transition,
 )
 from app.api.routes import sqlite_alerts, sqlite_markets, sqlite_scenarios
 from app.core.config import settings
@@ -18,6 +21,9 @@ from app.core.config import settings
 api_router = APIRouter()
 api_router.include_router(health.router, tags=["health"])
 api_router.include_router(analysis.router, prefix="/analysis", tags=["analysis"])
+api_router.include_router(grid.router, prefix="/analysis", tags=["grid"])
+api_router.include_router(heat.router, prefix="/analysis", tags=["heat"])
+api_router.include_router(transition.router, prefix="/analysis", tags=["transition"])
 api_router.include_router(market.router, prefix="/market", tags=["market"])
 api_router.include_router(pathways.router, prefix="/pathways", tags=["pathways"])
 api_router.include_router(policies.router, prefix="/policies", tags=["policies"])
