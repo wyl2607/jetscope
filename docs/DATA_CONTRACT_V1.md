@@ -10,6 +10,8 @@ This document defines the data shapes that JetScope product surfaces rely on. It
 
 The contract is intentionally source-aware. A value without freshness, confidence, or fallback context is not sufficient for a decision-support product.
 
+For EU ETS/carbon-cost interpretation assumptions tied to these data fields, see [EU_ETS_CARBON_ASSUMPTIONS.md](./EU_ETS_CARBON_ASSUMPTIONS.md).
+
 ## Core Entities
 
 ### MarketSnapshot

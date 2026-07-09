@@ -8,6 +8,7 @@ import {
   resolveSnapshotMetric,
   type MarketHistory,
   type MarketHistoryMetric,
+  type DisplayLocale,
   type MarketSnapshot
 } from '@/lib/product-read-model';
 
@@ -55,6 +56,11 @@ const GERMANY_METRIC_CONFIGS: GermanyMetricConfig[] = [
   { metricKey: 'carbon_proxy_usd_per_t', unit: 'USD/tCO2', digits: 2 }
 ];
 
+function fallbackNote(sourceMetricKey: string, locale: DisplayLocale): string {
+  const sourceLabel = metricLabel(sourceMetricKey, locale);
+  return locale === 'de' ? `Fallback von ${sourceLabel}` : `Fallback from ${sourceLabel}`;
+}
+
 async function fetchJson<T>(path: string): Promise<T> {
   const controller = new AbortController();
   const timeoutMs = Number(process.env.JETSCOPE_MARKET_FETCH_TIMEOUT_MS ?? DEFAULT_FETCH_TIMEOUT_MS);
@@ -77,6 +83,7 @@ async function fetchJson<T>(path: string): Promise<T> {
 }
 
 function buildGermanyMetric(
+  locale: DisplayLocale,
   config: GermanyMetricConfig,
   snapshot: {
     value: number | null;
@@ -92,11 +99,11 @@ function buildGermanyMetric(
   const { metricKey } = config;
   const sourceMetricKey = history.metric ? history.sourceMetricKey : snapshot.sourceMetricKey;
   const usedFallback = snapshot.usedFallback || history.usedFallback;
-  const fallbackNote = usedFallback && sourceMetricKey !== metricKey ? `Fallback from ${metricLabel(sourceMetricKey)}` : null;
+  const note = usedFallback && sourceMetricKey !== metricKey ? fallbackNote(sourceMetricKey, locale) : null;
 
   return {
     metricKey,
-    label: metricLabel(metricKey),
+    label: metricLabel(metricKey, locale),
     unit: config.unit,
     value: snapshot.value,
     digits: config.digits,
@@ -105,17 +112,17 @@ function buildGermanyMetric(
     changePct1d: finiteChangeOrNull(history.metric?.change_pct_1d),
     changePct7d: finiteChangeOrNull(history.metric?.change_pct_7d),
     changePct30d: finiteChangeOrNull(history.metric?.change_pct_30d),
-    note: fallbackNote
+    note
   };
 }
 
-function fallbackGermanyJetFuelReadModel(error: unknown): GermanyJetFuelReadModel {
+function fallbackGermanyJetFuelReadModel(error: unknown, locale: DisplayLocale): GermanyJetFuelReadModel {
   return {
     generatedAt: new Date().toISOString(),
     overallStatus: 'degraded',
     metrics: GERMANY_METRIC_CONFIGS.map((config) => ({
       metricKey: config.metricKey,
-      label: metricLabel(config.metricKey),
+      label: metricLabel(config.metricKey, locale),
       unit: config.unit,
       value: finiteNumberOrNull(FALLBACK_VALUES[config.metricKey]),
       digits: config.digits,
@@ -124,14 +131,14 @@ function fallbackGermanyJetFuelReadModel(error: unknown): GermanyJetFuelReadMode
       changePct1d: null,
       changePct7d: null,
       changePct30d: null,
-      note: config.fallbackKey ? `Fallback from ${metricLabel(config.fallbackKey)}` : null
+      note: config.fallbackKey ? fallbackNote(config.fallbackKey, locale) : null
     })),
     isFallback: true,
     error: error instanceof Error ? error.message : 'unknown error'
   };
 }
 
-export async function getGermanyJetFuelReadModel(): Promise<GermanyJetFuelReadModel> {
+export async function getGermanyJetFuelReadModel(locale: DisplayLocale = 'zh'): Promise<GermanyJetFuelReadModel> {
   try {
     const [market, history] = await Promise.all([
       fetchJson<MarketSnapshot>('/market/snapshot'),
@@ -140,6 +147,7 @@ export async function getGermanyJetFuelReadModel(): Promise<GermanyJetFuelReadMo
 
     const metrics = GERMANY_METRIC_CONFIGS.map((config) =>
       buildGermanyMetric(
+        locale,
         config,
         resolveSnapshotMetric(market.values, config.metricKey, config.fallbackKey),
         resolveHistoryMetric(history, config.metricKey, config.fallbackKey)
@@ -154,6 +162,6 @@ export async function getGermanyJetFuelReadModel(): Promise<GermanyJetFuelReadMo
       error: null
     };
   } catch (error) {
-    return fallbackGermanyJetFuelReadModel(error);
+    return fallbackGermanyJetFuelReadModel(error, locale);
   }
 }

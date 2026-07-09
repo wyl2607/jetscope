@@ -2,7 +2,7 @@
 
 ## Product Positioning
 
-JetScope is an aviation fuel transition intelligence product for the European market. The product is not a generic oil dashboard; it models when Sustainable Aviation Fuel (SAF) becomes a rational procurement option under fuel-price pressure, carbon exposure, reserve stress, subsidy support, and pathway economics.
+JetScope is a European transition-energy intelligence product now covering three adjacent decision domains: SAF, renewable electricity/grid parity, and residential heating transition. It models when SAF and heat pathways become economically rational under price, policy, and infrastructure assumptions, and it supports comparison between fossil, SAF, grid, and heat alternatives using shared market, policy, and model assumptions.
 
 ## Product Stack
 
@@ -35,6 +35,11 @@ test/         # Node contract and read-model tests
 - Germany jet-fuel price page
 - EU reserve stress crisis page
 - SAF tipping-point crisis page
+- Grid parity dashboard and heat comparison surfaces
+- Grid history and historical calibration context
+- Grid LCOE sensitivity analysis
+- Heat parity dashboard
+- Heat sensitivity analysis
 - Reports and research portfolio surfaces
 - Scenario registry and persistence flow
 - Admin data operations
@@ -48,6 +53,12 @@ test/         # Node contract and read-model tests
 - `GET /v1/analysis/tipping-point`
 - `GET /v1/analysis/airline-decision`
 - `GET /v1/analysis/tipping-point/events`
+- `GET /v1/analysis/grid-parity`
+- `GET /v1/analysis/grid-parity/history`
+- `POST /v1/analysis/grid-parity/history/seed`
+- `GET /v1/analysis/grid-parity/lcoe-sensitivity`
+- `GET /v1/analysis/heat-parity`
+- `GET /v1/analysis/heat-parity/sensitivity`
 - `GET /v1/reserves/eu`
 - `GET /v1/research/signals`
 - `GET /v1/sources/coverage`
@@ -86,6 +97,13 @@ Current implemented source posture includes:
 - EEX EU ETS public market page where available
 - Investing.com ARA/Rotterdam public quote parsing where available
 - Checked-in baselines and deterministic fallback values when live sources fail
+- Portfolio demo data for grid/heat pathways where public baselines are not yet live
+
+Additional constraints:
+
+- Portfolio-level outputs are intended for decision support and scenario planning, not investment-grade forecasting.
+- Grid and heat analysis products remain demo-oriented where no production-grade feed contracts are explicit in code.
+- There are no claims of live paid-feed integration in current surface contracts.
 
 ## Architecture Rules
 

@@ -7,6 +7,7 @@ const RESEARCH_ROUTE = '/research' as Route;
 type Props = {
   brief: ResearchDecisionBrief;
   compact?: boolean;
+  showLink?: boolean;
 };
 
 function statusTone(status: ResearchDecisionBrief['status']): string {
@@ -27,7 +28,7 @@ function impactLabel(value: ResearchDecisionBrief['topSignals'][number]['impact_
   return '未知';
 }
 
-export function ResearchDecisionBriefCard({ brief, compact = false }: Props) {
+export function ResearchDecisionBriefCard({ brief, compact = false, showLink = true }: Props) {
   return (
     <section className={`rounded-2xl border p-6 ${statusTone(brief.status)}`}>
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -35,9 +36,11 @@ export function ResearchDecisionBriefCard({ brief, compact = false }: Props) {
           <p className="text-xs uppercase tracking-[0.18em] opacity-75">研究决策层</p>
           <h3 className="mt-2 text-xl font-semibold text-slate-950">{brief.headline}</h3>
         </div>
-        <Link href={RESEARCH_ROUTE} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-800">
-          打开信号
-        </Link>
+        {showLink ? (
+          <Link href={RESEARCH_ROUTE} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-800">
+            打开信号
+          </Link>
+        ) : null}
       </div>
 
       <p className="mt-4 text-sm leading-7 text-slate-700">{brief.whyMatters}</p>

@@ -38,7 +38,7 @@ export default function ClientBreakevenCalculator() {
           onChange={setOilPrice}
         />
         <SliderControl
-          label="SAF Preis"
+          label="SAF-Preis"
           value={safPrice}
           min={0.8}
           max={3.0}
@@ -47,7 +47,7 @@ export default function ClientBreakevenCalculator() {
           onChange={setSafPrice}
         />
         <SliderControl
-          label="EU ETS Preis"
+          label="EU-ETS-Preis"
           value={euEtsPrice}
           min={30}
           max={200}
@@ -56,7 +56,7 @@ export default function ClientBreakevenCalculator() {
           onChange={setEuEtsPrice}
         />
         <SliderControl
-          label="DE Premium"
+          label="DE-Aufschlag"
           value={germanyPremium}
           min={0}
           max={10}
@@ -65,7 +65,7 @@ export default function ClientBreakevenCalculator() {
           onChange={setGermanyPremium}
         />
         <SliderControl
-          label="SAF Blend-Rate"
+          label="SAF-Beimischungsrate"
           value={blendRate}
           min={0}
           max={70}
@@ -90,11 +90,11 @@ export default function ClientBreakevenCalculator() {
           color="emerald"
         />
         <ResultCard
-          label={`${blendRate}% Blend`}
+          label={`${blendRate}% Beimischung`}
           value={`$${blendedCost.toFixed(3)}`}
           unit="/L"
           color={premiumVsJet > 30 ? 'red' : premiumVsJet > 15 ? 'yellow' : 'green'}
-          subValue={`+${premiumVsJet.toFixed(1)}% vs Jet`}
+          subValue={`+${premiumVsJet.toFixed(1)}% ggü. Jet-A`}
         />
       </div>
 
