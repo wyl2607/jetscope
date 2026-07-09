@@ -12,6 +12,7 @@ from app.schemas.sqlite_schemas import (
     MarketAlertRead,
     MarketAlertUpdate,
 )
+from app.security import require_admin_token
 
 router = APIRouter(prefix="/sqlite/market-alerts", tags=["market-alerts-sqlite"])
 
@@ -47,6 +48,7 @@ def get_market_alert(alert_id: str, db: Session = Depends(get_sqlite_db)):
 @router.post("", response_model=MarketAlertRead, status_code=201)
 def create_market_alert(
     alert_data: MarketAlertCreate,
+    _auth: None = Depends(require_admin_token),
     db: Session = Depends(get_sqlite_db),
 ):
     """Create new market alert."""
@@ -76,6 +78,7 @@ def create_market_alert(
 def update_market_alert(
     alert_id: str,
     alert_data: MarketAlertUpdate,
+    _auth: None = Depends(require_admin_token),
     db: Session = Depends(get_sqlite_db),
 ):
     """Update market alert."""
@@ -94,7 +97,11 @@ def update_market_alert(
 
 
 @router.delete("/{alert_id}", status_code=204)
-def delete_market_alert(alert_id: str, db: Session = Depends(get_sqlite_db)):
+def delete_market_alert(
+    alert_id: str,
+    _auth: None = Depends(require_admin_token),
+    db: Session = Depends(get_sqlite_db),
+):
     """Delete market alert."""
     alert = db.query(MarketAlert).filter(MarketAlert.id == alert_id).first()
     if not alert:
@@ -105,7 +112,11 @@ def delete_market_alert(alert_id: str, db: Session = Depends(get_sqlite_db)):
 
 
 @router.put("/{alert_id}/trigger", response_model=MarketAlertRead)
-def trigger_market_alert(alert_id: str, db: Session = Depends(get_sqlite_db)):
+def trigger_market_alert(
+    alert_id: str,
+    _auth: None = Depends(require_admin_token),
+    db: Session = Depends(get_sqlite_db),
+):
     """Mark alert as triggered with current timestamp."""
     from datetime import datetime
 

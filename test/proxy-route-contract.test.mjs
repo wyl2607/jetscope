@@ -6,12 +6,23 @@ const APP_API_DIR = new URL('../apps/web/app/api/', import.meta.url);
 const LUFTHANSA_DE_PAGE = new URL('../apps/web/app/de/lufthansa-saf-2026/client-market-data.tsx', import.meta.url);
 
 const PROXY_ROUTES = [
+  ['health/route.ts', "proxyToApi(request, '/health')"],
   ['market/route.ts', "proxyToApi(request, '/market/snapshot')"],
+  ['readiness/route.ts', "proxyToApi(request, '/readiness')"],
+  ['research/refresh/route.ts', "proxyToApi(request, '/research/refresh')"],
   ['reserves/route.ts', "proxyToApi(request, '/reserves/eu')"],
   ['reserves/eu/route.ts', "proxyToApi(request, '/reserves/eu')"],
   ['sources/route.ts', "proxyToApi(request, '/sources/coverage')"],
   ['analysis/tipping-point/route.ts', "proxyToApi(request, '/analysis/tipping-point')"],
-  ['analysis/airline-decision/route.ts', "proxyToApi(request, '/analysis/airline-decision')"]
+  ['analysis/heat-parity/route.ts', "proxyToApi(request, '/analysis/heat-parity')"],
+  ['analysis/heat-parity/sensitivity/route.ts', "proxyToApi(request, '/analysis/heat-parity/sensitivity')"],
+  ['analysis/transition-summary/route.ts', "proxyToApi(request, '/analysis/transition-summary')"],
+  ['analysis/grid-parity/route.ts', "proxyToApi(request, '/analysis/grid-parity')"],
+  ['analysis/grid-parity/history/route.ts', "proxyToApi(request, '/analysis/grid-parity/history')"],
+  ['analysis/grid-parity/lcoe-sensitivity/route.ts', "proxyToApi(request, '/analysis/grid-parity/lcoe-sensitivity')"],
+  ['analysis/airline-decision/route.ts', "proxyToApi(request, '/analysis/airline-decision')"],
+  ['pathways/compare/route.ts', "proxyToApi(request, '/pathways/compare')"],
+  ['policies/eu-ets-pressure/route.ts', "proxyToApi(request, '/policies/eu-ets-pressure')"]
 ];
 
 test('web API proxy routes map to concrete FastAPI endpoints', async () => {

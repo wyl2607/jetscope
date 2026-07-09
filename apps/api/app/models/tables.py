@@ -128,6 +128,8 @@ class ESGSignal(Base):
             "POLICY_CHANGE",
             "PRICE_SHOCK",
             "CAPACITY_ANNOUNCEMENT",
+            "TECHNOLOGY_BREAKTHROUGH",
+            "GRID_INFRASTRUCTURE",
             "OTHER",
             name="esg_signal_type",
             native_enum=False,
@@ -137,8 +139,8 @@ class ESGSignal(Base):
     entities: Mapped[list[str]] = mapped_column(JSON)
     impact_direction: Mapped[str] = mapped_column(
         Enum(
-            "BEARISH_SAF",
-            "BULLISH_SAF",
+            "BEARISH",
+            "BULLISH",
             "NEUTRAL",
             name="esg_impact_direction",
             native_enum=False,

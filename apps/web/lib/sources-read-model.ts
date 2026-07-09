@@ -32,6 +32,13 @@ type MarketHistory = {
   metrics: Record<string, MarketHistoryMetric>;
 };
 
+export type SourceReviewAction = {
+  label: string;
+  detail: string;
+  href: string;
+  priority: 'normal' | 'review' | 'critical';
+};
+
 export type SourcesReadModel = {
   generatedAt: string;
   overallStatus: string;
@@ -66,6 +73,7 @@ export type SourcesReadModel = {
     alertLevel: "normal" | "watch" | "alert";
     sparkline: string;
     note: string;
+    reviewAction: SourceReviewAction;
   }>;
   isFallback: boolean;
   error: string | null;
@@ -222,6 +230,47 @@ function sourceErrorLabel(error: string): string {
   return error;
 }
 
+function reviewActionFor(metric: SourceCoverageMetric): SourceReviewAction {
+  if (metric.error === 'source_unavailable') {
+    return {
+      label: '确认公开端点',
+      detail: '先在 Admin 触发市场刷新；若仍不可用，保留回退标记并人工核对外部报价。',
+      href: '/admin',
+      priority: 'critical'
+    };
+  }
+  if (metric.error === 'fallback_used' || metric.fallback_used || metric.status === 'seed' || metric.status === 'fallback') {
+    return {
+      label: '刷新并复核回退',
+      detail: '配置 JETSCOPE_ADMIN_TOKEN 后触发刷新；刷新后回到本页确认该指标脱离回退。',
+      href: '/admin',
+      priority: 'critical'
+    };
+  }
+  if (metric.error || metric.status !== 'ok') {
+    return {
+      label: '排查来源状态',
+      detail: `来源状态为 ${metric.status}；先刷新，再检查该供应商或解析器是否变更。`,
+      href: '/admin',
+      priority: 'critical'
+    };
+  }
+  if (metric.source_type.includes('proxy') || metric.source_type === 'derived') {
+    return {
+      label: '人工复核代理假设',
+      detail: '用于高风险定价或采购决策前，交叉核对原始报价、政策口径和报告说明。',
+      href: '/reports',
+      priority: 'review'
+    };
+  }
+  return {
+    label: '保留快照证据',
+    detail: '当前来源可用；重大决策前记录生成时间、置信度和快照链接。',
+    href: '/reports',
+    priority: 'normal'
+  };
+}
+
 function averageFinite(values: number[]): number {
   const finiteValues = values.filter((value) => Number.isFinite(value));
   return finiteValues.length
@@ -324,7 +373,8 @@ function buildRows(
       change30d: formatChange(historyMetric?.change_pct_30d),
       alertLevel: computeAlertLevel(historyMetric),
       sparkline: encodeSparklinePoints(historyMetric?.points ?? []),
-      note: buildMetricNote(metric)
+      note: buildMetricNote(metric),
+      reviewAction: reviewActionFor(metric)
     };
   });
 }

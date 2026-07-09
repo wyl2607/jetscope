@@ -7,6 +7,10 @@ import { computeDashboardAlertBanners } from '@/lib/market-signals';
 import { getDashboardReadModel, type DashboardReadModel } from '@/lib/dashboard-read-model';
 import { getPriceTrendChartReadModel } from '@/lib/product-read-model';
 import { getSourcesReadModel } from '@/lib/sources-read-model';
+import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
+import { loadPathwayComparison } from '@/lib/pathways-read-model';
+import { EuEtsPressurePanel } from '@/components/eu-ets-pressure-panel';
+import { loadEuEtsPressure } from '@/lib/eu-ets-pressure-read-model';
 import type { Metadata } from 'next';
 import { buildPageMetadata } from '@/lib/seo';
 
@@ -41,9 +45,31 @@ function formatAsOf(value: string | null) {
   return date.toLocaleString();
 }
 
+function sourceStatusLabel(status: string) {
+  if (status === 'ok') return '正常';
+  if (status === 'degraded') return '降级';
+  if (status === 'offline') return '离线';
+  if (status === 'unknown') return '未知';
+  return status;
+}
+
+function freshnessLabel(level: string) {
+  if (level === 'fresh') return '新鲜';
+  if (level === 'stale') return '偏旧';
+  if (level === 'critical') return '严重过期';
+  return level;
+}
+
+function riskLevelLabel(level: string) {
+  if (level === 'normal') return '正常';
+  if (level === 'watch') return '观察';
+  if (level === 'alert') return '警报';
+  return level;
+}
+
 function dashboardFallbackHint(readModel: DashboardReadModel) {
   if (!readModel.isFallback) {
-    return `来源状态： ${readModel.market.source_status.overall} | 新鲜度=${readModel.freshnessSignal.level} (${readModel.freshnessSignal.minutes}m)`;
+    return `来源状态：${sourceStatusLabel(readModel.market.source_status.overall)} · 数据新鲜度：${freshnessLabel(readModel.freshnessSignal.level)}（${readModel.freshnessSignal.minutes} 分钟）`;
   }
 
   return '本地 API 暂不可用，正在使用内置决策模型，确保驾驶舱仍可审阅。';
@@ -69,9 +95,34 @@ export default async function DashboardPage() {
   const riskHint =
     risk == null
       ? '暂无历史风险信号'
-      : `级别=${risk.level} | 截至=${formatAsOf(risk.latestAsOf)} | 样本=${risk.sampleCount}`;
+      : `级别：${riskLevelLabel(risk.level)} · 截至：${formatAsOf(risk.latestAsOf)} · 样本：${risk.sampleCount}`;
 
   const alertBanners = computeDashboardAlertBanners(readModel.market, risk);
+
+  let pathwayComparison: Awaited<ReturnType<typeof loadPathwayComparison>> | null = null;
+  try {
+    pathwayComparison = await loadPathwayComparison({
+      fossilJetUsdPerL: market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l ?? 0.9,
+      carbonPriceEurPerT: Number(((market.carbon_proxy_usd_per_t ?? 0) / 1.08).toFixed(2)),
+      subsidyUsdPerL: 0,
+      blendRatePct: 6
+    });
+  } catch {
+    pathwayComparison = null;
+  }
+
+  let euEtsPressure: Awaited<ReturnType<typeof loadEuEtsPressure>> | null = null;
+  try {
+    euEtsPressure = await loadEuEtsPressure({
+      fossilJetUsdPerL: market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l ?? 0.9,
+      exemptBlendPct: 6,
+      euEtsMin: 0,
+      euEtsMax: 200,
+      euEtsStep: 50
+    });
+  } catch {
+    euEtsPressure = null;
+  }
 
   return (
     <Shell
@@ -128,7 +179,7 @@ export default async function DashboardPage() {
         <MetricCard
           label="情景模式"
           value={`${readModel.scenarioCount}`}
-          hint={readModel.scenarioCount > 0 ? '已有保存情景，可用于对比。' : '暂无保存情景；需要 what-if 案例时可从 Scenarios 开始。'}
+          hint={readModel.scenarioCount > 0 ? '已有保存情景，可用于对比。' : '暂无保存情景；需要假设推演时可从情景工作区开始。'}
         />
         <MetricCard label="管理控制" value="必需" hint="路线成本、政策参数、来源维护" />
         <MetricCard
@@ -146,7 +197,7 @@ export default async function DashboardPage() {
         <MetricCard
           label="德国航油价格页"
           value="打开实时页面"
-          hint="SSR 市场页，展示 Brent、全球航油、EU 航油代理价、碳价及 1d/7d/30d 变化"
+          hint="服务端市场页，展示 Brent、全球航油、EU 航油代理价、碳价及 1d/7d/30d 变化"
           cardHref="/prices/germany-jet-fuel"
         />
       </section>
@@ -202,6 +253,42 @@ export default async function DashboardPage() {
           )}
         </InfoCard>
       </section>
+
+      {pathwayComparison ? (
+        <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">路径对比</p>
+              <h2 className="mt-2 text-xl font-bold text-slate-950">SAF 路径净成本与来源可信度</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                以当前市场切片计算各 SAF 路径的净成本与价差，并标注每条路径的来源类型与置信度。
+              </p>
+            </div>
+            <span className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">
+              对比信号：{pathwayComparison.signalLabel}
+            </span>
+          </div>
+          <SafPathwayComparisonTable
+            selectedPathwayKey="hefa"
+            pathways={pathwayComparison.rows.map((row) => ({
+              pathway_key: row.pathway_key,
+              display_name: row.name,
+              net_cost_low_usd_per_l: row.min_usd_per_l,
+              net_cost_high_usd_per_l: row.max_usd_per_l,
+              spread_low_pct: row.spread_pct ?? 0,
+              spread_high_pct: row.spread_pct ?? 0,
+              status: row.status
+            }))}
+            sources={pathwayComparison.sourceByKey}
+          />
+        </section>
+      ) : null}
+
+      {euEtsPressure ? (
+        <section className="mt-8">
+          <EuEtsPressurePanel model={euEtsPressure} />
+        </section>
+      ) : null}
 
       <section className="mt-12">
         <PolicyTimelineWithMarketTime />
