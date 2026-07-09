@@ -193,6 +193,43 @@ def test_tipping_point_events_route_filters_and_serializes_metadata(client: Test
     assert payload[0]["metadata"]["breakeven_oil_price_usd_per_bbl"] == 137.5
 
 
+def test_crisis_brief_route_aggregates_source_backed_operating_context(client: TestClient):
+    response = client.get("/v1/analysis/crisis-brief?limit=5")
+    assert response.status_code == 200
+    payload = response.json()
+
+    assert payload["generated_at"]
+    assert payload["market_generated_at"]
+    assert payload["fossil_jet_usd_per_l"] > 0
+
+    assert payload["source_status"]["overall"] in {"ok", "degraded", "error", "seed"}
+    assert 0.0 <= payload["source_status"]["confidence"] <= 1.0
+    assert 0.0 <= payload["source_status"]["fallback_rate"] <= 100.0
+
+    reserve = payload["reserve"]
+    assert reserve["region"] == "eu"
+    assert reserve["coverage_weeks"] > 0
+    assert reserve["source_type"] in {"manual", "official", "public_proxy", "derived"}
+
+    assert isinstance(payload["tipping_events"], list)
+    assert len(payload["tipping_events"]) <= 5
+    assert payload["research"]["status"] in {"disabled", "empty", "signal_backed"}
+    assert payload["research"]["signal_count"] >= 0
+
+    actions = payload["actions"]
+    action_ids = {action["id"] for action in actions}
+    assert {"review_sources", "open_report", "review_scenarios"}.issubset(action_ids)
+    assert all(action["href"].startswith("/") for action in actions)
+
+
+def test_crisis_brief_route_is_published_in_openapi(client: TestClient):
+    schema = client.app.openapi()
+    assert "/v1/analysis/crisis-brief" in schema["paths"]
+    assert schema["paths"]["/v1/analysis/crisis-brief"]["get"]["responses"]["200"]["content"][
+        "application/json"
+    ]["schema"]["$ref"].endswith("/CrisisBriefResponse")
+
+
 def test_source_coverage_route_marks_partial_coverage_as_degraded(client: TestClient, monkeypatch: pytest.MonkeyPatch):
     from app.api.routes import sources as sources_route
     from app.services.bootstrap import utcnow

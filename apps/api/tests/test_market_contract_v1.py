@@ -1,4 +1,4 @@
-from datetime import datetime, UTC
+from datetime import datetime, timedelta, UTC
 from pathlib import Path
 
 import pytest
@@ -136,6 +136,100 @@ def test_snapshot_source_details_has_fallback_flag(client: TestClient, seeded_re
     fallback_flags = [bool(detail.get("fallback_used")) for detail in source_details.values() if isinstance(detail, dict)]
     assert fallback_flags, "expected non-empty fallback flags from source_details"
     assert all(isinstance(flag, bool) for flag in fallback_flags)
+
+
+def test_snapshot_source_status_exposes_freshness_confidence_and_fallback_summary(
+    client: TestClient,
+    seeded_refresh_run,
+):
+    response = client.get("/v1/market/snapshot")
+    assert response.status_code == 200
+    payload = response.json()
+
+    source_status = payload["source_status"]
+
+    assert isinstance(source_status["freshness_minutes"], int)
+    assert source_status["freshness_minutes"] >= 0
+    assert 0.0 <= source_status["confidence"] <= 1.0
+    assert source_status["confidence"] < 0.9
+    assert source_status["fallback_rate"] == pytest.approx(50.0)
+    assert source_status["is_fallback"] is True
+
+
+def test_snapshot_distinguishes_live_proxy_and_fallback_source_paths(
+    client: TestClient,
+    seeded_refresh_run,
+):
+    response = client.get("/v1/market/snapshot")
+    assert response.status_code == 200
+    payload = response.json()
+
+    brent = payload["source_details"]["brent"]
+    carbon = payload["source_details"]["carbon"]
+    jet_eu_proxy = payload["source_details"]["jet_eu_proxy"]
+
+    assert brent["status"] == "ok"
+    assert brent["fallback_used"] is False
+    assert brent["confidence_score"] == pytest.approx(0.88)
+
+    assert carbon["status"] == "fallback"
+    assert carbon["fallback_used"] is True
+    assert carbon["confidence_score"] == pytest.approx(0.7)
+
+    assert jet_eu_proxy["market_scope"] == "derived_proxy"
+    assert jet_eu_proxy["fallback_used"] is True
+
+
+def test_snapshot_exposes_stale_fallback_source_status(client: TestClient, db_path: Path):
+    engine = create_engine(f"sqlite:///{db_path}", future=True)
+    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+    Base.metadata.create_all(bind=engine)
+    stale_time = datetime.now(UTC) - timedelta(days=3)
+
+    with SessionLocal() as db:
+        db.add(
+            MarketRefreshRun(
+                refreshed_at=stale_time,
+                source_status="degraded",
+                ingest="test-stale-fallback",
+                sources={
+                    "jet_eu_proxy": {
+                        "source": "brent-derived",
+                        "status": "fallback",
+                        "region": "eu",
+                        "market_scope": "derived_proxy",
+                        "confidence_score": 0.65,
+                        "fallback_used": True,
+                    }
+                },
+            )
+        )
+        for metric in DEFAULT_MARKET_METRICS:
+            db.add(
+                MarketSnapshot(
+                    source_key=metric["source_key"],
+                    metric_key=metric["metric_key"],
+                    value=float(metric["value"]),
+                    unit=metric["unit"],
+                    as_of=stale_time,
+                    payload={"test": "stale-fallback"},
+                )
+            )
+        db.commit()
+
+    response = client.get("/v1/market/snapshot")
+    assert response.status_code == 200
+    payload = response.json()
+    source_status = payload["source_status"]
+    jet_eu_proxy = payload["source_details"]["jet_eu_proxy"]
+
+    assert source_status["overall"] == "degraded"
+    assert source_status["freshness_minutes"] >= 2 * 24 * 60
+    assert source_status["fallback_rate"] == pytest.approx(100.0)
+    assert source_status["is_fallback"] is True
+    assert jet_eu_proxy["fallback_used"] is True
+    assert jet_eu_proxy["status"] == "fallback"
+    assert jet_eu_proxy["confidence_score"] == pytest.approx(0.65)
 
 
 def test_snapshot_source_details_errors_are_public_safe(client: TestClient, seeded_refresh_run):
