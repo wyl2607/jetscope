@@ -154,17 +154,31 @@ test('admin UI keeps a light operations theme', async () => {
 
 test('admin market refresh shows database persistence evidence', async () => {
   const adminSource = await readFile(new URL('../apps/web/components/admin-data-ops.tsx', import.meta.url), 'utf8');
+  const adminPageSource = await readFile(new URL('../apps/web/app/admin/page.tsx', import.meta.url), 'utf8');
   const marketSchema = await readFile(new URL('../apps/api/app/schemas/market.py', import.meta.url), 'utf8');
   const marketRoute = await readFile(new URL('../apps/api/app/api/routes/market.py', import.meta.url), 'utf8');
 
+  assert.match(adminPageSource, /getLaunchReadinessReadModel/);
+  assert.match(adminPageSource, /上线前置状态/);
+  assert.match(adminPageSource, /readiness\.checks\.map/);
+  assert.match(adminPageSource, /check\.actionHref/);
+  assert.match(adminPageSource, /check\.blocking/);
+  assert.match(adminPageSource, /check\.configKeys/);
+  assert.match(adminPageSource, /阻塞上线/);
+  assert.match(adminPageSource, /相关配置/);
   assert.match(adminSource, /refreshEvidence/);
   assert.match(adminSource, /Promise<unknown>/);
   assert.match(adminSource, /return await response\.json\(\)/);
   assert.match(adminSource, /setPoliciesJson\(stringify\(policiesPayload\)\)/);
   assert.match(adminSource, /\/api\/market\/refresh/);
+  assert.match(adminSource, /\/api\/research\/refresh/);
   assert.match(adminSource, /\/api\/market/);
   assert.match(adminSource, /persisted_metric_count/);
   assert.match(adminSource, /market_snapshots/);
+  assert.match(adminSource, /researchRefreshEvidence/);
+  assert.match(adminSource, /触发研究刷新/);
+  assert.match(adminSource, /JETSCOPE_AI_RESEARCH_ENABLED=true/);
+  assert.match(adminSource, /JETSCOPE_ANTHROPIC_API_KEY/);
   assert.match(adminSource, /本地数据库/);
   assert.match(adminSource, /friendlyAdminError/);
   assert.match(marketSchema, /persisted_metric_count/);

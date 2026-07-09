@@ -1,4 +1,5 @@
 from pathlib import Path
+from urllib.parse import unquote
 
 from alembic import command
 from alembic.config import Config
@@ -16,8 +17,28 @@ def _alembic_config() -> Config:
     return config
 
 
+def _ensure_sqlite_parent_dir(database_url: str) -> None:
+    scheme, separator, remainder = database_url.partition("://")
+    if not separator or not scheme.startswith("sqlite"):
+        return
+
+    path = unquote(remainder.split("?", 1)[0])
+    if path.startswith("//"):
+        path = path[1:]
+    elif path.startswith("/"):
+        path = path[1:]
+
+    if not path or path in {":memory:", "/:memory:"} or path.startswith("file:"):
+        return
+
+    parent = Path(path).parent
+    if parent != Path("."):
+        parent.mkdir(parents=True, exist_ok=True)
+
+
 def apply_schema_bootstrap(engine: Engine) -> str:
     mode = settings.schema_bootstrap_mode.strip().lower()
+    _ensure_sqlite_parent_dir(settings.database_url)
 
     if mode == "create_all":
         # Compatibility fallback for local bring-up and ephemeral test DBs.

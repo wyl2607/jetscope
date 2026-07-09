@@ -40,7 +40,7 @@ function probabilityLabel(value: number): string {
 export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Props) {
   if (!decision) {
     return (
-      <section className="rounded-2xl border border-slate-200 bg-white/90 p-5">
+      <section className="min-w-0 rounded-2xl border border-slate-200 bg-white/90 p-4 sm:p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
@@ -61,7 +61,7 @@ export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Pr
   >;
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white/90 p-5">
+    <section className="min-w-0 rounded-2xl border border-slate-200 bg-white/90 p-4 sm:p-5">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">

@@ -176,7 +176,7 @@ export function TransitionReadinessDashboard({
   const reserveSeverity = getReserveSeverity(reserveWeeks);
 
   return (
-    <section className="space-y-6 rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/70">
+    <section className="min-w-0 space-y-6 rounded-[2rem] border border-slate-200 bg-white/95 p-4 shadow-xl shadow-slate-200/70 sm:p-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.28em] text-sky-700">转型监测</p>
@@ -270,7 +270,7 @@ export function TransitionReadinessDashboard({
         </div>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[1.12fr_0.88fr]">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[1.12fr_0.88fr]">
         <FuelVsSafPriceChart
           fossilJetUsdPerL={tippingPoint.inputs.fossil_jet_usd_per_l}
           effectiveFossilJetUsdPerL={tippingPoint.effective_fossil_jet_usd_per_l}
@@ -297,7 +297,7 @@ export function TransitionReadinessDashboard({
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <SafPathwayComparisonTable
           pathways={tippingPoint.pathways}
           selectedPathwayKey={selectedPathwayKey}
@@ -309,7 +309,7 @@ export function TransitionReadinessDashboard({
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <Panel title="各国政策推进进度" subtitle="用统一国家目标口径对比当前采用率和 2030 目标">
           <div className="mb-3 grid grid-cols-[112px_1fr_52px_74px] gap-2 border-b border-slate-200 pb-2 text-[11px] uppercase tracking-[0.12em] text-slate-500">
             <span>国家 / 地区</span>
@@ -387,7 +387,7 @@ export function TransitionReadinessDashboard({
         </Panel>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <Panel title="主要航空公司 SAF 采用率" subtitle="对比当前采用率、2030 目标和估算状态">
           <div className="mb-3 grid grid-cols-[126px_1fr_58px_58px] gap-2 border-b border-slate-200 pb-2 text-[11px] uppercase tracking-[0.12em] text-slate-500">
             <span>航空公司</span>
@@ -547,7 +547,7 @@ function Panel({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5">
+    <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
       <div className="mb-4">
         <div className="flex items-center gap-3">
           <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">{title}</h4>

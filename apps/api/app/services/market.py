@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
@@ -5,6 +6,7 @@ import httpx
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.tables import MarketRefreshRun, MarketSnapshot
 from app.schemas.market import (
     MarketHistoryPoint,
@@ -86,6 +88,8 @@ DEFAULT_MARKET_METRICS = (
 )
 
 MARKET_REFRESH_LOCK_KEY = 24041801
+DEFAULT_MARKET_SOURCE_TIMEOUT_SECONDS = 12.0
+MIN_MARKET_SOURCE_TIMEOUT_SECONDS = 0.1
 
 SOURCE_CONTEXT: dict[str, dict[str, object]] = {
     "eia": {
@@ -173,10 +177,38 @@ def _derive_jet_eu_proxy_usd_per_l_from_brent(brent_usd_per_bbl: float) -> float
     return _to_usd_per_l_from_usd_per_bbl(brent_usd_per_bbl) * EU_JET_PROXY_BRENT_PREMIUM_MULTIPLIER
 
 
-def _fetch_text(url: str, timeout_s: float = 12.0) -> str:
+def _coerce_positive_timeout(raw: str, *, scale: float = 1.0) -> float | None:
+    try:
+        value = float(raw) * scale
+    except (TypeError, ValueError):
+        return None
+    if value < MIN_MARKET_SOURCE_TIMEOUT_SECONDS:
+        return None
+    return value
+
+
+def _market_source_timeout_seconds(default: float = DEFAULT_MARKET_SOURCE_TIMEOUT_SECONDS) -> float:
+    configured_seconds = os.getenv("JETSCOPE_MARKET_SOURCE_TIMEOUT_SECONDS")
+    if configured_seconds:
+        timeout = _coerce_positive_timeout(configured_seconds)
+        if timeout is not None:
+            return timeout
+
+    legacy_milliseconds = os.getenv("SAFVSOIL_MARKET_REFRESH_TIMEOUT_MS")
+    if legacy_milliseconds:
+        timeout = _coerce_positive_timeout(legacy_milliseconds, scale=0.001)
+        if timeout is not None:
+            return timeout
+
+    settings_timeout = _coerce_positive_timeout(str(settings.market_source_timeout_seconds))
+    return settings_timeout if settings_timeout is not None else default
+
+
+def _fetch_text(url: str, timeout_s: float | None = None) -> str:
+    effective_timeout_s = timeout_s if timeout_s is not None else _market_source_timeout_seconds()
     response = httpx.get(
         url,
-        timeout=timeout_s,
+        timeout=effective_timeout_s,
         headers={"User-Agent": "JetScope API/0.1 (+fastapi vertical slice)"},
         follow_redirects=True,
     )
@@ -184,10 +216,11 @@ def _fetch_text(url: str, timeout_s: float = 12.0) -> str:
     return response.text
 
 
-def _fetch_json(url: str, timeout_s: float = 12.0) -> dict:
+def _fetch_json(url: str, timeout_s: float | None = None) -> dict:
+    effective_timeout_s = timeout_s if timeout_s is not None else _market_source_timeout_seconds()
     response = httpx.get(
         url,
-        timeout=timeout_s,
+        timeout=effective_timeout_s,
         headers={"User-Agent": "JetScope API/0.1 (+market-history-backfill)"},
         follow_redirects=True,
     )
