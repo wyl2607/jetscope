@@ -103,7 +103,7 @@ test('getDashboardReadModel summarizes live market, scenario, and risk signals f
                 latest_as_of: '2026-04-23T12:00:00Z',
                 change_pct_1d: 4.5,
                 change_pct_7d: 8.1,
-                change_pct_30d: 9.9,
+                change_pct_30d: 22.1,
                 points: [{ as_of: '2026-04-22T12:00:00Z', value: 0.98 }]
               }
             }
@@ -188,13 +188,19 @@ test('getDashboardReadModel summarizes live market, scenario, and risk signals f
   assert.deepEqual(readModel.recentScenarioNames, ['Base case', 'EU shock', 'High carbon']);
   assert.equal(readModel.freshnessSignal.level, 'fresh');
   assert.equal(readModel.freshnessSignal.minutes, 30);
-  assert.equal(readModel.topRiskSignal?.metric, 'Brent');
-  assert.equal(readModel.topRiskSignal?.metricKey, 'brent_usd_per_bbl');
-  assert.equal(readModel.topRiskSignal?.window, '1d');
-  assert.equal(readModel.topRiskSignal?.level, 'watch');
+  assert.equal(readModel.topRiskSignal?.metric, '航煤');
+  assert.equal(readModel.topRiskSignal?.metricKey, 'jet_usd_per_l');
+  assert.equal(readModel.topRiskSignal?.window, '30d');
+  assert.equal(readModel.topRiskSignal?.level, 'alert');
   assert.equal(readModel.topRiskSignal?.sampleCount, 1);
   assert.equal(readModel.reserve?.coverage_weeks, 2.6);
   assert.equal(readModel.sourceCoverage?.metrics[0].source_name, 'ICE Jet');
+
+  const germanReadModel = await getDashboardReadModel('de');
+  assert.equal(germanReadModel.topRiskSignal?.metric, 'Jet-Fuel');
+
+  const englishReadModel = await getDashboardReadModel('en');
+  assert.equal(englishReadModel.topRiskSignal?.metric, 'Jet fuel');
 });
 
 test('getDashboardReadModel falls back to safe dashboard defaults when the market snapshot fails', async (t) => {
@@ -222,6 +228,98 @@ test('getDashboardReadModel falls back to safe dashboard defaults when the marke
   assert.equal(readModel.scenarioCount, 0);
   assert.equal(readModel.topRiskSignal, null);
   assert.match(readModel.error ?? '', /HTTP 503/);
+});
+
+test('getCrisisBriefReadModel consumes the crisis brief API and localizes action links', async (t) => {
+  installEnv(t, {
+    JETSCOPE_API_BASE_URL: 'https://api.example.com',
+    JETSCOPE_API_PREFIX: '/v1'
+  });
+
+  installFetchStub(
+    t,
+    new Map([
+      [
+        'https://api.example.com/v1/analysis/crisis-brief?limit=20',
+        () =>
+          jsonResponse({
+            generated_at: '2026-06-04T12:00:00Z',
+            market_generated_at: '2026-06-04T11:58:00Z',
+            fossil_jet_usd_per_l: 0.845,
+            source_status: {
+              overall: 'degraded',
+              confidence: 0.72,
+              freshness_minutes: 2,
+              fallback_rate: 14,
+              is_fallback: true
+            },
+            reserve: {
+              generated_at: '2026-06-04T11:55:00Z',
+              region: 'eu',
+              coverage_days: 24,
+              coverage_weeks: 3.43,
+              stress_level: 'elevated',
+              estimated_supply_gap_pct: 9.5,
+              source_type: 'official',
+              source_name: 'IEA Oil Market Report',
+              confidence_score: 0.85
+            },
+            tipping_events: [
+              {
+                id: 'event-1',
+                event_type: 'ALERT',
+                saf_pathway: 'hefa',
+                fossil_price_usd_per_l: 1.12,
+                saf_effective_cost_usd_per_l: 1.2,
+                gap_usd_per_l: -0.08,
+                observed_at: '2026-06-04T10:00:00Z',
+                metadata: {}
+              }
+            ],
+            research: {
+              status: 'signal_backed',
+              signal_count: 2,
+              top_signal_title: 'Policy signal',
+              top_signal_confidence: 0.91,
+              latest_published_at: '2026-06-03T10:00:00Z'
+            },
+            actions: [
+              {
+                id: 'review_sources',
+                label: 'Review source evidence',
+                href: '/sources?filter=review',
+                reason: 'review sources'
+              },
+              {
+                id: 'open_report',
+                label: 'Open tipping-point report',
+                href: '/reports/tipping-point-analysis',
+                reason: 'open report'
+              },
+              {
+                id: 'review_scenarios',
+                label: 'Review scenarios',
+                href: '/scenarios',
+                reason: 'review scenarios'
+              }
+            ]
+          })
+      ]
+    ])
+  );
+
+  const { getCrisisBriefReadModel } = await importWebLib('apps/web/lib/crisis-brief-read-model.ts');
+  const readModel = await getCrisisBriefReadModel('de');
+
+  assert.equal(readModel.error, null);
+  assert.equal(readModel.fossilJetUsdPerL, 0.845);
+  assert.equal(readModel.reserve.coverage_weeks, 3.43);
+  assert.equal(readModel.tippingEvents[0].event_type, 'ALERT');
+  assert.equal(readModel.research.status, 'signal_backed');
+  assert.deepEqual(
+    readModel.actions.map((action) => action.href),
+    ['/de/sources?filter=review', '/de/reports/tipping-point-analysis', '/de/scenarios']
+  );
 });
 
 test('getPriceTrendChartReadModel maps live market history into chart-friendly metrics', async (t) => {
@@ -350,7 +448,7 @@ test('getGermanyJetFuelReadModel falls back from EU proxy history to global jet 
   );
 
   const { getGermanyJetFuelReadModel } = await importWebLib('apps/web/lib/germany-jet-fuel-read-model.ts');
-  const readModel = await getGermanyJetFuelReadModel();
+  const readModel = await getGermanyJetFuelReadModel('de');
   const euProxyMetric = readModel.metrics.find((metric) => metric.metricKey === 'jet_eu_proxy_usd_per_l');
 
   assert.equal(readModel.isFallback, false);
@@ -358,7 +456,90 @@ test('getGermanyJetFuelReadModel falls back from EU proxy history to global jet 
   assert.equal(euProxyMetric?.value, 1.04);
   assert.equal(euProxyMetric?.sourceMetricKey, 'jet_usd_per_l');
   assert.equal(euProxyMetric?.changePct7d, 12.1);
-  assert.equal(euProxyMetric?.note, 'Fallback from 航煤');
+  assert.equal(euProxyMetric?.note, 'Fallback von Jet-Fuel');
+});
+
+test('English Germany jet fuel price page exposes localized market review without Chinese or German copy', async () => {
+  const englishPriceSource = await readFile(
+    new URL('../apps/web/app/en/prices/germany-jet-fuel/page.tsx', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(englishPriceSource, /Germany Jet-Fuel Price Monitor/);
+  assert.match(englishPriceSource, /getGermanyJetFuelReadModel\('en'\)/);
+  assert.match(englishPriceSource, /en\/sources\?focus=jet_eu_proxy_usd_per_l/);
+  assert.match(englishPriceSource, /Decision support, not a trading feed/);
+  assert.match(englishPriceSource, /Source Review/);
+  assert.doesNotMatch(
+    englishPriceSource,
+    /德国航油价格|价格 · 德国|来源状态|风险说明|Deutschland|Risikohinweis|Quellen/
+  );
+  assert.doesNotMatch(englishPriceSource, /text-white|text-slate-300|bg-slate-900|border-slate-800/);
+});
+
+test('German Germany jet fuel price page keeps source review in the German locale', async () => {
+  const germanPriceSource = await readFile(
+    new URL('../apps/web/app/de/prices/germany-jet-fuel/page.tsx', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(germanPriceSource, /de\/sources\?focus=jet_eu_proxy_usd_per_l/);
+  assert.doesNotMatch(germanPriceSource, /href: '\/sources\?focus=/);
+});
+
+test('English Lufthansa SAF analysis page is a localized light review surface', async () => {
+  const englishLufthansaSource = await readFile(
+    new URL('../apps/web/app/en/lufthansa-saf-2026/page.tsx', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(englishLufthansaSource, /Lufthansa SAF Inflection Review/);
+  assert.match(englishLufthansaSource, /locale="en"/);
+  assert.match(englishLufthansaSource, /\/en\/prices\/germany-jet-fuel/);
+  assert.match(englishLufthansaSource, /\/en\/sources\?filter=review/);
+  assert.match(englishLufthansaSource, /\/en\/scenarios/);
+  assert.match(englishLufthansaSource, /\/analysis\/lufthansa-flight-cuts-2026-04/);
+  assert.match(englishLufthansaSource, /\/de\/lufthansa-saf-2026/);
+  assert.doesNotMatch(
+    englishLufthansaSource,
+    /汉莎|削减|航油|德国制造|事件概述|Lufthansa kürzt|Wendepunkt|Kerosin|Deutschland|Chinesische Vollversion/
+  );
+  assert.doesNotMatch(englishLufthansaSource, /text-white|text-slate-300|bg-slate-900|bg-slate-950|border-slate-800/);
+  assert.doesNotMatch(englishLufthansaSource, /<input|AdminDataOps|ScenarioRegistry|x-admin-token/i);
+});
+
+test('localized FAQ pages explain launch boundaries without write controls', async () => {
+  const chineseFaqSource = await readFile(new URL('../apps/web/app/faq/page.tsx', import.meta.url), 'utf8');
+  const englishFaqSource = await readFile(new URL('../apps/web/app/en/faq/page.tsx', import.meta.url), 'utf8');
+  const germanFaqSource = await readFile(new URL('../apps/web/app/de/faq/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(chineseFaqSource, /常见问题/);
+  assert.match(chineseFaqSource, /上线前置状态/);
+  assert.match(chineseFaqSource, /数据来源/);
+  assert.match(chineseFaqSource, /研究信号/);
+  assert.match(chineseFaqSource, /\/admin/);
+  assert.match(chineseFaqSource, /\/sources/);
+
+  assert.match(englishFaqSource, /Frequently Asked Questions/);
+  assert.match(englishFaqSource, /Launch readiness/);
+  assert.match(englishFaqSource, /Source review/);
+  assert.match(englishFaqSource, /Research workbench/);
+  assert.match(englishFaqSource, /\/en\/admin/);
+  assert.match(englishFaqSource, /\/en\/sources/);
+  assert.doesNotMatch(englishFaqSource, /上线前置状态|数据来源|研究信号|Häufige Fragen|Startbereitschaft/);
+
+  assert.match(germanFaqSource, /Häufige Fragen/);
+  assert.match(germanFaqSource, /Startbereitschaft/);
+  assert.match(germanFaqSource, /Quellenprüfung/);
+  assert.match(germanFaqSource, /Forschungswerkstatt/);
+  assert.match(germanFaqSource, /\/de\/admin/);
+  assert.match(germanFaqSource, /\/de\/sources/);
+  assert.doesNotMatch(germanFaqSource, /Frequently Asked Questions|Launch readiness|Source review|上线前置状态|数据来源/);
+
+  for (const source of [chineseFaqSource, englishFaqSource, germanFaqSource]) {
+    assert.doesNotMatch(source, /<input|<textarea|AdminDataOps|ScenarioRegistry|x-admin-token/i);
+    assert.doesNotMatch(source, /text-white|text-slate-300|bg-slate-900|bg-slate-950|border-slate-800/);
+  }
 });
 
 test('crisis page uses light semantic data cards instead of gray dark boxes', async () => {
@@ -390,6 +571,57 @@ test('crisis page uses light semantic data cards instead of gray dark boxes', as
   assert.match(crisisSource, /border-emerald-200 bg-emerald-50/);
   assert.match(crisisSource, /border-amber-200 bg-amber-50/);
   assert.match(crisisSource, /border-sky-200 bg-sky-50/);
+});
+
+test('localized crisis pages are source-backed and stay in their locale', async () => {
+  const englishCrisisSource = await readFile(new URL('../apps/web/app/en/crisis/page.tsx', import.meta.url), 'utf8');
+  const germanCrisisSource = await readFile(new URL('../apps/web/app/de/crisis/page.tsx', import.meta.url), 'utf8');
+  const shellSource = await readFile(new URL('../apps/web/components/shell.tsx', import.meta.url), 'utf8');
+
+  assert.match(englishCrisisSource, /Fuel Stress Brief/);
+  assert.match(englishCrisisSource, /getCrisisBriefReadModel\('en'\)/);
+  assert.match(englishCrisisSource, /FastAPI crisis-brief contract/);
+  assert.match(englishCrisisSource, /Reserve stress/);
+  assert.match(englishCrisisSource, /Source confidence/);
+  assert.match(englishCrisisSource, /Tipping events/);
+  assert.match(englishCrisisSource, /Research posture/);
+  assert.match(englishCrisisSource, /en\/sources\?filter=review/);
+  assert.match(englishCrisisSource, /en\/reports\/tipping-point-analysis/);
+  assert.match(englishCrisisSource, /en\/scenarios/);
+  assert.doesNotMatch(englishCrisisSource, /getDashboardReadModel|getEuReserveCoverage|getTippingPointEvents|getResearchSignals/);
+  assert.doesNotMatch(
+    englishCrisisSource,
+    /危机监测|储备压力|来源可信度|研究姿态|Krisenbrief|Reservestress|Quellenvertrauen|Forschungsstatus/
+  );
+
+  assert.match(germanCrisisSource, /Krisenbrief/);
+  assert.match(germanCrisisSource, /getCrisisBriefReadModel\('de'\)/);
+  assert.match(germanCrisisSource, /FastAPI-Crisis-Brief-Vertrag/);
+  assert.match(germanCrisisSource, /Reservestress/);
+  assert.match(germanCrisisSource, /Quellenvertrauen/);
+  assert.match(germanCrisisSource, /Kippereignisse/);
+  assert.match(germanCrisisSource, /Forschungsstatus/);
+  assert.match(germanCrisisSource, /de\/sources\?filter=review/);
+  assert.match(germanCrisisSource, /de\/reports\/tipping-point-analysis/);
+  assert.match(germanCrisisSource, /de\/scenarios/);
+  assert.doesNotMatch(germanCrisisSource, /getDashboardReadModel|getEuReserveCoverage|getTippingPointEvents|getResearchSignals/);
+  assert.doesNotMatch(
+    germanCrisisSource,
+    /危机监测|储备压力|来源可信度|研究姿态|Fuel Stress Brief|Reserve stress|Source confidence|Research posture/
+  );
+
+  assert.match(shellSource, /\/en\/crisis/);
+  assert.match(shellSource, /Crisis Monitor/);
+  assert.match(shellSource, /\/de\/crisis/);
+  assert.match(shellSource, /Krisenmonitor/);
+  assert.doesNotMatch(
+    `${englishCrisisSource}\n${germanCrisisSource}`,
+    /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/
+  );
+
+  const crisisBriefSource = await readFile(new URL('../apps/web/lib/crisis-brief-read-model.ts', import.meta.url), 'utf8');
+  assert.match(crisisBriefSource, /analysis\/crisis-brief/);
+  assert.match(crisisBriefSource, /localizeHref/);
 });
 
 test('reserve price trends guard finite chart coordinates and highlight the current SAF breakpoint', async () => {
@@ -452,7 +684,8 @@ test('scenarios workbench exposes a global language switch and stays product-fac
   );
 
   assert.match(shellSource, /LanguageSwitcher/);
-  assert.match(languageSwitcherSource, /aria-label="语言"/);
+  assert.match(languageSwitcherSource, /aria-label=\{controlLabel\}/);
+  assert.match(languageSwitcherSource, /Sprache/);
   assert.match(languageSwitcherSource, /中文/);
   assert.match(languageSwitcherSource, /Deutsch/);
   assert.match(languageSwitcherSource, /English/);
@@ -462,8 +695,298 @@ test('scenarios workbench exposes a global language switch and stays product-fac
   assert.match(scenariosSource, /来源复核在数据来源/);
   assert.match(scenariosSource, /情景工作区/);
   assert.match(registrySource, /高级 JSON 设置/);
+  assert.match(registrySource, /SCENARIO_NAME_MAX_LENGTH = 120/);
+  assert.match(registrySource, /scenario-name-limit/);
+  assert.match(readinessSource, /min-w-0/);
   assert.doesNotMatch(
     `${scenariosSource}\n${registrySource}\n${readinessSource}`,
     /FastAPI \+ PostgreSQL|第二页|第二页面|canonical|contracts|demo route|\/v1\/policies\/refuel-eu|开发分层|后续接真实数据的接口位|text-slate-300|bg-slate-950|border-slate-800|text-white/
   );
+});
+
+test('reports landing page is a live report workbench instead of a static index', async () => {
+  const reportsSource = await readFile(new URL('../apps/web/app/reports/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(reportsSource, /getDashboardReadModel/);
+  assert.match(reportsSource, /dynamic = 'force-dynamic'/);
+  assert.match(reportsSource, /报告工作台/);
+  assert.match(reportsSource, /来源状态/);
+  assert.match(reportsSource, /情景数量/);
+  assert.match(reportsSource, /复核来源/);
+  assert.match(reportsSource, /topRiskSignal/);
+  assert.match(reportsSource, /reports\/tipping-point-analysis/);
+  assert.doesNotMatch(reportsSource, /bg-slate-900|border-slate-800|text-white|text-slate-300/);
+});
+
+test('English reports page exposes report readiness without Chinese UI copy', async () => {
+  const englishReportsSource = await readFile(new URL('../apps/web/app/en/reports/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(englishReportsSource, /Report Workbench/);
+  assert.match(englishReportsSource, /getDashboardReadModel\('en'\)/);
+  assert.match(englishReportsSource, /Source status/);
+  assert.match(englishReportsSource, /Scenario count/);
+  assert.match(englishReportsSource, /Launch posture/);
+  assert.match(englishReportsSource, /en\/reports\/tipping-point-analysis/);
+  assert.match(englishReportsSource, /en\/sources\?filter=review/);
+  assert.match(englishReportsSource, /en\/dashboard/);
+  assert.doesNotMatch(
+    englishReportsSource,
+    /报告工作台|来源状态|情景数量|上线姿态|复核来源|暂无|需复核|可发布候选/
+  );
+  assert.doesNotMatch(englishReportsSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
+test('English tipping-point report detail stays localized and source-backed', async () => {
+  const englishReportSource = await readFile(
+    new URL('../apps/web/app/en/reports/tipping-point-analysis/page.tsx', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(englishReportSource, /Tipping-Point Report/);
+  assert.match(englishReportSource, /getDashboardReadModel\('en'\)/);
+  assert.match(englishReportSource, /getEuReserveCoverage/);
+  assert.match(englishReportSource, /getTippingPointEvents/);
+  assert.match(englishReportSource, /getResearchSignals/);
+  assert.match(englishReportSource, /Source confidence/);
+  assert.match(englishReportSource, /Research posture/);
+  assert.match(englishReportSource, /en\/sources\?filter=review/);
+  assert.match(englishReportSource, /en\/scenarios/);
+  assert.match(englishReportSource, /en\/reports/);
+  assert.match(englishReportSource, /reports\/tipping-point-analysis/);
+  assert.doesNotMatch(
+    englishReportSource,
+    /临界点报告|核心论点|来源状态|情景数量|上线姿态|复核来源|暂无|需复核|可发布候选|Bericht|Kipppunkt|Quellenstatus/
+  );
+  assert.doesNotMatch(englishReportSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
+test('German reports page exposes report readiness without Chinese or English report copy', async () => {
+  const germanReportsSource = await readFile(new URL('../apps/web/app/de/reports/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(germanReportsSource, /Berichtswerkstatt/);
+  assert.match(germanReportsSource, /getDashboardReadModel\('de'\)/);
+  assert.match(germanReportsSource, /Quellenstatus/);
+  assert.match(germanReportsSource, /Berichtskatalog/);
+  assert.match(germanReportsSource, /Vor dem Start/);
+  assert.match(germanReportsSource, /de\/reports\/tipping-point-analysis/);
+  assert.match(germanReportsSource, /de\/sources\?filter=review/);
+  assert.match(germanReportsSource, /de\/dashboard/);
+  assert.match(germanReportsSource, /de\/admin/);
+  assert.doesNotMatch(
+    germanReportsSource,
+    /报告工作台|来源状态|情景数量|上线姿态|复核来源|暂无|需复核|可发布候选/
+  );
+  assert.doesNotMatch(
+    germanReportsSource,
+    /Report Workbench|Report catalog|Pre-launch actions|Review source evidence|Publish candidate|Review needed/
+  );
+  assert.doesNotMatch(germanReportsSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
+test('German tipping-point report detail stays localized and source-backed', async () => {
+  const germanReportSource = await readFile(
+    new URL('../apps/web/app/de/reports/tipping-point-analysis/page.tsx', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(germanReportSource, /Kipppunktbericht/);
+  assert.match(germanReportSource, /getDashboardReadModel\('de'\)/);
+  assert.match(germanReportSource, /getEuReserveCoverage/);
+  assert.match(germanReportSource, /getTippingPointEvents/);
+  assert.match(germanReportSource, /getResearchSignals/);
+  assert.match(germanReportSource, /Quellenvertrauen/);
+  assert.match(germanReportSource, /Forschungsstatus/);
+  assert.match(germanReportSource, /de\/sources\?filter=review/);
+  assert.match(germanReportSource, /de\/scenarios/);
+  assert.match(germanReportSource, /de\/reports/);
+  assert.match(germanReportSource, /reports\/tipping-point-analysis/);
+  assert.doesNotMatch(
+    germanReportSource,
+    /临界点报告|核心论点|来源状态|情景数量|上线姿态|复核来源|暂无|需复核|可发布候选|Tipping-Point Report|Source confidence|Research posture/
+  );
+  assert.doesNotMatch(germanReportSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
+test('English admin page exposes launch readiness without protected write controls', async () => {
+  const englishAdminSource = await readFile(new URL('../apps/web/app/en/admin/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(englishAdminSource, /Launch Readiness/);
+  assert.match(englishAdminSource, /getLaunchReadinessReadModel/);
+  assert.match(englishAdminSource, /Admin token/);
+  assert.match(englishAdminSource, /AI research pipeline/);
+  assert.match(englishAdminSource, /Protected operations/);
+  assert.match(englishAdminSource, /check\.blocking/);
+  assert.match(englishAdminSource, /check\.severity/);
+  assert.match(englishAdminSource, /check\.configKeys/);
+  assert.match(englishAdminSource, /Blocks launch/);
+  assert.match(englishAdminSource, /Review needed/);
+  assert.match(englishAdminSource, /Related config/);
+  assert.match(englishAdminSource, /en\/sources\?filter=review/);
+  assert.match(englishAdminSource, /en\/research/);
+  assert.doesNotMatch(englishAdminSource, /AdminDataOps/);
+  assert.doesNotMatch(
+    englishAdminSource,
+    /管理台|上线前置状态|假设与数据接入管理|管理令牌|缺少配置|未启用|打开研究工作台/
+  );
+  assert.doesNotMatch(englishAdminSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
+test('English scenarios page reviews saved assumptions without Chinese editor UI', async () => {
+  const englishScenariosSource = await readFile(new URL('../apps/web/app/en/scenarios/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(englishScenariosSource, /Scenario Workbench/);
+  assert.match(englishScenariosSource, /getDashboardReadModel\('en'\)/);
+  assert.match(englishScenariosSource, /Saved scenarios/);
+  assert.match(englishScenariosSource, /Scenario assumptions/);
+  assert.match(englishScenariosSource, /Protected write boundary/);
+  assert.match(englishScenariosSource, /en\/dashboard/);
+  assert.match(englishScenariosSource, /en\/sources\?filter=review/);
+  assert.doesNotMatch(englishScenariosSource, /ScenarioRegistry/);
+  assert.doesNotMatch(
+    englishScenariosSource,
+    /情景工作区|情景管理|保存假设|管理令牌|创建|更新|删除|高级 JSON 设置|暂无/
+  );
+  assert.doesNotMatch(englishScenariosSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
+test('German sources page exposes source review without Chinese UI copy', async () => {
+  const germanSourcesSource = await readFile(new URL('../apps/web/app/de/sources/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(germanSourcesSource, /Quellenprüfung/);
+  assert.match(germanSourcesSource, /getSourcesReadModel/);
+  assert.match(germanSourcesSource, /Wiederherstellungsaktionen/);
+  assert.match(germanSourcesSource, /Quellenmatrix/);
+  assert.match(germanSourcesSource, /key: 'review', label: 'Prüfen'/);
+  assert.match(germanSourcesSource, /de\/sources\?filter=review/);
+  assert.match(germanSourcesSource, /\/de\/dashboard/);
+  assert.doesNotMatch(germanSourcesSource, /from '@\/app\/sources|from '@\/app\/en\/sources/);
+  assert.doesNotMatch(
+    germanSourcesSource,
+    /数据来源|来源复核|恢复步骤|需复核|回退|代理|实时|打开 Admin 刷新|正在显示|暂无|管理令牌/
+  );
+  assert.doesNotMatch(germanSourcesSource, /Source Review|Recovery actions|Market input matrix|Needs review|Show review rows/);
+  assert.doesNotMatch(germanSourcesSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
+test('German dashboard keeps source drill-through in the German locale', async () => {
+  const germanDashboardSource = await readFile(new URL('../apps/web/app/de/dashboard/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(germanDashboardSource, /de\/sources\?focus=/);
+  assert.doesNotMatch(germanDashboardSource, /`\/sources\?focus=/);
+});
+
+test('German scenarios page reviews saved assumptions without Chinese editor UI', async () => {
+  const germanScenariosSource = await readFile(new URL('../apps/web/app/de/scenarios/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(germanScenariosSource, /Szenario-Workbench/);
+  assert.match(germanScenariosSource, /getDashboardReadModel\('de'\)/);
+  assert.match(germanScenariosSource, /Gespeicherte Szenarien/);
+  assert.match(germanScenariosSource, /Szenarioannahmen/);
+  assert.match(germanScenariosSource, /Geschützte Schreibgrenze/);
+  assert.match(germanScenariosSource, /de\/dashboard/);
+  assert.match(germanScenariosSource, /de\/sources\?filter=review/);
+  assert.match(germanScenariosSource, /de\/admin/);
+  assert.doesNotMatch(germanScenariosSource, /ScenarioRegistry|<input|type="password"/);
+  assert.doesNotMatch(
+    germanScenariosSource,
+    /情景工作区|情景管理|保存假设|管理令牌|创建|更新|删除|高级 JSON 设置|暂无/
+  );
+  assert.doesNotMatch(
+    germanScenariosSource,
+    /Scenario Workbench|Saved scenarios|Scenario assumptions|Protected write boundary|No saved assumptions/
+  );
+  assert.doesNotMatch(germanScenariosSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
+test('German admin page exposes launch readiness without protected write controls', async () => {
+  const germanAdminSource = await readFile(new URL('../apps/web/app/de/admin/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(germanAdminSource, /Startbereitschaft/);
+  assert.match(germanAdminSource, /getLaunchReadinessReadModel/);
+  assert.match(germanAdminSource, /Admin-Token/);
+  assert.match(germanAdminSource, /AI-Research-Pipeline/);
+  assert.match(germanAdminSource, /Geschützte Operationen/);
+  assert.match(germanAdminSource, /check\.blocking/);
+  assert.match(germanAdminSource, /check\.severity/);
+  assert.match(germanAdminSource, /check\.configKeys/);
+  assert.match(germanAdminSource, /Blockiert Start/);
+  assert.match(germanAdminSource, /Prüfung nötig/);
+  assert.match(germanAdminSource, /Relevante Konfiguration/);
+  assert.match(germanAdminSource, /de\/sources\?filter=review/);
+  assert.match(germanAdminSource, /\/de\/dashboard/);
+  assert.doesNotMatch(germanAdminSource, /AdminDataOps|<input|type="password"/);
+  assert.doesNotMatch(
+    germanAdminSource,
+    /管理台|上线前置状态|假设与数据接入管理|管理令牌|缺少配置|未启用|打开研究工作台/
+  );
+  assert.doesNotMatch(
+    germanAdminSource,
+    /Launch Readiness|Protected operations|Missing configuration|Open sources|Open research|Not ready/
+  );
+  assert.doesNotMatch(germanAdminSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
+test('research page is an honest signal workbench with disabled-state actions', async () => {
+  const researchSource = await readFile(new URL('../apps/web/app/research/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(researchSource, /研究工作台/);
+  assert.match(researchSource, /AI_RESEARCH_ENABLED/);
+  assert.match(researchSource, /ResearchDecisionBriefCard/);
+  assert.match(researchSource, /showLink=\{false\}/);
+  assert.match(researchSource, /信号总数/);
+  assert.match(researchSource, /开启研究流水线/);
+  assert.match(researchSource, /reports\/tipping-point-analysis/);
+  assert.match(researchSource, /sources\?filter=review/);
+  assert.doesNotMatch(researchSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
+test('English research page exposes research pipeline boundaries without Chinese UI copy', async () => {
+  const englishResearchSource = await readFile(new URL('../apps/web/app/en/research/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(englishResearchSource, /Research Workbench/);
+  assert.match(englishResearchSource, /AI_RESEARCH_ENABLED/);
+  assert.match(englishResearchSource, /research pipeline is disabled/i);
+  assert.match(englishResearchSource, /en\/reports\/tipping-point-analysis/);
+  assert.match(englishResearchSource, /en\/sources\?filter=review/);
+  assert.match(englishResearchSource, /en\/admin/);
+  assert.doesNotMatch(
+    englishResearchSource,
+    /研究工作台|开启研究流水线|信号总数|复核来源|正向|负向|中性|暂无/
+  );
+  assert.doesNotMatch(englishResearchSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
+test('German research page exposes research pipeline boundaries without Chinese or English UI copy', async () => {
+  const germanResearchSource = await readFile(new URL('../apps/web/app/de/research/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(germanResearchSource, /Forschungswerkstatt/);
+  assert.match(germanResearchSource, /AI_RESEARCH_ENABLED/);
+  assert.match(germanResearchSource, /Forschungspipeline ist deaktiviert/);
+  assert.match(germanResearchSource, /Signalanzahl/);
+  assert.match(germanResearchSource, /Entscheidungsnotiz/);
+  assert.match(germanResearchSource, /de\/sources\?filter=review/);
+  assert.match(germanResearchSource, /de\/reports/);
+  assert.match(germanResearchSource, /de\/admin/);
+  assert.doesNotMatch(
+    germanResearchSource,
+    /研究工作台|开启研究流水线|信号总数|复核来源|正向|负向|中性|暂无|使用动作/
+  );
+  assert.doesNotMatch(
+    germanResearchSource,
+    /Research Workbench|Enable research pipeline|Signal count|Decision brief|Evidence actions|No research signals/
+  );
+  assert.doesNotMatch(germanResearchSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+});
+
+test('dashboard and admin avoid leaking raw implementation labels into UI copy', async () => {
+  const dashboardSource = await readFile(new URL('../apps/web/app/dashboard/page.tsx', import.meta.url), 'utf8');
+  const adminSource = await readFile(new URL('../apps/web/app/admin/page.tsx', import.meta.url), 'utf8');
+
+  assert.match(dashboardSource, /sourceStatusLabel/);
+  assert.match(dashboardSource, /freshnessLabel/);
+  assert.match(dashboardSource, /riskLevelLabel/);
+  assert.doesNotMatch(dashboardSource, /来源状态： \$\{readModel\.market\.source_status\.overall\}/);
+  assert.doesNotMatch(dashboardSource, /新鲜度=\$\{readModel\.freshnessSignal\.level\}/);
+  assert.match(adminSource, /<code className=/);
+  assert.doesNotMatch(adminSource, /<p>`route_catalog`/);
 });

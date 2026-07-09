@@ -74,7 +74,7 @@ export default function ClientMarketData() {
   if (error || !data) {
     return (
       <section className="rounded-lg border border-red-800/50 bg-red-950/20 p-6">
-        <p className="text-red-300 text-sm">Marktdaten nicht verfügbar: {error || 'unknown'}</p>
+        <p className="text-red-300 text-sm">Marktdaten nicht verfügbar: {error || 'unbekannte Ursache'}</p>
       </section>
     );
   }
@@ -85,17 +85,18 @@ export default function ClientMarketData() {
   const euEts = v.eu_ets_price_eur_per_t ?? 0;
   const germanyPremium = v.germany_premium_pct ?? 0;
   const rotterdam = v.rotterdam_jet_fuel_usd_per_l ?? 0;
+  const sourceStatus = data.source_status?.overall ?? 'unknown';
 
   return (
     <section className="rounded-lg border border-sky-800/50 bg-slate-950 p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-sky-300">Echtzeit-Marktdaten</h2>
         <span className={`text-xs px-2 py-1 rounded ${
-          data.source_status?.overall === 'ok' ? 'bg-green-900/50 text-green-300' :
-          data.source_status?.overall === 'degraded' ? 'bg-yellow-900/50 text-yellow-300' :
+          sourceStatus === 'ok' ? 'bg-green-900/50 text-green-300' :
+          sourceStatus === 'degraded' ? 'bg-yellow-900/50 text-yellow-300' :
           'bg-red-900/50 text-red-300'
         }`}>
-          {(data.source_status?.overall ?? 'unknown').toUpperCase()}
+          {sourceStatusLabel(sourceStatus)}
         </span>
       </div>
 
@@ -125,7 +126,7 @@ export default function ClientMarketData() {
           detail={coverageByMetric.eu_ets_price_eur_per_t}
         />
         <MetricCard
-          label="DE Premium"
+          label="DE-Aufschlag"
           value={`+${germanyPremium.toFixed(1)}%`}
           unit="auf Jet"
           detail={coverageByMetric.germany_premium_pct}
@@ -159,9 +160,19 @@ function MetricCard({ label, value, unit, detail, highlight }: {
       <p className="text-xs text-slate-500">{unit}</p>
       {detail?.confidence_score !== undefined && (
         <p className="text-xs text-slate-600 mt-1">
-          conf: {(detail.confidence_score * 100).toFixed(0)}%
+          Vertrauen: {(detail.confidence_score * 100).toFixed(0)}%
         </p>
       )}
     </div>
   );
+}
+
+function sourceStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    ok: 'OK',
+    degraded: 'EINGESCHRÄNKT',
+    offline: 'OFFLINE',
+    unknown: 'UNBEKANNT'
+  };
+  return labels[status] ?? status.toUpperCase();
 }

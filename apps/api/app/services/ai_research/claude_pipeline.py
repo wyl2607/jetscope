@@ -16,9 +16,11 @@ ALLOWED_SIGNAL_TYPES = {
     "POLICY_CHANGE",
     "PRICE_SHOCK",
     "CAPACITY_ANNOUNCEMENT",
+    "TECHNOLOGY_BREAKTHROUGH",
+    "GRID_INFRASTRUCTURE",
     "OTHER",
 }
-ALLOWED_IMPACT_DIRECTIONS = {"BEARISH_SAF", "BULLISH_SAF", "NEUTRAL"}
+ALLOWED_IMPACT_DIRECTIONS = {"BEARISH", "BULLISH", "NEUTRAL"}
 
 
 class BudgetExceeded(RuntimeError):
@@ -99,11 +101,14 @@ class ClaudeSignalExtractor:
                 {
                     "type": "text",
                     "text": (
-                        "你是 SAF 行业分析师。输入一条新闻，输出严格 JSON："
+                        "你是能源转型分析师，覆盖可持续航空燃料（SAF）、电力、可再生能源与电网。"
+                        "输入一条新闻，输出严格 JSON："
                         "{signal_type, entities, impact_direction, confidence, summary_en, summary_cn}。"
-                        "signal_type ∈ {SUPPLY_DISRUPTION,POLICY_CHANGE,PRICE_SHOCK,CAPACITY_ANNOUNCEMENT,OTHER}。"
-                        "impact_direction ∈ {BEARISH_SAF,BULLISH_SAF,NEUTRAL}。"
-                        "confidence 是 0-1 浮点。entities 是公司/政策/国家名列表。"
+                        "signal_type ∈ {SUPPLY_DISRUPTION,POLICY_CHANGE,PRICE_SHOCK,"
+                        "CAPACITY_ANNOUNCEMENT,TECHNOLOGY_BREAKTHROUGH,GRID_INFRASTRUCTURE,OTHER}。"
+                        "impact_direction 表示对清洁能源转型的方向影响："
+                        "BULLISH=利好/加速，BEARISH=利空/拖慢，NEUTRAL=中性。"
+                        "confidence 是 0-1 浮点。entities 是公司/政策/国家/技术名列表。"
                     ),
                     "cache_control": {"type": "ephemeral"},
                 }

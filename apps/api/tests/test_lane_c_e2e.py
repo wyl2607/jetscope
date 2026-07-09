@@ -188,7 +188,11 @@ class TestDataFreshness:
         """C11: Freshness level encoded (fresh/stale/critical)."""
         response = client.get("/v1/market/snapshot")
         data = response.json()
-        freshness_minutes = data["values"].get("data_freshness", 0)
+        source_status = data["source_status"]
+        freshness_minutes = source_status["freshness_minutes"]
+
+        assert isinstance(freshness_minutes, int), "freshness_minutes must be an integer"
+        assert freshness_minutes >= 0, "freshness_minutes cannot be negative"
 
         # Define freshness SLA
         FRESH_THRESHOLD = 30  # <= 30 min is fresh

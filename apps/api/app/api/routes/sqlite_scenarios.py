@@ -12,6 +12,7 @@ from app.schemas.sqlite_schemas import (
     UserScenarioRead,
     UserScenarioUpdate,
 )
+from app.security import require_admin_token
 
 router = APIRouter(prefix="/sqlite/user-scenarios", tags=["user-scenarios-sqlite"])
 
@@ -44,6 +45,7 @@ def get_user_scenario(scenario_id: str, db: Session = Depends(get_sqlite_db)):
 def create_user_scenario(
     scenario_data: UserScenarioCreate,
     user_id: str = Query(..., description="User ID"),
+    _auth: None = Depends(require_admin_token),
     db: Session = Depends(get_sqlite_db),
 ):
     """Create new user scenario."""
@@ -61,6 +63,7 @@ def create_user_scenario(
 def update_user_scenario(
     scenario_id: str,
     scenario_data: UserScenarioUpdate,
+    _auth: None = Depends(require_admin_token),
     db: Session = Depends(get_sqlite_db),
 ):
     """Update user scenario."""
@@ -79,7 +82,11 @@ def update_user_scenario(
 
 
 @router.delete("/{scenario_id}", status_code=204)
-def delete_user_scenario(scenario_id: str, db: Session = Depends(get_sqlite_db)):
+def delete_user_scenario(
+    scenario_id: str,
+    _auth: None = Depends(require_admin_token),
+    db: Session = Depends(get_sqlite_db),
+):
     """Delete user scenario."""
     scenario = db.query(UserScenario).filter(UserScenario.id == scenario_id).first()
     if not scenario:
@@ -92,6 +99,7 @@ def delete_user_scenario(scenario_id: str, db: Session = Depends(get_sqlite_db))
 @router.delete("", status_code=204)
 def delete_user_scenarios(
     user_id: str = Query(..., description="User ID"),
+    _auth: None = Depends(require_admin_token),
     db: Session = Depends(get_sqlite_db),
 ):
     """Delete all scenarios for a user."""

@@ -2,7 +2,7 @@
 
 ## 目的
 
-航空可持续燃料（SAF）市场数据平台。聚合 EU ETS、CORSIA、航空公司 SAF 采购数据，提供市场分析和趋势预测。
+航空燃料（SAF）、可再生电网（grid）、住宅供热转型（heat）三域决策情报平台。聚合 EU ETS、市场价格、政策/基线假设与场景参数，提供跨域比较分析与趋势洞察。
 
 ## 当前阶段
 
@@ -48,10 +48,16 @@ graph TD
 
 ## 开发需求（下一步）
 
-- [ ] 前端组件测试补全
-- [ ] API 统一错误处理中间件
-- [ ] 数据管道端到端测试
-- [ ] 中文用户界面完善
+- [ ] integration/cherry-pick review
+- [ ] browser QA（关键页面与图表渲染）
+- [ ] API 文档与代码合同漂移审查
+- [ ] data pipeline E2E（含市场快照/历史种子）
+- [ ] docs/readme surface 与产品边界一致性
+
+当前主干覆盖说明：
+
+- 当前本地分支已含 `grid-parity*` 与 `heat-parity*` 路由覆盖，且工作区 `preferences`/`scenarios` 写路由具备 `x-admin-token` 合同与隔离测试。
+- 产品叙事已同步到 SAF + grid + heat 并以 demo/proxy/baseline 数据来源为保守口径，不对外宣称实时付费源。
 
 ## 技术栈
 
