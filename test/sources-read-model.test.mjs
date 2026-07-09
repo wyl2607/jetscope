@@ -137,6 +137,10 @@ test('sources page exposes click-through filters and row focus actions', async (
   assert.match(source, /href=\{sourceFilterHref\(filter\.key\)\}/);
   assert.match(source, /href=\{sourceFocusHref\(row\.metricKey\)\}/);
   assert.ok(source.includes('正在显示 {visibleRows.length} / {readModel.rows.length}'));
+  assert.match(source, /恢复步骤/);
+  assert.match(source, /actionRows/);
+  assert.match(source, /row\.reviewAction\.label/);
+  assert.match(source, /打开 Admin 刷新/);
 });
 
 test('sources read model keeps summary aggregation centralized', async () => {
@@ -145,6 +149,7 @@ test('sources read model keeps summary aggregation centralized', async () => {
   assert.match(readModelSource, /function summarizeCoverageTrust\(/);
   assert.match(readModelSource, /function averageFinite\(/);
   assert.match(readModelSource, /function freshestLagMinutes\(/);
+  assert.match(readModelSource, /function reviewActionFor\(/);
   assert.doesNotMatch(readModelSource, /rows\.filter\(\(row\) => row\.trustState === /);
   assert.doesNotMatch(readModelSource, /confidenceScores\.reduce\(/);
 });
@@ -370,6 +375,8 @@ test('getSourcesReadModel maps live coverage, volatility levels, and notes for t
   assert.equal(readModel.rows[0].trustState, 'live');
   assert.equal(readModel.rows[0].sourceType, '市场主来源');
   assert.match(readModel.rows[0].degradedReason, /实时主来源/);
+  assert.equal(readModel.rows[0].reviewAction.priority, 'normal');
+  assert.match(readModel.rows[0].reviewAction.label, /保留快照/);
   assert.equal(readModel.rows[0].lag, '45m');
   assert.equal(readModel.rows[1].source, 'FRED');
   assert.equal(readModel.rows[1].value, '1.043 USD/L');
@@ -377,10 +384,15 @@ test('getSourcesReadModel maps live coverage, volatility levels, and notes for t
   assert.equal(readModel.rows[1].change30d, '+21.70%');
   assert.equal(readModel.rows[2].trustState, 'fallback');
   assert.equal(readModel.rows[2].note, 'CBAM 88.00 EUR × FX 1.0923');
+  assert.equal(readModel.rows[2].reviewAction.href, '/admin');
+  assert.equal(readModel.rows[2].reviewAction.priority, 'critical');
+  assert.match(readModel.rows[2].reviewAction.detail, /JETSCOPE_ADMIN_TOKEN/);
   assert.equal(readModel.rows[4].surface, 'Rotterdam 航煤');
   assert.equal(readModel.rows[4].source, 'rotterdam-jet-direct');
   assert.equal(readModel.rows[4].trustState, 'proxy');
   assert.equal(readModel.rows[4].note, 'ARA direct quote');
+  assert.equal(readModel.rows[4].reviewAction.href, '/reports');
+  assert.match(readModel.rows[4].reviewAction.label, /代理假设/);
   assert.equal(readModel.coverageMetrics[2].source_type, 'derived');
   assert.equal(readModel.summary.liveCount, 2);
   assert.equal(readModel.summary.proxyCount, 1);
@@ -480,6 +492,7 @@ test('getSourcesReadModel falls back to a generic degraded state when coverage A
   assert.equal(readModel.rows[0].status, 'unknown');
   assert.equal(readModel.rows[0].trustState, 'fallback');
   assert.match(readModel.rows[0].degradedReason, /回退路径/);
+  assert.equal(readModel.rows[0].reviewAction.priority, 'critical');
   assert.equal(readModel.rows[0].scope, 'unknown · coverage_unavailable');
   assert.equal(readModel.rows[0].note, '回退');
   assert.equal(readModel.rows[1].value, '1.010 USD/L');
@@ -705,4 +718,6 @@ test('getSourcesReadModel uses coverage metric supplements instead of snapshot s
   assert.equal(readModel.rows[0].status, 'ok');
   assert.equal(readModel.rows[0].note, 'Coverage error only');
   assert.equal(readModel.rows[0].degradedReason, 'Coverage error only');
+  assert.equal(readModel.rows[0].reviewAction.priority, 'critical');
+  assert.match(readModel.rows[0].reviewAction.label, /排查来源状态/);
 });

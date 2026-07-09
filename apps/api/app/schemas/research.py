@@ -9,9 +9,11 @@ ResearchSignalType = Literal[
     "POLICY_CHANGE",
     "PRICE_SHOCK",
     "CAPACITY_ANNOUNCEMENT",
+    "TECHNOLOGY_BREAKTHROUGH",
+    "GRID_INFRASTRUCTURE",
     "OTHER",
 ]
-ResearchImpactDirection = Literal["BEARISH_SAF", "BULLISH_SAF", "NEUTRAL"]
+ResearchImpactDirection = Literal["BEARISH", "BULLISH", "NEUTRAL"]
 
 
 class ResearchSignalResponse(BaseModel):
@@ -30,3 +32,12 @@ class ResearchSignalResponse(BaseModel):
     published_at: datetime
     claude_model: str
     prompt_cache_hit: bool
+
+
+class ResearchRefreshResponse(BaseModel):
+    accepted: bool
+    message: str
+    fetched: int = Field(ge=0)
+    extracted: int = Field(ge=0)
+    persisted: int = Field(ge=0)
+    skipped_budget: int = Field(ge=0)

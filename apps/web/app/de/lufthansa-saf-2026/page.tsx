@@ -11,19 +11,20 @@ export const metadata: Metadata = buildPageMetadata({
   title: 'Lufthansa kürzt 20.000 Flüge: Wendepunkt für nachhaltige Flugkraftstoffe?',
   description:
     'Tiefenanalyse der Lufthansa-Flugkürzungen vom April 2026. Energieökonomie, SAF-Kostendynamiken und deutsche Produktionschancen.',
-  path: '/de/lufthansa-saf-analysis'
+  path: '/de/lufthansa-saf-2026'
 });
 
 export default function LufthansaAnalysisDE() {
   return (
     <Shell
+      locale="de"
       eyebrow="Tiefenanalyse Deutsche Fassung"
       title="Lufthansa kürzt 20.000 Flüge: SAF-Wendepunkt?"
       description="Energiemarktkrise & strategische Transformation"
     >
       <div className="max-w-4xl mx-auto space-y-8">
         
-        {/* 实时市场数据看板 */}
+        {/* Market data panel */}
         <ClientMarketData />
 
         <section className="rounded-lg border border-slate-800 bg-slate-950 p-8">
@@ -39,7 +40,7 @@ export default function LufthansaAnalysisDE() {
             <div className="bg-slate-900 p-4 rounded border border-slate-800">
               <p className="font-semibold text-sky-300">Öl-Schock</p>
               <p className="text-slate-400 text-sm mt-2">$80/Fass → $115/Fass (+43%) 
-              = +30-35% Unitkosten auf Kurzstrecke</p>
+              = +30-35% Einheitskosten auf Kurzstrecke</p>
             </div>
             
             <div className="bg-slate-900 p-4 rounded border border-slate-800">
@@ -51,11 +52,11 @@ export default function LufthansaAnalysisDE() {
           </div>
 
           <p className="text-slate-300">
-            Im brutalen Wettbewerb mit Billigfliegern kann Lufthansa nicht schnell die Ticketpreise erhöhen. Die rationale Reaktion: Niedrig-Margin-Flüge streichen.
+            Im brutalen Wettbewerb mit Billigfliegern kann Lufthansa nicht schnell die Ticketpreise erhöhen. Die rationale Reaktion: margenschwache Flüge streichen.
           </p>
         </section>
 
-        {/* 交互式盈亏平衡计算器 */}
+        {/* Interactive break-even calculator */}
         <ClientBreakevenCalculator />
 
         <section className="space-y-6">
@@ -129,7 +130,7 @@ export default function LufthansaAnalysisDE() {
             <div className="bg-slate-900 border-l-4 border-orange-600 p-4 rounded">
               <p className="font-semibold text-orange-300">Lufthansas Vorteil</p>
               <p className="mt-2 text-sm text-slate-300">
-                Heimische Lieferketten + Costenführerschaft 
+                Heimische Lieferketten + Kostenführerschaft
                 = 2028-2030 niedrigere Treibstoffkosten als andere EU-Airlines
               </p>
             </div>
@@ -168,7 +169,7 @@ export default function LufthansaAnalysisDE() {
             <div className="bg-slate-900 border-l-4 border-blue-500 p-4 rounded">
               <p className="font-bold text-blue-300 mb-2">Basis ($110-130/Fass)</p>
               <p className="text-sm text-slate-300">
-                Anhaltende Geopolitische Spannungen. SAF-Spreads schrumpfen auf 20-30%. 
+                Anhaltende geopolitische Spannungen. SAF-Spreads schrumpfen auf 20-30%.
                 Deutsche Industrie dominiert. Lufthansa schließt Langfrist-Kontrakte.
               </p>
             </div>
@@ -196,7 +197,7 @@ export default function LufthansaAnalysisDE() {
           <h2 className="text-2xl font-bold text-sky-300 mb-4">Kern-Botschaft</h2>
           <p className="text-slate-300 leading-relaxed">
             Lufthansas Flugkürzungen sind <strong>kein Signal für Branchenerosion, sondern für strategische Transformation</strong>. 
-            Die alte Konkurrenz war Skalierung + Kosteneffizienz. Die zukünftige wird Energiewende + Lieferkette-Kontrolle.
+            Die alte Konkurrenz war Skalierung + Kosteneffizienz. Die zukünftige wird Energiewende + Lieferkettenkontrolle.
           </p>
           <p className="text-slate-300 leading-relaxed mt-4">
             <strong>Für Deutschland:</strong> Dies ist ein Gold-Fenster bis 2030. 
@@ -208,7 +209,7 @@ export default function LufthansaAnalysisDE() {
 
         <section className="text-center py-8">
           <Link href="/analysis/lufthansa-flight-cuts-2026-04" className="text-sky-300 underline">
-            中文完整版 (Chinese Full Version) →
+            Chinesische Vollversion →
           </Link>
         </section>
 

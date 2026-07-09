@@ -13,6 +13,7 @@ from app.schemas.sqlite_schemas import (
     MarketPriceRead,
     MarketPriceUpdate,
 )
+from app.security import require_admin_token
 from app.services.cache import PriceCacheService
 
 router = APIRouter(prefix="/sqlite/market-prices", tags=["market-prices"])
@@ -58,7 +59,9 @@ def get_market_price(price_id: str, db: Session = Depends(get_sqlite_db)):
 
 @router.post("", response_model=MarketPriceRead, status_code=201)
 def create_market_price(
-    price_data: MarketPriceCreate, db: Session = Depends(get_sqlite_db)
+    price_data: MarketPriceCreate,
+    _auth: None = Depends(require_admin_token),
+    db: Session = Depends(get_sqlite_db),
 ):
     """Create new market price entry."""
     # Validate market_type
@@ -84,6 +87,7 @@ def create_market_price(
 def update_market_price(
     price_id: str,
     price_data: MarketPriceUpdate,
+    _auth: None = Depends(require_admin_token),
     db: Session = Depends(get_sqlite_db),
 ):
     """Update market price."""
@@ -106,7 +110,11 @@ def update_market_price(
 
 
 @router.delete("/{price_id}", status_code=204)
-def delete_market_price(price_id: str, db: Session = Depends(get_sqlite_db)):
+def delete_market_price(
+    price_id: str,
+    _auth: None = Depends(require_admin_token),
+    db: Session = Depends(get_sqlite_db),
+):
     """Delete market price."""
     price = db.query(MarketPrice).filter(MarketPrice.id == price_id).first()
     if not price:

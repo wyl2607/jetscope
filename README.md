@@ -1,12 +1,14 @@
 # JetScope
 
-> European aviation fuel transition intelligence for SAF timing, reserve stress, policy exposure, and procurement decisions.
+> European aviation fuel and renewable-grid transition intelligence, powered by one EU ETS carbon price lever and a shared cost-crossover engine for SAF timing, grid parity, reserve stress, policy exposure, and procurement decisions.
 
 [![Node.js](https://img.shields.io/badge/Node.js-22+-green.svg)](https://nodejs.org/)
 [![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://python.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-teal.svg)](https://fastapi.tiangolo.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+[Quickstart](docs/QUICKSTART.md) | [Demo](docs/DEMO.md) | [Architecture](#architecture) | [API Contract](docs/API_CONTRACT_V1.md) | [Roadmap](ROADMAP.md) | [Contributing](CONTRIBUTING.md) | [Security](SECURITY.md)
 
 ## Languages
 
@@ -20,9 +22,9 @@
 
 ### What Is JetScope?
 
-JetScope is a market intelligence platform for the European aviation fuel transition. It helps airlines, fuel procurement teams, analysts, and policy observers answer one practical question: when does Sustainable Aviation Fuel (SAF) become the economically rational choice compared with fossil jet fuel?
+JetScope is a market intelligence platform for European aviation fuel, renewable-grid, and heating-transition economics. It helps airlines, fuel procurement teams, analysts, policy observers, and energy-transition reviewers answer one practical question across multiple domains: when does the clean option become economically rational once the relevant European carbon price is applied to the fossil reference?
 
-The product connects market prices, EU policy, carbon costs, reserve coverage, SAF pathway economics, and AI-assisted research signals into a single decision surface.
+The product connects market prices, EU policy, carbon costs, reserve coverage, SAF pathway economics, grid LCOE assumptions, heating fuel assumptions, and AI-assisted research signals into a single decision surface.
 
 ### Product Capabilities
 
@@ -30,6 +32,8 @@ The product connects market prices, EU policy, carbon costs, reserve coverage, S
 | --- | --- |
 | Market dashboard | Tracks aviation fuel, Brent proxy, EU ETS carbon price, German premium, Rotterdam proxy, SAF proxy, freshness, and source health. |
 | SAF tipping point analysis | Models when fossil jet fuel plus carbon exposure crosses SAF effective cost. |
+| Grid-parity analysis | Models when renewable electricity (solar/wind LCOE) crosses fossil generation cost plus EU ETS carbon, with an interactive carbon-price slider. Shares one cost-crossover engine with the SAF tipping point. |
+| Heat-parity analysis | Models when heat pumps cross gas condensing boiler costs, reusing the same crossover engine with ETS2 building/heating fuel carbon-price sensitivity. |
 | Airline decision matrix | Combines fuel price, reserve stress, carbon exposure, and SAF pathway cost into procurement signals. |
 | EU reserve stress view | Shows European reserve coverage pressure and crisis indicators. |
 | Scenario registry | Saves and compares procurement assumptions and route edits. |
@@ -53,23 +57,75 @@ jetscope/
 └── test/                     # Node contract and read-model tests
 ```
 
+#### Architecture highlight: one cost-crossover engine, three decarbonization domains
+
+The economic question behind SAF, grid, and heating products is identical:
+*when does the clean option become cheaper than the fossil option once the
+relevant European carbon price is applied?* That logic lives in a single domain-agnostic core
+(`apps/api/app/services/analysis/crossover.py`), consumed by three domains.
+
+```mermaid
+graph TD
+    CO2["EU ETS carbon price<br/>(shared lever)"] --> CROSS
+    CROSS["crossover.py<br/>domain-agnostic cost-crossover core"]
+    CROSS --> SAFCORE["breakeven.py / tipping_point.py<br/>SAF net cost vs fossil jet"]
+    CROSS --> GRIDCORE["grid_parity.py<br/>renewable LCOE vs fossil marginal cost"]
+    CROSS --> HEATCORE["heat_parity.py<br/>heat pump useful heat vs gas boiler"]
+    GRIDCORE --> LCOE["grid_lcoe_sensitivity.py<br/>bottom-up LCOE sensitivity"]
+    SAFCORE --> SAFAPI["/analysis/tipping-point* endpoints"]
+    GRIDCORE --> GRIDAPI["/analysis/grid-parity* endpoints"]
+    HEATCORE --> HEATAPI["/analysis/heat-parity endpoint"]
+    LCOE --> GRIDAPI
+    SAFAPI --> SAFWEB["SAF pages<br/>/crisis/saf-tipping-point + reports"]
+    GRIDAPI --> GRIDWEB["Grid page<br/>/grid"]
+    HEATAPI --> HEATWEB["Heat page<br/>/heat"]
+    NEWS["Fuel/energy news"] --> AI["Claude signal extractor<br/>(mock-first, switchable to live)"]
+    AI --> WEB["Next.js read models + localized pages"]
+    SAFWEB --> WEB
+    GRIDWEB --> WEB
+    HEATWEB --> WEB
+```
+
+The AI research pipeline (`ai_research/claude_pipeline.py`) is mock-first by
+default and switches to a real Claude extraction path via configuration, so the
+repository stays reproducible without credentials.
+
 ### Core API Surface
 
 | Endpoint | Method | Description |
 | --- | --- | --- |
 | `/v1/health` | GET | API health and capability status. |
+| `/v1/readiness` | GET | Launch-prerequisite checks for database, sources, admin token, and AI research configuration. |
+| `/api/health` | GET | Web liveness proxy to `/v1/health`; does not replace launch readiness. |
 | `/v1/market/snapshot` | GET | Current market values, source status, and source detail metadata. |
 | `/v1/market/history` | GET | Historical market series used by dashboard and trend views. |
 | `/v1/market/refresh` | POST | Admin-protected market refresh. |
 | `/v1/analysis/tipping-point` | GET | SAF/fossil tipping point calculation. |
 | `/v1/analysis/airline-decision` | GET | Procurement decision analysis for an airline-style scenario. |
 | `/v1/analysis/tipping-point/events` | GET | Persisted tipping event timeline. |
+| `/v1/analysis/grid-parity` | GET | Renewable-vs-fossil grid-parity calculation with a carbon-price sweep. |
+| `/v1/analysis/grid-parity/history` | GET | Historical grid cost-crossover series (provenance-annotated static baseline). |
+| `/v1/analysis/grid-parity/lcoe-sensitivity` | GET | Renewable LCOE sensitivity matrix and breakeven carbon-price scan. |
+| `/v1/analysis/heat-parity` | GET | Heat-pump vs gas-boiler parity calculation with ETS2 building/heating fuel carbon-price sensitivity. |
+| `/v1/analysis/crisis-brief` | GET | Read-only crisis brief aggregating market source status, EU reserve stress, tipping events, research posture, and review actions. |
 | `/v1/reserves/eu` | GET | EU reserve stress signal. |
 | `/v1/research/signals` | GET | Structured AI research signals with filters for time, type, and limit. |
+| `/v1/research/refresh` | POST | Admin-protected manual AI research refresh with pipeline counters. |
 | `/v1/sources/coverage` | GET | Source coverage, quality, and provenance status. |
 | `/v1/workspaces/{workspace_slug}/scenarios` | GET/POST | Scenario list and creation. Write operations require an admin token. |
 
 More detail lives in `docs/API_CONTRACT_V1.md`, `docs/DATA_CONTRACT_V1.md`, `docs/AI_PIPELINE.md`, and `docs/REFACTORING_STRATEGY.md`.
+The grid LCOE and dual-domain crossover methodology lives in `docs/GRID_LCOE_METHODOLOGY.md`.
+
+Contributor and maintainer documents live in `CONTRIBUTING.md`, `MAINTAINERS.md`, `SECURITY.md`, `ROADMAP.md`, `CHANGELOG.md`, and `docs/MAINTENANCE_LOG.md`.
+
+### Localized Frontend Entrypoints
+
+| Locale | Routes | Notes |
+| --- | --- | --- |
+| Chinese | `/`, `/faq`, `/dashboard`, `/crisis`, `/grid`, `/heat`, `/sources`, `/research`, `/reports`, `/scenarios`, `/admin` | Primary operations workspace plus launch-boundary FAQ, crisis monitor, interactive grid-parity analysis, and heating parity. |
+| German | `/de`, `/de/faq`, `/de/dashboard`, `/de/crisis`, `/de/prices/germany-jet-fuel`, `/de/sources`, `/de/scenarios`, `/de/reports`, `/de/reports/tipping-point-analysis`, `/de/research`, `/de/admin`, `/de/lufthansa-saf-2026` | German FAQ, market, crisis, source, readiness, scenario, report, research, and Lufthansa review slice. |
+| English | `/en`, `/en/faq`, `/en/dashboard`, `/en/crisis`, `/en/prices/germany-jet-fuel`, `/en/sources`, `/en/research`, `/en/reports`, `/en/reports/tipping-point-analysis`, `/en/admin`, `/en/scenarios`, `/en/lufthansa-saf-2026` | English FAQ and review slice for landing, decision cockpit, crisis monitor, Germany price monitor, source review, research pipeline status, report readiness, read-only launch readiness, scenario review, and Lufthansa SAF analysis; protected writes still link back to the primary workspace. |
 
 ### Prerequisites
 
@@ -111,11 +167,14 @@ The API uses `JETSCOPE_` environment variables by default. Important variables:
 | `JETSCOPE_DATABASE_URL` | `sqlite:///./data/market.db` | SQLAlchemy database URL. |
 | `JETSCOPE_ADMIN_TOKEN` | empty | Required for admin-protected write routes. |
 | `JETSCOPE_MARKET_REFRESH_INTERVAL_SECONDS` | `600` | Background market refresh interval. |
+| `JETSCOPE_MARKET_SOURCE_TIMEOUT_SECONDS` | `12` | Per-public-source timeout for admin-triggered market refreshes before explicit fallback evidence is recorded. |
 | `JETSCOPE_SCHEMA_BOOTSTRAP_MODE` | `alembic` | Database bootstrap strategy. |
 | `JETSCOPE_AI_RESEARCH_ENABLED` | `false` | Enables daily AI research ingestion loop. |
 | `JETSCOPE_AI_RESEARCH_MOCK_MODE` | `true` | Keeps Claude extraction deterministic and cost-safe by default. |
 | `JETSCOPE_ANTHROPIC_API_KEY` | empty | Anthropic key for live extraction. |
-| `JETSCOPE_NEWSAPI_KEY` | empty | Optional NewsAPI key; Reuters RSS fallback is used otherwise. |
+| `JETSCOPE_NEWSAPI_KEY` | empty | Optional NewsAPI credential; Reuters RSS fallback is used otherwise. |
+
+`GET /v1/readiness` reports `not_ready` until protected admin writes and AI research prerequisites are configured. It reports whether prerequisites exist, but never returns secret values.
 
 Selected legacy `SAFVSOIL_*` variables may still be accepted for compatibility with older deployments. New deployments should prefer `JETSCOPE_*` where supported.
 
@@ -155,6 +214,12 @@ The full operational gate is:
 npm run preflight
 ```
 
+Release-readiness checks that avoid push, publish, deploy, SSH, and rsync are documented in `docs/RELEASE_PROCESS.md` and can be run with:
+
+```bash
+npm run release:dry-run
+```
+
 `npm run api:check` auto-detects `JETSCOPE_PYTHON_BIN`, `PYTHON_BIN`, the API virtual environment, or the platform default Python interpreter.
 
 ```bash
@@ -191,6 +256,8 @@ Project deployment memory now lives in `OPERATIONS.md`. Future work should treat
 
 Production-style Docker and nginx examples are in `infra/` and `docker-compose.prod.yml`.
 
+This repository is open source, but `package.json` intentionally sets `private: true` because JetScope is an application monorepo rather than an npm library package.
+
 ### Repository Hygiene
 
 Tracked files should be product code, tests, public documentation, small sample datasets, infrastructure templates, and deterministic migration artifacts. Do not commit secrets, local databases, logs, generated build output, node_modules, private automation ledgers, or internal handoff archives.
@@ -205,9 +272,9 @@ MIT. See `LICENSE`.
 
 ### JetScope 是什么？
 
-JetScope 是面向欧洲航空燃料转型的市场情报平台。它帮助航空公司、燃料采购团队、行业分析师和政策观察者判断一个核心问题：在什么条件下，可持续航空燃料（SAF）相对传统化石航煤会成为经济上合理的选择？
+JetScope 是面向欧洲航空燃料转型、新能源电网平价与供暖转型的市场情报平台。它帮助航空公司、燃料采购团队、能源转型分析师和政策观察者判断同一个核心问题：在相关欧洲碳价作用下，SAF、可再生电力或热泵何时相对化石基准成本成为经济上合理的选择？
 
-平台把市场价格、欧盟政策、碳成本、燃料储备压力、SAF 路径成本和 AI 辅助研究信号整合到同一个决策界面中。
+平台把市场价格、欧盟政策、EU ETS/ETS2 碳成本、燃料储备压力、SAF 路径成本、电网 LCOE 假设、供暖燃料假设和 AI 辅助研究信号整合到同一个决策界面中。
 
 ### 核心能力
 
@@ -215,6 +282,8 @@ JetScope 是面向欧洲航空燃料转型的市场情报平台。它帮助航�
 | --- | --- |
 | 市场仪表盘 | 跟踪航空燃料、Brent 代理指标、EU ETS 碳价、德国溢价、Rotterdam 代理指标、SAF 代理价格、数据新鲜度和来源健康状态。 |
 | SAF 拐点分析 | 建模化石航煤加碳成本后，何时与 SAF 有效成本交叉。 |
+| 电网平价分析 | 建模光伏/风电 LCOE 何时与化石发电边际成本加 EU ETS 碳成本交叉，并复用 SAF 拐点的同一成本交叉引擎。 |
+| 供暖平价分析 | 建模热泵何时与燃气冷凝锅炉成本交叉，并复用同一成本交叉引擎与 ETS2 建筑/供暖燃料碳价。 |
 | 航司采购决策矩阵 | 综合燃料价格、储备压力、碳成本和 SAF 路径成本，输出采购判断信号。 |
 | 欧盟储备压力视图 | 展示欧洲燃料储备覆盖压力和危机指标。 |
 | 情景注册表 | 保存、加载和比较采购假设与航线调整。 |
@@ -293,9 +362,9 @@ npm run preflight
 
 ### Was Ist JetScope?
 
-JetScope ist eine Market-Intelligence-Plattform für die europäische Transformation von Flugkraftstoffen. Sie unterstützt Airlines, Einkaufsteams, Analysten und Policy-Teams bei der Frage, wann Sustainable Aviation Fuel (SAF) gegenüber fossilem Jet Fuel wirtschaftlich sinnvoll wird.
+JetScope ist eine Market-Intelligence-Plattform für europäische Flugkraftstoff-Transformation, erneuerbare Grid-Parity-Ökonomik und Wärmewende. Sie unterstützt Airlines, Einkaufsteams, Energieanalysten und Policy-Teams bei derselben Frage in mehreren Domänen: Wann wird die saubere Option (SAF, erneuerbarer Strom oder Wärmepumpe) gegenüber der fossilen Referenz wirtschaftlich sinnvoll, sobald der relevante europäische CO2-Preis wirkt?
 
-Die Plattform verbindet Marktpreise, EU-Regulierung, CO2-Kosten, Reserveabdeckung, SAF-Pfadkosten und KI-gestützte Research-Signale in einer gemeinsamen Entscheidungsoberfläche.
+Die Plattform verbindet Marktpreise, EU-Regulierung, EU-ETS-/ETS2-CO2-Kosten, Reserveabdeckung, SAF-Pfadkosten, Grid-LCOE-Annahmen, Heizenergie-Annahmen und KI-gestützte Research-Signale in einer gemeinsamen Entscheidungsoberfläche.
 
 ### Kernfunktionen
 
@@ -303,6 +372,8 @@ Die Plattform verbindet Marktpreise, EU-Regulierung, CO2-Kosten, Reserveabdeckun
 | --- | --- |
 | Markt-Dashboard | Überwacht Aviation-Fuel-Preise, Brent-Proxy, EU-ETS-CO2-Preis, Deutschland-Premium, Rotterdam-Proxy, SAF-Proxy, Datenfrische und Quellenstatus. |
 | SAF-Tipping-Point | Modelliert, wann fossiler Jet Fuel inklusive CO2-Exponierung die effektiven SAF-Kosten erreicht oder übersteigt. |
+| Grid-Parity-Analyse | Modelliert, wann Solar-/Wind-LCOE die fossilen Grenzkosten inklusive EU-ETS-CO2-Kosten kreuzt, und nutzt denselben Cost-Crossover-Kern wie der SAF-Tipping-Point. |
+| Wärme-Parity-Analyse | Modelliert, wann Wärmepumpen die Kosten von Gas-Brennwertkesseln kreuzen, und nutzt denselben Cost-Crossover-Kern mit ETS2-CO2-Kosten für Gebäude- und Heizbrennstoffe. |
 | Airline-Entscheidungsmatrix | Kombiniert Fuel Price, Reserve Stress, CO2-Kosten und SAF-Pfadkosten zu Beschaffungssignalen. |
 | EU-Reserve-Stress | Zeigt Reserveabdeckung und Krisensignale für Europa. |
 | Szenario-Registry | Speichert und vergleicht Beschaffungsannahmen und Routenanpassungen. |

@@ -1,4 +1,9 @@
 from app.schemas.analysis import BreakevenStatus, TippingPointAssessment
+from app.services.analysis.crossover import (
+    SpreadThresholds,
+    classify_spread,
+    compute_crossover,
+)
 from app.services.analysis.pathway_costs import (
     EUR_TO_USD,
     FOSSIL_JET_EMISSIONS_KG_PER_L,
@@ -7,15 +12,17 @@ from app.services.analysis.pathway_costs import (
     get_pathway_cost,
 )
 
+SAF_SPREAD_THRESHOLDS = SpreadThresholds(high=25.0, mid=5.0, low=-10.0)
+SAF_STATUS_LABELS: tuple[str, str, str, str] = (
+    "uneconomic",
+    "inflection",
+    "marginal_switch",
+    "dominant",
+)
+
 
 def _status_for_spread(spread_pct: float) -> BreakevenStatus:
-    if spread_pct > 25:
-        return "uneconomic"
-    if spread_pct > 5:
-        return "inflection"
-    if spread_pct >= -10:
-        return "marginal_switch"
-    return "dominant"
+    return classify_spread(spread_pct, SAF_SPREAD_THRESHOLDS, SAF_STATUS_LABELS)  # type: ignore[return-value]
 
 
 def compute_tipping_point(
@@ -34,8 +41,12 @@ def compute_tipping_point(
         subsidy_usd_per_l=subsidy_usd_per_l,
         blend_rate_pct=blend_rate_pct,
     )
-    spread_usd_per_l = net_saf_cost - fossil_jet_usd_per_l
-    spread_pct = (spread_usd_per_l / fossil_jet_usd_per_l) * 100.0
+    crossover = compute_crossover(
+        clean_cost=net_saf_cost,
+        reference_cost=fossil_jet_usd_per_l,
+        thresholds=SAF_SPREAD_THRESHOLDS,
+        labels=SAF_STATUS_LABELS,
+    )
     return TippingPointAssessment(
         pathway=pathway,
         fossil_jet_usd_per_l=fossil_jet_usd_per_l,
@@ -45,9 +56,9 @@ def compute_tipping_point(
         carbon_credit_usd_per_l=carbon_credit,
         effective_support_usd_per_l=effective_support,
         net_saf_cost_usd_per_l=net_saf_cost,
-        net_cost_spread_usd_per_l=spread_usd_per_l,
-        spread_pct=spread_pct,
-        status=_status_for_spread(spread_pct),
+        net_cost_spread_usd_per_l=crossover.gap,
+        spread_pct=crossover.spread_pct,
+        status=crossover.status,  # type: ignore[arg-type]
     )
 
 

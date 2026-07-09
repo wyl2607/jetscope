@@ -10,6 +10,10 @@ import type { Metadata, Route } from 'next';
 import Link from 'next/link';
 import { buildPageMetadata } from '@/lib/seo';
 import { TippingPointWorkbench } from '@/components/tipping-point-workbench';
+import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
+import { loadPathwayComparison } from '@/lib/pathways-read-model';
+import { EuEtsPressurePanel } from '@/components/eu-ets-pressure-panel';
+import { loadEuEtsPressure } from '@/lib/eu-ets-pressure-read-model';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +80,31 @@ export default async function SafTippingPointPage() {
   const sourceCoverageSummary = readModel.sourceCoverage
     ? `${degradedSourceCount} / ${sourceCoverageItems.length} 个计算输入需要复核`
     : '来源覆盖暂不可用，当前计算应视为情景基线';
+
+  let pathwayComparison: Awaited<ReturnType<typeof loadPathwayComparison>> | null = null;
+  try {
+    pathwayComparison = await loadPathwayComparison({
+      fossilJetUsdPerL: liveFuel,
+      carbonPriceEurPerT: Number((liveCarbonUsd / 1.08).toFixed(2)),
+      subsidyUsdPerL: 0,
+      blendRatePct: 6
+    });
+  } catch {
+    pathwayComparison = null;
+  }
+
+  let euEtsPressure: Awaited<ReturnType<typeof loadEuEtsPressure>> | null = null;
+  try {
+    euEtsPressure = await loadEuEtsPressure({
+      fossilJetUsdPerL: liveFuel,
+      exemptBlendPct: 6,
+      euEtsMin: 0,
+      euEtsMax: 200,
+      euEtsStep: 50
+    });
+  } catch {
+    euEtsPressure = null;
+  }
 
   return (
     <Shell
@@ -162,6 +191,42 @@ export default async function SafTippingPointPage() {
           pathwayKey: 'hefa'
         }}
       />
+
+      {pathwayComparison ? (
+        <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">路径对比</p>
+              <h2 className="mt-2 text-xl font-bold text-slate-950">SAF 路径净成本与来源可信度</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                以当前市场输入计算各路径的净成本区间与价差，并标注每条路径的来源类型与置信度。
+              </p>
+            </div>
+            <span className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">
+              对比信号：{pathwayComparison.signalLabel}
+            </span>
+          </div>
+          <SafPathwayComparisonTable
+            selectedPathwayKey="hefa"
+            pathways={pathwayComparison.rows.map((row) => ({
+              pathway_key: row.pathway_key,
+              display_name: row.name,
+              net_cost_low_usd_per_l: row.min_usd_per_l,
+              net_cost_high_usd_per_l: row.max_usd_per_l,
+              spread_low_pct: row.spread_pct ?? 0,
+              spread_high_pct: row.spread_pct ?? 0,
+              status: row.status
+            }))}
+            sources={pathwayComparison.sourceByKey}
+          />
+        </section>
+      ) : null}
+
+      {euEtsPressure ? (
+        <div className="mb-8">
+          <EuEtsPressurePanel model={euEtsPressure} />
+        </div>
+      ) : null}
 
       {/* Model Boundaries */}
       <section className="rounded-2xl border border-slate-200 bg-white p-8">

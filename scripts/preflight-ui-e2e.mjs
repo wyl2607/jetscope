@@ -433,6 +433,7 @@ async function runAttempt(attempt) {
           JETSCOPE_DATABASE_URL: `sqlite+pysqlite:///${sqlitePath}`,
           JETSCOPE_SCHEMA_BOOTSTRAP_MODE: 'alembic',
           JETSCOPE_MARKET_REFRESH_INTERVAL_SECONDS: '0',
+          JETSCOPE_MARKET_SOURCE_TIMEOUT_SECONDS: '0.25',
           JETSCOPE_ADMIN_TOKEN: adminToken,
           JETSCOPE_API_PREFIX: '/v1'
         }
@@ -451,8 +452,7 @@ async function runAttempt(attempt) {
           ...process.env,
           JETSCOPE_API_BASE_URL: `http://127.0.0.1:${apiPort}`,
           JETSCOPE_API_PREFIX: '/v1',
-          JETSCOPE_WORKSPACE_SLUG: 'default',
-          SAFVSOIL_MARKET_REFRESH_TIMEOUT_MS: '1500'
+          JETSCOPE_WORKSPACE_SLUG: 'default'
         }
       }
     );

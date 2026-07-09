@@ -6,7 +6,8 @@ async function importApiConfig(env = {}) {
     JETSCOPE_API_BASE_URL: process.env.JETSCOPE_API_BASE_URL,
     SAFVSOIL_API_BASE_URL: process.env.SAFVSOIL_API_BASE_URL,
     JETSCOPE_API_PREFIX: process.env.JETSCOPE_API_PREFIX,
-    SAFVSOIL_API_PREFIX: process.env.SAFVSOIL_API_PREFIX
+    SAFVSOIL_API_PREFIX: process.env.SAFVSOIL_API_PREFIX,
+    NODE_ENV: process.env.NODE_ENV
   };
 
   for (const key of Object.keys(previous)) {
@@ -45,4 +46,14 @@ test('buildApiUrl keeps same-origin defaults stable', async () => {
   assert.equal(API_BASE_URL, '');
   assert.equal(API_PREFIX, '/v1');
   assert.equal(buildApiUrl('/health'), '/v1/health');
+});
+
+test('buildApiUrl defaults to the local API during development', async () => {
+  const { API_BASE_URL, API_PREFIX, buildApiUrl } = await importApiConfig({
+    NODE_ENV: 'development'
+  });
+
+  assert.equal(API_BASE_URL, 'http://127.0.0.1:8000');
+  assert.equal(API_PREFIX, '/v1');
+  assert.equal(buildApiUrl('/market/snapshot'), 'http://127.0.0.1:8000/v1/market/snapshot');
 });
