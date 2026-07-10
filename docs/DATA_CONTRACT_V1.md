@@ -1,7 +1,7 @@
 # JetScope Data Contract v1
 
 **Status:** Active v1 contract  
-**Last updated:** 2026-04-24  
+**Last updated:** 2026-07-10
 **Scope:** Market snapshots, source metadata, reserves, tipping events, scenarios, and AI research signals.
 
 ## Purpose
@@ -168,6 +168,26 @@ Alembic migrations in `apps/api/migrations/versions/` are the migration source o
 4. Product read models should avoid blocking a full page on a single failed source.
 5. Research ingestion is disabled by default and mock-first by default to avoid uncontrolled external spend.
 
+
+## SAF Price Proxy Labelling
+
+SAF and jet-proxy values are not claimed as paid primary feeds. Labelling must stay evidence-backed and public-source oriented.
+
+| Condition | Typical source | `fallback_used` | Confidence band | Product expectation |
+| --- | --- | --- | --- | --- |
+| Live public jet quote available (for example ARA/Rotterdam parser) | `ara-rotterdam-public` / `rotterdam-jet-direct` | `false` | `0.70-0.89` | Display as public-source backed. |
+| Live quote unavailable; Brent-derived EU jet proxy used | `brent-derived` | `true` | `0.50-0.69` | Display with derived-proxy / fallback note. |
+| Live and derived inputs unavailable; seeded baseline used | `seed-baseline` | `true` | `0.00-0.29` | Display degraded / offline deterministic fallback. |
+| Curated SAF pathway cost bands within update cadence | `manual` pathway source | `false` | maturity map (`0.50-0.80`) | Display as curated manual proxy, not a live SAF market print. |
+| Curated SAF pathway cost bands past cadence (stale) | `manual` pathway source | `true` | capped at `0.30-0.49` | Display warning; treat band as weak/stale. |
+| Market refresh run older than the soft stale window and row is already fallback/seed | snapshot read model | remains `true` | capped at `0.30-0.49` | Keep freshness and fallback visible together. |
+
+Rules:
+
+1. Fallback state must remain visible in API responses (`source_details[].fallback_used`, `source_status.is_fallback` / `fallback_rate`, and pathway `source.fallback_used`).
+2. Confidence scores must stay inside the Source Confidence Semantics bands above.
+3. Deterministic seed values are allowed only when labelled as fallback with low confidence.
+4. Product copy must not present manual pathway midpoints or Brent-derived proxies as live SAF exchange prints.
 ## Versioning Rules
 
 Patch updates may clarify documentation or add examples. Minor updates may add optional fields, new metrics, or new read endpoints. Major updates are required for deleting fields, renaming fields, changing field types, or changing enum semantics.

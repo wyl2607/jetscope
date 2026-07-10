@@ -229,7 +229,10 @@ def test_snapshot_exposes_stale_fallback_source_status(client: TestClient, db_pa
     assert source_status["is_fallback"] is True
     assert jet_eu_proxy["fallback_used"] is True
     assert jet_eu_proxy["status"] == "fallback"
-    assert jet_eu_proxy["confidence_score"] == pytest.approx(0.65)
+    # Stale fallback rows are capped into the DATA_CONTRACT weak/stale band (0.30-0.49).
+    assert jet_eu_proxy["confidence_score"] == pytest.approx(0.49)
+    assert 0.30 <= jet_eu_proxy["confidence_score"] <= 0.49
+    assert source_status["confidence"] == pytest.approx(0.49)
 
 
 def test_snapshot_source_details_errors_are_public_safe(client: TestClient, seeded_refresh_run):

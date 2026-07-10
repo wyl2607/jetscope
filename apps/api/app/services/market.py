@@ -148,7 +148,20 @@ SOURCE_CONTEXT: dict[str, dict[str, object]] = {
         "confidence_score": 0.75,
         "note": "German aviation fuel tax premium; static configuration per regulatory tax band.",
     },
+    "seed-baseline": {
+        "region": "eu",
+        "market_scope": "deterministic_fallback",
+        "lag_minutes": None,
+        "confidence_score": 0.25,
+        "note": "Deterministic seeded baseline used when live and derived public sources are unavailable.",
+    },
 }
+
+# Confidence band caps aligned with docs/DATA_CONTRACT_V1.md.
+STALE_SOURCE_CONFIDENCE_CAP = 0.49  # weak fallback / stale source
+DETERMINISTIC_FALLBACK_CONFIDENCE = 0.25  # deterministic fallback only
+# Soft staleness threshold for snapshot read-model confidence capping (minutes).
+STALE_SNAPSHOT_SOFT_MINUTES = 2 * 24 * 60
 
 
 def _round(value: float, digits: int = 2) -> float:
@@ -399,7 +412,9 @@ def _set_source_detail(
         "market_scope": context["market_scope"],
         "lag_minutes": context["lag_minutes"],
         "confidence_score": context["confidence_score"],
-        "fallback_used": False,
+        # Fallback/seed statuses must surface fallback_used so API consumers can
+        # distinguish live public quotes from derived or deterministic proxies.
+        "fallback_used": status in {"fallback", "seed"},
         "note": context["note"],
     }
     if value is not None:
@@ -515,6 +530,7 @@ def _ingest_jet_eu_market_value(
                 extra={
                     "note": "ARA/Rotterdam public quote unavailable; fell back to Brent-derived EU proxy.",
                     "primary_error": primary_error_text,
+                    "fallback_used": True,
                 },
             )
             return derived_value
@@ -523,12 +539,14 @@ def _ingest_jet_eu_market_value(
         _set_source_detail(
             details,
             "jet_eu_proxy",
-            source="brent-derived",
+            source="seed-baseline",
             status="fallback",
             value=seed_value,
             extra={
                 "note": "ARA/Rotterdam and Brent unavailable; fell back to seeded EU proxy baseline.",
                 "primary_error": primary_error_text,
+                "confidence_score": DETERMINISTIC_FALLBACK_CONFIDENCE,
+                "fallback_used": True,
             },
         )
         return seed_value
@@ -1149,14 +1167,33 @@ def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
             usd_per_eur=float(raw["usd_per_eur"]) if raw.get("usd_per_eur") is not None else None,
             )
 
-    confidence_values = [detail.confidence_score for detail in typed_source_details.values()]
-    fallback_count = sum(1 for detail in typed_source_details.values() if detail.fallback_used)
-    confidence = _round(sum(confidence_values) / len(confidence_values), 3) if confidence_values else 1.0
-    fallback_rate = _round((fallback_count / len(typed_source_details)) * 100.0, 2) if typed_source_details else 0.0
     freshness_minutes = max(
         0,
         int((utcnow() - _ensure_utc_datetime(refreshed_at)).total_seconds() // 60),
     )
+
+    # When the refresh run itself is stale, cap confidence for fallback/proxy rows
+    # into the DATA_CONTRACT weak/stale band so product surfaces can warn.
+    if freshness_minutes >= STALE_SNAPSHOT_SOFT_MINUTES and typed_source_details:
+        capped: dict[str, MarketSourceDetail] = {}
+        for key, detail in typed_source_details.items():
+            if detail.fallback_used or detail.status in {"fallback", "seed"}:
+                capped[key] = detail.model_copy(
+                    update={
+                        "confidence_score": min(
+                            float(detail.confidence_score),
+                            STALE_SOURCE_CONFIDENCE_CAP,
+                        )
+                    }
+                )
+            else:
+                capped[key] = detail
+        typed_source_details = capped
+
+    confidence_values = [detail.confidence_score for detail in typed_source_details.values()]
+    fallback_count = sum(1 for detail in typed_source_details.values() if detail.fallback_used)
+    confidence = _round(sum(confidence_values) / len(confidence_values), 3) if confidence_values else 1.0
+    fallback_rate = _round((fallback_count / len(typed_source_details)) * 100.0, 2) if typed_source_details else 0.0
 
     return MarketSnapshotResponse(
         generated_at=generated_at,
