@@ -168,7 +168,6 @@ Alembic migrations in `apps/api/migrations/versions/` are the migration source o
 4. Product read models should avoid blocking a full page on a single failed source.
 5. Research ingestion is disabled by default and mock-first by default to avoid uncontrolled external spend.
 
-
 ## SAF Price Proxy Labelling
 
 SAF and jet-proxy values are not claimed as paid primary feeds. Labelling must stay evidence-backed and public-source oriented.
