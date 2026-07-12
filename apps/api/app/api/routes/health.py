@@ -33,6 +33,9 @@ def _sanitize_error_detail(error: str) -> str:
     ):
         if secret:
             sanitized = sanitized.replace(secret, "[redacted-secret]")
+            stripped = secret.strip()
+            if stripped and stripped != secret:
+                sanitized = sanitized.replace(stripped, "[redacted-secret]")
 
     sanitized = re.sub(
         r"(?i)\bbearer\s+[^\s,;\"']+",
