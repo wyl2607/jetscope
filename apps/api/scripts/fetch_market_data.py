@@ -48,17 +48,19 @@ DATA_SOURCES = {
     },
 }
 
-# Industry benchmarks (static, updated manually from monthly reports)
+# Industry benchmarks (static, reviewed with public market seed refresh 2026-07-17)
 BENCHMARKS = {
     # Rotterdam jet fuel crack spread over Brent (historical avg ~$12-15/bbl)
     "jet_fuel_crack_spread_usd_per_bbl": 14.0,
-    # SAF premium over conventional jet fuel (ReFuelEU mandates 2% by 2025)
+    # SAF premium over conventional jet fuel (ReFuelEU blend ramp 2025+)
     # HEFA-SPK typically 2-3x conventional jet fuel
     "saf_premium_multiplier": 2.5,
     # Conversion: 1 bbl jet fuel ≈ 159 liters
     "liters_per_bbl": 159.0,
-    # EU ETS aviation multiplier (aviation gets 15% free allowance in 2026)
+    # EU ETS aviation free-allowance residual (indicative 2026)
     "eu_ets_aviation_multiplier": 0.85,
+    # Last manual review of seed/fallback levels (YYYY-MM-DD)
+    "seed_as_of": "2026-07-17",
 }
 
 

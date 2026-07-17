@@ -91,7 +91,8 @@ def _resolve_fossil_jet_usd_per_l(values: dict[str, float]) -> float:
         value = values.get(key)
         if isinstance(value, int | float) and value > 0:
             return float(value)
-    return 0.99
+    # Keep in sync with app.services.market DEFAULT_JET_EU_PROXY_USD_PER_L seed.
+    return 0.657
 
 
 def _build_research_posture(db: Session) -> CrisisBriefResearchPosture:

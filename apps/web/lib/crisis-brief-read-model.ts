@@ -95,7 +95,7 @@ function fallbackReadModel(error: unknown): CrisisBriefReadModel {
   return {
     generatedAt: new Date().toISOString(),
     marketGeneratedAt: new Date().toISOString(),
-    fossilJetUsdPerL: 0.99,
+    fossilJetUsdPerL: 0.657,
     sourceStatus: {
       overall: 'degraded',
       confidence: 0,

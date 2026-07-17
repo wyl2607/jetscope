@@ -44,7 +44,7 @@ export default async function TippingPointReportPage() {
     tippingPoint?.inputs.fossilJetUsdPerL ??
     dashboardReadModel.market.values.jet_eu_proxy_usd_per_l ??
     dashboardReadModel.market.values.jet_usd_per_l ??
-    0.99;
+    0.657;
   const effectiveFossilJetUsdPerL = tippingPoint?.effectiveFossilJetUsdPerL ?? fossilJetUsdPerL;
   const switchProbability = Math.round(
     Math.max(

@@ -133,9 +133,9 @@ export default async function EuJetReserveCrisisPage() {
   const level = getReserveSeverity(reserve.weeks);
   const market = readModel.market.values;
 
-  const brent = market.brent_usd_per_bbl ?? 114.93;
-  const jetEu = market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l ?? 0.99;
-  const carbon = market.carbon_proxy_usd_per_t ?? 88.79;
+  const brent = market.brent_usd_per_bbl ?? 87.01;
+  const jetEu = market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l ?? 0.657;
+  const carbon = market.carbon_proxy_usd_per_t ?? 91.91;
 
   // SAF competitiveness gap at current prices
   const safHeffaLow = 1.60;
