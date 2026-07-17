@@ -72,7 +72,8 @@ export const SAF_ROUTES = [
 ];
 
 export const POLICY_DEFAULTS = {
-  carbonPriceUsdPerTonne: 90,
+  // ~80 EUR/t EU ETS × ECB EURUSD (~1.14) ≈ 92 USD/t (seed as of 2026-07-17)
+  carbonPriceUsdPerTonne: 92,
   subsidyUsdPerLiter: 0.5,
   jetProxySlope: 0.0082,
   jetProxyIntercept: 0.12
@@ -86,22 +87,23 @@ export const OIL_PRICE_CONTEXT = {
     mid: { value: 60, label: '2015-2019 平均', year: '2015-2019' },
     high: { value: 145, label: '2008 历史高', year: 2008 }
   },
-  // Current status (2026)
+  // Current status (2026-07 public spot seed)
   current: {
-    baselineUsdPerBarrel: 80,
-    label: '2026 基准（Goldman Sachs）'
+    baselineUsdPerBarrel: 87,
+    label: '2026-07 现货种子（Yahoo BZ=F / 公共回退）'
   },
-  // Forecast cone (Goldman Sachs 2026-2027)
+  // Forecast cone (illustrative mid-cycle bands for scenario tools)
   forecasts: {
-    base2026: { value: 80, range: [75, 85], label: '2026 基准' },
-    base2027: { value: 82, range: [75, 90], label: '2027 基准' },
+    base2026: { value: 87, range: [80, 95], label: '2026 中位（现货锚定）' },
+    base2027: { value: 85, range: [75, 95], label: '2027 基准' },
     optimistic: { value: 100, label: '乐观情景（地缘政治）' },
     pessimistic: { value: 60, label: '悲观情景（需求崩塌）' }
   },
   // Parity calculation ranges
   parityRanges: {
     jetFuelAt60: 0.62,      // At $60/bbl
-    jetFuelAt80: 0.78,      // At $80/bbl (current)
+    jetFuelAt80: 0.78,      // At $80/bbl
+    jetFuelAt87: 0.83,      // At $87/bbl (2026-07 seed)
     jetFuelAt100: 0.94,     // At $100/bbl
     jetFuelAt120: 1.10      // At $120/bbl
   },
@@ -122,9 +124,9 @@ export const OIL_PRICE_CONTEXT = {
   }
 };
 
-// Carbon price trajectory (EU ETS + policy forecasts)
+// Carbon price trajectory (EU ETS + policy forecasts; USD/tCO2e proxy)
 export const CARBON_PRICE_TRAJECTORY = {
-  current: { value: 90, year: 2026, label: 'Current EU ETS' },
+  current: { value: 92, year: 2026, label: 'Current EU ETS (~80 EUR/t)' },
   near: { value: 120, year: 2030, label: 'EU 2030 forecast' },
   mid: { value: 160, year: 2035, label: 'Mid-term policy' },
   far: { value: 200, year: 2040, label: 'Long-term climate' }
@@ -150,7 +152,8 @@ export const HISTORICAL_OIL_PRICES = [
   { year: 2022, value: 101, label: '2022 (Ukraine crisis)' },
   { year: 2023, value: 83, label: '2023 (normalization)' },
   { year: 2024, value: 88, label: '2024 (elevated)' },
-  { year: 2025, value: 87, label: '2025 (current data)' }
+  { year: 2025, value: 87, label: '2025 annual avg (approx)' },
+  { year: 2026, value: 87, label: '2026-07 spot seed' }
 ];
 
 // Policy scenarios: predefined combinations for quick exploration
@@ -158,11 +161,11 @@ export const POLICY_SCENARIOS = [
   {
     id: 'baseline-2026',
     name: '基准情景 (2026)',
-    description: 'Goldman预测 + 现行EU ETS + 隐性补贴',
-    crudeUsdPerBarrel: 80,
-    carbonPriceUsdPerTonne: 90,
+    description: '2026-07 现货锚定 + 现行EU ETS + 隐性补贴',
+    crudeUsdPerBarrel: 87,
+    carbonPriceUsdPerTonne: 92,
     subsidyUsdPerLiter: 0.50,
-    assumptions: 'OPEC稳定、ReFuelEU如期落地'
+    assumptions: 'OPEC稳定、ReFuelEU如期落地；价格种子随公共源刷新'
   },
   {
     id: 'eu-ambition-2030',
