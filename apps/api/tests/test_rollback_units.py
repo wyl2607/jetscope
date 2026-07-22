@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import sys
+from datetime import datetime, timezone
 from types import SimpleNamespace
 from pathlib import Path
 
@@ -36,6 +37,13 @@ def test_write_rollback_flag_writes_expected_json(tmp_path, monkeypatch):
     assert payload["reason"] == "postgres unavailable"
     assert payload["timestamp"] == "2026-06-02T12:00:00Z"
     assert payload["read_postgres_pct"] == 0
+
+
+def test_timestamp_uses_utc_timezone(monkeypatch):
+    rollback = load_rollback_module(monkeypatch)
+    timestamp = datetime.fromisoformat(rollback._ts().replace("Z", "+00:00"))
+
+    assert timestamp.tzinfo is timezone.utc
 
 
 def test_clear_rollback_flag_removes_existing_file(tmp_path, monkeypatch):
