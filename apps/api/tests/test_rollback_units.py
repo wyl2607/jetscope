@@ -41,8 +41,10 @@ def test_write_rollback_flag_writes_expected_json(tmp_path, monkeypatch):
 
 def test_timestamp_uses_utc_timezone(monkeypatch):
     rollback = load_rollback_module(monkeypatch)
-    timestamp = datetime.fromisoformat(rollback._ts().replace("Z", "+00:00"))
+    value = rollback._ts()
+    timestamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
 
+    assert value.endswith("Z")
     assert timestamp.tzinfo is timezone.utc
 
 
