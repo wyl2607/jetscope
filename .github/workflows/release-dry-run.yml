@@ -2,6 +2,9 @@ name: Release Dry Run
 
 on:
   pull_request:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -34,4 +37,6 @@ jobs:
         run: bash -n scripts/release-dry-run.sh
 
       - name: Run safe release dry run (skip preflight)
+        env:
+          RELEASE_DRY_RUN_BASE_REF: ${{ github.event_name == 'push' && github.event.before || 'origin/main' }}
         run: npm run release:dry-run -- --skip-preflight
