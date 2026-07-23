@@ -144,6 +144,8 @@ async function run() {
           JETSCOPE_DATABASE_URL: `sqlite+pysqlite:///${sqlitePath}`,
           JETSCOPE_SCHEMA_BOOTSTRAP_MODE: 'alembic',
           JETSCOPE_MARKET_REFRESH_INTERVAL_SECONDS: '0',
+          // Smoke coverage must be deterministic: public market sources may be unavailable in CI.
+          JETSCOPE_MARKET_SOURCE_TIMEOUT_SECONDS: '0.25',
           JETSCOPE_ADMIN_TOKEN: adminToken,
           JETSCOPE_API_PREFIX: '/v1'
         }
