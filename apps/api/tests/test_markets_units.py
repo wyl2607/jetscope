@@ -148,4 +148,5 @@ def test_get_latest_price_reads_from_db_and_sets_cache_on_cache_miss(monkeypatch
     assert set_calls[0][0] is db
     assert set_calls[0][1] == "ARA"
     assert set_calls[0][2]["latest"]["id"] == "price-1"
-    assert "timestamp" in set_calls[0][2]
+    timestamp = datetime.fromisoformat(set_calls[0][2]["timestamp"])
+    assert timestamp.tzinfo is timezone.utc
