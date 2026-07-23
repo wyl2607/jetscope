@@ -1,97 +1,11 @@
-"""Focused unit tests for app.services.reserves with offline-safe dependency stubs."""
+"""Focused unit tests for app.services.reserves with offline-safe fakes."""
 
 from __future__ import annotations
 
-import dataclasses
-import importlib
-import sys
-import types
 from datetime import datetime, timezone
-from pathlib import Path
 from types import SimpleNamespace
 
-
-def _load_reserves_module():
-    # Ensure apps/api is importable when invoking pytest from repo root.
-    api_root = Path(__file__).resolve().parents[1]
-    if str(api_root) not in sys.path:
-        sys.path.insert(0, str(api_root))
-
-    # Stub SQLAlchemy surface used at import/runtime by reserves.py.
-    sqlalchemy_mod = types.ModuleType("sqlalchemy")
-
-    class _DummyQuery:
-        def where(self, *_args, **_kwargs):
-            return self
-
-        def order_by(self, *_args, **_kwargs):
-            return self
-
-        def limit(self, *_args, **_kwargs):
-            return self
-
-    sqlalchemy_mod.select = lambda *_args, **_kwargs: _DummyQuery()
-    sys.modules["sqlalchemy"] = sqlalchemy_mod
-
-    sqlalchemy_orm_mod = types.ModuleType("sqlalchemy.orm")
-    sqlalchemy_orm_mod.Session = object
-    sys.modules["sqlalchemy.orm"] = sqlalchemy_orm_mod
-
-    # Stub table model dependency used by reserves.py.
-    app_models_tables_mod = types.ModuleType("app.models.tables")
-
-    class _TimestampField:
-        def desc(self):
-            return self
-
-    @dataclasses.dataclass
-    class ReservesCoverage:
-        id: str
-        country_iso: str
-        timestamp: datetime
-        stock_days: float
-        source: str
-        confidence: float
-        fetched_at: datetime
-
-    ReservesCoverage.country_iso = object()
-    ReservesCoverage.timestamp = _TimestampField()
-    app_models_tables_mod.ReservesCoverage = ReservesCoverage
-    sys.modules["app.models.tables"] = app_models_tables_mod
-
-    # Stub schema dependency used by reserves.py.
-    app_schemas_reserves_mod = types.ModuleType("app.schemas.reserves")
-
-    @dataclasses.dataclass
-    class ReserveStressResponse:
-        region: str
-        coverage_days: int
-        stress_level: str
-        supply_gap_pct: float
-        source_type: str
-        confidence: float
-        observed_at: datetime | None = None
-
-    app_schemas_reserves_mod.ReserveStressResponse = ReserveStressResponse
-    sys.modules["app.schemas.reserves"] = app_schemas_reserves_mod
-
-    # Stub adapter module imported inside refresh_reserves_coverage.
-    adapters_iea_mod = types.ModuleType("adapters.iea")
-
-    class ConfigError(Exception):
-        pass
-
-    class IEAAdapter:
-        pass
-
-    adapters_iea_mod.ConfigError = ConfigError
-    adapters_iea_mod.IEAAdapter = IEAAdapter
-    sys.modules["adapters.iea"] = adapters_iea_mod
-
-    return importlib.import_module("app.services.reserves")
-
-
-reserves = _load_reserves_module()
+from app.services import reserves
 
 
 class FakeScalarResult:
