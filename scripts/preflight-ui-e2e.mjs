@@ -507,7 +507,9 @@ async function run() {
   throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
-run().catch((error) => {
-  console.error(error instanceof Error ? error.stack : error);
-  process.exitCode = 1;
-});
+run()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error instanceof Error ? error.stack : error);
+    process.exit(1);
+  });
