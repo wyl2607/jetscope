@@ -1,6 +1,7 @@
 """SQLite database connection and utilities for local development and backups."""
 
 import os
+import sqlite3
 from datetime import datetime
 from pathlib import Path
 
@@ -12,6 +13,7 @@ DEFAULT_DB_PATH = os.getenv(
     "JETSCOPE_SQLITE_PATH",
     os.getenv("SAFVSOIL_SQLITE_PATH", "/opt/jetscope/data/market.db"),
 )
+SQLITE_BUSY_TIMEOUT_SECONDS = max(0.0, float(os.getenv("JETSCOPE_SQLITE_BUSY_TIMEOUT_SECONDS", "5")))
 
 
 def ensure_db_dir(db_path: str = DEFAULT_DB_PATH) -> Path:
@@ -28,7 +30,10 @@ def create_sqlite_engine(db_path: str = DEFAULT_DB_PATH, check_same_thread: bool
     
     engine = create_engine(
         db_url,
-        connect_args={"check_same_thread": check_same_thread},
+        connect_args={
+            "check_same_thread": check_same_thread,
+            "timeout": SQLITE_BUSY_TIMEOUT_SECONDS,
+        },
         echo=False,
         future=True,
     )
@@ -57,3 +62,18 @@ def get_backup_path(db_path: str = DEFAULT_DB_PATH, backup_dir: str = "/opt/jets
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     db_name = Path(db_path).stem
     return os.path.join(backup_dir, f"{db_name}_{timestamp}.db")
+
+
+def backup_sqlite_database(
+    db_path: str = DEFAULT_DB_PATH,
+    backup_dir: str = "/opt/jetscope/backups",
+) -> str:
+    """Create a consistent SQLite backup using the database backup API."""
+    source_path = Path(db_path)
+    if not source_path.is_file():
+        raise FileNotFoundError(f"SQLite database does not exist: {source_path}")
+
+    backup_path = get_backup_path(str(source_path), backup_dir)
+    with sqlite3.connect(source_path) as source, sqlite3.connect(backup_path) as destination:
+        source.backup(destination)
+    return backup_path

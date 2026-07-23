@@ -160,6 +160,7 @@ def test_update_delete_and_trigger_alert_mutate_existing_record(seeded_alerts: l
     triggered = sqlite_alerts.trigger_market_alert("a1", db=db)
     assert triggered.last_triggered is not None
     assert isinstance(triggered.last_triggered, datetime)
+    assert triggered.last_triggered.tzinfo is timezone.utc
 
     sqlite_alerts.delete_market_alert("a1", db=db)
     assert all(item.id != "a1" for item in db.items)

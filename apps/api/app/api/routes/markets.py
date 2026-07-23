@@ -1,6 +1,6 @@
 """Market prices CRUD endpoints for SQLite persistence."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -138,7 +138,7 @@ def get_latest_price(market_type: str, db: Session = Depends(get_db)):
         # Cache the result
         cache_data = {
             "latest": price.__dict__,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         PriceCacheService.set_cache(db, market_type, cache_data)
 

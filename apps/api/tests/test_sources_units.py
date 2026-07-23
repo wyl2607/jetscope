@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import pytest
 
 from app.schemas.market import MarketSnapshotResponse, MarketSourceDetail, SourceStatus
+from app.schemas.sources import SourceCoverageMetric, SourceCoverageResponse
 from app.services import sources
 
 
@@ -21,6 +22,25 @@ def test_classify_source_type_rules_cover_official_public_and_fallback():
     assert sources._classify_source_type("eia", False) == "official"
     assert sources._classify_source_type("fred", False) == "public_proxy"
     assert sources._classify_source_type("custom feed", True) == "derived"
+
+
+def test_source_coverage_normalizes_legacy_naive_timestamp_and_rejects_negative_lag() -> None:
+    response = SourceCoverageResponse(generated_at=datetime(2026, 1, 2), metrics=[])
+
+    assert response.generated_at.tzinfo is timezone.utc
+
+    with pytest.raises(ValueError, match="greater than or equal to 0"):
+        SourceCoverageMetric(
+            metric_key="jet_usd_per_l",
+            source_name="FRED",
+            source_type="public_proxy",
+            confidence_score=0.7,
+            lag_minutes=-1,
+            fallback_used=False,
+            status="ok",
+            region="us",
+            market_scope="statistical_series",
+        )
 
 
 def test_build_source_coverage_response_backfills_missing_metrics(monkeypatch):
