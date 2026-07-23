@@ -39,9 +39,10 @@ def test_preferences_numeric_fields_are_coerced_to_float():
         "jetProxyIntercept",
     ],
 )
-def test_preferences_reject_nan_values(field_name: str):
+@pytest.mark.parametrize("invalid_value", ["nan", float("inf"), float("-inf")])
+def test_preferences_reject_non_finite_values(field_name: str, invalid_value: float | str):
     with pytest.raises(ValidationError) as exc:
-        PreferencesPayload(**{field_name: "nan"})
+        PreferencesPayload(**{field_name: invalid_value})
 
     assert "numeric fields must be finite numbers" in str(exc.value)
 
@@ -61,9 +62,9 @@ def test_route_edit_coerces_numeric_fields_and_allows_extra():
 
 
 @pytest.mark.parametrize("field_name", ["baseCostUsdPerLiter", "co2SavingsKgPerLiter"])
-def test_route_edit_rejects_nan_values(field_name: str):
+@pytest.mark.parametrize("invalid_value", [float("nan"), float("inf"), float("-inf")])
+def test_route_edit_rejects_non_finite_values(field_name: str, invalid_value: float):
     with pytest.raises(ValidationError) as exc:
-        RouteEditPayload(**{field_name: float("nan")})
+        RouteEditPayload(**{field_name: invalid_value})
 
     assert "route edit numeric fields must be finite numbers" in str(exc.value)
-
