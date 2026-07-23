@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+from contextlib import contextmanager
 from unittest import mock
 
 import pytest
@@ -15,48 +16,40 @@ from app.db import postgres as pg_mod
 class TestDefaultUrlResolution:
     """Environment precedence without leaking reloaded module state."""
 
+    @contextmanager
     def _reload_with(self, monkeypatch, *, jetscope=None, safvsoil=None):
-        patch = monkeypatch.context()
-        if jetscope is None:
-            patch.delenv("JETSCOPE_POSTGRES_URL", raising=False)
-        else:
-            patch.setenv("JETSCOPE_POSTGRES_URL", jetscope)
-        if safvsoil is None:
-            patch.delenv("SAFVSOIL_POSTGRES_URL", raising=False)
-        else:
-            patch.setenv("SAFVSOIL_POSTGRES_URL", safvsoil)
-        return patch, importlib.reload(pg_mod)
+        with monkeypatch.context() as patch:
+            if jetscope is None:
+                patch.delenv("JETSCOPE_POSTGRES_URL", raising=False)
+            else:
+                patch.setenv("JETSCOPE_POSTGRES_URL", jetscope)
+            if safvsoil is None:
+                patch.delenv("SAFVSOIL_POSTGRES_URL", raising=False)
+            else:
+                patch.setenv("SAFVSOIL_POSTGRES_URL", safvsoil)
+            yield importlib.reload(pg_mod)
+
+        # Restore the module-level default after the temporary environment exits.
+        importlib.reload(pg_mod)
 
     def test_jetscope_env_takes_priority(self, monkeypatch):
-        patch, mod = self._reload_with(
+        with self._reload_with(
             monkeypatch,
             jetscope="postgresql://jetscope:pass@primary:5432/jetscopedb",
             safvsoil="postgresql://safvsoil:pass@fallback:5432/safvsoildb",
-        )
-        try:
+        ) as mod:
             assert mod.DEFAULT_POSTGRES_URL == "postgresql://jetscope:pass@primary:5432/jetscopedb"
-        finally:
-            patch.undo()
-            importlib.reload(pg_mod)
 
     def test_falls_back_to_safvsoil_env(self, monkeypatch):
-        patch, mod = self._reload_with(
+        with self._reload_with(
             monkeypatch,
             safvsoil="postgresql://safvsoil:pass@fallback:5432/safvsoildb",
-        )
-        try:
+        ) as mod:
             assert mod.DEFAULT_POSTGRES_URL == "postgresql://safvsoil:pass@fallback:5432/safvsoildb"
-        finally:
-            patch.undo()
-            importlib.reload(pg_mod)
 
     def test_falls_back_to_settings_database_url(self, monkeypatch):
-        patch, mod = self._reload_with(monkeypatch)
-        try:
+        with self._reload_with(monkeypatch) as mod:
             assert mod.DEFAULT_POSTGRES_URL == mod.settings.database_url
-        finally:
-            patch.undo()
-            importlib.reload(pg_mod)
 
 
 def _sqlite_engine(url, **kwargs):
