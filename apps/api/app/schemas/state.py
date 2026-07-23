@@ -1,3 +1,4 @@
+from math import isfinite
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -29,7 +30,7 @@ class PreferencesPayload(BaseModel):
         if value is None:
             return value
         numeric = float(value)
-        if numeric != numeric:  # NaN
+        if not isfinite(numeric):
             raise ValueError("numeric fields must be finite numbers")
         return numeric
 
@@ -48,6 +49,6 @@ class RouteEditPayload(BaseModel):
         if value is None:
             return value
         numeric = float(value)
-        if numeric != numeric:  # NaN
+        if not isfinite(numeric):
             raise ValueError("route edit numeric fields must be finite numbers")
         return numeric
