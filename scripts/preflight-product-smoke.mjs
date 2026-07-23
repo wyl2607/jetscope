@@ -355,7 +355,9 @@ async function run() {
   }
 }
 
-run().catch((error) => {
-  console.error(error instanceof Error ? error.stack : error);
-  process.exitCode = 1;
-});
+run()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error instanceof Error ? error.stack : error);
+    process.exit(1);
+  });
