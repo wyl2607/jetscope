@@ -39,6 +39,25 @@ class Settings(BaseSettings):
         default=True,
         validation_alias=AliasChoices("JETSCOPE_AI_RESEARCH_MOCK_MODE", "AI_RESEARCH_MOCK_MODE"),
     )
+    ai_research_request_timeout_seconds: float = Field(
+        default=30.0,
+        validation_alias=AliasChoices(
+            "JETSCOPE_AI_RESEARCH_REQUEST_TIMEOUT_SECONDS",
+            "AI_RESEARCH_REQUEST_TIMEOUT_SECONDS",
+        ),
+    )
+    ai_research_max_retries: int = Field(
+        default=3,
+        validation_alias=AliasChoices("JETSCOPE_AI_RESEARCH_MAX_RETRIES", "AI_RESEARCH_MAX_RETRIES"),
+    )
+    json_logs: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("JETSCOPE_JSON_LOGS", "JSON_LOGS"),
+    )
+    sentry_dsn: str = Field(
+        default="",
+        validation_alias=AliasChoices("JETSCOPE_SENTRY_DSN", "SENTRY_DSN"),
+    )
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="JETSCOPE_")
 
