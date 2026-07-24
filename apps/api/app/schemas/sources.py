@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class SourceCoverageMetric(BaseModel):
@@ -8,7 +8,7 @@ class SourceCoverageMetric(BaseModel):
     source_name: str
     source_type: str
     confidence_score: float = Field(ge=0, le=1)
-    lag_minutes: int | None = None
+    lag_minutes: int | None = Field(default=None, ge=0)
     fallback_used: bool = False
     status: str
     region: str
@@ -24,3 +24,10 @@ class SourceCoverageResponse(BaseModel):
     metrics: list[SourceCoverageMetric]
     completeness: float = Field(ge=0.0, le=1.0, default=1.0)
     degraded: bool = False
+
+    @field_validator("generated_at")
+    @classmethod
+    def generated_at_must_be_timezone_aware(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value

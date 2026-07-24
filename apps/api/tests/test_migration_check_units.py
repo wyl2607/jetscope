@@ -11,10 +11,6 @@ SPEC = importlib.util.spec_from_file_location("migration_check", MODULE_PATH)
 assert SPEC is not None
 migration_check = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
-sys.modules.setdefault(
-    "sqlalchemy",
-    types.SimpleNamespace(create_engine=lambda *args, **kwargs: None, text=lambda sql: sql),
-)
 SPEC.loader.exec_module(migration_check)
 
 

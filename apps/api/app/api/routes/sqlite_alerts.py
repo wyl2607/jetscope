@@ -1,5 +1,6 @@
 """Market alerts CRUD endpoints for SQLite persistence."""
 
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -118,13 +119,11 @@ def trigger_market_alert(
     db: Session = Depends(get_sqlite_db),
 ):
     """Mark alert as triggered with current timestamp."""
-    from datetime import datetime
-
     alert = db.query(MarketAlert).filter(MarketAlert.id == alert_id).first()
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
 
-    alert.last_triggered = datetime.utcnow()
+    alert.last_triggered = datetime.now(timezone.utc)
     db.add(alert)
     db.commit()
     db.refresh(alert)

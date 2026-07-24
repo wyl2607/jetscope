@@ -109,11 +109,12 @@ export type MarketHistory = {
   metrics: Record<string, MarketHistoryMetric>;
 };
 
+/** Deterministic UI fallbacks aligned with API seed baselines (as of 2026-07-17). */
 export const FALLBACK_VALUES = {
-  brent_usd_per_bbl: 114.93,
-  jet_usd_per_l: 0.99,
-  jet_eu_proxy_usd_per_l: 0.99,
-  carbon_proxy_usd_per_t: 88.79
+  brent_usd_per_bbl: 87.01,
+  jet_usd_per_l: 0.64,
+  jet_eu_proxy_usd_per_l: 0.657,
+  carbon_proxy_usd_per_t: 91.91
 } as const;
 
 export async function fetchJson<T>(path: string): Promise<T> {

@@ -8,6 +8,7 @@ percentage spread into the same four bands.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import isfinite
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +55,10 @@ def compute_crossover(
     thresholds: SpreadThresholds,
     labels: tuple[str, str, str, str],
 ) -> CrossoverResult:
+    if not isfinite(clean_cost) or not isfinite(reference_cost):
+        raise ValueError("clean_cost and reference_cost must be finite")
+    if reference_cost <= 0:
+        raise ValueError("reference_cost must be greater than zero")
     gap = clean_cost - reference_cost
     spread_pct = (gap / reference_cost) * 100.0
     return CrossoverResult(

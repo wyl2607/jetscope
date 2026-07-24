@@ -90,19 +90,19 @@ Response shape:
     "is_fallback": true
   },
   "values": {
-    "brent_usd_per_bbl": 84.25,
-    "jet_usd_per_l": 0.99,
-    "carbon_proxy_usd_per_t": 88.79,
-    "jet_eu_proxy_usd_per_l": 0.86,
-    "rotterdam_jet_fuel_usd_per_l": 0.85,
-    "eu_ets_price_eur_per_t": 92.5,
+    "brent_usd_per_bbl": 87.01,
+    "jet_usd_per_l": 0.64,
+    "carbon_proxy_usd_per_t": 91.91,
+    "jet_eu_proxy_usd_per_l": 0.657,
+    "rotterdam_jet_fuel_usd_per_l": 0.657,
+    "eu_ets_price_eur_per_t": 80.38,
     "germany_premium_pct": 2.5
   },
   "source_details": {
     "brent_eia": {
       "source": "eia",
       "status": "ok",
-      "value": 84.25,
+      "value": 87.01,
       "region": "global",
       "market_scope": "physical_spot_benchmark",
       "lag_minutes": 1440,

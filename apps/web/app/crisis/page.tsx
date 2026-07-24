@@ -164,7 +164,7 @@ export default async function CrisisPage() {
   const tippingPoint = toTippingPointReadModel(dashboardReadModel.tippingPoint);
   const decision = toDecisionReadModel(dashboardReadModel.airlineDecision);
 
-  const fallbackFossil = dashboardReadModel.market.values.jet_eu_proxy_usd_per_l ?? dashboardReadModel.market.values.jet_usd_per_l ?? 0.99;
+  const fallbackFossil = dashboardReadModel.market.values.jet_eu_proxy_usd_per_l ?? dashboardReadModel.market.values.jet_usd_per_l ?? 0.657;
   const researchBrief = buildResearchDecisionBrief(researchSignals);
   const reserveWeeks = reserve?.coverage_weeks ?? dashboardReadModel.reserve?.coverage_weeks ?? null;
   const reserveStatus = reserve ? '储备数据已连接' : '正在使用情景基线';

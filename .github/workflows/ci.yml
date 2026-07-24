@@ -17,10 +17,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -54,6 +54,15 @@ jobs:
       - name: Build web app
         run: npm --prefix apps/web run build
 
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run product smoke preflight
+        run: npm run preflight:product
+
+      - name: Run browser UI E2E preflight
+        run: npm run preflight:e2e
+
       - name: Compile API
         run: npm run api:check
 
@@ -63,3 +72,11 @@ jobs:
       - name: Run API tests
         working-directory: apps/api
         run: python -m pytest
+
+      - name: Upload UI E2E artifacts
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ui-e2e-artifacts
+          path: test-results/ui-e2e-artifacts/
+          if-no-files-found: ignore

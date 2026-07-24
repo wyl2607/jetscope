@@ -1,0 +1,65 @@
+[
+  {
+    "name": "Synthetic SAF baseline — moderate carbon",
+    "preferences": {
+      "schema_version": 1,
+      "crudeSource": "manual",
+      "carbonSource": "manual",
+      "benchmarkMode": "crude-proxy",
+      "crudeUsdPerBarrel": 82.0,
+      "carbonPriceUsdPerTonne": 90.0,
+      "subsidyUsdPerLiter": 0.25,
+      "jetProxySlope": 0.0082,
+      "jetProxyIntercept": 0.12
+    },
+    "route_edits": {
+      "sugar-atj": {
+        "pathway": "Synthetic sugar-to-jet example",
+        "baseCostUsdPerLiter": 1.6,
+        "co2SavingsKgPerLiter": 1.5
+      }
+    }
+  },
+  {
+    "name": "Synthetic reserve-stress — high carbon",
+    "preferences": {
+      "schema_version": 1,
+      "crudeSource": "manual",
+      "carbonSource": "manual",
+      "benchmarkMode": "live-jet-spot",
+      "crudeUsdPerBarrel": 110.0,
+      "carbonPriceUsdPerTonne": 145.0,
+      "subsidyUsdPerLiter": 0.55,
+      "jetProxySlope": 0.0094,
+      "jetProxyIntercept": 0.18
+    },
+    "route_edits": {
+      "sugar-atj": {
+        "pathway": "Synthetic stress comparison",
+        "baseCostUsdPerLiter": 1.41,
+        "co2SavingsKgPerLiter": 1.8
+      }
+    }
+  },
+  {
+    "name": "Synthetic technology-learning case",
+    "preferences": {
+      "schema_version": 1,
+      "crudeSource": "manual",
+      "carbonSource": "manual",
+      "benchmarkMode": "crude-proxy",
+      "crudeUsdPerBarrel": 70.0,
+      "carbonPriceUsdPerTonne": 115.0,
+      "subsidyUsdPerLiter": 0.4,
+      "jetProxySlope": 0.0088,
+      "jetProxyIntercept": 0.14
+    },
+    "route_edits": {
+      "sugar-atj": {
+        "pathway": "Synthetic learning curve",
+        "baseCostUsdPerLiter": 1.3,
+        "co2SavingsKgPerLiter": 2.0
+      }
+    }
+  }
+]

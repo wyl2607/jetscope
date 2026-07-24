@@ -6,8 +6,10 @@
     "sources": [
       {"name": "Fraunhofer ISE, Stromgestehungskosten Erneuerbare Energien", "year": 2024, "use": "renewable LCOE bands"},
       {"name": "IRENA, Renewable Power Generation Costs", "year": 2023, "use": "renewable LCOE cross-check"},
-      {"name": "Ember, European electricity & EU ETS carbon price series", "year": 2024, "use": "carbon price and fuel context"}
-    ]
+      {"name": "Ember, European electricity & EU ETS carbon price series", "year": 2024, "use": "carbon price and fuel context"},
+      {"name": "Public EU ETS secondary market quotes", "year": 2026, "use": "2025-2026 carbon seed refresh"}
+    ],
+    "seed_as_of": "2026-07-17"
   },
   "history": [
     {"year": 2019, "carbon_price_eur_per_t": 25.0, "gas_fuel_eur_per_mwh_th": 14.0, "solar_lcoe_eur_per_mwh": 70.0, "confidence": 0.6, "source": "Ember/ISE", "fallback": false},
@@ -15,6 +17,8 @@
     {"year": 2021, "carbon_price_eur_per_t": 53.0, "gas_fuel_eur_per_mwh_th": 46.0, "solar_lcoe_eur_per_mwh": 60.0, "confidence": 0.6, "source": "Ember/ISE", "fallback": false},
     {"year": 2022, "carbon_price_eur_per_t": 81.0, "gas_fuel_eur_per_mwh_th": 123.0, "solar_lcoe_eur_per_mwh": 58.0, "confidence": 0.6, "source": "Ember/ISE", "fallback": false},
     {"year": 2023, "carbon_price_eur_per_t": 84.0, "gas_fuel_eur_per_mwh_th": 41.0, "solar_lcoe_eur_per_mwh": 56.0, "confidence": 0.6, "source": "Ember/ISE", "fallback": false},
-    {"year": 2024, "carbon_price_eur_per_t": 65.0, "gas_fuel_eur_per_mwh_th": 30.0, "solar_lcoe_eur_per_mwh": 55.0, "confidence": 0.6, "source": "Ember/ISE", "fallback": false}
+    {"year": 2024, "carbon_price_eur_per_t": 65.0, "gas_fuel_eur_per_mwh_th": 30.0, "solar_lcoe_eur_per_mwh": 55.0, "confidence": 0.6, "source": "Ember/ISE", "fallback": false},
+    {"year": 2025, "carbon_price_eur_per_t": 74.0, "gas_fuel_eur_per_mwh_th": 32.0, "solar_lcoe_eur_per_mwh": 52.0, "confidence": 0.55, "source": "Ember/public averages", "fallback": false},
+    {"year": 2026, "carbon_price_eur_per_t": 80.4, "gas_fuel_eur_per_mwh_th": 30.0, "solar_lcoe_eur_per_mwh": 50.0, "confidence": 0.55, "source": "EU ETS spot seed + ISE trend", "fallback": false}
   ]
 }

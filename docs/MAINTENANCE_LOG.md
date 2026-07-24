@@ -2,6 +2,20 @@
 
 This log records public-safe maintenance evidence for the JetScope repository.
 
+## 2026-07-17
+
+- Refreshed deterministic market **seed / UI fallback** baselines from public
+  spot references (Yahoo Finance Brent BZ=F, ECB EUR/USD, public EU ETS
+  secondary quotes). Live adapters remain preferred; seeds only apply when
+  live sources are unavailable.
+  - Brent seed: `114.93` → `87.01` USD/bbl
+  - Jet EU proxy seed: derived `0.657` USD/L (Brent × 1.20 premium)
+  - EU ETS seed: `92.50` → `80.38` EUR/t; carbon USD proxy `91.91`
+  - Grid history JSON extended with illustrative 2025–2026 points
+- Scenario page constants (e.g. Lufthansa 2026-04 analysis) left unchanged;
+  those are event-specific, not live market seeds.
+- No personal machine paths or private config were added to this public repo.
+
 ## 2026-06-06
 
 - Published the existing `/grid` and `/heat` workspaces through README

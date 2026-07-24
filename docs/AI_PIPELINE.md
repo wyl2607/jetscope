@@ -37,6 +37,11 @@ Per-article payload is sent in `user` content:
 - `Published`
 - `Excerpt`
 
+The article block is explicitly treated as untrusted data: it is wrapped in
+`<untrusted_article>`, capped at 12,000 characters, and the system prompt forbids
+following instructions found in it. This narrows prompt-injection exposure while
+keeping the source text available as evidence; it is covered by focused unit tests.
+
 ## Prompt Caching Strategy
 
 Caching is enabled on the system prompt by setting:

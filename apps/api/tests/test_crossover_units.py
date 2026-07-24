@@ -25,3 +25,24 @@ def test_compute_crossover_gap_and_spread() -> None:
     assert result.gap == pytest.approx(-25.0)
     assert result.spread_pct == pytest.approx(-31.25)
     assert result.status == "dominant"
+
+
+@pytest.mark.parametrize("reference_cost", [0.0, -1.0, float("nan"), float("inf")])
+def test_compute_crossover_rejects_invalid_reference_cost(reference_cost: float) -> None:
+    with pytest.raises(ValueError, match="reference_cost"):
+        compute_crossover(
+            clean_cost=55.0,
+            reference_cost=reference_cost,
+            thresholds=THRESHOLDS,
+            labels=LABELS,
+        )
+
+
+def test_compute_crossover_rejects_non_finite_clean_cost() -> None:
+    with pytest.raises(ValueError, match="finite"):
+        compute_crossover(
+            clean_cost=float("nan"),
+            reference_cost=80.0,
+            thresholds=THRESHOLDS,
+            labels=LABELS,
+        )

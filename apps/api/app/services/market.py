@@ -36,7 +36,17 @@ LITERS_PER_METRIC_TON_JET = 1000.0 / JET_FUEL_REFERENCE_DENSITY_KG_PER_L
 # EU jet proxy = Brent (USD/bbl -> USD/L) * premium factor.
 # Premium approximates jet crack + ARA/Europe logistics basis in one stable multiplier.
 EU_JET_PROXY_BRENT_PREMIUM_MULTIPLIER = 1.20
-DEFAULT_BRENT_USD_PER_BBL = 114.93
+# Deterministic seed baselines refreshed from public spot references (2026-07-17):
+# - Brent: Yahoo Finance BZ=F close (~87 USD/bbl)
+# - EUR/USD: ECB eurofxref daily (1.1435)
+# - EU ETS: public secondary-market quote (~80.4 EUR/t)
+# Live adapters still prefer real-time sources; these values are fallbacks only.
+DEFAULT_MARKET_SEED_AS_OF = "2026-07-17"
+DEFAULT_BRENT_USD_PER_BBL = 87.01
+DEFAULT_JET_USD_PER_L = 0.64  # Brent + ~$14/bbl crack, converted to USD/L
+DEFAULT_EU_ETS_EUR_PER_T = 80.38
+DEFAULT_EUR_USD = 1.1435
+DEFAULT_CARBON_PROXY_USD_PER_T = round(DEFAULT_EU_ETS_EUR_PER_T * DEFAULT_EUR_USD, 2)
 DEFAULT_JET_EU_PROXY_USD_PER_L = round(
     (DEFAULT_BRENT_USD_PER_BBL / LITERS_PER_BARREL) * EU_JET_PROXY_BRENT_PREMIUM_MULTIPLIER,
     3,
@@ -52,13 +62,13 @@ DEFAULT_MARKET_METRICS = (
     {
         "source_key": "jet_fred_proxy",
         "metric_key": "jet_usd_per_l",
-        "value": 0.99,
+        "value": DEFAULT_JET_USD_PER_L,
         "unit": "USD/L",
     },
     {
         "source_key": "cbam_proxy",
         "metric_key": "carbon_proxy_usd_per_t",
-        "value": 88.79,
+        "value": DEFAULT_CARBON_PROXY_USD_PER_T,
         "unit": "USD/tCO2",
     },
     {
@@ -70,13 +80,13 @@ DEFAULT_MARKET_METRICS = (
     {
         "source_key": "rotterdam_jet_fuel",
         "metric_key": "rotterdam_jet_fuel_usd_per_l",
-        "value": 0.85,
+        "value": DEFAULT_JET_EU_PROXY_USD_PER_L,
         "unit": "USD/L",
     },
     {
         "source_key": "eu_ets_eex",
         "metric_key": "eu_ets_price_eur_per_t",
-        "value": 92.50,
+        "value": DEFAULT_EU_ETS_EUR_PER_T,
         "unit": "EUR/tCO2",
     },
     {
@@ -679,7 +689,7 @@ def _ingest_germany_premium(
         VAT_RATE = 0.19
         
         # Use ECB rate if available to convert to USD context
-        usd_per_eur = 1.08  # approximate fallback
+        usd_per_eur = DEFAULT_EUR_USD
         try:
             ecb_xml = _fetch_text(MARKET_SOURCE_URLS["ecb_eur_usd"])
             usd_per_eur = _parse_ecb_usd_per_eur(ecb_xml)
@@ -690,9 +700,11 @@ def _ingest_germany_premium(
         
         # Premium = (tax / jet_price) * 100
         # If jet price unavailable, use default proxy
-        base_jet_price = jet_eu_proxy_usd_per_l if jet_eu_proxy_usd_per_l else 0.85
+        base_jet_price = (
+            jet_eu_proxy_usd_per_l if jet_eu_proxy_usd_per_l else DEFAULT_JET_EU_PROXY_USD_PER_L
+        )
         if base_jet_price < 0.1:
-            base_jet_price = 0.85
+            base_jet_price = DEFAULT_JET_EU_PROXY_USD_PER_L
             
         germany_premium_pct = _round((tax_usd_per_l / base_jet_price) * 100, 2)
         
