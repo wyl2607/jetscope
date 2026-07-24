@@ -65,6 +65,14 @@ The next safe recovery implementation should be last-good or artifact-first, not
 4. Emit deployment events for start, fail, restore-start, restore-success, and restore-failed states.
 5. Keep destructive cleanup, manual `git reset --hard`, and service stop/start commands behind explicit operator approval until the recovery path is tested on the VPS.
 
+The last-good recovery from steps 1–4 is now implemented in `scripts/auto-deploy.sh`: on a post-fast-forward health/readiness failure it can reset production to the pre-deploy commit, rebuild, re-verify, and emit `restore-start` / `restore-success` / `restore-failed` events. Per step 5 it stays **off by default** and is enabled only with `JETSCOPE_ENABLE_AUTO_RESTORE=1` once the path has been exercised on the VPS; otherwise auto-deploy leaves production on the failed commit for operator recovery (emitting `restore-skipped`).
+
+## Data Store & Backup
+
+- SQLite is the **frozen production database engine** (`sqlite:///./data/market.db`, mounted from the `./data` host volume by `docker-compose.prod.yml`). The Postgres / dual-write / read-cutover scaffolding is unused, unverified, and is **not** production; `app/db/postgres.py` now fails loudly instead of silently falling back to SQLite when no explicit `JETSCOPE_POSTGRES_URL` is set.
+- Deploy readiness is gated on the deep `GET /v1/readiness` check (DB, market data, source coverage, admin token), not just the shallow `/v1/health`.
+- Back up with `scripts/backup-sqlite.sh` (online-consistent `sqlite3 .backup` + integrity check + gzip + retention). Prove restorability with the non-destructive `scripts/restore-sqlite-drill.sh`. For real disaster recovery point `JETSCOPE_BACKUP_DIR` at off-host storage — the default lives on the same volume as the DB and only guards against corruption.
+
 ## Allowed Variants
 
 Use these only when there is a concrete reason:

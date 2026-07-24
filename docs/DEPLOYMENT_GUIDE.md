@@ -62,9 +62,14 @@ npm run api:check
 npm run api:test
 ```
 
-## Phase 2: Postgres Production-Style Setup
+## Phase 2: Postgres Setup (experimental — not current production)
 
-**Use for**: Production-style deployments where an operator has already provisioned
+> **Production is frozen on SQLite** (see `../OPERATIONS.md` → Data Store & Backup).
+> The Postgres path below is an unverified, experimental migration scaffold, not the
+> production database. `app/db/postgres.py` fails loudly unless an explicit
+> `JETSCOPE_POSTGRES_URL` is set — it will not silently use SQLite.
+
+**Use for**: experimental evaluation where an operator has already provisioned
 PostgreSQL and secrets outside the repository.
 
 Do not grant the application database user superuser privileges. Do not write real
