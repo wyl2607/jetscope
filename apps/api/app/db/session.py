@@ -16,8 +16,10 @@ def get_db():
 
 
 # ── Zero-downtime migration: gradual read cutover ────────────────────────────
-# During Phase 2 of the SQLite -> PostgreSQL migration, reads can be gradually
-# routed to Postgres via the READ_POSTGRES_PCT environment variable.
+# Production is frozen on SQLite; this cutover is unused scaffolding kept for the
+# experimental SQLite -> PostgreSQL migration path. It only routes reads to
+# Postgres when READ_POSTGRES_PCT > 0, and app.db.postgres now fails loudly unless
+# an explicit JETSCOPE_POSTGRES_URL is set (no silent SQLite fallback).
 #
 # Usage:
 #   READ_POSTGRES_PCT=10 uvicorn app.main:app   # 10% Postgres reads
