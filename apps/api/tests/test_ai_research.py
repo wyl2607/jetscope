@@ -99,7 +99,7 @@ def test_claude_extractor_real_mode_uses_cache_control(monkeypatch: pytest.Monke
             return FakeResponse()
 
     class FakeAnthropic:
-        def __init__(self, api_key=None):
+        def __init__(self, api_key=None, **kwargs):
             self.messages = FakeMessages()
 
     monkeypatch.setitem(sys.modules, "anthropic", types.SimpleNamespace(Anthropic=FakeAnthropic))
@@ -135,7 +135,7 @@ def test_claude_extractor_budget_exceeded(monkeypatch: pytest.MonkeyPatch):
             return FakeResponse()
 
     class FakeAnthropic:
-        def __init__(self, api_key=None):
+        def __init__(self, api_key=None, **kwargs):
             self.messages = FakeMessages()
 
     monkeypatch.setitem(sys.modules, "anthropic", types.SimpleNamespace(Anthropic=FakeAnthropic))
@@ -171,7 +171,7 @@ def test_claude_extractor_persists_budget_across_instances(monkeypatch: pytest.M
             return FakeResponse()
 
     class FakeAnthropic:
-        def __init__(self, api_key=None):
+        def __init__(self, api_key=None, **kwargs):
             self.messages = FakeMessages()
 
     monkeypatch.setitem(sys.modules, "anthropic", types.SimpleNamespace(Anthropic=FakeAnthropic))

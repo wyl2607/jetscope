@@ -62,7 +62,15 @@ class ClaudeSignalExtractor:
             from anthropic import Anthropic
 
             key = anthropic_api_key if anthropic_api_key is not None else settings.anthropic_api_key
-            self._client = Anthropic(api_key=key or None)
+            # The SDK retries 429/5xx/connection errors with exponential backoff and
+            # bounds each request with a timeout, so a transient rate limit or hang
+            # no longer aborts the daily run. Wall-clock per call is at most
+            # timeout * (max_retries + 1).
+            self._client = Anthropic(
+                api_key=key or None,
+                timeout=settings.ai_research_request_timeout_seconds,
+                max_retries=settings.ai_research_max_retries,
+            )
 
     def extract(self, article: RawArticle, *, db: Session | None = None) -> list[ExtractedSignal]:
         self._reset_budget_if_new_day()

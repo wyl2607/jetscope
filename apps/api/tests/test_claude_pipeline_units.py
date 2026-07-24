@@ -99,7 +99,7 @@ def test_real_mode_parses_json_text_and_tracks_tokens(monkeypatch: pytest.Monkey
             return FakeResponse()
 
     class FakeAnthropic:
-        def __init__(self, api_key: str | None = None) -> None:
+        def __init__(self, api_key: str | None = None, **kwargs) -> None:
             self.api_key = api_key
             self.messages = FakeMessages()
 
@@ -144,7 +144,7 @@ def test_real_mode_raises_when_response_usage_exceeds_in_memory_budget(
             return FakeResponse()
 
     class FakeAnthropic:
-        def __init__(self, api_key: str | None = None) -> None:
+        def __init__(self, api_key: str | None = None, **kwargs) -> None:
             self.messages = FakeMessages()
 
     monkeypatch.setitem(sys.modules, "anthropic", types.SimpleNamespace(Anthropic=FakeAnthropic))
