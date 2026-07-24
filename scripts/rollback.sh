@@ -159,12 +159,21 @@ fi
 systemctl restart jetscope-web.service
 sleep 3
 
-# Verify
+# Verify web serves AND the API is deeply ready (DB, market data, sources, admin
+# token) — not just a web 200. Mirrors the readiness gate in auto-deploy.sh: the
+# top-level "ready":true covers both "ready" and "degraded".
+API_READINESS_URL="${JETSCOPE_API_READINESS_URL:-http://127.0.0.1:8000/v1/readiness}"
+READINESS_BODY=$(curl -s "$API_READINESS_URL" --connect-timeout 5 --max-time 10 2>/dev/null || true)
+READINESS_STATUS=$(printf '%s' "$READINESS_BODY" | grep -oE '"status"[[:space:]]*:[[:space:]]*"(ready|degraded|not_ready)"' | head -1 | grep -oE '(ready|degraded|not_ready)' | head -1 || true)
+[ -n "$READINESS_STATUS" ] || READINESS_STATUS="unknown"
 WEB_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${JETSCOPE_PUBLIC_URL:-https://saf.meichen.beauty}" --connect-timeout 5 --max-time 10 2>/dev/null || echo "000")
-echo "[$(date -Iseconds)] Rollback complete. Web status: $WEB_STATUS" | tee -a "$LOG"
+echo "[$(date -Iseconds)] Rollback complete. Web status: $WEB_STATUS, readiness: $READINESS_STATUS" | tee -a "$LOG"
 
-if [ "$WEB_STATUS" = "200" ] || [ "$WEB_STATUS" = "307" ]; then
-    emit_publish_event "success" "rollback completed successfully" "" "$COMMIT_BEFORE" "$ROLLBACK_TARGET"
+if { [ "$WEB_STATUS" = "200" ] || [ "$WEB_STATUS" = "307" ]; } \
+    && printf '%s' "$READINESS_BODY" | grep -qE '"ready"[[:space:]]*:[[:space:]]*true'; then
+    emit_publish_event "success" "rollback completed successfully" "readiness $READINESS_STATUS" "$COMMIT_BEFORE" "$ROLLBACK_TARGET"
 else
-    emit_publish_event "failed" "rollback completed but health check failed" "web status $WEB_STATUS" "$COMMIT_BEFORE" "$ROLLBACK_TARGET"
+    echo "[$(date -Iseconds)] ERROR: rollback health/readiness check failed (web $WEB_STATUS readiness $READINESS_STATUS)." | tee -a "$LOG" >&2
+    emit_publish_event "failed" "rollback completed but health/readiness check failed" "web status $WEB_STATUS readiness $READINESS_STATUS" "$COMMIT_BEFORE" "$ROLLBACK_TARGET"
+    exit 1
 fi

@@ -19,6 +19,7 @@ EXPECTED_COMMIT="${JETSCOPE_EXPECT_COMMIT:-}"
 APPROVAL_TOKEN=""
 API_HEALTH_URL="${JETSCOPE_API_HEALTH_URL:-http://127.0.0.1:8000/v1/health}"
 WEB_HEALTH_URL="${JETSCOPE_WEB_HEALTH_URL:-https://saf.meichen.beauty/}"
+API_READINESS_URL="${JETSCOPE_API_READINESS_URL:-http://127.0.0.1:8000/v1/readiness}"
 HEALTH_TIMEOUT_SECONDS="${JETSCOPE_HEALTH_TIMEOUT_SECONDS:-120}"
 HEALTH_INTERVAL_SECONDS="${JETSCOPE_HEALTH_INTERVAL_SECONDS:-5}"
 CURL_MAX_TIME_SECONDS="${JETSCOPE_CURL_MAX_TIME_SECONDS:-10}"
@@ -29,6 +30,15 @@ WEB_STATUS="000"
 WEB_CT=""
 SHOULD_RECORD_FAILURE=1
 LEDGER_HELPER=""
+BUILD_TIMEOUT="${JETSCOPE_WEB_BUILD_TIMEOUT_SECONDS:-600}"
+# Once production fast-forwards to the new commit a later failure leaves the
+# live tree on a broken commit. DEPLOY_ADVANCED tracks that window so fail_deploy
+# can trigger last-good recovery (OPERATIONS.md "Recovery Direction").
+DEPLOY_ADVANCED=0
+RESTORE_IN_PROGRESS=0
+ENABLE_AUTO_RESTORE="${JETSCOPE_ENABLE_AUTO_RESTORE:-0}"
+READINESS_STATUS="unknown"
+DEPLOYED_COMMIT=""
 
 while (($# > 0)); do
     case "$1" in
@@ -133,6 +143,12 @@ fail_deploy() {
     echo "[$(date -Iseconds)] ERROR: ${summary}${error_text:+ ($error_text)}" | tee -a "$LOG"
     record_deploy_failure
     emit_publish_event "failed" "$summary" "$error_text" "${LOCAL_COMMIT:-}" "${REMOTE_COMMIT:-}"
+    # If the failure happened after production fast-forwarded, the live tree is on
+    # a broken commit. Attempt last-good recovery when enabled; otherwise leave it
+    # for the operator (guard against re-entry from the recovery path itself).
+    if [ "$DEPLOY_ADVANCED" -eq 1 ] && [ "$RESTORE_IN_PROGRESS" -eq 0 ]; then
+        maybe_restore_last_good
+    fi
     exit 1
 }
 
@@ -260,6 +276,133 @@ wait_for_web_health() {
     return 1
 }
 
+check_api_readiness_once() {
+    local max_time="$1"
+    local body
+    body=$(curl -s "$API_READINESS_URL" --connect-timeout 5 --max-time "$max_time" 2>/dev/null || true)
+    # Top-level "ready":true means the readiness aggregate is "ready" or
+    # "degraded" (both acceptable to serve); "ready":false means "not_ready".
+    # The nested per-check objects use "ok", never "ready", so this key is
+    # unambiguous. See apps/api/app/api/routes/health.py.
+    READINESS_STATUS=$(printf '%s' "$body" \
+        | grep -oE '"status"[[:space:]]*:[[:space:]]*"(ready|degraded|not_ready)"' \
+        | head -1 \
+        | grep -oE '(ready|degraded|not_ready)' \
+        | head -1 || true)
+    [ -n "$READINESS_STATUS" ] || READINESS_STATUS="unknown"
+    printf '%s' "$body" | grep -qE '"ready"[[:space:]]*:[[:space:]]*true'
+}
+
+wait_for_api_readiness() {
+    local deadline=$((SECONDS + HEALTH_TIMEOUT_SECONDS))
+    while [ "$SECONDS" -lt "$deadline" ]; do
+        if check_api_readiness_once "$(curl_timeout_for_deadline "$deadline")"; then
+            return 0
+        fi
+        echo "[$(date -Iseconds)] Waiting for API readiness: status $READINESS_STATUS" | tee -a "$LOG"
+        sleep_until_next_health_attempt "$deadline"
+    done
+    return 1
+}
+
+# Rebuild + restart the API container from the current checkout. Logs details to
+# $LOG and returns non-zero on failure. Shared by the deploy and recovery paths.
+start_api_container() {
+    if systemctl is-active --quiet jetscope-api.service 2>/dev/null; then
+        echo "[$(date -Iseconds)] ERROR: jetscope-api.service must stay inactive; API is owned by docker-compose.prod.yml" | tee -a "$LOG"
+        return 1
+    fi
+    docker-compose -f docker-compose.prod.yml down >> "$LOG" 2>&1 || true
+    docker rm -f jetscope-api >> "$LOG" 2>&1 || true
+    if ! docker-compose -f docker-compose.prod.yml up --build -d api >> "$LOG" 2>&1; then
+        echo "[$(date -Iseconds)] ERROR: docker-compose up --build -d api failed" | tee -a "$LOG"
+        return 1
+    fi
+    return 0
+}
+
+# Build the web app in-place with a bounded timeout. Logs to $BUILD_LOG/$LOG and
+# returns non-zero on timeout or a missing build artifact. Shared by both paths.
+build_web_blocking() {
+    cd "$DEPLOY_DIR/apps/web" || return 1
+    rm -rf .next
+    nohup "$DEPLOY_DIR/node_modules/.bin/next" build --webpack > "$BUILD_LOG" 2>&1 &
+    local build_pid=$!
+    local build_elapsed=0
+    while kill -0 "$build_pid" 2>/dev/null; do
+        sleep 10
+        build_elapsed=$((build_elapsed + 10))
+        if [ "$build_elapsed" -ge "$BUILD_TIMEOUT" ]; then
+            echo "[$(date -Iseconds)] ERROR: Web build timeout (${BUILD_TIMEOUT}s). Killing..." | tee -a "$LOG"
+            kill -9 "$build_pid" 2>/dev/null || true
+            return 1
+        fi
+    done
+    if [ ! -f "$DEPLOY_DIR/apps/web/.next/BUILD_ID" ]; then
+        echo "[$(date -Iseconds)] ERROR: web build failed (missing .next/BUILD_ID)" | tee -a "$LOG"
+        return 1
+    fi
+    return 0
+}
+
+# Route a post-fast-forward failure into last-good recovery. Off by default:
+# per OPERATIONS.md the destructive reset + service restart stays behind explicit
+# operator approval (JETSCOPE_ENABLE_AUTO_RESTORE=1) until tested on the VPS.
+maybe_restore_last_good() {
+    local restore_target="${LOCAL_COMMIT:-}"
+    if [ -z "$restore_target" ]; then
+        echo "[$(date -Iseconds)] CRITICAL: no last-good commit known; cannot auto-restore." | tee -a "$LOG"
+        emit_publish_event "restore-failed" "no last-good commit recorded" "" "${DEPLOYED_COMMIT:-}" ""
+        return 1
+    fi
+    if [ "$ENABLE_AUTO_RESTORE" != "1" ]; then
+        echo "[$(date -Iseconds)] Auto-restore disabled (set JETSCOPE_ENABLE_AUTO_RESTORE=1 to enable). Production left on ${DEPLOYED_COMMIT:0:8} for operator recovery to last-good ${restore_target:0:8}." | tee -a "$LOG"
+        emit_publish_event "restore-skipped" "auto-restore disabled; operator recovery required" "last-good ${restore_target}" "${DEPLOYED_COMMIT:-}" "$restore_target"
+        return 0
+    fi
+    restore_last_good "$restore_target"
+}
+
+# Reset production to the recorded last-good commit, rebuild, and re-verify. Emits
+# restore-start / restore-success / restore-failed. Never calls fail_deploy (the
+# RESTORE_IN_PROGRESS guard prevents recursion).
+restore_last_good() {
+    local restore_target="$1"
+    RESTORE_IN_PROGRESS=1
+    echo "[$(date -Iseconds)] Restoring production to last-good ${restore_target:0:8} from failed ${DEPLOYED_COMMIT:0:8}..." | tee -a "$LOG"
+    emit_publish_event "restore-start" "restoring last-good commit" "from ${DEPLOYED_COMMIT}" "${DEPLOYED_COMMIT:-}" "$restore_target"
+
+    cd "$DEPLOY_DIR" || {
+        emit_publish_event "restore-failed" "cannot cd to deploy dir" "$DEPLOY_DIR" "${DEPLOYED_COMMIT:-}" "$restore_target"
+        return 1
+    }
+    if ! git merge-base --is-ancestor "$restore_target" "$DEPLOYED_COMMIT" >> "$LOG" 2>&1; then
+        echo "[$(date -Iseconds)] CRITICAL: last-good ${restore_target:0:8} is not an ancestor of ${DEPLOYED_COMMIT:0:8}; refusing reset." | tee -a "$LOG"
+        emit_publish_event "restore-failed" "last-good is not an ancestor of failed commit" "" "${DEPLOYED_COMMIT:-}" "$restore_target"
+        return 1
+    fi
+    if ! git reset --hard "$restore_target" >> "$LOG" 2>&1; then
+        echo "[$(date -Iseconds)] CRITICAL: git reset --hard to last-good failed." | tee -a "$LOG"
+        emit_publish_event "restore-failed" "git reset --hard to last-good failed" "" "${DEPLOYED_COMMIT:-}" "$restore_target"
+        return 1
+    fi
+
+    if ! start_api_container \
+        || ! wait_for_api_health \
+        || ! wait_for_api_readiness \
+        || ! build_web_blocking \
+        || ! systemctl restart jetscope-web.service >> "$LOG" 2>&1 \
+        || ! wait_for_web_health; then
+        echo "[$(date -Iseconds)] CRITICAL: rebuild/verify of last-good failed (api $API_STATUS readiness $READINESS_STATUS web $WEB_STATUS); production may be down." | tee -a "$LOG"
+        emit_publish_event "restore-failed" "rebuild/verify of last-good failed" "api $API_STATUS readiness $READINESS_STATUS web $WEB_STATUS" "${DEPLOYED_COMMIT:-}" "$restore_target"
+        return 1
+    fi
+
+    echo "[$(date -Iseconds)] Restore SUCCESS: production back on last-good ${restore_target:0:8} (readiness $READINESS_STATUS)." | tee -a "$LOG"
+    emit_publish_event "restore-success" "production restored to last-good" "readiness $READINESS_STATUS" "${DEPLOYED_COMMIT:-}" "$restore_target"
+    return 0
+}
+
 load_approval_token_ledger() {
     LEDGER_HELPER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/approval-token-ledger.sh"
     if [ ! -f "$LEDGER_HELPER" ]; then
@@ -356,48 +499,30 @@ if [ "$DEPLOYED_COMMIT" != "$REMOTE_COMMIT" ]; then
     fail_deploy "deploy tree did not advance to requested commit" "head $DEPLOYED_COMMIT remote $REMOTE_COMMIT"
 fi
 
+# Production is now on the new commit. From here a failure must attempt recovery.
+DEPLOY_ADVANCED=1
+
 load_approval_token_ledger
 approval_token_record_once "deploy" "$APPROVAL_TOKEN" "$REMOTE_COMMIT"
 
 # Build API (Docker) - force recreate to avoid ContainerConfig bug
 echo "[$(date -Iseconds)] Building API..." | tee -a "$LOG"
-if systemctl is-active --quiet jetscope-api.service 2>/dev/null; then
-    fail_deploy "conflicting legacy API service is active" "jetscope-api.service must stay inactive; API is owned by docker-compose.prod.yml"
-fi
-docker-compose -f docker-compose.prod.yml down >> "$LOG" 2>&1 || true
-docker rm -f jetscope-api >> "$LOG" 2>&1 || true
-if ! docker-compose -f docker-compose.prod.yml up --build -d api >> "$LOG" 2>&1; then
-    fail_deploy "api container build/start failed during auto-deploy" "docker-compose up --build -d api failed"
+if ! start_api_container; then
+    fail_deploy "api container build/start failed during auto-deploy" "see $LOG"
 fi
 
-# Wait for API to be ready
+# Wait for API liveness, then deep readiness (DB, market data, sources, admin token).
 if ! wait_for_api_health; then
     fail_deploy "api health check failed after auto-deploy" "api status $API_STATUS"
+fi
+if ! wait_for_api_readiness; then
+    fail_deploy "api readiness not ready after auto-deploy" "readiness status $READINESS_STATUS"
 fi
 
 # Build Web
 echo "[$(date -Iseconds)] Building Web..." | tee -a "$LOG"
-cd apps/web
-rm -rf .next
-nohup "$DEPLOY_DIR/node_modules/.bin/next" build --webpack > "$BUILD_LOG" 2>&1 &
-BUILD_PID=$!
-
-# Wait for build (max 10 minutes)
-BUILD_TIMEOUT=600
-BUILD_ELAPSED=0
-while kill -0 "$BUILD_PID" 2>/dev/null; do
-    sleep 10
-    BUILD_ELAPSED=$((BUILD_ELAPSED + 10))
-    if [ "$BUILD_ELAPSED" -ge "$BUILD_TIMEOUT" ]; then
-        echo "[$(date -Iseconds)] ERROR: Web build timeout (${BUILD_TIMEOUT}s). Killing..." | tee -a "$LOG"
-        kill -9 "$BUILD_PID" 2>/dev/null || true
-        fail_deploy "web build timed out during auto-deploy" "build timeout ${BUILD_TIMEOUT}s"
-    fi
-done
-
-# Check if build succeeded
-if [ ! -f ".next/BUILD_ID" ]; then
-    fail_deploy "web build failed during auto-deploy" "missing .next/BUILD_ID"
+if ! build_web_blocking; then
+    fail_deploy "web build failed during auto-deploy" "see $BUILD_LOG"
 fi
 
 echo "[$(date -Iseconds)] Web build OK. Restarting service..." | tee -a "$LOG"
@@ -407,9 +532,9 @@ fi
 
 # Verify Web serves real HTML (not API proxy)
 if wait_for_web_health; then
-    echo "[$(date -Iseconds)] Deploy SUCCESS! Web: $WEB_STATUS (HTML), API: $API_STATUS" | tee -a "$LOG"
+    echo "[$(date -Iseconds)] Deploy SUCCESS! Web: $WEB_STATUS (HTML), API: $API_STATUS, readiness: $READINESS_STATUS" | tee -a "$LOG"
     record_deploy_success
-    emit_publish_event "success" "auto-deploy completed successfully" "" "$LOCAL_COMMIT" "$REMOTE_COMMIT"
+    emit_publish_event "success" "auto-deploy completed successfully" "readiness $READINESS_STATUS" "$LOCAL_COMMIT" "$REMOTE_COMMIT"
 else
     fail_deploy "web health check failed after auto-deploy" "web status $WEB_STATUS content-type '$WEB_CT'"
 fi
