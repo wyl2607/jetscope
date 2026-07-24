@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import logging
+
 from sqlalchemy.orm import Session
 
 from app.services.ai_research.claude_pipeline import BudgetExceeded, ClaudeSignalExtractor
 from app.services.ai_research.scraper import NewsScraper
 from app.services.ai_research.signals import SignalRepository
+
+logger = logging.getLogger("jetscope.ai_research")
 
 
 def run_daily_pipeline(db: Session) -> dict[str, int]:
@@ -25,6 +29,12 @@ def run_daily_pipeline(db: Session) -> dict[str, int]:
         except BudgetExceeded:
             skipped_budget += len(articles) - index
             break
+        except Exception:
+            # Isolate per-article failures (a transient API error that outlived the
+            # SDK's retries, a parse error, etc.) so one bad article does not abort
+            # the whole daily run.
+            logger.exception("ai_research_article_failed title=%r", getattr(article, "title", None))
+            continue
 
         extracted += len(signals)
         for signal in signals:

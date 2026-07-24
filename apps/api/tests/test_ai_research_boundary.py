@@ -28,7 +28,7 @@ def test_mock_mode_is_deterministic_and_key_free(monkeypatch: pytest.MonkeyPatch
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
     class GuardAnthropic:
-        def __init__(self, api_key=None):
+        def __init__(self, api_key=None, **kwargs):
             raise AssertionError("Anthropic client must not initialize in mock mode")
 
     monkeypatch.setitem(sys.modules, "anthropic", types.SimpleNamespace(Anthropic=GuardAnthropic))
@@ -56,7 +56,7 @@ def test_live_mode_is_explicit_and_db_budget_guarded(monkeypatch: pytest.MonkeyP
             raise AssertionError("DB-backed budget guard should refuse before live API call")
 
     class FakeAnthropic:
-        def __init__(self, api_key=None):
+        def __init__(self, api_key=None, **kwargs):
             self.messages = FakeMessages()
 
     monkeypatch.setitem(sys.modules, "anthropic", types.SimpleNamespace(Anthropic=FakeAnthropic))

@@ -1,4 +1,4 @@
-# JetScope v0.1.0-alpha Release Notes Draft
+# JetScope v0.1.0-alpha Release Notes
 
 Title:
 

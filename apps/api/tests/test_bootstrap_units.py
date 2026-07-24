@@ -164,7 +164,11 @@ def test_apply_schema_bootstrap_alembic_runs_upgrade_head(monkeypatch: pytest.Mo
     monkeypatch.setattr(
         bootstrap,
         "settings",
-        SimpleNamespace(database_url="sqlite:///unused.db", schema_bootstrap_mode=" alembic "),
+        SimpleNamespace(
+            database_url="sqlite:///unused.db",
+            schema_bootstrap_mode=" alembic ",
+            enable_sqlite_routes=False,
+        ),
     )
     monkeypatch.setattr(bootstrap, "_alembic_config", lambda: fake_config)
     monkeypatch.setattr(bootstrap.command, "upgrade", fake_upgrade)
