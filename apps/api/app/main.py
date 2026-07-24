@@ -7,6 +7,7 @@ from fastapi import FastAPI
 
 from app.api.router import api_router
 from app.core.config import settings
+from app.core.observability import configure_observability
 from app.db.bootstrap import apply_schema_bootstrap
 from app.db.session import SessionLocal, engine
 from app.services.market import refresh_market_snapshot_set
@@ -92,6 +93,7 @@ async def _market_refresh_loop(interval_seconds: int) -> None:
 
 
 def create_app() -> FastAPI:
+    configure_observability()
     app = FastAPI(
         title="JetScope API",
         version="0.1.0",

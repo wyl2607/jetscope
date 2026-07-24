@@ -37,6 +37,10 @@ The compose stack in `infra/docker-compose.yml` currently includes:
 - the web container
 - nginx
 
+> The PostgreSQL service here is **local/reviewer-only and is not the production
+> database**. Production is frozen on SQLite (`docker-compose.prod.yml`); see
+> `../OPERATIONS.md` → Data Store & Backup.
+
 For a quick reviewer demo, Docker is optional. The normal quickstart path is to run the API and web locally with the defaults in `.env.example`.
 
 ## Notes For Reviewers
