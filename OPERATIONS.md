@@ -65,7 +65,7 @@ The next safe recovery implementation should be last-good or artifact-first, not
 4. Emit deployment events for start, fail, restore-start, restore-success, and restore-failed states.
 5. Keep destructive cleanup, manual `git reset --hard`, and service stop/start commands behind explicit operator approval until the recovery path is tested on the VPS.
 
-The last-good recovery from steps 1–4 is now implemented in `scripts/auto-deploy.sh`: on a post-fast-forward health/readiness failure it can reset production to the pre-deploy commit, rebuild, re-verify, and emit `restore-start` / `restore-success` / `restore-failed` events. Per step 5 it stays **off by default** and is enabled only with `JETSCOPE_ENABLE_AUTO_RESTORE=1` once the path has been exercised on the VPS; otherwise auto-deploy leaves production on the failed commit for operator recovery (emitting `restore-skipped`).
+The last-good recovery from steps 1–4 is now implemented in `scripts/auto-deploy.sh`: on a post-fast-forward health/readiness failure it restores the persisted `last-success-commit`, rebuilds, re-verifies, and emits `restore-start` / `restore-success` / `restore-failed` events. A recorded failed commit is not retried automatically; use `JETSCOPE_FORCE_DEPLOY=1` only after operator review. Per step 5 auto-restore stays **off by default** and is enabled only with `JETSCOPE_ENABLE_AUTO_RESTORE=1` once the path has been exercised on the VPS; otherwise auto-deploy leaves production on the failed commit for operator recovery (emitting `restore-skipped`).
 
 ## Data Store & Backup
 

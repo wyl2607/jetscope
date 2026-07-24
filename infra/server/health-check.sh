@@ -12,7 +12,8 @@
 set -uo pipefail
 
 WEB_URL="${JETSCOPE_PUBLIC_URL:-https://saf.meichen.beauty/}"
-API_URL="http://127.0.0.1:8000/v1/health"
+API_HEALTH_URL="${JETSCOPE_API_HEALTH_URL:-http://127.0.0.1:8000/v1/health}"
+API_READINESS_URL="${JETSCOPE_API_READINESS_URL:-http://127.0.0.1:8000/v1/readiness}"
 LOG="/var/log/jetscope-health.log"
 BUS_WRITE="${JETSCOPE_BUS_WRITE:-}"
 PRODUCER="infra/server/health-check.sh"
@@ -59,27 +60,33 @@ EOF
 }
 
 # --- API check ---
-api_status() {
-    curl -s -o /dev/null -w "%{http_code}" "$API_URL" --connect-timeout 5 --max-time 10 2>/dev/null || echo "000"
+api_liveness_status() {
+    curl -s -o /dev/null -w "%{http_code}" "$API_HEALTH_URL" --connect-timeout 5 --max-time 10 2>/dev/null || echo "000"
 }
 
-API_STATUS=$(api_status)
-if [ "$API_STATUS" != "200" ]; then
+api_is_ready() {
+    API_STATUS=$(api_liveness_status)
+    READINESS_BODY=$(curl -s "$API_READINESS_URL" --connect-timeout 5 --max-time 10 2>/dev/null || true)
+    READINESS_STATUS=$(printf '%s' "$READINESS_BODY" | grep -oE '"status"[[:space:]]*:[[:space:]]*"(ready|degraded|not_ready)"' | head -1 | grep -oE '(ready|degraded|not_ready)' | head -1 || true)
+    [ -n "$READINESS_STATUS" ] || READINESS_STATUS="unknown"
+    [ "$API_STATUS" = "200" ] && printf '%s' "$READINESS_BODY" | grep -qE '"ready"[[:space:]]*:[[:space:]]*true'
+}
+
+if ! api_is_ready; then
     if ! restart_allowed; then
-        log "API unhealthy (status: $API_STATUS). Restart disabled or unapproved; emitting failure only."
-        emit_event "failed" "api unhealthy, restart disabled" "status=$API_STATUS"
+        log "API unhealthy (liveness: $API_STATUS, readiness: $READINESS_STATUS). Restart disabled or unapproved; emitting failure only."
+        emit_event "failed" "api unhealthy, restart disabled" "liveness=$API_STATUS readiness=$READINESS_STATUS"
     else
-    log "API unhealthy (status: $API_STATUS). Restarting..."
-    emit_event "recovering" "api unhealthy, restarting" "status=$API_STATUS"
+    log "API unhealthy (liveness: $API_STATUS, readiness: $READINESS_STATUS). Restarting..."
+    emit_event "recovering" "api unhealthy, restarting" "liveness=$API_STATUS readiness=$READINESS_STATUS"
     cd /opt/jetscope && docker-compose -f docker-compose.prod.yml restart api >> "$LOG" 2>&1
     sleep 5
-    API_STATUS=$(api_status)
-    if [ "$API_STATUS" != "200" ]; then
-        log "API still unhealthy after restart (status: $API_STATUS)."
-        emit_event "failed" "api restart did not recover" "status=$API_STATUS"
+    if ! api_is_ready; then
+        log "API still unhealthy after restart (liveness: $API_STATUS, readiness: $READINESS_STATUS)."
+        emit_event "failed" "api restart did not recover" "liveness=$API_STATUS readiness=$READINESS_STATUS"
     else
         log "API recovered after restart."
-        emit_event "recovered" "api recovered after restart" ""
+        emit_event "recovered" "api recovered after restart" "liveness=$API_STATUS readiness=$READINESS_STATUS"
     fi
     fi
 fi
@@ -119,6 +126,6 @@ fi
 # Log OK status occasionally (every 10 minutes)
 MINUTE=$(date +%M)
 if [ "${MINUTE:1:1}" = "0" ]; then
-    log "Health check OK (API: $API_STATUS, Web: $WEB_STATUS)"
-    emit_event "ok" "health check ok" "api=$API_STATUS web=$WEB_STATUS"
+    log "Health check OK (API liveness: $API_STATUS, readiness: $READINESS_STATUS, Web: $WEB_STATUS)"
+    emit_event "ok" "health check ok" "api=$API_STATUS readiness=$READINESS_STATUS web=$WEB_STATUS"
 fi

@@ -242,7 +242,7 @@ check_web_health_once() {
 }
 
 current_deploy_is_healthy() {
-    check_api_health_once 5 && check_web_health_once 5
+    check_api_health_once 5 && check_api_readiness_once 5 && check_web_health_once 5
 }
 
 wait_for_api_health() {
@@ -349,7 +349,10 @@ build_web_blocking() {
 # per OPERATIONS.md the destructive reset + service restart stays behind explicit
 # operator approval (JETSCOPE_ENABLE_AUTO_RESTORE=1) until tested on the VPS.
 maybe_restore_last_good() {
-    local restore_target="${LOCAL_COMMIT:-}"
+    # LOCAL_COMMIT is only the commit that happened to precede this deploy. It
+    # may itself be a failed, un-restored deployment. The persisted success
+    # record is the sole authoritative recovery target.
+    local restore_target="${LAST_SUCCESS:-}"
     if [ -z "$restore_target" ]; then
         echo "[$(date -Iseconds)] CRITICAL: no last-good commit known; cannot auto-restore." | tee -a "$LOG"
         emit_publish_event "restore-failed" "no last-good commit recorded" "" "${DEPLOYED_COMMIT:-}" ""
@@ -460,7 +463,7 @@ if [ "$FORCE_DEPLOY" != "1" ] && [ "$LOCAL_COMMIT" = "$REMOTE_COMMIT" ]; then
                 LAST_SUCCESS="$REMOTE_COMMIT"
                 LAST_FAILURE=""
                 rm -f "$LAST_FAILURE_FILE" 2>/dev/null || true
-                echo "[$(date -Iseconds)] Existing healthy deploy recorded as success for ${REMOTE_COMMIT:0:8}." >> "$LOG"
+                echo "[$(date -Iseconds)] Existing deeply healthy deploy recorded as success for ${REMOTE_COMMIT:0:8}." >> "$LOG"
             else
                 fail_deploy "failed to reconcile healthy deploy state" "could not write $LAST_SUCCESS_FILE"
             fi
@@ -474,6 +477,19 @@ if [ "$FORCE_DEPLOY" != "1" ] && [ "$LOCAL_COMMIT" = "$REMOTE_COMMIT" ]; then
         emit_publish_event "skipped" "auto-deploy found no upstream changes" "" "$LOCAL_COMMIT" "$REMOTE_COMMIT"
         exit 0
     fi
+fi
+
+# Do not automatically re-advance to a commit that has already failed. A later
+# distinct upstream commit is still eligible; an operator can deliberately retry
+# the failed revision only with JETSCOPE_FORCE_DEPLOY=1.
+if [ "$FORCE_DEPLOY" != "1" ] && [ "$LAST_FAILURE" = "$REMOTE_COMMIT" ]; then
+    fail_deploy "refusing to redeploy known failed commit" "commit ${REMOTE_COMMIT:0:8}; use JETSCOPE_FORCE_DEPLOY=1 after operator review"
+fi
+
+# A same-commit checkout that is not deeply healthy is a deployment failure, not
+# a reason to rebuild it automatically on every scheduler invocation.
+if [ "$FORCE_DEPLOY" != "1" ] && [ "$LOCAL_COMMIT" = "$REMOTE_COMMIT" ]; then
+    fail_deploy "existing deploy is not deeply healthy" "api $API_STATUS readiness $READINESS_STATUS web $WEB_STATUS"
 fi
 
 emit_publish_event "started" "auto-deploy detected new upstream commit" "" "$LOCAL_COMMIT" "$REMOTE_COMMIT"
@@ -503,7 +519,9 @@ fi
 DEPLOY_ADVANCED=1
 
 load_approval_token_ledger
-approval_token_record_once "deploy" "$APPROVAL_TOKEN" "$REMOTE_COMMIT"
+if ! approval_token_record_once "deploy" "$APPROVAL_TOKEN" "$REMOTE_COMMIT"; then
+    fail_deploy "approval token ledger rejected deploy" "could not record approved deploy for ${REMOTE_COMMIT:0:8}"
+fi
 
 # Build API (Docker) - force recreate to avoid ContainerConfig bug
 echo "[$(date -Iseconds)] Building API..." | tee -a "$LOG"
