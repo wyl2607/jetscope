@@ -2,7 +2,11 @@ import math
 
 from app.schemas.analysis import PathwayCostBand
 
-EUR_TO_USD = 1.08
+# Seed FX must match market.DEFAULT_EUR_USD (ECB eurofxref baseline).
+# Live market paths refresh via market.py adapters; this is analysis fallback only.
+EUR_TO_USD = 1.1435
+EUR_TO_USD_AS_OF = "2026-07-17"
+EUR_TO_USD_SOURCE = "ECB eurofxref daily (seed aligned with market.DEFAULT_EUR_USD)"
 FOSSIL_JET_EMISSIONS_KG_PER_L = 2.5
 
 
