@@ -190,7 +190,7 @@ export function TippingPointWorkbench({
           crudeSource: 'manual',
           carbonSource: 'manual',
           benchmarkMode: 'live-jet-spot',
-          carbonPriceUsdPerTonne: Number((carbonPriceEurPerT * 1.08).toFixed(2)),
+          carbonPriceUsdPerTonne: Number((carbonPriceEurPerT * 1.1435 /* seed EURUSD aligned market.DEFAULT_EUR_USD 2026-07-17 */).toFixed(2)),
           subsidyUsdPerLiter: subsidyUsdPerL,
           tippingPoint: {
             fossilJetUsdPerL,

@@ -185,7 +185,7 @@ def main() -> int:
         return 1
 
     # 2. Compute derived prices
-    derived = compute_derived_prices(brent_usd, eur_usd or 1.08)
+    derived = compute_derived_prices(brent_usd, eur_usd or 1.1435)
 
     print(f"  Jet Fuel (Rotterdam est.): {derived['jet_fuel_usd_per_bbl']} USD/bbl")
     print(f"  SAF (est.): {derived['saf_usd_per_bbl']} USD/bbl")
