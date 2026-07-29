@@ -24,6 +24,17 @@ class Settings(BaseSettings):
         default="",
         validation_alias=AliasChoices("JETSCOPE_NEWSAPI_KEY", "NEWSAPI_KEY"),
     )
+    openaq_api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("JETSCOPE_OPENAQ_API_KEY", "OPENAQ_API_KEY"),
+    )
+    openaq_location_id: str = Field(
+        default="",
+        validation_alias=AliasChoices(
+            "JETSCOPE_OPENAQ_LOCATION_ID",
+            "OPENAQ_LOCATION_ID",
+        ),
+    )
     ai_research_enabled: bool = Field(
         default=False,
         validation_alias=AliasChoices("JETSCOPE_AI_RESEARCH_ENABLED", "AI_RESEARCH_ENABLED"),

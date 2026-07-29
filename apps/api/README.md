@@ -51,6 +51,8 @@ Defaults:
 - `JETSCOPE_AI_RESEARCH_MOCK_MODE` (`true` by default)
 - `JETSCOPE_ANTHROPIC_API_KEY`
 - `JETSCOPE_NEWSAPI_KEY`
+- `JETSCOPE_OPENAQ_API_KEY` (or `OPENAQ_API_KEY`) — required for live Rotterdam air-quality (OpenAQ **v3**; v1/v2 return HTTP 410)
+- `JETSCOPE_OPENAQ_LOCATION_ID` (optional) — pin an OpenAQ location near Rotterdam
 
 Selected legacy `SAFVSOIL_*` variables may still be accepted by older compatibility code. New deployments should prefer `JETSCOPE_*` names.
 
