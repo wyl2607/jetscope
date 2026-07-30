@@ -113,4 +113,3 @@ unless the user asks.
 Cross-repo weekly scan: `wyl2607/automation` workflow **Portfolio scan** (secret `PORTFOLIO_SCAN_TOKEN`).
 Deferred majors (product-driven only): Tailwind 4, eslint 10, fastapi+pydantic co-upgrade, ruff 0.16 modernization.
 Shared rules: Obsidian `Codex记忆/决策/portfolio-post-optim-operating-mode-2026-07-30.md`.
-
