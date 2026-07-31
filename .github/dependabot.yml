@@ -8,6 +8,34 @@ updates:
     groups:
       node-dev-tooling:
         dependency-type: development
+    ignore:
+      # Deferred majors: each of these fails `Verify web and API` for a reason
+      # that lives outside this repo, so a weekly PR is a weekly re-diagnosis.
+      # Drop the entry once the blocker below clears, and upgrade deliberately.
+      #
+      # typescript 7: Next 16 build aborts with "trying to use TypeScript but do
+      # not have the required package(s) installed" (PR #237, run 30577632549).
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      # These two rode along in the same group PR and were never evaluated on
+      # their own merits; they are deferred, not judged.
+      - dependency-name: '@testing-library/jest-dom'
+        update-types: [version-update:semver-major]
+      - dependency-name: jsdom
+        update-types: [version-update:semver-major]
+    # `next` is deliberately NOT ignored — it ships security patches — but read
+    # this before merging one. Any next bump re-solves the lockfile, and
+    # re-solving drops sharp from 0.35.3 to 0.34.5, so `npm audit` reports
+    # GHSA-f88m-g3jw-g9cj (high, libvips CVEs) and `Verify web and API` fails.
+    # That is what blocks PR #238.
+    # The `next@16.2.11 -> sharp 0.35.3` override in package.json does NOT
+    # prevent it: sharp is an optionalDependency constrained to `^0.34.5` by
+    # next, and npm silently declines to override it. Verified 2026-07-31 by
+    # deleting the lockfile on a clean main and reinstalling — sharp came back
+    # as 0.34.5. Today's 0.35.3 is lockfile inertia, not policy. The top-level
+    # `sharp`, bare `next`, `next@<newversion>`, and `$sharp`-reference override
+    # forms were each tested; none of them hold. The real fix is upstream: next
+    # has to widen its sharp range. Until then a next bump is a judgement call.
 
   - package-ecosystem: pip
     directory: /apps/api
