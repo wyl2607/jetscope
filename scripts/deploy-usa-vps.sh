@@ -14,6 +14,15 @@ REMOTE_DIR="${JETSCOPE_REMOTE_DIR:-/opt/jetscope}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REBUILD=0
 
+if ! DEPLOY_COMMIT="$(git -C "$ROOT" rev-parse --verify HEAD^{commit}")"; then
+  echo "ERROR: deploy source is not a Git checkout" >&2
+  exit 1
+fi
+if [[ -n "$(git -C "$ROOT" status --porcelain)" ]]; then
+  echo "ERROR: deploy source tree is dirty; commit or discard changes before deploying" >&2
+  exit 1
+fi
+
 for arg in "$@"; do
   case "$arg" in
     --rebuild) REBUILD=1 ;;
@@ -55,6 +64,15 @@ RSYNC_OPTS=(
 # Avoid --delete by default so production DB/env and untracked ops files stay put.
 rsync "${RSYNC_OPTS[@]}" "$ROOT/" "$HOST:$REMOTE_DIR/"
 
+echo "==> Record deployment provenance ($DEPLOY_COMMIT)"
+ssh "$HOST" bash -s -- "$REMOTE_DIR" "$DEPLOY_COMMIT" <<'REMOTE'
+set -euo pipefail
+REMOTE_DIR="$1"
+DEPLOY_COMMIT="$2"
+printf '%s\\n' "$DEPLOY_COMMIT" > "$REMOTE_DIR/.deploy-commit"
+chmod 0644 "$REMOTE_DIR/.deploy-commit"
+REMOTE
+
 if [[ "$REBUILD" -eq 1 ]]; then
   echo "==> Rebuild + restart API container on $HOST"
   ssh "$HOST" bash -s <<REMOTE
@@ -83,6 +101,7 @@ ssh "$HOST" bash -s <<REMOTE
 set -euo pipefail
 cd "$REMOTE_DIR"
 echo "cwd=\$(pwd)"
+echo "deployed_commit=\$(cat .deploy-commit 2>/dev/null || echo unknown)"
 test -f data/curated/lufthansa_q2_2026.json && echo "OK curated LH event present" || echo "MISSING curated LH event"
 
 if curl -fsS --max-time 8 http://127.0.0.1:8000/v1/health >/dev/null 2>&1; then
