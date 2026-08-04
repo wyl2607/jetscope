@@ -11,7 +11,7 @@ from alembic import op
 
 
 revision = "0005_market_snapshot_metric_as_of"
-down_revision = "0004_generalize_signal_taxonomy"
+down_revision = "generalize_signal_taxonomy"
 branch_labels = None
 depends_on = None
 
