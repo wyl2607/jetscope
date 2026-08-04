@@ -49,7 +49,7 @@ class MarketSnapshot(Base):
     payload: Mapped[dict] = mapped_column(JSON)
 
     __table_args__ = (
-        Index("ix_market_snapshots_metric_key_as_of", "metric_key", "as_of"),
+        Index("ix_market_snapshots_metric_key_as_of", "metric_key", "as_of", "id"),
     )
 
 
