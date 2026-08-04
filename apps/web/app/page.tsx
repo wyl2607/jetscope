@@ -1,162 +1,222 @@
-import Link from 'next/link';
-import type { Metadata, Route } from 'next';
+import { Shell } from '@/components/shell';
+import { ResearchDecisionBriefCard } from '@/components/research-decision-brief';
+import { TransitionLadder } from '@/components/transition-ladder';
+import { type TransitionSummaryResponse, loadTransitionSummary } from '@/lib/transition-read-model';
+import { getEuReserveCoverage, getTippingPointEvents } from '@/lib/portfolio-read-model';
+import {
+  AI_RESEARCH_ENABLED,
+  buildResearchDecisionBrief,
+  getResearchSignals
+} from '@/lib/research-signals-read-model';
 import { buildPageMetadata } from '@/lib/seo';
+import type { Metadata, Route } from 'next';
+import Link from 'next/link';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = buildPageMetadata({
-  title: 'JetScope — SAF market intelligence',
+  title: 'JetScope 航油转型决策入口',
   description:
-    'Real-time jet fuel, carbon and SAF decision intelligence for European aviation. Live sources with provenance, crisis scenarios, and Lufthansa Q2 stress playbooks.',
+    '用五分钟了解欧洲航油压力信号、SAF 转折点事件、EU ETS 成本影响与 AI 辅助研究工作流。',
   path: '/'
 });
 
-const locales = [
-  {
-    code: 'EN',
-    href: '/dashboard' as Route,
-    title: 'English cockpit',
-    body: 'Dashboard, sources trust center, scenarios, crisis tools'
-  },
-  {
-    code: 'DE',
-    href: '/de' as Route,
-    title: 'Deutsch',
-    body: 'Deutschland-Fokus, Lufthansa SAF Analyse, Jetpreis DE'
-  },
-  {
-    code: 'ZH',
-    href: '/dashboard' as Route,
-    title: '中文入口',
-    body: '主控台与情景分析（界面以 EN/DE 产品页为主，数据同源）'
-  }
-] as const;
+function isoDaysAgo(days: number): string {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+}
 
-const pillars = [
+function stressTone(stressLevel?: string): string {
+  if (stressLevel === 'critical') return 'text-rose-300';
+  if (stressLevel === 'elevated') return 'text-amber-300';
+  if (stressLevel === 'normal') return 'text-emerald-300';
+  return 'text-yellow-300';
+}
+
+function eventTone(eventType?: string): string {
+  if (eventType === 'CRITICAL') return 'text-rose-300';
+  if (eventType === 'ALERT') return 'text-amber-300';
+  if (eventType === 'CROSSOVER') return 'text-emerald-300';
+  return 'text-slate-300';
+}
+
+const CTA_CARDS = [
   {
-    href: '/dashboard' as Route,
-    title: 'Live dashboard',
-    body: 'Snapshot, Jet–Brent derived spread, refresh health, curated aviation events'
+    title: '危机监测',
+    description: '面向运营团队的实时库存覆盖、压力色带与转折事件时间线。',
+    href: '/crisis' as Route,
+    tone: 'border-rose-600/40 bg-rose-500/10'
   },
   {
-    href: '/sources' as Route,
-    title: 'Trust center',
-    body: 'As-of, lag, status, fallback and confidence for every core metric'
+    title: '研究信号台',
+    description: 'AI 信号流、双语摘要与置信度过滤，帮助快速筛选可行动线索。',
+    href: '/research' as Route,
+    tone: 'border-sky-600/40 bg-sky-500/10'
   },
   {
+    title: '路径推演',
+    description: '比较 SAF 路径与成本情景，判断何时 SAF 成为经营理性选择。',
     href: '/crisis/saf-tipping-point' as Route,
-    title: 'SAF tipping point',
-    body: 'Interactive breakeven + airline decision matrix; LH Q2 2026 playbook'
+    tone: 'border-emerald-600/40 bg-emerald-500/10'
   },
   {
-    href: '/scenarios' as Route,
-    title: 'Scenarios',
-    body: 'Saved assumptions, transition readiness, registry-backed workflows'
+    title: '电网平价',
+    description: '比较可再生 LCOE 与化石发电+EU ETS 碳成本的交叉点，可交互调节碳价与 WACC。',
+    href: '/grid' as Route,
+    tone: 'border-emerald-500/40 bg-sky-500/10'
   },
   {
-    href: '/crisis/eu-jet-reserves' as Route,
-    title: 'Reserve monitor',
-    body: 'Curated EU reserve signal (not IATA live) + price pressure context'
-  },
-  {
-    href: '/de/lufthansa-saf-2026' as Route,
-    title: 'Lufthansa deep-dive',
-    body: 'DE analysis page; ops facts as_of 2026-08-04 from curated article'
+    title: '分析报告',
+    description: '为招聘方、评审者和业务读者准备的结构化投资与产品论证。',
+    href: '/reports/tipping-point-analysis' as Route,
+    tone: 'border-indigo-600/40 bg-indigo-500/10'
   }
-] as const;
+];
 
-export default function IndexPage() {
+export default async function HomePage() {
+  const [reserve, events, signalsResult] = await Promise.all([
+    getEuReserveCoverage(),
+    getTippingPointEvents({ since: isoDaysAgo(42), limit: 50 }),
+    getResearchSignals()
+  ]);
+
+  const latestEvent = events[0] ?? null;
+  const signalCount = signalsResult.signals.length;
+  const researchBrief = buildResearchDecisionBrief(signalsResult);
+
+  let transition: TransitionSummaryResponse | null = null;
+  try {
+    transition = await loadTransitionSummary();
+  } catch {
+    transition = null;
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-950 to-black text-slate-100">
-      <header className="border-b border-slate-800 bg-slate-950/80">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-sky-300">JetScope</p>
-            <p className="mt-1 text-sm text-slate-400">Sustainable aviation fuel · market intelligence</p>
-          </div>
-          <nav className="flex flex-wrap gap-4 text-sm text-slate-300">
-            <Link href="/dashboard">Dashboard</Link>
-            <Link href="/sources">Sources</Link>
-            <Link href="/de">DE</Link>
-            <Link href="/admin">Admin</Link>
-          </nav>
+    <Shell
+      eyebrow="Phase C 作品集入口"
+      title="JetScope"
+      description="面向招聘团队、航空运营方和能源转型研究者的五分钟产品价值入口。"
+    >
+      <section className="rounded-2xl border border-slate-700 bg-slate-950/80 p-8">
+        <p className="text-2xl font-semibold leading-tight text-white md:text-4xl">
+          欧洲 Jet-A 航油库存已连续六周徘徊在三周覆盖线附近。SAF 要到什么价格，才会成为经营理性选择？
+        </p>
+        <p className="mt-4 text-base leading-7 text-slate-300 md:text-lg">
+          欧洲航油库存连续六周维持在三周覆盖线附近，JetScope 用实时市场数据与策略模型回答同一个问题：
+          何时 SAF 不再只是合规成本，而是经营理性选择。
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link
+            href="/dashboard"
+            className="rounded-full bg-sky-400 px-4 py-2 text-sm font-semibold !text-slate-950 transition hover:bg-sky-300"
+          >
+            打开决策驾驶舱
+          </Link>
+          <Link
+            href="/scenarios"
+            className="rounded-full border border-slate-600 px-4 py-2 text-sm font-semibold !text-slate-100 transition hover:border-sky-400 hover:!text-sky-200"
+          >
+            测试情景
+          </Link>
+          <Link
+            href="/sources"
+            className="rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold !text-slate-300 transition hover:border-slate-500 hover:!text-white"
+          >
+            查看来源质量
+          </Link>
         </div>
-      </header>
+      </section>
 
-      <main className="mx-auto max-w-6xl px-6 py-12">
-        <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-8 shadow-2xl shadow-sky-950/20 md:p-12">
-          <p className="text-xs uppercase tracking-[0.22em] text-sky-300">V1 research product</p>
-          <h1 className="mt-3 max-w-3xl text-3xl font-semibold text-white md:text-4xl">
-            Real-time jet, carbon & SAF decision intelligence — with labeled provenance
-          </h1>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300">
-            JetScope aggregates public market proxies (Brent, jet, EU ETS/CBAM), shows source trust explicitly, and
-            maps airline stress playbooks (e.g. Lufthansa Q2 2026) without inventing unpublished prices. Built for
-            procurement research and policy scenario work — not a paid Platts terminal.
+      <section className="mt-8 rounded-2xl border border-emerald-600/30 bg-slate-900/70 p-6">
+        <p className="text-xs uppercase tracking-[0.16em] text-emerald-200">双域叙事</p>
+        <p className="mt-3 text-base leading-7 text-slate-200">
+          同一 EU ETS 碳价正在同时推动天上的 SAF 转折点与地上的电网平价：它把化石燃料的排放成本显性化，也让低碳替代方案更快跨过经营理性线。
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link
+            href="/grid"
+            className="rounded-full border border-emerald-500/60 px-4 py-2 text-sm font-semibold !text-emerald-100 transition hover:border-emerald-300 hover:!text-white"
+          >
+            查看电网平价
+          </Link>
+          <Link
+            href="/crisis/saf-tipping-point"
+            className="rounded-full border border-sky-500/60 px-4 py-2 text-sm font-semibold !text-sky-100 transition hover:border-sky-300 hover:!text-white"
+          >
+            查看 SAF 转折点
+          </Link>
+        </div>
+      </section>
+
+      {transition && (
+        <section className="mt-8">
+          <TransitionLadder summary={transition} />
+        </section>
+      )}
+
+      <section className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">核心指标 1 · 库存覆盖</p>
+          <h3 className="mt-2 text-lg font-semibold text-white">/v1/reserves/eu</h3>
+          <p className={`mt-4 text-3xl font-semibold ${stressTone(reserve?.stress_level)}`}>
+            {reserve ? `${reserve.coverage_weeks.toFixed(2)} 周` : '暂不可用'}
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              href="/dashboard"
-              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500"
-            >
-              Open live dashboard
-            </Link>
-            <Link
-              href="/sources"
-              className="rounded-lg border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-100 hover:border-slate-400"
-            >
-              Inspect sources
-            </Link>
-            <Link
-              href="/crisis/saf-tipping-point?lh=1"
-              className="rounded-lg border border-amber-700/60 bg-amber-950/30 px-4 py-2 text-sm font-semibold text-amber-100 hover:border-amber-500"
-            >
-              LH Q2 2026 playbook
-            </Link>
-          </div>
-        </section>
+          <p className="mt-2 text-sm text-slate-300">
+            {reserve ? `压力等级：${reserve.stress_level} · 来源：${reserve.source_type}` : '上游暂时降级时，页面保留可读的兜底状态。'}
+          </p>
+        </article>
 
-        <section className="mt-10">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">Locales</h2>
-          <div className="mt-4 grid gap-4 md:grid-cols-3">
-            {locales.map((item) => (
-              <Link
-                key={item.code}
-                href={item.href}
-                className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5 transition hover:border-sky-700/60"
-              >
-                <p className="text-xs font-semibold text-sky-300">{item.code}</p>
-                <h3 className="mt-2 text-lg font-medium text-white">{item.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-400">{item.body}</p>
-              </Link>
-            ))}
-          </div>
-        </section>
+        <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">核心指标 2 · 转折事件</p>
+          <h3 className="mt-2 text-lg font-semibold text-white">/v1/analysis/tipping-point/events</h3>
+          <p className={`mt-4 text-3xl font-semibold ${eventTone(latestEvent?.event_type)}`}>
+            {latestEvent ? latestEvent.event_type : '暂无事件'}
+          </p>
+          <p className="mt-2 text-sm text-slate-300">
+            {latestEvent
+              ? `${latestEvent.saf_pathway.toUpperCase()} 价差 ${latestEvent.gap_usd_per_l.toFixed(3)} USD/L · 已载入 ${events.length} 个事件`
+              : '事件流启动前，时间线以占位状态保持可读。'}
+          </p>
+        </article>
 
-        <section className="mt-10">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">Product map</h2>
-          <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {pillars.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5 transition hover:border-emerald-700/50"
-              >
-                <h3 className="text-base font-medium text-white">{item.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-400">{item.body}</p>
-              </Link>
-            ))}
-          </div>
-        </section>
+        <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">核心指标 3 · 研究信号</p>
+          <h3 className="mt-2 text-lg font-semibold text-white">/v1/research/signals</h3>
+          <p className="mt-4 text-3xl font-semibold text-sky-300">
+            {signalsResult.status === 'not_found'
+              ? '404 兜底'
+              : signalsResult.status === 'error'
+                ? '接口异常'
+                : `${signalCount} 条信号`}
+          </p>
+          <p className="mt-2 text-sm text-slate-300">
+            {signalsResult.status === 'not_found'
+              ? 'Phase B API 尚未合入时，页面显示部署提示而不是崩溃。'
+              : signalsResult.status === 'error'
+                ? `Research API 暂时降级：${signalsResult.message}`
+              : AI_RESEARCH_ENABLED
+                ? '信号按类型分组，并提供双语摘要与置信度阈值。'
+                : 'AI_RESEARCH_ENABLED=false：研究页按设计展示空状态。'}
+          </p>
+        </article>
+      </section>
 
-        <section className="mt-10 rounded-2xl border border-slate-800 bg-slate-950/50 p-6 text-sm leading-7 text-slate-400">
-          <p className="font-medium text-slate-200">Data honesty (V1)</p>
-          <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>Market prices come from public/proxy feeds or labeled seed fallback — never silent invention.</li>
-            <li>Lufthansa figures are curated from the 2026-08-04 article JSON only.</li>
-            <li>EU reserve days are curated/env; supply gap is null unless explicitly configured.</li>
-            <li>Refresh health is exposed at <code className="text-sky-300">/v1/market/health</code>.</li>
-          </ul>
-        </section>
-      </main>
-    </div>
+      <section className="mt-8">
+        <ResearchDecisionBriefCard brief={researchBrief} compact />
+      </section>
+
+      <section className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        {CTA_CARDS.map((card) => (
+          <Link
+            key={card.title}
+            href={card.href}
+            className={`rounded-2xl border p-5 transition hover:border-slate-500 ${card.tone}`}
+          >
+            <p className="text-xs uppercase tracking-[0.16em] text-slate-300">深入查看</p>
+            <h3 className="mt-2 text-xl font-semibold text-white">{card.title}</h3>
+            <p className="mt-3 text-sm leading-6 text-slate-200">{card.description}</p>
+          </Link>
+        ))}
+      </section>
+    </Shell>
   );
 }

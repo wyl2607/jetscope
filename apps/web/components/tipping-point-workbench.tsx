@@ -31,7 +31,6 @@ type Props = {
   };
 };
 
-const ADMIN_TOKEN_STORAGE_KEY = 'jetscope.admin-token.v1';
 const PATHWAY_KEYS = ['hefa', 'atj', 'ft', 'ptl'] as const;
 
 function finiteNumber(value: string | null, fallback: number): number {
@@ -39,8 +38,22 @@ function finiteNumber(value: string | null, fallback: number): number {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
 }
 
+function boundedNumber(value: string, fallback: number, min: number, max = Number.POSITIVE_INFINITY): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, parsed));
+}
+
 function formatNumber(value: number, digits = 2): string {
   return value.toFixed(digits);
+}
+
+async function parseJsonResponse<T>(response: Response): Promise<T> {
+  const body = await response.json();
+  if (!response.ok) {
+    throw new Error(body?.detail ?? body?.error ?? `HTTP ${response.status}`);
+  }
+  return body as T;
 }
 
 export function TippingPointWorkbench({
@@ -74,20 +87,10 @@ export function TippingPointWorkbench({
   });
   const [tippingPoint, setTippingPoint] = useState<TippingPointReadModel | null>(initialTippingPoint);
   const [decision, setDecision] = useState<DecisionReadModel | null>(initialDecision);
-  const [status, setStatus] = useState('Ready');
+  const [status, setStatus] = useState('就绪');
   const [error, setError] = useState<string | null>(null);
   const [adminToken, setAdminToken] = useState('');
-  const [scenarioName, setScenarioName] = useState('SAF tipping point scenario');
-  // Optional LH Q2 2026 curated playbook params (verified article mapping only).
-  const [farePassThroughPct, setFarePassThroughPct] = useState<number | null>(() =>
-    searchParams.get('lh') === '1' ? 0.6 : null
-  );
-  const [laborCostEurM, setLaborCostEurM] = useState<number | null>(() =>
-    searchParams.get('lh') === '1' ? 150 : null
-  );
-  const [extraFuelCostEurM, setExtraFuelCostEurM] = useState<number | null>(() =>
-    searchParams.get('lh') === '1' ? 750 : null
-  );
+  const [scenarioName, setScenarioName] = useState('SAF 拐点情景');
 
   const query = useMemo(() => {
     const params = new URLSearchParams({
@@ -98,30 +101,13 @@ export function TippingPointWorkbench({
       reserve: formatNumber(reserveWeeks, 2),
       pathway: pathwayKey
     });
-    if (farePassThroughPct != null) params.set('lh', '1');
     return params.toString();
-  }, [
-    blendRatePct,
-    carbonPriceEurPerT,
-    farePassThroughPct,
-    fossilJetUsdPerL,
-    pathwayKey,
-    reserveWeeks,
-    subsidyUsdPerL
-  ]);
+  }, [blendRatePct, carbonPriceEurPerT, fossilJetUsdPerL, pathwayKey, reserveWeeks, subsidyUsdPerL]);
 
   const pathways = tippingPoint?.pathways ?? [];
   const selectedPathway = pathways.find((item) => item.pathway_key === pathwayKey) ?? pathways[0] ?? null;
   const selectedPathwayKey = selectedPathway?.pathway_key ?? pathwayKey;
-
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
-      if (stored) setAdminToken(stored);
-    } catch {
-      // Local storage is optional for this workbench.
-    }
-  }, []);
+  const saveDisabledReason = !adminToken ? '输入管理令牌后可保存情景' : null;
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -135,7 +121,7 @@ export function TippingPointWorkbench({
   useEffect(() => {
     const controller = new AbortController();
     const timeout = window.setTimeout(async () => {
-      setStatus('Recomputing analysis...');
+      setStatus('正在重新计算分析...');
       setError(null);
       try {
         const analysisParams = new URLSearchParams({
@@ -150,32 +136,21 @@ export function TippingPointWorkbench({
           carbon_price_eur_per_t: String(carbonPriceEurPerT),
           pathway_key: selectedPathwayKey
         });
-        if (farePassThroughPct != null) {
-          decisionParams.set('fare_pass_through_pct', String(farePassThroughPct));
-        }
-        if (laborCostEurM != null) {
-          decisionParams.set('labor_cost_impact_eur_m', String(laborCostEurM));
-        }
-        if (extraFuelCostEurM != null) {
-          decisionParams.set('extra_fuel_cost_eur_m', String(extraFuelCostEurM));
-        }
         const [nextTippingPoint, nextDecision] = await Promise.all([
-          fetch(`/api/analysis/tipping-point?${analysisParams}`, { cache: 'no-store', signal: controller.signal }).then((res) => res.json().then((body) => {
-            if (!res.ok) throw new Error(body?.detail ?? body?.error ?? `HTTP ${res.status}`);
-            return body as TippingPointResponse;
-          })),
-          fetch(`/api/analysis/airline-decision?${decisionParams}`, { cache: 'no-store', signal: controller.signal }).then((res) => res.json().then((body) => {
-            if (!res.ok) throw new Error(body?.detail ?? body?.error ?? `HTTP ${res.status}`);
-            return body as AirlineDecisionResponse;
-          }))
+          fetch(`/api/analysis/tipping-point?${analysisParams}`, { cache: 'no-store', signal: controller.signal }).then(
+            (response) => parseJsonResponse<TippingPointResponse>(response)
+          ),
+          fetch(`/api/analysis/airline-decision?${decisionParams}`, { cache: 'no-store', signal: controller.signal }).then(
+            (response) => parseJsonResponse<AirlineDecisionResponse>(response)
+          )
         ]);
         setTippingPoint(toTippingPointReadModel(nextTippingPoint));
         setDecision(toDecisionReadModel(nextDecision));
-        setStatus('Analysis updated');
+        setStatus('分析已更新');
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
-        setError(err instanceof Error ? err.message : 'Failed to recompute analysis');
-        setStatus('Analysis failed');
+        setError('分析服务暂时不可用，当前结果保留为本地情景基线。请确认 API 已启动后再重新计算。');
+        setStatus('使用情景基线');
       }
     }, 350);
 
@@ -183,17 +158,7 @@ export function TippingPointWorkbench({
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [
-    blendRatePct,
-    carbonPriceEurPerT,
-    extraFuelCostEurM,
-    farePassThroughPct,
-    fossilJetUsdPerL,
-    laborCostEurM,
-    reserveWeeks,
-    selectedPathwayKey,
-    subsidyUsdPerL
-  ]);
+  }, [blendRatePct, carbonPriceEurPerT, fossilJetUsdPerL, reserveWeeks, selectedPathwayKey, subsidyUsdPerL]);
 
   function useLiveValues() {
     setFossilJetUsdPerL(liveDefaults.fossilJetUsdPerL);
@@ -202,48 +167,20 @@ export function TippingPointWorkbench({
     setBlendRatePct(liveDefaults.blendRatePct);
     setReserveWeeks(liveDefaults.reserveWeeks);
     setPathwayKey(liveDefaults.pathwayKey);
-    setStatus('Live market defaults applied');
-  }
-
-  function applyLhQ2Playbook() {
-    // Keep live jet/carbon from snapshot; only apply verified LH article mapping.
-    setFossilJetUsdPerL(liveDefaults.fossilJetUsdPerL);
-    setCarbonPriceEurPerT(liveDefaults.carbonPriceEurPerT);
-    setReserveWeeks(liveDefaults.reserveWeeks);
-    setFarePassThroughPct(0.6);
-    setLaborCostEurM(150);
-    setExtraFuelCostEurM(750);
-    setScenarioName('LH Q2 2026 fuel shock (curated)');
-    setStatus('LH Q2 2026 playbook applied (live jet + curated pass-through/labor)');
-  }
-
-  function clearLhPlaybook() {
-    setFarePassThroughPct(null);
-    setLaborCostEurM(null);
-    setExtraFuelCostEurM(null);
-    setStatus('LH playbook cleared');
+    setStatus('已应用实时市场默认值');
   }
 
   function handleAdminTokenChange(value: string) {
     setAdminToken(value);
-    try {
-      if (value) {
-        window.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, value);
-      } else {
-        window.localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
-      }
-    } catch {
-      // Ignore storage write issues.
-    }
   }
 
   async function postScenario() {
     const trimmed = scenarioName.trim();
     if (!trimmed) {
-      setError('Scenario name is required');
+      setError('情景名称不能为空');
       return;
     }
-    setStatus('Saving scenario...');
+    setStatus('正在保存情景...');
     setError(null);
     try {
       const payload = {
@@ -253,7 +190,7 @@ export function TippingPointWorkbench({
           crudeSource: 'manual',
           carbonSource: 'manual',
           benchmarkMode: 'live-jet-spot',
-          carbonPriceUsdPerTonne: Number((carbonPriceEurPerT * 1.08).toFixed(2)),
+          carbonPriceUsdPerTonne: Number((carbonPriceEurPerT * 1.1435 /* seed EURUSD aligned market.DEFAULT_EUR_USD 2026-07-17 */).toFixed(2)),
           subsidyUsdPerLiter: subsidyUsdPerL,
           tippingPoint: {
             fossilJetUsdPerL,
@@ -269,7 +206,9 @@ export function TippingPointWorkbench({
               [selectedPathway.pathway_key]: {
                 name: selectedPathway.display_name,
                 pathway: selectedPathway.pathway_key,
-                baseCostUsdPerLiter: Number(((selectedPathway.net_cost_low_usd_per_l + selectedPathway.net_cost_high_usd_per_l) / 2).toFixed(4)),
+                baseCostUsdPerLiter: Number(
+                  ((selectedPathway.net_cost_low_usd_per_l + selectedPathway.net_cost_high_usd_per_l) / 2).toFixed(4)
+                ),
                 co2SavingsKgPerLiter: 0
               }
             }
@@ -287,91 +226,107 @@ export function TippingPointWorkbench({
       if (!response.ok) {
         throw new Error(body?.detail ?? body?.error ?? `HTTP ${response.status}`);
       }
-      setStatus(`Saved scenario "${body.name}"`);
+      setStatus(`已保存情景“${body.name}”`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save scenario');
-      setStatus('Save failed');
+      setError('情景暂时无法保存。请确认管理令牌和 API 服务可用后再试。');
+      setStatus('保存失败');
     }
   }
 
   return (
     <>
-      <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-950 p-6">
+      <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold text-white">Interactive tipping point workbench</h2>
-            <p className="mt-2 text-sm text-slate-400">
-              Adjust market and policy assumptions. Results recompute through the existing FastAPI analysis contracts and the URL stays shareable.
+            <h2 className="text-xl font-bold text-slate-950">交互式拐点工作台</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              调整市场与政策假设。结果通过现有 FastAPI 分析合约重新计算，URL 会保持可分享。
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              className="rounded-lg border border-sky-500/40 bg-sky-500/20 px-3 py-2 text-xs font-semibold text-sky-200"
+              className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800 transition hover:border-sky-500 hover:bg-sky-100"
               onClick={useLiveValues}
             >
-              Use live values
+              使用实时值
             </button>
-            <button
-              type="button"
-              className="rounded-lg border border-amber-500/40 bg-amber-500/20 px-3 py-2 text-xs font-semibold text-amber-100"
-              onClick={applyLhQ2Playbook}
-            >
-              Load LH Q2 2026
-            </button>
-            {farePassThroughPct != null && (
-              <button
-                type="button"
-                className="rounded-lg border border-slate-600 px-3 py-2 text-xs font-semibold text-slate-300"
-                onClick={clearLhPlaybook}
-              >
-                Clear LH
-              </button>
-            )}
-            <span className="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300">
-              {isPending ? 'Updating URL...' : status}
+            <span className="rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-700" aria-live="polite">
+              {isPending ? '正在更新 URL...' : status}
             </span>
           </div>
         </div>
 
-        {farePassThroughPct != null && (
-          <p className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
-            LH playbook active: pass-through {Math.round(farePassThroughPct * 100)}% · labor €
-            {laborCostEurM ?? '—'}m · extra fuel €{extraFuelCostEurM ?? '—'}m · jet still from live snapshot ($
-            {formatNumber(fossilJetUsdPerL, 3)}/L). Source: curated article 2026-08-04.
-          </p>
-        )}
-
         {error ? (
-          <p className="mb-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+          <p className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
             {error}
           </p>
         ) : null}
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
-            fossil jet USD/L
-            <input className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white" type="number" min="0.1" step="0.01" value={fossilJetUsdPerL} onChange={(event) => setFossilJetUsdPerL(Number(event.target.value))} />
+          <label className="text-xs uppercase tracking-[0.14em] text-slate-600">
+            化石航油 USD/L
+            <input
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+              type="number"
+              min="0.1"
+              step="0.01"
+              value={fossilJetUsdPerL}
+              onChange={(event) => setFossilJetUsdPerL((current) => boundedNumber(event.target.value, current, 0.1))}
+            />
           </label>
-          <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
-            carbon EUR/t
-            <input className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white" type="number" min="0" step="1" value={carbonPriceEurPerT} onChange={(event) => setCarbonPriceEurPerT(Number(event.target.value))} />
+          <label className="text-xs uppercase tracking-[0.14em] text-slate-600">
+            碳价 EUR/t
+            <input
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+              type="number"
+              min="0"
+              step="1"
+              value={carbonPriceEurPerT}
+              onChange={(event) => setCarbonPriceEurPerT((current) => boundedNumber(event.target.value, current, 0))}
+            />
           </label>
-          <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
-            subsidy USD/L
-            <input className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white" type="number" min="0" step="0.01" value={subsidyUsdPerL} onChange={(event) => setSubsidyUsdPerL(Number(event.target.value))} />
+          <label className="text-xs uppercase tracking-[0.14em] text-slate-600">
+            补贴 USD/L
+            <input
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+              type="number"
+              min="0"
+              step="0.01"
+              value={subsidyUsdPerL}
+              onChange={(event) => setSubsidyUsdPerL((current) => boundedNumber(event.target.value, current, 0))}
+            />
           </label>
-          <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
-            blend rate %
-            <input className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white" type="number" min="0" max="100" step="1" value={blendRatePct} onChange={(event) => setBlendRatePct(Math.min(100, Number(event.target.value)))} />
+          <label className="text-xs uppercase tracking-[0.14em] text-slate-600">
+            掺混比例 %
+            <input
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              value={blendRatePct}
+              onChange={(event) => setBlendRatePct((current) => boundedNumber(event.target.value, current, 0, 100))}
+            />
           </label>
-          <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
-            reserve weeks
-            <input className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white" type="number" min="0.1" step="0.1" value={reserveWeeks} onChange={(event) => setReserveWeeks(Number(event.target.value))} />
+          <label className="text-xs uppercase tracking-[0.14em] text-slate-600">
+            储备周数
+            <input
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={reserveWeeks}
+              onChange={(event) => setReserveWeeks((current) => boundedNumber(event.target.value, current, 0.1))}
+            />
           </label>
-          <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
-            selected pathway
-            <select className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white" value={selectedPathwayKey} onChange={(event) => setPathwayKey(event.target.value)}>
+          <label className="text-xs uppercase tracking-[0.14em] text-slate-600">
+            已选路径
+            <select
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+              value={selectedPathwayKey}
+              onChange={(event) => setPathwayKey(event.target.value)}
+            >
               {PATHWAY_KEYS.map((key) => (
                 <option key={key} value={key}>{key.toUpperCase()}</option>
               ))}
@@ -380,23 +335,40 @@ export function TippingPointWorkbench({
         </div>
 
         <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_0.7fr_auto]">
-          <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
-            scenario name
-            <input className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white" value={scenarioName} onChange={(event) => setScenarioName(event.target.value)} />
+          <label className="text-xs uppercase tracking-[0.14em] text-slate-600">
+            情景名称
+            <input
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+              value={scenarioName}
+              onChange={(event) => setScenarioName(event.target.value)}
+            />
           </label>
-          <label className="text-xs uppercase tracking-[0.14em] text-slate-400">
-            admin token
-            <input className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white" value={adminToken} onChange={(event) => handleAdminTokenChange(event.target.value)} placeholder="x-admin-token" />
+          <label className="text-xs uppercase tracking-[0.14em] text-slate-600">
+            管理令牌
+            <input
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
+              value={adminToken}
+              onChange={(event) => handleAdminTokenChange(event.target.value)}
+              placeholder="x-admin-token"
+            />
           </label>
           <button
             type="button"
-            className="self-end rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-4 py-2 text-xs font-semibold text-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
+            className="self-end rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-800 transition hover:border-emerald-500 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
             onClick={postScenario}
-            disabled={!adminToken}
+            disabled={Boolean(saveDisabledReason)}
+            aria-disabled={Boolean(saveDisabledReason)}
+            title={saveDisabledReason ?? '保存当前情景'}
           >
-            Save scenario
+            保存情景
           </button>
         </div>
+        {saveDisabledReason ? (
+          <p className="mt-2 text-xs text-slate-500">{saveDisabledReason}</p>
+        ) : null}
       </section>
 
       <section className="mb-8">
