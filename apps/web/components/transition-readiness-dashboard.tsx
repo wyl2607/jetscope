@@ -23,7 +23,7 @@ type PolicyTarget = {
 type Props = {
   initialTippingPoint: TippingPointResponse;
   initialDecision: AirlineDecisionResponse;
-  initialReserve: ReserveSignal;
+  initialReserve: ReserveSignal | null;
   policyTargets: PolicyTarget[];
 };
 
@@ -109,7 +109,9 @@ export function TransitionReadinessDashboard({
   const [fossilJet, setFossilJet] = useState(initialTippingPoint.inputs.fossil_jet_usd_per_l);
   const [carbon, setCarbon] = useState(initialTippingPoint.inputs.carbon_price_eur_per_t);
   const [subsidy, setSubsidy] = useState(initialTippingPoint.inputs.subsidy_usd_per_l);
-  const [reserveWeeks, setReserveWeeks] = useState(initialReserve.coverage_weeks);
+  const initialReserveWeeks = initialReserve?.coverage_weeks ?? 3;
+  const reserveIsScenarioDefault = initialReserve == null;
+  const [reserveWeeks, setReserveWeeks] = useState(initialReserveWeeks);
   const [selectedPathwayKey, setSelectedPathwayKey] = useState(initialDecision.inputs.pathway_key);
   const [tippingPoint, setTippingPoint] = useState(initialTippingPoint);
   const [decision, setDecision] = useState(initialDecision);
@@ -177,7 +179,7 @@ export function TransitionReadinessDashboard({
 
   return (
     <section className="min-w-0 space-y-6 rounded-[2rem] border border-slate-200 bg-white/95 p-4 shadow-xl shadow-slate-200/70 sm:p-6">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.28em] text-sky-700">转型监测</p>
           <h3 className="mt-3 text-2xl font-semibold text-slate-950">SAF 行业转型综合仪表盘</h3>
@@ -185,7 +187,9 @@ export function TransitionReadinessDashboard({
             这里把燃油价格、碳价、储备压力和政策目标放在同一个工作区，帮助团队判断哪些 SAF 路径已经接近可执行区间。
           </p>
           <p className="mt-3 text-xs text-slate-600">
-            储备来源：{initialReserve.source_name} · 置信度 {Math.round(initialReserve.confidence_score * 100)}%
+            {initialReserve
+              ? `储备来源：${initialReserve.source_name} · 置信度 ${Math.round(initialReserve.confidence_score * 100)}%`
+              : '实时储备数据不可用；3.0w 仅为可编辑情景假设，不代表实际储备。'}
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -208,7 +212,7 @@ export function TransitionReadinessDashboard({
             onChange={setCarbon}
           />
           <SliderCard
-            label="储备周数"
+            label={reserveIsScenarioDefault ? '储备周数（假设）' : '储备周数'}
             value={`${reserveWeeks.toFixed(1)}w`}
             min={1}
             max={8}

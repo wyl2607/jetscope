@@ -182,6 +182,7 @@ export default async function SafTippingPointPage() {
         initialTippingPoint={tippingPoint}
         initialDecision={airlineDecision}
         initialReserveWeeks={readModel.reserve?.coverage_weeks ?? 3.0}
+        reserveIsScenarioDefault={!readModel.reserve}
         liveDefaults={{
           fossilJetUsdPerL: liveFuel,
           carbonPriceEurPerT: Number((liveCarbonUsd / 1.08).toFixed(2)),

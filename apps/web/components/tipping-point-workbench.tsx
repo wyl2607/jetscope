@@ -21,6 +21,7 @@ type Props = {
   initialTippingPoint: TippingPointReadModel | null;
   initialDecision: DecisionReadModel | null;
   initialReserveWeeks: number;
+  reserveIsScenarioDefault?: boolean;
   liveDefaults: {
     fossilJetUsdPerL: number;
     carbonPriceEurPerT: number;
@@ -60,6 +61,7 @@ export function TippingPointWorkbench({
   initialTippingPoint,
   initialDecision,
   initialReserveWeeks,
+  reserveIsScenarioDefault = false,
   liveDefaults
 }: Props) {
   const router = useRouter();
@@ -310,7 +312,7 @@ export function TippingPointWorkbench({
             />
           </label>
           <label className="text-xs uppercase tracking-[0.14em] text-slate-600">
-            储备周数
+            {reserveIsScenarioDefault ? '储备周数（假设）' : '储备周数'}
             <input
               className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
               type="number"

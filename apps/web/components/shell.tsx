@@ -2,6 +2,7 @@ import type { Route } from 'next';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import Link from 'next/link';
 import { ReactNode } from 'react';
+import { ShellNav } from '@/components/shell-nav';
 
 type ShellLocale = 'zh' | 'de' | 'en';
 
@@ -62,39 +63,39 @@ export function Shell({
   const nav = navByLocale[locale];
   const homeHref = locale === 'de' ? '/de' : locale === 'en' ? '/en' : '/';
   const navigationLabel = locale === 'de' ? 'Hauptnavigation' : locale === 'en' ? 'Main navigation' : '主导航';
+  const menuLabel = locale === 'de' ? 'Menü' : locale === 'en' ? 'Menu' : '菜单';
+  const closeLabel = locale === 'de' ? 'Schließen' : locale === 'en' ? 'Close' : '关闭';
 
   return (
-    <div className="jetscope-workbench min-h-screen bg-gradient-to-b from-sky-50 via-slate-50 to-slate-100 text-slate-950">
-      <header className="border-b border-slate-200 bg-white/90 shadow-sm shadow-slate-200/70 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-4 md:flex-row md:items-center md:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-3">
-              <LanguageSwitcher />
-              <Link href={homeHref as Route} className="text-xs uppercase tracking-[0.22em] text-sky-700">
-                JetScope
-              </Link>
-            </div>
-            <p className="mt-1 truncate text-lg font-semibold text-slate-950 md:text-xl">{title}</p>
+    <div className="jetscope-workbench js-app-shell min-h-screen text-slate-950">
+      <header className="js-shell-header">
+        <div className="js-shell-header-inner">
+          <div className="js-brand-group">
+            <Link href={homeHref as Route} className="js-brand" aria-label="JetScope home">
+              <span className="js-brand-mark" aria-hidden="true">
+                JS
+              </span>
+              <span>JetScope</span>
+            </Link>
+            <span className="js-brand-context">{title}</span>
+            <LanguageSwitcher />
           </div>
-          <nav aria-label={navigationLabel} className="flex max-w-full flex-wrap gap-1 text-sm text-slate-700 md:justify-end">
-            {nav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href as Route}
-                className="shrink-0 rounded-full px-3 py-1.5 transition hover:bg-sky-50 hover:text-sky-800"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <ShellNav
+            items={nav}
+            navigationLabel={navigationLabel}
+            menuLabel={menuLabel}
+            closeLabel={closeLabel}
+          />
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 md:py-10">
-        <section className="mb-8 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xl shadow-slate-200/70 md:rounded-3xl md:p-8">
-          <p className="text-xs uppercase tracking-[0.2em] text-sky-700">{eyebrow}</p>
-          <h2 className="mt-3 text-3xl font-semibold text-slate-950">{title}</h2>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-700">{description}</p>
+      <main className="js-main mx-auto max-w-7xl px-4 py-7 sm:px-6 md:py-10">
+        <section className="js-page-hero mb-8">
+          <div className="max-w-3xl">
+            <p className="js-kicker">{eyebrow}</p>
+            <h1 className="js-page-title">{title}</h1>
+            <p className="js-page-description">{description}</p>
+          </div>
         </section>
         {children}
       </main>
