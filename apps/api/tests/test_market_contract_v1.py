@@ -95,6 +95,34 @@ def seeded_refresh_run(db_path: Path):
         db.commit()
 
 
+def test_snapshot_uses_latest_refresh_run(client: TestClient, db_path: Path):
+    engine = create_engine(f"sqlite:///{db_path}", future=True)
+    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+    Base.metadata.create_all(bind=engine)
+    older = datetime(2100, 1, 1, tzinfo=UTC)
+    newer = datetime(2100, 1, 2, tzinfo=UTC)
+
+    with SessionLocal() as db:
+        db.add(MarketRefreshRun(refreshed_at=older, source_status="error", ingest="old", sources={}))
+        db.add(MarketRefreshRun(refreshed_at=newer, source_status="ok", ingest="new", sources={}))
+        for metric in DEFAULT_MARKET_METRICS:
+            db.add(
+                MarketSnapshot(
+                    source_key=metric["source_key"],
+                    metric_key=metric["metric_key"],
+                    value=float(metric["value"]),
+                    unit=metric["unit"],
+                    as_of=newer,
+                    payload={},
+                )
+            )
+        db.commit()
+
+    response = client.get("/v1/market/snapshot")
+    assert response.status_code == 200
+    assert response.json()["source_status"]["overall"] == "ok"
+
+
 def test_snapshot_has_source_details_shape(client: TestClient, seeded_refresh_run):
     response = client.get("/v1/market/snapshot")
     assert response.status_code == 200
