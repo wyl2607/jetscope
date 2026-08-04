@@ -307,12 +307,22 @@ wait_for_api_readiness() {
 
 # Rebuild + restart the API container from the current checkout. Logs details to
 # $LOG and returns non-zero on failure. Shared by the deploy and recovery paths.
+remove_stale_compose_api_containers() {
+    local container_id
+    while IFS= read -r container_id; do
+        [ -n "$container_id" ] || continue
+        echo "[$(date -Iseconds)] Removing stale Compose API container $container_id" | tee -a "$LOG"
+        docker rm -f "$container_id" >> "$LOG" 2>&1 || true
+    done < <(docker ps -aq --filter label=com.docker.compose.service=api)
+}
+
 start_api_container() {
     if systemctl is-active --quiet jetscope-api.service 2>/dev/null; then
         echo "[$(date -Iseconds)] ERROR: jetscope-api.service must stay inactive; API is owned by docker-compose.prod.yml" | tee -a "$LOG"
         return 1
     fi
     docker-compose -f docker-compose.prod.yml down >> "$LOG" 2>&1 || true
+    remove_stale_compose_api_containers
     docker rm -f jetscope-api >> "$LOG" 2>&1 || true
     if ! docker-compose -f docker-compose.prod.yml up --build -d api >> "$LOG" 2>&1; then
         echo "[$(date -Iseconds)] ERROR: docker-compose up --build -d api failed" | tee -a "$LOG"
