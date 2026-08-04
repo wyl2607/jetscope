@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
 import httpx
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -858,18 +858,34 @@ def _persist_market_snapshot_set(
     return snapshot_time
 
 
-def _latest_market_values_by_metric(db: Session) -> dict[str, float]:
+def _latest_market_snapshots_by_metric(db: Session) -> dict[str, MarketSnapshot]:
+    """Load only the newest snapshot row for each expected market metric."""
+    metric_keys = [item["metric_key"] for item in DEFAULT_MARKET_METRICS]
+    latest_as_of = (
+        select(
+            MarketSnapshot.metric_key,
+            func.max(MarketSnapshot.as_of).label("latest_as_of"),
+        )
+        .where(MarketSnapshot.metric_key.in_(metric_keys))
+        .group_by(MarketSnapshot.metric_key)
+        .subquery()
+    )
     rows = db.scalars(
-        select(MarketSnapshot).order_by(MarketSnapshot.metric_key.asc(), MarketSnapshot.as_of.desc())
+        select(MarketSnapshot).join(
+            latest_as_of,
+            (MarketSnapshot.metric_key == latest_as_of.c.metric_key)
+            & (MarketSnapshot.as_of == latest_as_of.c.latest_as_of),
+        )
     ).all()
-    latest: dict[str, float] = {}
-    for row in rows:
-        if row.metric_key not in latest:
-            latest[row.metric_key] = float(row.value)
-    if len(latest) < len(DEFAULT_MARKET_METRICS):
+    return {row.metric_key: row for row in rows}
+
+
+def _latest_market_values_by_metric(db: Session) -> dict[str, float]:
+    latest_by_metric = _latest_market_snapshots_by_metric(db)
+    if len(latest_by_metric) < len(DEFAULT_MARKET_METRICS):
         seed_market_snapshot_set(db)
         return _latest_market_values_by_metric(db)
-    return latest
+    return {metric_key: float(row.value) for metric_key, row in latest_by_metric.items()}
 
 
 def _scale_history_to_latest(
@@ -1107,24 +1123,11 @@ def refresh_market_snapshot_set(db: Session) -> tuple[datetime, str]:
 
 
 def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
-    rows = db.scalars(
-        select(MarketSnapshot).order_by(MarketSnapshot.metric_key.asc(), MarketSnapshot.as_of.desc())
-    ).all()
-
-    latest_by_metric: dict[str, MarketSnapshot] = {}
-    for row in rows:
-        if row.metric_key not in latest_by_metric:
-            latest_by_metric[row.metric_key] = row
+    latest_by_metric = _latest_market_snapshots_by_metric(db)
 
     if len(latest_by_metric) < len(DEFAULT_MARKET_METRICS):
         seeded_at = seed_market_snapshot_set(db)
-        rows = db.scalars(
-            select(MarketSnapshot).order_by(MarketSnapshot.metric_key.asc(), MarketSnapshot.as_of.desc())
-        ).all()
-        latest_by_metric = {}
-        for row in rows:
-            if row.metric_key not in latest_by_metric:
-                latest_by_metric[row.metric_key] = row
+        latest_by_metric = _latest_market_snapshots_by_metric(db)
         generated_at = seeded_at
     else:
         generated_at = max(row.as_of for row in latest_by_metric.values())
