@@ -223,9 +223,9 @@ export default async function EuJetReserveCrisisPage() {
       <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900/60 p-8">
         <h2 className="text-xl font-semibold text-white">Lufthansa flight cuts: a leading indicator</h2>
         <p className="mt-3 text-sm leading-7 text-slate-300">
-          In April 2026, Lufthansa announced the cancellation of <strong>20,000 short-haul flights</strong>. 
-          Surface reason: cost cutting. Deeper logic: the energy economics of aviation has reached an inflection point. 
-          Fuel now consumes ~30% of short-haul operating cost. With jet prices at current levels, 
+          In April 2026, Lufthansa announced the cancellation of <strong>20,000 short-haul flights</strong>.
+          Surface reason: cost cutting. Deeper logic: the energy economics of aviation has reached an inflection point.
+          Fuel now consumes ~30% of short-haul operating cost. With jet prices at current levels,
           2–3% margin routes become unprofitable.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">

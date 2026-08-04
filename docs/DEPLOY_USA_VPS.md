@@ -1,6 +1,6 @@
 # Deploy JetScope to USA VPS
 
-**Target**: `usa-vps` → `root@192.227.130.69`  
+**Target**: `usa-vps` → `root@192.227.130.69`
 **Goal path**: `~/jetscope` (or `/opt/jetscope` if you standardize later)
 
 ## Preconditions

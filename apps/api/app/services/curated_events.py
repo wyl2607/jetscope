@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-# apps/api/app/services -> repo root is parents[4]? 
+# apps/api/app/services -> repo root is parents[4]?
 # services -> app -> api -> apps -> jetscope root
 # Path: jetscope/apps/api/app/services/curated_events.py
 # parents[0]=services, [1]=app, [2]=api, [3]=apps, [4]=jetscope
