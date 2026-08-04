@@ -19,7 +19,7 @@ def test_get_pathway_source_normalizes_key_and_maps_maturity_confidence() -> Non
     assert source["source_type"] == "manual"
     assert source["confidence_score"] == pytest.approx(0.8)
     assert source["cadence"] == "quarterly"
-    assert source["updated_at"] == "2026-04-23"
+    assert source["updated_at"] == "2026-07-15"
     assert source["fallback_used"] is False
 
 
@@ -75,7 +75,8 @@ def test_is_pathway_source_stale_respects_quarterly_cadence() -> None:
 
 def test_stale_pathway_source_marks_fallback_and_caps_confidence() -> None:
     """Regression: stale curated SAF proxies must surface fallback + weak confidence."""
-    source = get_pathway_source("hefa", as_of=date(2026, 8, 15))
+    # Curated updated_at is 2026-07-15; quarterly window is 100 days.
+    source = get_pathway_source("hefa", as_of=date(2026, 11, 1))
 
     assert source["fallback_used"] is True
     assert source["confidence_score"] == pytest.approx(STALE_CONFIDENCE_CAP)
@@ -83,7 +84,7 @@ def test_stale_pathway_source_marks_fallback_and_caps_confidence() -> None:
 
 
 def test_stale_pathway_list_applies_fallback_semantics_to_all_rows() -> None:
-    sources = list_pathway_sources(as_of=date(2026, 9, 1))
+    sources = list_pathway_sources(as_of=date(2026, 11, 1))
 
     assert sources
     assert all(row["fallback_used"] is True for row in sources.values())
@@ -92,7 +93,7 @@ def test_stale_pathway_list_applies_fallback_semantics_to_all_rows() -> None:
 
 def test_stale_cap_does_not_raise_low_maturity_confidence() -> None:
     # Demonstration maturity already sits at 0.50; after stale cap it should not exceed 0.49.
-    source = get_pathway_source("ptl", as_of=date(2026, 8, 15))
+    source = get_pathway_source("ptl", as_of=date(2026, 11, 1))
 
     assert source["fallback_used"] is True
     assert source["confidence_score"] == pytest.approx(STALE_CONFIDENCE_CAP)
