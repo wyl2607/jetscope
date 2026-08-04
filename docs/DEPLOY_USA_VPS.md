@@ -1,146 +1,91 @@
 # Deploy JetScope to USA VPS
 
-**Target**: `usa-vps` → `root@192.227.130.69`
-**Goal path**: `~/jetscope` (or `/opt/jetscope` if you standardize later)
+**Target host**: `usa-vps` → `racknerd-483e137` (`192.227.130.69`, also on Tailscale)
+**Production path**: `/opt/jetscope`
+**Running service (observed 2026-08)**: Docker container `jetscope-api` on `127.0.0.1:8000`
+**Legacy path**: `~/jetscope` (older rsync snapshot; prefer `/opt/jetscope`)
+
+## V1 demo readiness checklist
+
+| Gate | Status (PR #246) |
+|------|------------------|
+| CI green (web + API + OpenAPI + E2E smoke) | Yes |
+| Live market strip + trust center UI | Yes |
+| Curated LH Q2 2026 event API | Yes |
+| `/v1/market/health` | Yes |
+| Honest reserve / source labels | Yes |
+| Deploy script + this doc | Yes |
+| Merge to `main` | Open — merge before long-lived prod pin |
+| SSH from this machine | Working (`ssh usa-vps`) |
+| Full public web frontend container | API-only compose today; web may need separate nginx/static path |
+
+**Verdict**: **Enough for a USA VPS demo deploy of the V1 API + dashboard stack after merge (or direct branch deploy).**
+Not a claim of “finished commercial product” — seed/fallback honesty and live feed quality still matter.
 
 ## Preconditions
 
-1. SSH works from your machine:
+1. SSH works:
    ```bash
-   ssh usa-vps "echo OK && hostname"
+   ssh usa-vps "hostname && curl -fsS http://127.0.0.1:8000/v1/health"
    ```
-2. This Windows host currently offers `~/.ssh/id_rsa` only; **server must authorize that public key** (or you use another IdentityFile).
-3. Development package is verified locally:
-   - API: `pytest apps/api/tests/test_realtime_aviation_updates.py apps/api/tests/test_analysis_routes.py`
-   - Node: `node --test test/resolve-live-jet.test.mjs` and `npm test`
+2. Remote `/opt/jetscope/.env` already has `JETSCOPE_ADMIN_TOKEN` (script **never** overwrites `.env` or `data/*.db`).
+3. Local package verified (or GitHub CI green on the commit you deploy).
 
-## What was completed before deploy (dev package)
+## Recommended deploy
 
-| Area | Status |
-|------|--------|
-| Curated LH Q2 2026 facts | `data/curated/lufthansa_q2_2026.json` + `/v1/events/*` |
-| Jet–Brent derived arithmetic | snapshot.`derived` |
-| Reserve source honesty | no fake IATA claim; gap default null |
-| Dashboard event bar + residual | `/dashboard` |
-| LH playbook one-click | `/crisis/saf-tipping-point?lh=1` + button |
-| Live jet for analysis | Rotterdam → EU proxy → US jet |
-
-## Deploy steps (manual / script)
-
-### A. Sync code
-
-From a machine that **can** SSH (often coco / yumei Mac):
+From a machine with `rsync` + `ssh` (Git Bash / WSL / Mac / Linux):
 
 ```bash
-# Option 1: rsync single node
-rsync -avz --delete \
-  --exclude=.git --exclude=node_modules --exclude=apps/web/.next \
-  --exclude=apps/api/.venv --exclude=.omx --exclude=.automation \
-  ./ usa-vps:~/jetscope/
+# 1) Sync code only (safe; keeps .env and DB)
+bash scripts/deploy-usa-vps.sh
 
-# Option 2: existing multi-node script (from coco path)
-# bash scripts/sync-to-nodes.sh
+# 2) Rebuild API container so new routes (events, market/health) load
+bash scripts/deploy-usa-vps.sh --rebuild
 ```
 
-### B. On the VPS
+Override path if needed:
+
+```bash
+JETSCOPE_REMOTE_DIR=/opt/jetscope bash scripts/deploy-usa-vps.sh --rebuild
+```
+
+### Manual equivalent on the VPS
 
 ```bash
 ssh usa-vps
-cd ~/jetscope
-
-# Node
-node -v   # need >= 22
-npm install
-cd apps/web && npm install && cd ../..
-
-# Python
-cd apps/api
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cd ../..
-
-# Env
-cp .env.example .env   # set JETSCOPE_ADMIN_TOKEN, API URLs if needed
-# Ensure data/curated is present (rsync should bring it)
-
-# Migrate / seed
-npm run api:migrate || true
-
-# Docker prod path (if preferred)
-# docker compose -f docker-compose.prod.yml up -d --build
+cd /opt/jetscope
+# after rsync
+docker compose -f docker-compose.prod.yml up -d --build api
+# or: docker-compose -f docker-compose.prod.yml up -d --build api
+curl -fsS http://127.0.0.1:8000/v1/health
+curl -fsS http://127.0.0.1:8000/v1/events/lufthansa-q2-2026-earnings | head
+curl -fsS http://127.0.0.1:8000/v1/market/health | head
 ```
 
-### C. Process model (minimal)
+## Post-deploy smoke
+
+| Check | Expect |
+|-------|--------|
+| `GET /v1/health` | `ok: true` |
+| `GET /v1/market/health` | JSON with refresh interval / healthy flag |
+| `GET /v1/events/lufthansa-q2-2026-earnings` | Curated LH payload (not 404) |
+| `GET /v1/sources/coverage` | Metrics + completeness/degraded |
+| `GET /v1/reserves/eu` | No invented IATA claim |
+| Dashboard `/dashboard` | Live strip + LH event card when web is served |
+
+## Notes / risks
+
+- Compose file currently ships **API only** (`jetscope-api`). Public nginx today may still point other apps (e.g. ESG on `:8001`). Wire JetScope web explicitly before promising a public URL.
+- Do **not** rsync `--delete` against `/opt/jetscope` unless you intend to wipe ops files.
+- Market snapshot can be slow if upstream feeds hang; health endpoint is the operational signal.
+- Prefer: **merge PR #246 → deploy that commit** so prod matches `main`.
+
+## Rollback
 
 ```bash
-# API
-cd ~/jetscope/apps/api && source .venv/bin/activate
-uvicorn app.main:app --host 127.0.0.1 --port 8000
-
-# Web (another session / pm2)
-cd ~/jetscope && npm run web:build && npm run web:start
-# default Next port 3000
+ssh usa-vps
+cd /opt/jetscope
+git status   # if deployed via git
+# or re-rsync previous known-good tree, then:
+docker compose -f docker-compose.prod.yml up -d --build api
 ```
-
-Recommend **nginx** reverse proxy: `:80` → web `:3000`, `/v1` → api `:8000`.
-
-### D. Smoke checks (V1)
-
-```bash
-curl -sS http://127.0.0.1:8000/v1/health
-curl -sS http://127.0.0.1:8000/v1/market/health
-curl -sS http://127.0.0.1:8000/v1/events/lufthansa-q2-2026-earnings | head
-curl -sS http://127.0.0.1:8000/v1/market/snapshot | head
-curl -sS http://127.0.0.1:8000/v1/reserves/eu | head
-curl -sS http://127.0.0.1:8000/v1/sources/coverage | head
-# browser (Tailscale or public):
-#   http://<vps-ip>/           → product map
-#   http://<vps-ip>/dashboard  → Live strip + LH event
-#   http://<vps-ip>/sources    → Trust center
-```
-
-Expect:
-
-- `/v1/market/health` returns `refresh_interval_seconds`, `recent_runs`, `healthy`
-- events payload `as_of: 2026-08-04`
-- reserves `estimated_supply_gap_pct: null` (unless env set)
-- snapshot includes `derived.jet_vs_brent_*`
-- dashboard Live strip + LH event bar
-- sources matrix columns: As of, Fallback, Status
-
-## Blocker on this Windows agent (2026-08-04 session)
-
-```
-ssh root@192.227.130.69
-→ Permission denied (publickey)
-```
-
-**Action needed from you**: add this machine’s public key to VPS `authorized_keys`, or run deploy from coco/mac-mini that already has access.
-
-```powershell
-# Show public key to install on VPS
-Get-Content $env:USERPROFILE\.ssh\id_rsa.pub
-```
-
-On VPS (from a working session):
-
-```bash
-mkdir -p ~/.ssh && chmod 700 ~/.ssh
-echo 'PASTE_PUBKEY_HERE' >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
-```
-
-Then re-run:
-
-```bash
-ssh usa-vps "echo OK"
-# or
-bash scripts/deploy-usa-vps.sh
-```
-
-## Security notes
-
-- Do not commit `.env` or admin tokens.
-- Bind API to `127.0.0.1` if nginx fronts it.
-- Prefer HTTPS (Let’s Encrypt) before public demo.
