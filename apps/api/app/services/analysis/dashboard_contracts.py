@@ -116,6 +116,9 @@ def build_airline_decision_response(
     reserve_weeks: float,
     carbon_price_eur_per_t: float,
     pathway_key: str,
+    fare_pass_through_pct: float | None = None,
+    labor_cost_impact_eur_m: float | None = None,
+    extra_fuel_cost_eur_m: float | None = None,
 ) -> AirlineDecisionResponse:
     get_pathway_cost(pathway_key)
     assessment = compute_airline_decision(
@@ -123,6 +126,9 @@ def build_airline_decision_response(
         reserve_weeks=reserve_weeks,
         carbon_price_eur_per_t=carbon_price_eur_per_t,
         pathway_key=pathway_key,
+        fare_pass_through_pct=fare_pass_through_pct,
+        labor_cost_impact_eur_m=labor_cost_impact_eur_m,
+        extra_fuel_cost_eur_m=extra_fuel_cost_eur_m,
     )
     return AirlineDecisionResponse(
         generated_at=utcnow(),
@@ -131,123 +137,34 @@ def build_airline_decision_response(
             reserve_weeks=reserve_weeks,
             carbon_price_eur_per_t=carbon_price_eur_per_t,
             pathway_key=pathway_key,
+            fare_pass_through_pct=fare_pass_through_pct,
+            labor_cost_impact_eur_m=labor_cost_impact_eur_m,
+            extra_fuel_cost_eur_m=extra_fuel_cost_eur_m,
         ),
         probabilities=assessment.probabilities,
         signal=_decision_signal(assessment),
+        fare_pass_through_pct=assessment.fare_pass_through_pct,
+        labor_cost_impact_eur_m=assessment.labor_cost_impact_eur_m,
+        extra_fuel_cost_eur_m=assessment.extra_fuel_cost_eur_m,
+        residual_fuel_cost_exposure=assessment.residual_fuel_cost_exposure,
     )
 
 
-def _reserve_source_name(source_type: str) -> str:
-    if source_type == "manual":
-        return "IATA / EUROCONTROL curated estimate"
-    if source_type == "official":
-        return "IEA Oil Market Report"
-    if source_type == "derived":
-        return "Derived reserve coverage model"
-    return source_type
-
-
-def build_eu_reserve_signal_response(db=None) -> ReserveSignalResponse:
-    reserve_stress = get_eu_reserve_stress(db=db)
+def build_eu_reserve_signal_response() -> ReserveSignalResponse:
+    reserve_stress = get_eu_reserve_stress()
     return ReserveSignalResponse(
-        generated_at=reserve_stress.observed_at or utcnow(),
+        generated_at=utcnow(),
         region=reserve_stress.region,
         coverage_days=reserve_stress.coverage_days,
         coverage_weeks=round(reserve_stress.coverage_days / 7.0, 2),
         stress_level=reserve_stress.stress_level,
         estimated_supply_gap_pct=reserve_stress.supply_gap_pct,
         source_type=reserve_stress.source_type,
-        source_name=_reserve_source_name(reserve_stress.source_type),
+        source_name=reserve_stress.source_name,
         confidence_score=reserve_stress.confidence,
+        coverage_source=reserve_stress.coverage_source,
+        supply_gap_source=reserve_stress.supply_gap_source,
+        stress_source=reserve_stress.stress_source,
+        supply_status_note=reserve_stress.supply_status_note,
+        supply_status_as_of=reserve_stress.supply_status_as_of,
     )
-
-
-def build_pathway_comparison_response(
-    *,
-    fossil_jet_usd_per_l: float,
-    carbon_price_eur_per_t: float = 0.0,
-    subsidy_usd_per_l: float = 0.0,
-    blend_rate_pct: float = 0.0,
-    carbon_sweep_min: float = 0.0,
-    carbon_sweep_max: float | None = None,
-    carbon_sweep_step: float = 10.0,
-):
-    """Build the SAF pathway comparison contract.
-
-    ``signal`` is rule-based and deterministic over the computable rows
-    (status != ``not_computable``):
-    - ``insufficient_data``: no computable row.
-    - ``clear_leader``: best row is ``below_fossil`` OR best spread_pct <= 5 and
-      leads the runner-up by >= 10 spread points.
-    - ``close_race``: best spread_pct <= 25 and not a clear leader.
-    - ``no_advantage``: otherwise.
-    """
-    from app.schemas.analysis import (
-        PathwayCarbonSweepEntry,
-        PathwayCarbonSweepPoint,
-        PathwayComparisonInputs,
-        PathwayComparisonResponse,
-        PathwayComparisonRow,
-        PathwaySourceMeta,
-    )
-    from app.services.analysis.pathway_costs import carbon_price_sweep, compare_pathways
-    from app.services.analysis.pathway_sources import get_pathway_source
-
-    raw_rows = compare_pathways(
-        fossil_jet_usd_per_l=fossil_jet_usd_per_l,
-        carbon_price_eur_per_t=carbon_price_eur_per_t,
-        subsidy_usd_per_l=subsidy_usd_per_l,
-        blend_rate_pct=blend_rate_pct,
-    )
-    rows = [
-        PathwayComparisonRow(source=PathwaySourceMeta(**get_pathway_source(row["pathway_key"])), **row)
-        for row in raw_rows
-    ]
-
-    sweep: list = []
-    if carbon_sweep_max is not None:
-        for point in carbon_price_sweep(
-            fossil_jet_usd_per_l=fossil_jet_usd_per_l,
-            carbon_min=carbon_sweep_min,
-            carbon_max=carbon_sweep_max,
-            step=carbon_sweep_step,
-            subsidy_usd_per_l=subsidy_usd_per_l,
-            blend_rate_pct=blend_rate_pct,
-        ):
-            sweep.append(
-                PathwayCarbonSweepPoint(
-                    carbon_price_eur_per_t=point["carbon_price_eur_per_t"],
-                    pathways=[PathwayCarbonSweepEntry(**entry) for entry in point["pathways"]],
-                )
-            )
-
-    signal = _pathway_comparison_signal(rows)
-
-    return PathwayComparisonResponse(
-        generated_at=utcnow(),
-        inputs=PathwayComparisonInputs(
-            fossil_jet_usd_per_l=fossil_jet_usd_per_l,
-            carbon_price_eur_per_t=carbon_price_eur_per_t,
-            subsidy_usd_per_l=subsidy_usd_per_l,
-            blend_rate_pct=blend_rate_pct,
-        ),
-        fossil_jet_usd_per_l=fossil_jet_usd_per_l,
-        rows=rows,
-        carbon_sweep=sweep,
-        signal=signal,
-    )
-
-
-def _pathway_comparison_signal(rows) -> str:
-    computable = [row for row in rows if row.status != "not_computable" and row.spread_pct is not None]
-    if not computable:
-        return "insufficient_data"
-    ordered = sorted(computable, key=lambda row: row.effective_saf_cost_usd_per_l)
-    best = ordered[0]
-    runner_up_spread = ordered[1].spread_pct if len(ordered) > 1 else None
-    leads_clearly = runner_up_spread is not None and (runner_up_spread - best.spread_pct) >= 10
-    if best.status == "below_fossil" or (best.spread_pct <= 5 and leads_clearly):
-        return "clear_leader"
-    if best.spread_pct <= 25:
-        return "close_race"
-    return "no_advantage"

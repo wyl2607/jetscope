@@ -1,0 +1,68 @@
+{
+  "id": "lufthansa-q2-2026-earnings",
+  "as_of": "2026-08-04",
+  "as_of_time_local": "14:16",
+  "timezone_note": "Europe/Berlin (article Stand)",
+  "source": {
+    "type": "news_article",
+    "title": "Hohe Kerosinpreise machen Lufthansa zu schaffen",
+    "language": "de",
+    "stand": "04.08.2026 • 14:16 Uhr",
+    "notes": "Facts below are transcribed from the user-provided article text only. No inferred market prices."
+  },
+  "entity": {
+    "name": "Deutsche Lufthansa AG",
+    "index": "MDax",
+    "ceo": "Carsten Spohr",
+    "cfo": "Till Streichert"
+  },
+  "verified_facts": {
+    "q2_adjusted_operating_profit_eur_m": 383,
+    "q2_adjusted_operating_profit_yoy_change_pct": -56,
+    "q2_extra_kerosene_cost_iran_war_eur_m": 750,
+    "fuel_hedge_coverage_pct_gt": 80,
+    "q2_strike_cost_eur_m_approx": 150,
+    "prior_year_adjusted_operating_profit_eur_bn": 1.96,
+    "fy_guidance_adjusted_operating_profit_eur_bn": {
+      "low": 1.7,
+      "high": 2.2
+    },
+    "prior_guidance_vs_prior_year": "significantly_above_prior_year",
+    "kerosene_cost_pass_through_pct_approx": 60,
+    "fy_fuel_cost_expected_eur_bn": 8.7,
+    "fy_fuel_cost_vs_may_forecast_eur_bn_delta": -0.2,
+    "capacity_plan_current_year": "stagnate",
+    "capacity_plan_original_growth_pct_up_to": 4,
+    "europe_capacity_further_cut_under_review_pct": 1,
+    "cityline_europe_flights_cut_summer_schedule_approx": 20000,
+    "tech_and_cargo_subsidiaries_result_contribution": "positive",
+    "competitors_smaller_profit_decline_named": [
+      "Air France-KLM",
+      "IAG"
+    ],
+    "supply_situation_status": "normalized_in_recent_weeks_per_ceo",
+    "alt_supply_chains_mentioned": ["Nigeria"],
+    "gulf_carriers_status": "hubs_temporarily_closed_during_fighting_now_back_with_aggressive_pricing",
+    "gulf_carriers_named": ["Emirates", "Qatar Airways"],
+    "strategic_focus": "grow_long_haul_review_europe_reduction",
+    "ceo_demand_quote_de": "Die Menschen wollen fliegen, und sie können es sich auch zu höheren Preisen leisten.",
+    "h2_ticket_prices_direction": "expected_to_rise"
+  },
+  "explicitly_not_in_source": [
+    "exact_EU_jet_reserve_days_or_weeks",
+    "Brent_or_jet_spot_prices",
+    "EU_ETS_price",
+    "SAF_blend_percentage",
+    "pass_through_for_full_year_confirmed_exact",
+    "official_IATA_or_EUROCONTROL_reserve_estimate"
+  ],
+  "jetscope_mapping": {
+    "fare_pass_through_pct": 0.6,
+    "labor_cost_impact_eur_m": 150,
+    "extra_fuel_cost_eur_m": 750,
+    "fy_op_profit_guidance_eur_bn": [1.7, 2.2],
+    "fy_fuel_bill_eur_bn": 8.7,
+    "capacity_growth_pct": 0,
+    "notes": "Only map fields with numeric values present in verified_facts. Do not invent fossil jet USD/L."
+  }
+}

@@ -1,8 +1,7 @@
-import { buildApiUrl } from '@/lib/api-config';
+import { WORKSPACE_SLUG, buildApiUrl } from '@/lib/api-config';
+import type { SourceCoverageResponse } from '@/lib/source-coverage-contract';
 
-const DEFAULT_FETCH_TIMEOUT_MS = 2000;
-
-export type MarketSnapshot = {
+type MarketSnapshot = {
   generated_at: string;
   source_status: {
     overall: string;
@@ -12,6 +11,8 @@ export type MarketSnapshot = {
     is_fallback?: boolean | null;
   };
   values: Record<string, number>;
+  /** Arithmetic from values only; never invents prices */
+  derived?: Record<string, number | string>;
 };
 
 export type ReserveSignal = {
@@ -20,10 +21,17 @@ export type ReserveSignal = {
   coverage_days: number;
   coverage_weeks: number;
   stress_level: string;
-  estimated_supply_gap_pct: number;
+  /** null when no verified gap estimate exists */
+  estimated_supply_gap_pct: number | null;
   source_type: string;
   source_name: string;
   confidence_score: number;
+  fallback_used?: boolean;
+  coverage_source?: string | null;
+  supply_gap_source?: string | null;
+  stress_source?: string | null;
+  supply_status_note?: string | null;
+  supply_status_as_of?: string | null;
 };
 
 export type TippingPointPathway = {
@@ -60,6 +68,39 @@ export type DecisionReadModel = {
     sign_long_term_offtake: number;
     ground_routes: number;
   };
+  fare_pass_through_pct?: number | null;
+  labor_cost_impact_eur_m?: number | null;
+  extra_fuel_cost_eur_m?: number | null;
+  residual_fuel_cost_exposure?: number | null;
+};
+
+export type CuratedAviationEvent = {
+  id: string;
+  as_of?: string;
+  file?: string;
+  source?: {
+    type?: string;
+    title?: string;
+    stand?: string;
+    notes?: string;
+  };
+  entity?: {
+    name?: string;
+    index?: string;
+    ceo?: string;
+    cfo?: string;
+  };
+  verified_facts?: Record<string, unknown>;
+  explicitly_not_in_source?: string[];
+  jetscope_mapping?: {
+    fare_pass_through_pct?: number;
+    labor_cost_impact_eur_m?: number;
+    extra_fuel_cost_eur_m?: number;
+    fy_op_profit_guidance_eur_bn?: number[];
+    fy_fuel_bill_eur_bn?: number;
+    capacity_growth_pct?: number;
+    notes?: string;
+  };
 };
 
 export type TippingPointResponse = {
@@ -82,6 +123,9 @@ export type AirlineDecisionResponse = {
     reserve_weeks: number;
     carbon_price_eur_per_t: number;
     pathway_key: string;
+    fare_pass_through_pct?: number | null;
+    labor_cost_impact_eur_m?: number | null;
+    extra_fuel_cost_eur_m?: number | null;
   };
   signal: string;
   probabilities: {
@@ -91,9 +135,13 @@ export type AirlineDecisionResponse = {
     sign_long_term_offtake: number;
     ground_routes: number;
   };
+  fare_pass_through_pct?: number | null;
+  labor_cost_impact_eur_m?: number | null;
+  extra_fuel_cost_eur_m?: number | null;
+  residual_fuel_cost_exposure?: number | null;
 };
 
-export type MarketHistoryMetric = {
+type MarketHistoryMetric = {
   metric_key: string;
   unit: string;
   latest_value?: number;
@@ -104,26 +152,176 @@ export type MarketHistoryMetric = {
   points?: Array<{ as_of: string; value: number }>;
 };
 
-export type MarketHistory = {
+type MarketHistory = {
   generated_at?: string;
   metrics: Record<string, MarketHistoryMetric>;
 };
 
-/** Deterministic UI fallbacks aligned with API seed baselines (as of 2026-07-17). */
-export const FALLBACK_VALUES = {
-  brent_usd_per_bbl: 87.01,
-  jet_usd_per_l: 0.64,
-  jet_eu_proxy_usd_per_l: 0.657,
-  carbon_proxy_usd_per_t: 91.91
+type ScenarioRecord = {
+  id: string;
+  name: string;
+  saved_at: string;
+};
+
+export type MarketHealth = {
+  generated_at: string;
+  refresh_interval_seconds: number;
+  latest_refreshed_at: string | null;
+  latest_status: string | null;
+  latest_ingest: string | null;
+  age_seconds: number | null;
+  next_refresh_eta_seconds: number | null;
+  runs_window: number;
+  runs_total: number;
+  runs_ok: number;
+  success_rate: number | null;
+  healthy: boolean;
+  note: string;
+  recent_runs: Array<{
+    id: string;
+    refreshed_at: string;
+    source_status: string;
+    ingest: string;
+    ok: boolean;
+  }>;
+};
+
+export type DashboardReadModel = {
+  market: MarketSnapshot;
+  reserve: ReserveSignal | null;
+  tippingPoint: TippingPointResponse | null;
+  airlineDecision: AirlineDecisionResponse | null;
+  sourceCoverage: SourceCoverageResponse | null;
+  aviationEvent: CuratedAviationEvent | null;
+  marketHealth: MarketHealth | null;
+  analysisInputs: {
+    fossilJetUsdPerL: number;
+    carbonPriceEurPerT: number;
+    reserveWeeks: number;
+    jetSourceKey: string;
+  };
+  scenarioCount: number;
+  recentScenarioNames: string[];
+  freshnessSignal: {
+    minutes: number;
+    level: 'fresh' | 'stale' | 'critical';
+    freshMaxMinutes: number;
+    staleMaxMinutes: number;
+  };
+  topRiskSignal: {
+    metric: string;
+    metricKey: string;
+    window: '1d' | '7d' | '30d';
+    changePct: number;
+    level: 'normal' | 'watch' | 'alert';
+    latestAsOf: string | null;
+    sampleCount: number;
+  } | null;
+  isFallback: boolean;
+  error: string | null;
+};
+
+/** Prefer Rotterdam / EU jet; never invent a price when snapshot is empty. */
+export function resolveLiveFossilJetUsdPerL(values: Record<string, number>): {
+  value: number | null;
+  sourceKey: string;
+} {
+  if (Number.isFinite(values.rotterdam_jet_fuel_usd_per_l) && values.rotterdam_jet_fuel_usd_per_l > 0) {
+    return { value: values.rotterdam_jet_fuel_usd_per_l, sourceKey: 'rotterdam_jet_fuel_usd_per_l' };
+  }
+  if (Number.isFinite(values.jet_eu_proxy_usd_per_l) && values.jet_eu_proxy_usd_per_l > 0) {
+    return { value: values.jet_eu_proxy_usd_per_l, sourceKey: 'jet_eu_proxy_usd_per_l' };
+  }
+  if (Number.isFinite(values.jet_usd_per_l) && values.jet_usd_per_l > 0) {
+    return { value: values.jet_usd_per_l, sourceKey: 'jet_usd_per_l' };
+  }
+  return { value: null, sourceKey: 'unavailable' };
+}
+
+export type GermanyJetFuelMetricKey =
+  | 'brent_usd_per_bbl'
+  | 'jet_usd_per_l'
+  | 'jet_eu_proxy_usd_per_l'
+  | 'carbon_proxy_usd_per_t';
+
+export type GermanyJetFuelMetric = {
+  metricKey: GermanyJetFuelMetricKey;
+  label: string;
+  unit: string;
+  value: number | null;
+  digits: number;
+  sourceMetricKey: string;
+  latestAsOf: string | null;
+  changePct1d: number | null;
+  changePct7d: number | null;
+  changePct30d: number | null;
+  note: string | null;
+};
+
+export type GermanyJetFuelReadModel = {
+  generatedAt: string;
+  overallStatus: string;
+  metrics: GermanyJetFuelMetric[];
+  isFallback: boolean;
+  error: string | null;
+};
+
+const FALLBACK_VALUES = {
+  brent_usd_per_bbl: 114.93,
+  jet_usd_per_l: 0.99,
+  jet_eu_proxy_usd_per_l: 0.99,
+  carbon_proxy_usd_per_t: 88.79
 } as const;
 
-export async function fetchJson<T>(path: string): Promise<T> {
+function envThreshold(name: string, defaultValue: number): number {
+  const raw = process.env[name];
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return defaultValue;
+  }
+  return Math.floor(parsed);
+}
+
+const FRESHNESS_DEFAULTS = { freshMaxMinutes: 60, staleMaxMinutes: 1440 } as const;
+
+const FRESHNESS_THRESHOLDS = (() => {
+  const freshMaxMinutes = envThreshold('SAFVSOIL_FRESHNESS_FRESH_MAX_MINUTES', FRESHNESS_DEFAULTS.freshMaxMinutes);
+  const staleMaxMinutes = envThreshold('SAFVSOIL_FRESHNESS_STALE_MAX_MINUTES', FRESHNESS_DEFAULTS.staleMaxMinutes);
+  if (staleMaxMinutes <= freshMaxMinutes) {
+    return FRESHNESS_DEFAULTS;
+  }
+  return { freshMaxMinutes, staleMaxMinutes };
+})();
+
+function computeFreshnessSignal(generatedAt: string): DashboardReadModel['freshnessSignal'] {
+  const generatedAtMs = new Date(generatedAt).getTime();
+  if (Number.isNaN(generatedAtMs)) {
+    return {
+      minutes: FRESHNESS_THRESHOLDS.staleMaxMinutes + 1,
+      level: 'critical',
+      freshMaxMinutes: FRESHNESS_THRESHOLDS.freshMaxMinutes,
+      staleMaxMinutes: FRESHNESS_THRESHOLDS.staleMaxMinutes
+    };
+  }
+
+  const minutes = Math.max(0, Math.floor((Date.now() - generatedAtMs) / 60000));
+  const level = minutes <= FRESHNESS_THRESHOLDS.freshMaxMinutes
+    ? 'fresh'
+    : minutes <= FRESHNESS_THRESHOLDS.staleMaxMinutes
+      ? 'stale'
+      : 'critical';
+
+  return {
+    minutes,
+    level,
+    freshMaxMinutes: FRESHNESS_THRESHOLDS.freshMaxMinutes,
+    staleMaxMinutes: FRESHNESS_THRESHOLDS.staleMaxMinutes
+  };
+}
+
+async function fetchJson<T>(path: string): Promise<T> {
   const controller = new AbortController();
-  const timeoutMs = Number(process.env.JETSCOPE_MARKET_FETCH_TIMEOUT_MS ?? DEFAULT_FETCH_TIMEOUT_MS);
-  const timeout = setTimeout(
-    () => controller.abort(),
-    Number.isFinite(timeoutMs) && timeoutMs >= 100 ? timeoutMs : DEFAULT_FETCH_TIMEOUT_MS
-  );
+  const timeout = setTimeout(() => controller.abort(), 5000);
   try {
     const response = await fetch(buildApiUrl(path), {
       cache: 'no-store',
@@ -138,34 +336,108 @@ export async function fetchJson<T>(path: string): Promise<T> {
   }
 }
 
-export type DisplayLocale = 'zh' | 'de' | 'en';
+function fallbackReadModel(error: unknown): DashboardReadModel {
+  return {
+    market: {
+      generated_at: new Date().toISOString(),
+      source_status: { overall: 'degraded', confidence: 0, freshness_minutes: null, fallback_rate: 100, is_fallback: true },
+      values: { ...FALLBACK_VALUES }
+    },
+    reserve: null,
+    tippingPoint: null,
+    airlineDecision: null,
+    sourceCoverage: null,
+    aviationEvent: null,
+    marketHealth: null,
+    analysisInputs: {
+      fossilJetUsdPerL: FALLBACK_VALUES.jet_eu_proxy_usd_per_l,
+      carbonPriceEurPerT: 92.5,
+      reserveWeeks: 3,
+      jetSourceKey: 'fallback'
+    },
+    scenarioCount: 0,
+    recentScenarioNames: [],
+    freshnessSignal: {
+      minutes: FRESHNESS_THRESHOLDS.staleMaxMinutes + 1,
+      level: 'critical',
+      freshMaxMinutes: FRESHNESS_THRESHOLDS.freshMaxMinutes,
+      staleMaxMinutes: FRESHNESS_THRESHOLDS.staleMaxMinutes
+    },
+    topRiskSignal: null,
+    isFallback: true,
+    error: error instanceof Error ? error.message : 'unknown error'
+  };
+}
 
-export function metricLabel(metric: string, locale: DisplayLocale = 'zh'): string {
+function computeTopRiskSignal(history: MarketHistory | null): DashboardReadModel['topRiskSignal'] {
+  if (!history?.metrics) {
+    return null;
+  }
+
+  type Candidate = {
+    metric: string;
+    window: '1d' | '7d' | '30d';
+    changePct: number;
+    latestAsOf: string | null;
+    sampleCount: number;
+  };
+  const candidates: Candidate[] = [];
+
+  for (const metric of Object.values(history.metrics)) {
+    const windows: Array<{ window: '1d' | '7d' | '30d'; value?: number | null }> = [
+      { window: '1d', value: metric.change_pct_1d },
+      { window: '7d', value: metric.change_pct_7d },
+      { window: '30d', value: metric.change_pct_30d }
+    ];
+    for (const item of windows) {
+      if (!Number.isFinite(item.value ?? NaN)) {
+        continue;
+      }
+      candidates.push({
+        metric: metric.metric_key,
+        window: item.window,
+        changePct: Number(item.value),
+        latestAsOf: metric.latest_as_of ?? null,
+        sampleCount: Array.isArray(metric.points) ? metric.points.length : 0
+      });
+    }
+  }
+
+  if (!candidates.length) {
+    return null;
+  }
+
+  const top = candidates.reduce((winner, current) =>
+    Math.abs(current.changePct) > Math.abs(winner.changePct) ? current : winner
+  );
+  const peak = Math.abs(top.changePct);
+  const level: 'normal' | 'watch' | 'alert' = peak >= 20 ? 'alert' : peak >= 10 ? 'watch' : 'normal';
+
+  return {
+    metric: top.metric,
+    metricKey: top.metric,
+    window: top.window,
+    changePct: top.changePct,
+    level,
+    latestAsOf: top.latestAsOf,
+    sampleCount: top.sampleCount
+  };
+}
+
+function metricLabel(metric: string): string {
   if (metric === 'brent_usd_per_bbl') return 'Brent';
-  if (metric === 'jet_usd_per_l') {
-    if (locale === 'de') return 'Jet-Fuel';
-    if (locale === 'en') return 'Jet fuel';
-    return '航煤';
-  }
-  if (metric === 'jet_eu_proxy_usd_per_l') {
-    if (locale === 'de') return 'EU-Jet-Proxy';
-    if (locale === 'en') return 'EU jet proxy';
-    return '航煤（欧盟代理）';
-  }
-  if (metric === 'carbon_proxy_usd_per_t') {
-    if (locale === 'de') return 'Carbon-Proxy';
-    if (locale === 'en') return 'Carbon proxy';
-    return '碳价代理';
-  }
+  if (metric === 'jet_usd_per_l') return 'Jet fuel';
+  if (metric === 'jet_eu_proxy_usd_per_l') return 'Jet fuel (EU proxy)';
+  if (metric === 'carbon_proxy_usd_per_t') return 'Carbon proxy';
   return metric;
 }
 
-export function finiteNumberOrNull(value: unknown): number | null {
+function finiteNumberOrNull(value: unknown): number | null {
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
 }
 
-export function resolveSnapshotMetric(
+function resolveSnapshotMetric(
   values: Record<string, number>,
   key: string,
   fallbackKey?: string
@@ -189,7 +461,7 @@ export function resolveSnapshotMetric(
   return { value: null, sourceMetricKey: key, usedFallback: false };
 }
 
-export function resolveHistoryMetric(
+function resolveHistoryMetric(
   history: MarketHistory | null,
   key: string,
   fallbackKey?: string
@@ -213,8 +485,300 @@ export function resolveHistoryMetric(
   return { metric: null, sourceMetricKey: key, usedFallback: false };
 }
 
-export function finiteChangeOrNull(value?: number | null): number | null {
+function finiteChangeOrNull(value?: number | null): number | null {
   return finiteNumberOrNull(value);
+}
+
+function buildGermanyMetric(
+  metricKey: GermanyJetFuelMetricKey,
+  unit: string,
+  digits: number,
+  snapshot: {
+    value: number | null;
+    sourceMetricKey: string;
+    usedFallback: boolean;
+  },
+  history: {
+    metric: MarketHistoryMetric | null;
+    sourceMetricKey: string;
+    usedFallback: boolean;
+  }
+): GermanyJetFuelMetric {
+  const sourceMetricKey = history.metric ? history.sourceMetricKey : snapshot.sourceMetricKey;
+  const usedFallback = snapshot.usedFallback || history.usedFallback;
+  const fallbackNote = usedFallback && sourceMetricKey !== metricKey ? `Fallback from ${metricLabel(sourceMetricKey)}` : null;
+
+  return {
+    metricKey,
+    label: metricLabel(metricKey),
+    unit,
+    value: snapshot.value,
+    digits,
+    sourceMetricKey,
+    latestAsOf: history.metric?.latest_as_of ?? null,
+    changePct1d: finiteChangeOrNull(history.metric?.change_pct_1d),
+    changePct7d: finiteChangeOrNull(history.metric?.change_pct_7d),
+    changePct30d: finiteChangeOrNull(history.metric?.change_pct_30d),
+    note: fallbackNote
+  };
+}
+
+function fallbackGermanyJetFuelReadModel(error: unknown): GermanyJetFuelReadModel {
+  return {
+    generatedAt: new Date().toISOString(),
+    overallStatus: 'degraded',
+    metrics: [
+      {
+        metricKey: 'brent_usd_per_bbl',
+        label: metricLabel('brent_usd_per_bbl'),
+        unit: 'USD/bbl',
+        value: FALLBACK_VALUES.brent_usd_per_bbl,
+        digits: 2,
+        sourceMetricKey: 'brent_usd_per_bbl',
+        latestAsOf: null,
+        changePct1d: null,
+        changePct7d: null,
+        changePct30d: null,
+        note: null
+      },
+      {
+        metricKey: 'jet_usd_per_l',
+        label: metricLabel('jet_usd_per_l'),
+        unit: 'USD/L',
+        value: FALLBACK_VALUES.jet_usd_per_l,
+        digits: 3,
+        sourceMetricKey: 'jet_usd_per_l',
+        latestAsOf: null,
+        changePct1d: null,
+        changePct7d: null,
+        changePct30d: null,
+        note: null
+      },
+      {
+        metricKey: 'jet_eu_proxy_usd_per_l',
+        label: metricLabel('jet_eu_proxy_usd_per_l'),
+        unit: 'USD/L',
+        value: FALLBACK_VALUES.jet_eu_proxy_usd_per_l,
+        digits: 3,
+        sourceMetricKey: 'jet_usd_per_l',
+        latestAsOf: null,
+        changePct1d: null,
+        changePct7d: null,
+        changePct30d: null,
+        note: 'Fallback from Jet fuel'
+      },
+      {
+        metricKey: 'carbon_proxy_usd_per_t',
+        label: metricLabel('carbon_proxy_usd_per_t'),
+        unit: 'USD/tCO2',
+        value: FALLBACK_VALUES.carbon_proxy_usd_per_t,
+        digits: 2,
+        sourceMetricKey: 'carbon_proxy_usd_per_t',
+        latestAsOf: null,
+        changePct1d: null,
+        changePct7d: null,
+        changePct30d: null,
+        note: null
+      }
+    ],
+    isFallback: true,
+    error: error instanceof Error ? error.message : 'unknown error'
+  };
+}
+
+export async function getDashboardReadModel(): Promise<DashboardReadModel> {
+  try {
+    const [market, scenarios, history, reserve, sourceCoverage, aviationEvent, marketHealth] = await Promise.all([
+      fetchJson<MarketSnapshot>('/market/snapshot'),
+      fetchJson<ScenarioRecord[]>(`/workspaces/${WORKSPACE_SLUG}/scenarios`),
+      fetchJson<MarketHistory>('/market/history').catch(() => ({ metrics: {} })),
+      fetchJson<ReserveSignal>('/reserves/eu').catch(() => null),
+      fetchJson<SourceCoverageResponse>('/sources/coverage').catch(() => null),
+      fetchJson<CuratedAviationEvent>('/events/lufthansa-q2-2026-earnings').catch(() => null),
+      fetchJson<MarketHealth>('/market/health?runs_window=10').catch(() => null)
+    ]);
+
+    const liveJet = resolveLiveFossilJetUsdPerL(market.values);
+    // Only use snapshot jet when available; otherwise keep a labeled seed for analysis continuity.
+    const fossilJetUsdPerL = liveJet.value ?? FALLBACK_VALUES.jet_eu_proxy_usd_per_l;
+    const jetSourceKey = liveJet.value != null ? liveJet.sourceKey : 'seed_fallback';
+    const carbonPriceEurPerT =
+      Number.isFinite(market.values.eu_ets_price_eur_per_t) && market.values.eu_ets_price_eur_per_t > 0
+        ? market.values.eu_ets_price_eur_per_t
+        : 92.5;
+    const reserveWeeks =
+      reserve && Number.isFinite(reserve.coverage_weeks) && reserve.coverage_weeks > 0
+        ? reserve.coverage_weeks
+        : 3;
+
+    const mapping = aviationEvent?.jetscope_mapping;
+    const tippingQuery = new URLSearchParams({
+      fossil_jet_usd_per_l: String(fossilJetUsdPerL),
+      carbon_price_eur_per_t: String(carbonPriceEurPerT),
+      subsidy_usd_per_l: '0',
+      blend_rate_pct: '6'
+    });
+    const decisionQuery = new URLSearchParams({
+      fossil_jet_usd_per_l: String(fossilJetUsdPerL),
+      reserve_weeks: String(reserveWeeks),
+      carbon_price_eur_per_t: String(carbonPriceEurPerT),
+      pathway_key: 'hefa'
+    });
+    // LH Q2 2026 curated playbook — only verified mapping fields, not invented jet prices.
+    if (mapping?.fare_pass_through_pct != null) {
+      decisionQuery.set('fare_pass_through_pct', String(mapping.fare_pass_through_pct));
+    }
+    if (mapping?.labor_cost_impact_eur_m != null) {
+      decisionQuery.set('labor_cost_impact_eur_m', String(mapping.labor_cost_impact_eur_m));
+    }
+    if (mapping?.extra_fuel_cost_eur_m != null) {
+      decisionQuery.set('extra_fuel_cost_eur_m', String(mapping.extra_fuel_cost_eur_m));
+    }
+
+    const [tippingPoint, airlineDecision] = await Promise.all([
+      fetchJson<TippingPointResponse>(`/analysis/tipping-point?${tippingQuery}`).catch(() => null),
+      fetchJson<AirlineDecisionResponse>(`/analysis/airline-decision?${decisionQuery}`).catch(() => null)
+    ]);
+
+    const topRiskSignal = computeTopRiskSignal(history);
+
+    return {
+      market,
+      reserve,
+      tippingPoint,
+      airlineDecision,
+      sourceCoverage,
+      aviationEvent,
+      marketHealth,
+      analysisInputs: {
+        fossilJetUsdPerL,
+        carbonPriceEurPerT,
+        reserveWeeks,
+        jetSourceKey
+      },
+      scenarioCount: scenarios.length,
+      recentScenarioNames: scenarios.slice(0, 3).map((item) => item.name),
+      freshnessSignal: computeFreshnessSignal(market.generated_at),
+      topRiskSignal:
+        topRiskSignal == null
+          ? null
+          : {
+              ...topRiskSignal,
+              metric: metricLabel(topRiskSignal.metric)
+            },
+      isFallback: false,
+      error: null
+    };
+  } catch (error) {
+    return fallbackReadModel(error);
+  }
+}
+
+export async function getGermanyJetFuelReadModel(): Promise<GermanyJetFuelReadModel> {
+  try {
+    const [market, history] = await Promise.all([
+      fetchJson<MarketSnapshot>('/market/snapshot'),
+      fetchJson<MarketHistory>('/market/history').catch(() => ({ metrics: {} }))
+    ]);
+
+    const metrics = [
+      buildGermanyMetric(
+        'brent_usd_per_bbl',
+        'USD/bbl',
+        2,
+        resolveSnapshotMetric(market.values, 'brent_usd_per_bbl'),
+        resolveHistoryMetric(history, 'brent_usd_per_bbl')
+      ),
+      buildGermanyMetric(
+        'jet_usd_per_l',
+        'USD/L',
+        3,
+        resolveSnapshotMetric(market.values, 'jet_usd_per_l'),
+        resolveHistoryMetric(history, 'jet_usd_per_l')
+      ),
+      buildGermanyMetric(
+        'jet_eu_proxy_usd_per_l',
+        'USD/L',
+        3,
+        resolveSnapshotMetric(market.values, 'jet_eu_proxy_usd_per_l', 'jet_usd_per_l'),
+        resolveHistoryMetric(history, 'jet_eu_proxy_usd_per_l', 'jet_usd_per_l')
+      ),
+      buildGermanyMetric(
+        'carbon_proxy_usd_per_t',
+        'USD/tCO2',
+        2,
+        resolveSnapshotMetric(market.values, 'carbon_proxy_usd_per_t'),
+        resolveHistoryMetric(history, 'carbon_proxy_usd_per_t')
+      )
+    ];
+
+    return {
+      generatedAt: market.generated_at,
+      overallStatus: market.source_status?.overall ?? 'unknown',
+      metrics,
+      isFallback: false,
+      error: null
+    };
+  } catch (error) {
+    return fallbackGermanyJetFuelReadModel(error);
+  }
+}
+
+export type PriceTrendChartData = {
+  metric_key: string;
+  unit: string;
+  latest_value: number;
+  latest_as_of: string;
+  change_pct_1d: number | null;
+  change_pct_7d: number | null;
+  change_pct_30d: number | null;
+  points: Array<{ as_of: string; value: number }>;
+};
+
+export type PriceTrendChartReadModel = {
+  metrics: Record<string, PriceTrendChartData>;
+  generatedAt: string;
+  isFallback: boolean;
+  error: string | null;
+};
+
+export async function getPriceTrendChartReadModel(): Promise<PriceTrendChartReadModel> {
+  try {
+    const history = await fetchJson<MarketHistory>('/market/history');
+
+    if (!history?.metrics) {
+      throw new Error('No metrics in history response');
+    }
+
+    const metrics: Record<string, PriceTrendChartData> = {};
+
+    for (const [key, metric] of Object.entries(history.metrics)) {
+      metrics[key] = {
+        metric_key: key,
+        unit: metric.unit,
+        latest_value: metric.latest_value ?? 0,
+        latest_as_of: metric.latest_as_of ?? new Date().toISOString(),
+        change_pct_1d: finiteChangeOrNull(metric.change_pct_1d),
+        change_pct_7d: finiteChangeOrNull(metric.change_pct_7d),
+        change_pct_30d: finiteChangeOrNull(metric.change_pct_30d),
+        points: metric.points ?? []
+      };
+    }
+
+    return {
+      metrics,
+      generatedAt: new Date().toISOString(),
+      isFallback: false,
+      error: null
+    };
+  } catch (error) {
+    return {
+      metrics: {},
+      generatedAt: new Date().toISOString(),
+      isFallback: true,
+      error: error instanceof Error ? error.message : 'Failed to load price trends'
+    };
+  }
 }
 
 export function toTippingPointReadModel(
@@ -248,21 +812,13 @@ export function toDecisionReadModel(
       sign_long_term_offtake: response.probabilities?.sign_long_term_offtake ?? 0,
       ground_routes: response.probabilities?.ground_routes ?? 0,
     },
+    fare_pass_through_pct: response.fare_pass_through_pct ?? null,
+    labor_cost_impact_eur_m: response.labor_cost_impact_eur_m ?? null,
+    extra_fuel_cost_eur_m: response.extra_fuel_cost_eur_m ?? null,
+    residual_fuel_cost_exposure: response.residual_fuel_cost_exposure ?? null,
   };
 }
 
 export function getMarketSnapshotEndpoint(): string {
   return buildApiUrl('/market/snapshot');
 }
-
-// Re-exports: Dashboard read-model now lives in `./dashboard-read-model`.
-// Kept here for backwards compatibility with existing callers.
-export { getDashboardReadModel, type DashboardReadModel } from './dashboard-read-model';
-
-// Re-exports: PriceTrendChart read-model now lives in `./price-trend-chart-read-model`.
-// Kept here for backwards compatibility with existing callers.
-export {
-  getPriceTrendChartReadModel,
-  type PriceTrendChartData,
-  type PriceTrendChartReadModel
-} from './price-trend-chart-read-model';

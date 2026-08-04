@@ -1,33 +1,26 @@
 import { InfoCard, MetricCard } from '@/components/cards';
-import { ProvenanceSummary } from '@/components/provenance-summary';
 import { Shell } from '@/components/shell';
 import { PolicyTimelineWithMarketTime } from '@/components/policy-timeline-with-market-time';
 import { PriceTrendsChart } from '@/components/price-trends-chart';
 import { computeDashboardAlertBanners } from '@/lib/market-signals';
-import { getDashboardReadModel, type DashboardReadModel } from '@/lib/dashboard-read-model';
-import { getPriceTrendChartReadModel } from '@/lib/product-read-model';
-import { getSourcesReadModel } from '@/lib/sources-read-model';
-import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
-import { loadPathwayComparison } from '@/lib/pathways-read-model';
-import { EuEtsPressurePanel } from '@/components/eu-ets-pressure-panel';
-import { loadEuEtsPressure } from '@/lib/eu-ets-pressure-read-model';
+import { getDashboardReadModel, getPriceTrendChartReadModel, type DashboardReadModel } from '@/lib/product-read-model';
 import type { Metadata } from 'next';
 import { buildPageMetadata } from '@/lib/seo';
 
 const priorities = [
-  '实时市场数据：Brent 原油、航油代理价、EU ETS 碳价',
-  '统一情景引擎：价格、补贴、碳成本与盈亏平衡分析',
-  '管理控制：航线假设、政策参数与数据来源',
-  '导出与报告：图表、快照与情景对比'
+  'Real-time market data: Brent crude, jet fuel proxy, EU ETS carbon',
+  'Unified scenario engine: price, subsidy, carbon cost, break-even analysis',
+  'Admin control: route assumptions, policy parameters, data provenance',
+  'Export & reporting: charts, snapshots, scenario comparison'
 ];
 
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = buildPageMetadata({
-  title: '决策驾驶舱',
+  title: 'Dashboard',
   description:
-    '可持续航空燃料与传统航油的实时决策看板，覆盖市场快照、情景库状态与转型交付信号。',
+    'Live SAF versus fossil jet fuel dashboard with market snapshot, scenario registry status, and transition delivery signals.',
   path: '/dashboard'
 });
 
@@ -45,45 +38,16 @@ function formatAsOf(value: string | null) {
   return date.toLocaleString();
 }
 
-function sourceStatusLabel(status: string) {
-  if (status === 'ok') return '正常';
-  if (status === 'degraded') return '降级';
-  if (status === 'offline') return '离线';
-  if (status === 'unknown') return '未知';
-  return status;
-}
-
-function freshnessLabel(level: string) {
-  if (level === 'fresh') return '新鲜';
-  if (level === 'stale') return '偏旧';
-  if (level === 'critical') return '严重过期';
-  return level;
-}
-
-function riskLevelLabel(level: string) {
-  if (level === 'normal') return '正常';
-  if (level === 'watch') return '观察';
-  if (level === 'alert') return '警报';
-  return level;
-}
-
-function dashboardFallbackHint(readModel: DashboardReadModel) {
-  if (!readModel.isFallback) {
-    return `来源状态：${sourceStatusLabel(readModel.market.source_status.overall)} · 数据新鲜度：${freshnessLabel(readModel.freshnessSignal.level)}（${readModel.freshnessSignal.minutes} 分钟）`;
-  }
-
-  return '本地 API 暂不可用，正在使用内置决策模型，确保驾驶舱仍可审阅。';
-}
-
 export default async function DashboardPage() {
-  const [readModel, priceChartData, sourcesReadModel] = await Promise.all([
-    getDashboardReadModel(),
-    getPriceTrendChartReadModel(),
-    getSourcesReadModel()
-  ]);
+  const readModel = await getDashboardReadModel();
+  const priceChartData = await getPriceTrendChartReadModel();
   const market = readModel.market.values;
   const risk = readModel.topRiskSignal;
   const freshness = readModel.freshnessSignal;
+  const derived = readModel.market.derived ?? {};
+  const event = readModel.aviationEvent;
+  const decision = readModel.airlineDecision;
+  const analysis = readModel.analysisInputs;
 
   const riskColor =
     risk?.level === 'alert' ? 'text-rose-300' : risk?.level === 'watch' ? 'text-amber-300' : 'text-emerald-300';
@@ -94,42 +58,141 @@ export default async function DashboardPage() {
   const riskHref = risk == null ? undefined : `/sources?focus=${encodeURIComponent(risk.metricKey)}`;
   const riskHint =
     risk == null
-      ? '暂无历史风险信号'
-      : `级别：${riskLevelLabel(risk.level)} · 截至：${formatAsOf(risk.latestAsOf)} · 样本：${risk.sampleCount}`;
+      ? 'No history signal available yet'
+      : `level=${risk.level} | as_of=${formatAsOf(risk.latestAsOf)} | samples=${risk.sampleCount}`;
 
   const alertBanners = computeDashboardAlertBanners(readModel.market, risk);
+  const spread =
+    typeof derived.jet_vs_brent_spread_usd_per_l === 'number' ? derived.jet_vs_brent_spread_usd_per_l : null;
+  const multiplier =
+    typeof derived.jet_vs_brent_multiplier === 'number' ? derived.jet_vs_brent_multiplier : null;
+  const facts = (event?.verified_facts ?? {}) as Record<string, unknown>;
+  const coverageMetrics = readModel.sourceCoverage?.metrics?.length ?? 0;
+  const coverageCompleteness = readModel.sourceCoverage?.completeness;
 
-  let pathwayComparison: Awaited<ReturnType<typeof loadPathwayComparison>> | null = null;
-  try {
-    pathwayComparison = await loadPathwayComparison({
-      fossilJetUsdPerL: market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l ?? 0.9,
-      carbonPriceEurPerT: Number(((market.carbon_proxy_usd_per_t ?? 0) / 1.08).toFixed(2)),
-      subsidyUsdPerL: 0,
-      blendRatePct: 6
-    });
-  } catch {
-    pathwayComparison = null;
-  }
-
-  let euEtsPressure: Awaited<ReturnType<typeof loadEuEtsPressure>> | null = null;
-  try {
-    euEtsPressure = await loadEuEtsPressure({
-      fossilJetUsdPerL: market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l ?? 0.9,
-      exemptBlendPct: 6,
-      euEtsMin: 0,
-      euEtsMax: 200,
-      euEtsStep: 50
-    });
-  } catch {
-    euEtsPressure = null;
-  }
+  const health = readModel.marketHealth;
+  const formatEta = (seconds: number | null | undefined) => {
+    if (seconds == null || !Number.isFinite(seconds)) return 'n/a';
+    if (seconds < 60) return `${seconds}s`;
+    return `${Math.round(seconds / 60)}m`;
+  };
 
   return (
     <Shell
-      eyebrow="市场情报"
-      title="JetScope 决策驾驶舱"
-      description="面向 SAF 决策的实时市场快照、情景建模与转型风险信号。"
+      eyebrow="Market Intelligence"
+      title="SAF vs Oil Decision Cockpit"
+      description="Live market snapshot, scenario modelling, and transition risk signals for sustainable aviation fuel decisions."
     >
+      <section
+        className={`mb-6 rounded-xl border p-4 ${
+          health?.healthy === false
+            ? 'border-rose-800/60 bg-rose-950/20'
+            : 'border-emerald-800/50 bg-emerald-950/20'
+        }`}
+      >
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">Live market strip</p>
+            <p className="mt-1 text-sm text-slate-200">
+              Snapshot as_of <strong className="text-white">{formatAsOf(readModel.market.generated_at)}</strong>
+              {' · '}
+              freshness <strong className="text-white">{freshness.level}</strong> ({freshness.minutes}m)
+              {' · '}
+              overall <code className="text-sky-300">{readModel.market.source_status.overall}</code>
+              {spread != null && (
+                <>
+                  {' · '}
+                  Jet–Brent spread <strong className="text-white">${formatNumber(spread, 3)}/L</strong>
+                  {multiplier != null ? ` (×${formatNumber(multiplier, 3)})` : ''}
+                </>
+              )}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              Analysis jet: {analysis.jetSourceKey}=${formatNumber(analysis.fossilJetUsdPerL, 3)}/L · ETS €
+              {formatNumber(analysis.carbonPriceEurPerT)}/t · refresh interval{' '}
+              {health?.refresh_interval_seconds ?? '—'}s · next ETA {formatEta(health?.next_refresh_eta_seconds)} ·
+              health {health == null ? 'n/a' : health.healthy ? 'ok' : 'attention'}
+              {health?.runs_total != null
+                ? ` · runs ${health.runs_ok}/${health.runs_total}`
+                : ''}
+            </p>
+            {health?.note ? <p className="mt-1 text-xs text-slate-500">{health.note}</p> : null}
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <a
+              href="/sources"
+              className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-600"
+            >
+              Trust center →
+            </a>
+            <a
+              href="/crisis/saf-tipping-point"
+              className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-slate-400"
+            >
+              Tipping point
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {event && (
+        <section className="mb-6 rounded-xl border border-sky-800/60 bg-sky-950/30 p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-sky-300">
+                Aviation event · curated only · as_of {event.as_of ?? 'n/a'}
+              </p>
+              <h2 className="mt-1 text-base font-semibold text-white">
+                {event.entity?.name ?? 'Lufthansa'} — {event.source?.title ?? event.id}
+              </h2>
+              <p className="mt-2 text-sm text-slate-300">
+                Q2 adj. profit €{String(facts.q2_adjusted_operating_profit_eur_m ?? '—')}m (
+                {String(facts.q2_adjusted_operating_profit_yoy_change_pct ?? '—')}%) · extra kerosene €
+                {String(facts.q2_extra_kerosene_cost_iran_war_eur_m ?? '—')}m · strikes ~€
+                {String(facts.q2_strike_cost_eur_m_approx ?? '—')}m · fare pass-through ~
+                {String(facts.kerosene_cost_pass_through_pct_approx ?? '—')}% · FY fuel bill €
+                {String(facts.fy_fuel_cost_expected_eur_bn ?? '—')}bn · FY guidance €
+                {String(
+                  (facts.fy_guidance_adjusted_operating_profit_eur_bn as { low?: number; high?: number } | undefined)
+                    ?.low ?? '—'
+                )}
+                –
+                {String(
+                  (facts.fy_guidance_adjusted_operating_profit_eur_bn as { low?: number; high?: number } | undefined)
+                    ?.high ?? '—'
+                )}
+                bn
+              </p>
+              <p className="mt-2 text-xs text-slate-500">
+                Jet for analysis uses live snapshot ({analysis.jetSourceKey}=${formatNumber(analysis.fossilJetUsdPerL, 3)}
+                /L) — not an invented LH-reported jet USD/L. Residual exposure shown when pass-through is applied.
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+              <a
+                href="/crisis/saf-tipping-point?lh=1"
+                className="rounded-lg bg-sky-600 px-3 py-1.5 text-center text-xs font-medium text-white hover:bg-sky-500"
+              >
+                Open LH playbook →
+              </a>
+              <a
+                href="/de/lufthansa-saf-2026"
+                className="rounded-lg border border-slate-600 px-3 py-1.5 text-center text-xs font-medium text-slate-200 hover:border-slate-400"
+              >
+                DE analysis
+              </a>
+            </div>
+          </div>
+          {decision?.residual_fuel_cost_exposure != null && (
+            <p className="mt-3 text-sm text-amber-200">
+              Residual fuel-cost exposure (model index): {formatNumber(decision.residual_fuel_cost_exposure, 3)} ·
+              pass-through {decision.fare_pass_through_pct != null ? `${Math.round(decision.fare_pass_through_pct * 100)}%` : 'n/a'} ·
+              labor €{decision.labor_cost_impact_eur_m ?? '—'}m · extra fuel €{decision.extra_fuel_cost_eur_m ?? '—'}m
+            </p>
+          )}
+        </section>
+      )}
+
       {alertBanners.length > 0 && (
         <section className="mb-6 space-y-3">
           {alertBanners.map((banner, idx) => (
@@ -161,7 +224,7 @@ export default async function DashboardPage() {
                         : 'bg-amber-600 text-white hover:bg-amber-500'
                     }`}
                   >
-                    查看详情 →
+                    View details →
                   </a>
                 )}
               </div>
@@ -172,42 +235,65 @@ export default async function DashboardPage() {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="市场快照"
+          label="Market snapshot"
           value={`$${formatNumber(market.brent_usd_per_bbl)}/bbl`}
-          hint={`Jet(全球) $${formatNumber(market.jet_usd_per_l, 3)}/L | Jet(EU 代理) $${formatNumber(market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l, 3)}/L | 碳价 $${formatNumber(market.carbon_proxy_usd_per_t)}/tCO2`}
+          hint={`Jet(global) $${formatNumber(market.jet_usd_per_l, 3)}/L | Jet(EU proxy) $${formatNumber(market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l, 3)}/L | Carbon $${formatNumber(market.carbon_proxy_usd_per_t)}/tCO2`}
         />
         <MetricCard
-          label="情景模式"
+          label="Jet–Brent derived"
+          value={
+            spread == null
+              ? 'n/a'
+              : `$${formatNumber(spread, 3)}/L`
+          }
+          hint={
+            multiplier == null
+              ? 'Arithmetic from snapshot only when Brent + jet present'
+              : `×${formatNumber(multiplier, 3)} vs Brent/L · source ${String(derived.jet_source ?? analysis.jetSourceKey)} · not a forecast`
+          }
+        />
+        <MetricCard
+          label="Scenario mode"
           value={`${readModel.scenarioCount}`}
-          hint={readModel.scenarioCount > 0 ? '已有保存情景，可用于对比。' : '暂无保存情景；需要假设推演时可从情景工作区开始。'}
+          hint="从 /v1/workspaces/{slug}/scenarios 读取"
         />
-        <MetricCard label="管理控制" value="必需" hint="路线成本、政策参数、来源维护" />
+        <MetricCard label="Admin control" value="Required" hint="路线成本、政策参数、来源维护" />
         <MetricCard
-          label="交付状态"
-          value={readModel.isFallback ? '回退' : '实时切片'}
-          hint={dashboardFallbackHint(readModel)}
+          label="Delivery lane"
+          value={readModel.isFallback ? 'Fallback' : 'Live Slice'}
+          hint={
+            readModel.isFallback
+              ? `API fallback: ${readModel.error ?? 'unknown'}`
+              : `source status: ${readModel.market.source_status.overall} | freshness=${freshness.level} (${freshness.minutes}m) | sources ${coverageMetrics} metrics${
+                  coverageCompleteness != null ? ` · completeness ${(coverageCompleteness * 100).toFixed(0)}%` : ''
+                }`
+          }
         />
         <MetricCard
-          label="最高风险信号"
+          label="Top risk signal"
           value={riskValue}
           hint={riskHint}
           valueClassName={riskColor}
           valueHref={riskHref}
         />
         <MetricCard
-          label="德国航油价格页"
-          value="打开实时页面"
-          hint="服务端市场页，展示 Brent、全球航油、EU 航油代理价、碳价及 1d/7d/30d 变化"
+          label="Germany jet fuel page"
+          value="Open live page"
+          hint="SSR market page with Brent / global jet / EU jet proxy / carbon and 1d/7d/30d changes"
           cardHref="/prices/germany-jet-fuel"
         />
-      </section>
-
-      <section className="mt-8">
-        <ProvenanceSummary
-          summary={sourcesReadModel.summary}
-          completeness={sourcesReadModel.completeness}
-          generatedAt={sourcesReadModel.generatedAt}
-          href="/sources"
+        <MetricCard
+          label="Data freshness"
+          value={freshness.level.toUpperCase()}
+          hint={`Age ${freshness.minutes}m · fresh≤${freshness.freshMaxMinutes}m · stale≤${freshness.staleMaxMinutes}m · as_of ${formatAsOf(readModel.market.generated_at)}`}
+          valueClassName={
+            freshness.level === 'fresh'
+              ? 'text-emerald-300'
+              : freshness.level === 'stale'
+                ? 'text-amber-300'
+                : 'text-rose-300'
+          }
+          valueHref="/sources"
         />
       </section>
 
@@ -220,7 +306,7 @@ export default async function DashboardPage() {
       </section>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <InfoCard title="决策驾驶舱能力" subtitle="产品能力">
+        <InfoCard title="Dashboard capabilities" subtitle="Product features">
           <ul className="space-y-3 text-sm leading-7 text-slate-300">
             {priorities.map((item) => (
               <li key={item}>• {item}</li>
@@ -228,18 +314,23 @@ export default async function DashboardPage() {
           </ul>
         </InfoCard>
 
-        <InfoCard title="数据来源" subtitle="市场覆盖">
+        <InfoCard title="Data sources" subtitle="Honest coverage labels">
           <div className="space-y-3 text-sm leading-7 text-slate-300">
-            <p>• 覆盖健康时，实时指标优先使用主要或官方来源。</p>
-            <p>• 代理指标与回退值分开标注。</p>
-            <p>• 置信度、滞后时间与降级原因可在 Sources 页查看。</p>
-            <p>• 回退值用于保持驾驶舱可用，但不会对决策用户隐藏。</p>
+            <p>• Brent: EIA / FRED public series (daily lag possible)</p>
+            <p>• Jet: FRED Gulf + ARA/Rotterdam public proxy when available</p>
+            <p>• Carbon: CBAM+ECB proxy and/or EEX EU ETS when parseable</p>
+            <p>• Seed/fallback is always labeled — open Trust Center for as-of, lag, status.</p>
+            <p>
+              <a href="/sources" className="text-sky-300 underline">
+                Open /sources trust matrix →
+              </a>
+            </p>
           </div>
         </InfoCard>
       </section>
 
       <section className="mt-8">
-        <InfoCard title="最近情景" subtitle="来自 FastAPI / PostgreSQL">
+        <InfoCard title="Recent scenarios" subtitle="From FastAPI / PostgreSQL">
           {readModel.recentScenarioNames.length ? (
             <ul className="space-y-2 text-sm leading-7 text-slate-300">
               {readModel.recentScenarioNames.map((name) => (
@@ -248,47 +339,11 @@ export default async function DashboardPage() {
             </ul>
           ) : (
             <p className="text-sm leading-7 text-slate-300">
-              暂无保存情景。可通过 scenario API 创建一个情景，用于端到端验证 CRUD。
+              No saved scenarios yet. Create one through the scenario API to verify CRUD end-to-end.
             </p>
           )}
         </InfoCard>
       </section>
-
-      {pathwayComparison ? (
-        <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6">
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">路径对比</p>
-              <h2 className="mt-2 text-xl font-bold text-slate-950">SAF 路径净成本与来源可信度</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                以当前市场切片计算各 SAF 路径的净成本与价差，并标注每条路径的来源类型与置信度。
-              </p>
-            </div>
-            <span className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">
-              对比信号：{pathwayComparison.signalLabel}
-            </span>
-          </div>
-          <SafPathwayComparisonTable
-            selectedPathwayKey="hefa"
-            pathways={pathwayComparison.rows.map((row) => ({
-              pathway_key: row.pathway_key,
-              display_name: row.name,
-              net_cost_low_usd_per_l: row.min_usd_per_l,
-              net_cost_high_usd_per_l: row.max_usd_per_l,
-              spread_low_pct: row.spread_pct ?? 0,
-              spread_high_pct: row.spread_pct ?? 0,
-              status: row.status
-            }))}
-            sources={pathwayComparison.sourceByKey}
-          />
-        </section>
-      ) : null}
-
-      {euEtsPressure ? (
-        <section className="mt-8">
-          <EuEtsPressurePanel model={euEtsPressure} />
-        </section>
-      ) : null}
 
       <section className="mt-12">
         <PolicyTimelineWithMarketTime />

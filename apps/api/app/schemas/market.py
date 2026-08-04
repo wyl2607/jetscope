@@ -34,6 +34,8 @@ class MarketSnapshotResponse(BaseModel):
     source_status: SourceStatus
     values: dict[str, float]
     source_details: dict[str, MarketSourceDetail] = Field(default_factory=dict)
+    # Pure arithmetic from values already in the snapshot; never invents prices.
+    derived: dict[str, float | str] = Field(default_factory=dict)
 
 
 class MarketHistoryPoint(BaseModel):
@@ -61,15 +63,28 @@ class MarketHistoryResponse(BaseModel):
 class MarketRefreshResponse(BaseModel):
     accepted: bool
     message: str
-    refreshed_at: datetime | None = None
-    source_status: str | None = None
-    persisted_metric_count: int | None = None
-    ingest: str | None = None
 
 
-class MarketHistoryBackfillResponse(BaseModel):
-    accepted: bool
-    message: str
-    inserted_metric_count: int
-    days_requested: int
-    sources: list[str] = Field(default_factory=list)
+class MarketRefreshRunSummary(BaseModel):
+    id: str
+    refreshed_at: datetime
+    source_status: str
+    ingest: str
+    ok: bool
+
+
+class MarketHealthResponse(BaseModel):
+    generated_at: datetime
+    refresh_interval_seconds: int
+    latest_refreshed_at: datetime | None = None
+    latest_status: str | None = None
+    latest_ingest: str | None = None
+    age_seconds: int | None = None
+    next_refresh_eta_seconds: int | None = None
+    runs_window: int = 10
+    runs_total: int = 0
+    runs_ok: int = 0
+    success_rate: float | None = Field(default=None, ge=0.0, le=1.0)
+    healthy: bool
+    note: str
+    recent_runs: list[MarketRefreshRunSummary] = Field(default_factory=list)

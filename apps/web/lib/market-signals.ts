@@ -27,7 +27,7 @@ export type ReserveSeverity = {
 export type TippingPointSignalTone = 'teal' | 'amber' | 'red';
 
 export function computeDashboardAlertBanners(
-  market: DashboardReadModel['market'],
+  market: DashboardReadModel['market'] & { derived?: Record<string, number | string> },
   risk: DashboardReadModel['topRiskSignal']
 ): AlertBanner[] {
   const banners: AlertBanner[] = [];
@@ -37,28 +37,47 @@ export function computeDashboardAlertBanners(
   if (Number.isFinite(jetEu) && jetEu >= JET_PRICE_ALERT_THRESHOLD_USD_PER_L) {
     banners.push({
       level: 'alert',
-      title: '航煤价格预警',
-      message: `欧盟航煤代理价格达到 $${jetEu.toFixed(3)}/L（阈值 $${JET_PRICE_ALERT_THRESHOLD_USD_PER_L.toFixed(2)}/L）。短途航线利润率承压显著。`,
+      title: 'Jet Fuel Price Alert',
+      message: `EU jet proxy reached $${jetEu.toFixed(3)}/L (threshold $${JET_PRICE_ALERT_THRESHOLD_USD_PER_L.toFixed(2)}/L). Short-haul margins under severe pressure.`,
       href: '/crisis/eu-jet-reserves'
     });
   }
 
   const brent1d = risk?.metricKey === 'brent_usd_per_bbl' && risk.window === '1d' ? risk.changePct : undefined;
   if (typeof brent1d === 'number' && Number.isFinite(brent1d) && Math.abs(brent1d) >= BRENT_DAILY_CHANGE_ALERT_PCT) {
-    const direction = brent1d > 0 ? '上涨' : '下跌';
+    const direction = brent1d > 0 ? 'surged' : 'dropped';
     banners.push({
       level: 'alert',
-      title: 'SAF 拐点预警',
-      message: `Brent 1日内${direction} ${Math.abs(brent1d).toFixed(2)}%。SAF 竞争力差距正在快速收窄。`,
+      title: 'SAF Inflection Alert',
+      message: `Brent ${direction} ${Math.abs(brent1d).toFixed(2)}% in 1d. SAF competitiveness gap narrowing rapidly.`,
       href: '/crisis/eu-jet-reserves'
+    });
+  }
+
+  // Jet–Brent spread alert only when dashboard exposes derived arithmetic fields.
+  const derived = market?.derived;
+  const spread = typeof derived?.jet_vs_brent_spread_usd_per_l === 'number'
+    ? derived.jet_vs_brent_spread_usd_per_l
+    : undefined;
+  const multiplier = typeof derived?.jet_vs_brent_multiplier === 'number'
+    ? derived.jet_vs_brent_multiplier
+    : undefined;
+  if (typeof spread === 'number' && Number.isFinite(spread) && spread >= 0.2) {
+    banners.push({
+      level: 'watch',
+      title: 'Jet–Brent Spread Elevated',
+      message: `Derived spread $${spread.toFixed(3)}/L` +
+        (typeof multiplier === 'number' ? ` (×${multiplier.toFixed(3)} vs Brent/L)` : '') +
+        '. Arithmetic from snapshot prices only — not a forecast.',
+      href: '/sources'
     });
   }
 
   if (risk && risk.level === 'watch' && risk.window === '1d' && banners.length === 0) {
     banners.push({
       level: 'watch',
-      title: '市场观察',
-      message: `${risk.metric} 1日内变动 ${risk.changePct > 0 ? '+' : ''}${risk.changePct.toFixed(2)}%。请持续观察拐点信号。`,
+      title: 'Market Watch',
+      message: `${risk.metric} moved ${risk.changePct > 0 ? '+' : ''}${risk.changePct.toFixed(2)}% in 1d. Monitor for inflection signals.`,
       href: '/sources'
     });
   }
@@ -70,7 +89,7 @@ export function getReserveSeverity(weeks: number): ReserveSeverity {
   if (weeks <= 2) {
     return {
       level: 'critical',
-      label: '危急 - 需要立即行动',
+      label: 'CRITICAL — Immediate action required',
       color: 'text-rose-300',
       barColor: 'bg-rose-500',
       tone: 'red'
@@ -79,7 +98,7 @@ export function getReserveSeverity(weeks: number): ReserveSeverity {
   if (weeks <= 4) {
     return {
       level: 'elevated',
-      label: '升高 - SAF 切换窗口开启',
+      label: 'ELEVATED — SAF switch window opening',
       color: 'text-amber-300',
       barColor: 'bg-amber-500',
       tone: 'amber'
@@ -88,7 +107,7 @@ export function getReserveSeverity(weeks: number): ReserveSeverity {
   if (weeks <= 6) {
     return {
       level: 'watch',
-      label: '观察 - 密切监控',
+      label: 'WATCH — Monitor closely',
       color: 'text-yellow-300',
       barColor: 'bg-yellow-500',
       tone: 'blue'
@@ -96,7 +115,7 @@ export function getReserveSeverity(weeks: number): ReserveSeverity {
   }
   return {
     level: 'normal',
-    label: '正常',
+    label: 'NORMAL',
     color: 'text-emerald-300',
     barColor: 'bg-emerald-500',
     tone: 'blue'
@@ -132,14 +151,14 @@ export function getTippingPointSignalMeta(
 }
 
 export function getAirlineDecisionSignalLabel(signal: string): string {
-  if (signal === 'switch_window_opening') return '切换窗口开启';
-  if (signal === 'capacity_stress_dominant') return '运力压力主导';
-  return '渐进调整';
+  if (signal === 'switch_window_opening') return 'Switch window opening';
+  if (signal === 'capacity_stress_dominant') return 'Capacity stress dominant';
+  return 'Incremental adjustment';
 }
 
 export function getPathwayStatusLabel(status: string): string {
-  if (status === 'competitive') return 'SAF 成本占优';
-  if (status === 'inflection') return '切换窗口开启';
-  if (status === 'premium') return '化石航油仍占优';
-  return '未知';
+  if (status === 'competitive') return 'SAF cost advantaged';
+  if (status === 'inflection') return 'Switch window opening';
+  if (status === 'premium') return 'Fossil still advantaged';
+  return 'Unknown';
 }

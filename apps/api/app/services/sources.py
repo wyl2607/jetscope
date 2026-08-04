@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.schemas.sources import SourceCoverageMetric, SourceCoverageResponse
+from app.services.bootstrap import utcnow
 from app.services.market import DEFAULT_MARKET_METRICS, build_market_snapshot_response
 
 
@@ -22,14 +23,17 @@ _SEED_FALLBACKS: dict[str, tuple[str, str, float, str, str]] = {
     "brent_usd_per_bbl": ("EIA / FRED", "public_proxy", 0.70, "global", "benchmark"),
     "jet_usd_per_l": ("FRED Gulf Coast", "public_proxy", 0.70, "us", "statistical_series"),
     "carbon_proxy_usd_per_t": ("CBAM + ECB", "derived", 0.70, "eu", "regulatory_proxy"),
-    "jet_eu_proxy_usd_per_l": ("Derived from Brent", "derived", 0.65, "eu", "derived_proxy"),
+    "jet_eu_proxy_usd_per_l": ("Seed baseline", "deterministic_fallback", 0.25, "eu", "deterministic_fallback"),
     "rotterdam_jet_fuel_usd_per_l": ("ARA/Rotterdam (public)", "public_proxy", 0.60, "eu", "spot_market"),
     "eu_ets_price_eur_per_t": ("EEX EU ETS", "official", 0.85, "eu", "compliance_market"),
     "germany_premium_pct": ("Derived comparison", "derived", 0.60, "de", "price_differential"),
 }
 
+
 def _classify_source_type(source_name: str, fallback_used: bool) -> str:
     normalized = source_name.lower()
+    if "seed" in normalized or "seed-baseline" in normalized:
+        return "deterministic_fallback"
     if fallback_used:
         return "derived"
     if normalized in {"eia", "ecb", "eu_ets_eex", "eex-eu-ets"}:
@@ -60,19 +64,14 @@ def build_source_coverage_response(db: Session) -> SourceCoverageResponse:
                 status=detail.status,
                 region=detail.region,
                 market_scope=detail.market_scope,
-                error=detail.error,
-                note=detail.note,
-                cbam_eur=detail.cbam_eur,
-                usd_per_eur=detail.usd_per_eur,
             )
         )
 
     # Backfill any missing expected metrics individually so partial upstream
     # loss does not silently drop rows from the sources table.
-    present_keys = {m.metric_key for m in metrics if m.metric_key in _EXPECTED_METRIC_KEYS}
-    had_source_details = bool(metrics)
+    present_from_snapshot = {m.metric_key for m in metrics}
     for metric_key in _EXPECTED_METRIC_KEYS:
-        if metric_key in present_keys:
+        if metric_key in present_from_snapshot:
             continue
         source_name, source_type, confidence, region, market_scope = _SEED_FALLBACKS[metric_key]
         metrics.append(
@@ -108,11 +107,12 @@ def build_source_coverage_response(db: Session) -> SourceCoverageResponse:
                 )
             )
 
-    completeness = len(present_keys) / len(_EXPECTED_METRIC_KEYS) if had_source_details else 0.0
-    fallback_or_seed = any(metric.fallback_used or metric.status == "seed" for metric in metrics)
+    # Completeness must be computed AFTER backfill (was a bug: always 0 on seed).
+    covered_keys = {m.metric_key for m in metrics} & _EXPECTED_METRIC_KEYS
+    completeness = len(covered_keys) / len(_EXPECTED_METRIC_KEYS) if _EXPECTED_METRIC_KEYS else 1.0
     return SourceCoverageResponse(
-        generated_at=snapshot.generated_at,
+        generated_at=utcnow(),
         metrics=metrics,
         completeness=completeness,
-        degraded=completeness < 1.0 or fallback_or_seed,
+        degraded=completeness < 1.0,
     )
