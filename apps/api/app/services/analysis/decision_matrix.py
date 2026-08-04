@@ -59,7 +59,7 @@ def compute_airline_decision(
         # Residual share of fuel shock not recovered via fares (observed LH ~0.60).
         residual_fuel_cost_exposure = round(fuel_shock * (1.0 - fare_pass_through_pct), 4)
         # When pass-through is high, capacity cuts become relatively more likely
-        # than pure fare recovery — mild adjustment, not a new invented base rate.
+        # than pure fare recovery ÔÇö mild adjustment, not a new invented base rate.
         raise_fares = raise_fares * (0.85 + 0.15 * fare_pass_through_pct)
         cut_capacity = cut_capacity * (1.0 + 0.15 * (1.0 - fare_pass_through_pct))
 

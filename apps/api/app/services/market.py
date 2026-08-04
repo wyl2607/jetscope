@@ -1,11 +1,13 @@
+import os
 from datetime import datetime, timedelta, timezone
+from urllib.parse import quote
 
 import httpx
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from app.models.tables import MarketRefreshRun, MarketSnapshot
 from app.core.config import settings
+from app.models.tables import MarketRefreshRun, MarketSnapshot
 from app.schemas.market import (
     MarketHealthResponse,
     MarketHistoryPoint,
@@ -27,6 +29,7 @@ MARKET_SOURCE_URLS = {
     "cbam_price": "https://taxation-customs.ec.europa.eu/carbon-border-adjustment-mechanism/price-cbam-certificates_en",
     "ecb_eur_usd": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
     "eu_ets_eex": "https://www.eex.com/en/market-data/environmental-markets/spot-market",
+    "yahoo_chart": "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range={range}&interval=1d",
 }
 
 LITERS_PER_US_GALLON = 3.78541
@@ -36,7 +39,17 @@ LITERS_PER_METRIC_TON_JET = 1000.0 / JET_FUEL_REFERENCE_DENSITY_KG_PER_L
 # EU jet proxy = Brent (USD/bbl -> USD/L) * premium factor.
 # Premium approximates jet crack + ARA/Europe logistics basis in one stable multiplier.
 EU_JET_PROXY_BRENT_PREMIUM_MULTIPLIER = 1.20
-DEFAULT_BRENT_USD_PER_BBL = 114.93
+# Deterministic seed baselines refreshed from public spot references (2026-07-17):
+# - Brent: Yahoo Finance BZ=F close (~87 USD/bbl)
+# - EUR/USD: ECB eurofxref daily (1.1435)
+# - EU ETS: public secondary-market quote (~80.4 EUR/t)
+# Live adapters still prefer real-time sources; these values are fallbacks only.
+DEFAULT_MARKET_SEED_AS_OF = "2026-07-17"
+DEFAULT_BRENT_USD_PER_BBL = 87.01
+DEFAULT_JET_USD_PER_L = 0.64  # Brent + ~$14/bbl crack, converted to USD/L
+DEFAULT_EU_ETS_EUR_PER_T = 80.38
+DEFAULT_EUR_USD = 1.1435
+DEFAULT_CARBON_PROXY_USD_PER_T = round(DEFAULT_EU_ETS_EUR_PER_T * DEFAULT_EUR_USD, 2)
 DEFAULT_JET_EU_PROXY_USD_PER_L = round(
     (DEFAULT_BRENT_USD_PER_BBL / LITERS_PER_BARREL) * EU_JET_PROXY_BRENT_PREMIUM_MULTIPLIER,
     3,
@@ -52,13 +65,13 @@ DEFAULT_MARKET_METRICS = (
     {
         "source_key": "jet_fred_proxy",
         "metric_key": "jet_usd_per_l",
-        "value": 0.99,
+        "value": DEFAULT_JET_USD_PER_L,
         "unit": "USD/L",
     },
     {
         "source_key": "cbam_proxy",
         "metric_key": "carbon_proxy_usd_per_t",
-        "value": 88.79,
+        "value": DEFAULT_CARBON_PROXY_USD_PER_T,
         "unit": "USD/tCO2",
     },
     {
@@ -70,13 +83,13 @@ DEFAULT_MARKET_METRICS = (
     {
         "source_key": "rotterdam_jet_fuel",
         "metric_key": "rotterdam_jet_fuel_usd_per_l",
-        "value": 0.85,
+        "value": DEFAULT_JET_EU_PROXY_USD_PER_L,
         "unit": "USD/L",
     },
     {
         "source_key": "eu_ets_eex",
         "metric_key": "eu_ets_price_eur_per_t",
-        "value": 92.50,
+        "value": DEFAULT_EU_ETS_EUR_PER_T,
         "unit": "EUR/tCO2",
     },
     {
@@ -88,15 +101,10 @@ DEFAULT_MARKET_METRICS = (
 )
 
 MARKET_REFRESH_LOCK_KEY = 24041801
+DEFAULT_MARKET_SOURCE_TIMEOUT_SECONDS = 12.0
+MIN_MARKET_SOURCE_TIMEOUT_SECONDS = 0.1
 
 SOURCE_CONTEXT: dict[str, dict[str, object]] = {
-    "seed-baseline": {
-        "region": "eu",
-        "market_scope": "deterministic_fallback",
-        "lag_minutes": None,
-        "confidence_score": 0.25,
-        "note": "Deterministic seeded baseline used when live and derived public sources are unavailable.",
-    },
     "eia": {
         "region": "global",
         "market_scope": "physical_spot_benchmark",
@@ -153,7 +161,20 @@ SOURCE_CONTEXT: dict[str, dict[str, object]] = {
         "confidence_score": 0.75,
         "note": "German aviation fuel tax premium; static configuration per regulatory tax band.",
     },
+    "seed-baseline": {
+        "region": "eu",
+        "market_scope": "deterministic_fallback",
+        "lag_minutes": None,
+        "confidence_score": 0.25,
+        "note": "Deterministic seeded baseline used when live and derived public sources are unavailable.",
+    },
 }
+
+# Confidence band caps aligned with docs/DATA_CONTRACT_V1.md.
+STALE_SOURCE_CONFIDENCE_CAP = 0.49  # weak fallback / stale source
+DETERMINISTIC_FALLBACK_CONFIDENCE = 0.25  # deterministic fallback only
+# Soft staleness threshold for snapshot read-model confidence capping (minutes).
+STALE_SNAPSHOT_SOFT_MINUTES = 2 * 24 * 60
 
 
 def _round(value: float, digits: int = 2) -> float:
@@ -182,15 +203,55 @@ def _derive_jet_eu_proxy_usd_per_l_from_brent(brent_usd_per_bbl: float) -> float
     return _to_usd_per_l_from_usd_per_bbl(brent_usd_per_bbl) * EU_JET_PROXY_BRENT_PREMIUM_MULTIPLIER
 
 
-def _fetch_text(url: str, timeout_s: float = 12.0) -> str:
+def _coerce_positive_timeout(raw: str, *, scale: float = 1.0) -> float | None:
+    try:
+        value = float(raw) * scale
+    except (TypeError, ValueError):
+        return None
+    if value < MIN_MARKET_SOURCE_TIMEOUT_SECONDS:
+        return None
+    return value
+
+
+def _market_source_timeout_seconds(default: float = DEFAULT_MARKET_SOURCE_TIMEOUT_SECONDS) -> float:
+    configured_seconds = os.getenv("JETSCOPE_MARKET_SOURCE_TIMEOUT_SECONDS")
+    if configured_seconds:
+        timeout = _coerce_positive_timeout(configured_seconds)
+        if timeout is not None:
+            return timeout
+
+    legacy_milliseconds = os.getenv("SAFVSOIL_MARKET_REFRESH_TIMEOUT_MS")
+    if legacy_milliseconds:
+        timeout = _coerce_positive_timeout(legacy_milliseconds, scale=0.001)
+        if timeout is not None:
+            return timeout
+
+    settings_timeout = _coerce_positive_timeout(str(settings.market_source_timeout_seconds))
+    return settings_timeout if settings_timeout is not None else default
+
+
+def _fetch_text(url: str, timeout_s: float | None = None) -> str:
+    effective_timeout_s = timeout_s if timeout_s is not None else _market_source_timeout_seconds()
     response = httpx.get(
         url,
-        timeout=timeout_s,
-        headers={"User-Agent": "SAFvsOil API/0.1 (+fastapi vertical slice)"},
+        timeout=effective_timeout_s,
+        headers={"User-Agent": "JetScope API/0.1 (+fastapi vertical slice)"},
         follow_redirects=True,
     )
     response.raise_for_status()
     return response.text
+
+
+def _fetch_json(url: str, timeout_s: float | None = None) -> dict:
+    effective_timeout_s = timeout_s if timeout_s is not None else _market_source_timeout_seconds()
+    response = httpx.get(
+        url,
+        timeout=effective_timeout_s,
+        headers={"User-Agent": "JetScope API/0.1 (+market-history-backfill)"},
+        follow_redirects=True,
+    )
+    response.raise_for_status()
+    return response.json()
 
 
 def _parse_fred_csv(csv: str) -> tuple[str, float]:
@@ -210,6 +271,61 @@ def _parse_fred_csv(csv: str) -> tuple[str, float]:
     if not rows:
         raise ValueError("No usable rows in FRED payload")
     return rows[-1]
+
+
+def _parse_fred_csv_history(csv: str, *, cutoff: datetime) -> list[tuple[datetime, float]]:
+    rows: list[tuple[datetime, float]] = []
+    for line in csv.strip().splitlines()[1:]:
+        parts = line.split(",")
+        if len(parts) < 2:
+            continue
+        raw_value = parts[1].strip()
+        if raw_value in {"", "."}:
+            continue
+        try:
+            as_of = datetime.fromisoformat(parts[0].strip()).replace(tzinfo=timezone.utc)
+            value = float(raw_value)
+        except ValueError:
+            continue
+        if as_of >= cutoff:
+            rows.append((as_of, value))
+    return rows
+
+
+def _fetch_fred_history(series_id: str, *, days: int) -> list[tuple[datetime, float]]:
+    csv = _fetch_text(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}")
+    cutoff = utcnow() - timedelta(days=days)
+    return _parse_fred_csv_history(csv, cutoff=cutoff)
+
+
+def _fetch_yahoo_chart_history(symbol: str, *, days: int) -> list[tuple[datetime, float]]:
+    range_value = "1mo" if days <= 31 else "3mo"
+    url = MARKET_SOURCE_URLS["yahoo_chart"].format(symbol=quote(symbol, safe=""), range=range_value)
+    payload = _fetch_json(url)
+    chart = payload.get("chart", {})
+    error = chart.get("error")
+    if error:
+        raise ValueError(str(error.get("description") or error))
+    result = (chart.get("result") or [None])[0]
+    if not result:
+        raise ValueError(f"Yahoo chart returned no result for {symbol}")
+
+    timestamps = result.get("timestamp") or []
+    closes = ((result.get("indicators") or {}).get("quote") or [{}])[0].get("close") or []
+    cutoff = utcnow() - timedelta(days=days)
+    rows: list[tuple[datetime, float]] = []
+    for timestamp, close_value in zip(timestamps, closes, strict=False):
+        if close_value is None:
+            continue
+        as_of = datetime.fromtimestamp(int(timestamp), tz=timezone.utc)
+        if as_of < cutoff:
+            continue
+        try:
+            value = float(close_value)
+        except (TypeError, ValueError):
+            continue
+        rows.append((as_of, value))
+    return rows
 
 
 def _parse_eia_brent(html: str) -> float | None:
@@ -309,7 +425,9 @@ def _set_source_detail(
         "market_scope": context["market_scope"],
         "lag_minutes": context["lag_minutes"],
         "confidence_score": context["confidence_score"],
-        "fallback_used": False,
+        # Fallback/seed statuses must surface fallback_used so API consumers can
+        # distinguish live public quotes from derived or deterministic proxies.
+        "fallback_used": status in {"fallback", "seed"},
         "note": context["note"],
     }
     if value is not None:
@@ -319,6 +437,16 @@ def _set_source_detail(
     if extra:
         source_detail.update(extra)
     details["sources"][metric_name] = source_detail
+
+
+def _public_source_error(status: str, fallback_used: bool, error: object | None) -> str | None:
+    if error is None:
+        return None
+    if fallback_used:
+        return "fallback_used"
+    if status == "seed":
+        return "seed_used"
+    return "source_unavailable"
 
 
 def _ingest_brent_market_value(details: dict[str, object]) -> float | None:
@@ -415,6 +543,7 @@ def _ingest_jet_eu_market_value(
                 extra={
                     "note": "ARA/Rotterdam public quote unavailable; fell back to Brent-derived EU proxy.",
                     "primary_error": primary_error_text,
+                    "fallback_used": True,
                 },
             )
             return derived_value
@@ -424,12 +553,12 @@ def _ingest_jet_eu_market_value(
             details,
             "jet_eu_proxy",
             source="seed-baseline",
-            status="seed",
+            status="fallback",
             value=seed_value,
             extra={
                 "note": "ARA/Rotterdam and Brent unavailable; fell back to seeded EU proxy baseline.",
                 "primary_error": primary_error_text,
-                "confidence_score": 0.25,
+                "confidence_score": DETERMINISTIC_FALLBACK_CONFIDENCE,
                 "fallback_used": True,
             },
         )
@@ -467,10 +596,6 @@ def _ingest_rotterdam_jet_fuel_value(
             status="fallback",
             value=seed_value,
             error=str(error),
-            extra={
-                "fallback_used": True,
-                "confidence_score": 0.25,
-            },
         )
         return seed_value
 
@@ -544,10 +669,6 @@ def _ingest_eu_ets_price(
             status="fallback",
             value=seed_value,
             error=str(error),
-            extra={
-                "fallback_used": True,
-                "confidence_score": 0.25,
-            },
         )
         return seed_value
 
@@ -571,7 +692,7 @@ def _ingest_germany_premium(
         VAT_RATE = 0.19
         
         # Use ECB rate if available to convert to USD context
-        usd_per_eur = 1.08  # approximate fallback
+        usd_per_eur = DEFAULT_EUR_USD
         try:
             ecb_xml = _fetch_text(MARKET_SOURCE_URLS["ecb_eur_usd"])
             usd_per_eur = _parse_ecb_usd_per_eur(ecb_xml)
@@ -582,9 +703,11 @@ def _ingest_germany_premium(
         
         # Premium = (tax / jet_price) * 100
         # If jet price unavailable, use default proxy
-        base_jet_price = jet_eu_proxy_usd_per_l if jet_eu_proxy_usd_per_l else 0.85
+        base_jet_price = (
+            jet_eu_proxy_usd_per_l if jet_eu_proxy_usd_per_l else DEFAULT_JET_EU_PROXY_USD_PER_L
+        )
         if base_jet_price < 0.1:
-            base_jet_price = 0.85
+            base_jet_price = DEFAULT_JET_EU_PROXY_USD_PER_L
             
         germany_premium_pct = _round((tax_usd_per_l / base_jet_price) * 100, 2)
         
@@ -735,6 +858,200 @@ def _persist_market_snapshot_set(
     return snapshot_time
 
 
+def _latest_market_values_by_metric(db: Session) -> dict[str, float]:
+    rows = db.scalars(
+        select(MarketSnapshot).order_by(MarketSnapshot.metric_key.asc(), MarketSnapshot.as_of.desc())
+    ).all()
+    latest: dict[str, float] = {}
+    for row in rows:
+        if row.metric_key not in latest:
+            latest[row.metric_key] = float(row.value)
+    if len(latest) < len(DEFAULT_MARKET_METRICS):
+        seed_market_snapshot_set(db)
+        return _latest_market_values_by_metric(db)
+    return latest
+
+
+def _scale_history_to_latest(
+    rows: list[tuple[datetime, float]],
+    *,
+    latest_value: float,
+    inverse: bool = False,
+) -> list[tuple[datetime, float]]:
+    if not rows:
+        return []
+    latest_proxy = float(rows[-1][1])
+    if abs(latest_proxy) < 1e-9:
+        return []
+
+    scaled: list[tuple[datetime, float]] = []
+    for as_of, proxy_value in rows:
+        if inverse:
+            value = latest_value * (latest_proxy / float(proxy_value)) if abs(float(proxy_value)) >= 1e-9 else latest_value
+        else:
+            value = latest_value * (float(proxy_value) / latest_proxy)
+        scaled.append((as_of, value))
+    return scaled
+
+
+def _insert_backfill_rows(
+    db: Session,
+    metric_key: str,
+    rows: list[tuple[datetime, float]],
+    *,
+    payload: dict[str, object],
+) -> int:
+    if not rows:
+        return 0
+
+    metric_defaults = {item["metric_key"]: item for item in DEFAULT_MARKET_METRICS}
+    defaults = metric_defaults[metric_key]
+    existing = {
+        _ensure_utc_datetime(row.as_of).replace(microsecond=0)
+        for row in db.scalars(select(MarketSnapshot).where(MarketSnapshot.metric_key == metric_key)).all()
+    }
+
+    inserted = 0
+    for raw_as_of, value in rows:
+        as_of = _ensure_utc_datetime(raw_as_of).replace(microsecond=0)
+        if as_of in existing:
+            continue
+        db.add(
+            MarketSnapshot(
+                source_key=defaults["source_key"],
+                metric_key=metric_key,
+                value=float(value),
+                unit=defaults["unit"],
+                as_of=as_of,
+                payload=payload,
+            )
+        )
+        existing.add(as_of)
+        inserted += 1
+    return inserted
+
+
+def backfill_market_history_from_public_sources(db: Session, *, days: int = 30) -> dict[str, object]:
+    """Backfill local market history with public daily series and labelled proxies.
+
+    Direct public sources are used where available. Metrics without a reliable
+    free daily spot series are scaled from a public proxy curve and labelled in
+    row payloads instead of being presented as raw exchange settlement data.
+    """
+    days = max(1, min(int(days), 90))
+    latest_values = _latest_market_values_by_metric(db)
+
+    brent_rows = _fetch_yahoo_chart_history("BZ=F", days=days)
+    jet_rows = [
+        (as_of, _to_usd_per_l_from_usd_per_gal(value))
+        for as_of, value in _fetch_fred_history("DJFUELUSGULF", days=days)
+    ]
+    carbon_proxy_rows = _fetch_yahoo_chart_history("CO2.L", days=days)
+
+    inserted = 0
+    sources = ["Yahoo Finance BZ=F", "FRED DJFUELUSGULF", "Yahoo Finance CO2.L"]
+
+    inserted += _insert_backfill_rows(
+        db,
+        "brent_usd_per_bbl",
+        brent_rows,
+        payload={
+            "history_backfill": True,
+            "source": "yahoo:BZ=F",
+            "source_url": "https://finance.yahoo.com/quote/BZ=F/",
+            "note": "Brent futures daily close from Yahoo chart endpoint.",
+        },
+    )
+    inserted += _insert_backfill_rows(
+        db,
+        "jet_usd_per_l",
+        jet_rows,
+        payload={
+            "history_backfill": True,
+            "source": "fred:DJFUELUSGULF",
+            "source_url": "https://fred.stlouisfed.org/series/DJFUELUSGULF",
+            "note": "U.S. Gulf Coast kerosene-type jet fuel converted from USD/gal to USD/L.",
+        },
+    )
+
+    for metric_key, note in (
+        (
+            "jet_eu_proxy_usd_per_l",
+            "EU jet proxy scaled from Brent futures daily returns to the latest local EU jet proxy value.",
+        ),
+        (
+            "rotterdam_jet_fuel_usd_per_l",
+            "Rotterdam jet proxy scaled from Brent futures daily returns to the latest local Rotterdam value.",
+        ),
+    ):
+        inserted += _insert_backfill_rows(
+            db,
+            metric_key,
+            _scale_history_to_latest(brent_rows, latest_value=latest_values[metric_key]),
+            payload={
+                "history_backfill": True,
+                "source": "proxy:yahoo:BZ=F",
+                "source_url": "https://finance.yahoo.com/quote/BZ=F/",
+                "note": note,
+            },
+        )
+
+    for metric_key, note in (
+        (
+            "eu_ets_price_eur_per_t",
+            "EU ETS proxy scaled from SparkChange Physical Carbon EUA ETC daily returns to the latest local EU ETS value.",
+        ),
+        (
+            "carbon_proxy_usd_per_t",
+            "Carbon proxy scaled from SparkChange Physical Carbon EUA ETC daily returns to the latest local carbon proxy value.",
+        ),
+    ):
+        inserted += _insert_backfill_rows(
+            db,
+            metric_key,
+            _scale_history_to_latest(carbon_proxy_rows, latest_value=latest_values[metric_key]),
+            payload={
+                "history_backfill": True,
+                "source": "proxy:yahoo:CO2.L",
+                "source_url": "https://finance.yahoo.com/quote/CO2.L/",
+                "note": note,
+            },
+        )
+
+    inserted += _insert_backfill_rows(
+        db,
+        "germany_premium_pct",
+        _scale_history_to_latest(
+            brent_rows,
+            latest_value=latest_values["germany_premium_pct"],
+            inverse=True,
+        ),
+        payload={
+            "history_backfill": True,
+            "source": "proxy:yahoo:BZ=F:inverse",
+            "source_url": "https://finance.yahoo.com/quote/BZ=F/",
+            "note": "Germany premium proxy moves inversely to Brent-derived jet cost and is scaled to the latest local premium value.",
+        },
+    )
+
+    if inserted:
+        db.add(
+            MarketRefreshRun(
+                refreshed_at=utcnow(),
+                source_status="ok",
+                sources={"history_backfill": {"sources": sources, "days": days}},
+                ingest="history-backfill",
+            )
+        )
+        db.commit()
+
+    return {
+        "inserted_metric_count": inserted,
+        "days_requested": days,
+        "sources": sources,
+    }
+
+
 def seed_market_snapshot_set(db: Session, as_of: datetime | None = None) -> datetime:
     seed_values = {metric["metric_key"]: float(metric["value"]) for metric in DEFAULT_MARKET_METRICS}
     return _persist_market_snapshot_set(
@@ -850,7 +1167,11 @@ def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
             source=source_name,
             status=str(raw.get("status", "unknown")),
             value=float(raw["value"]) if raw.get("value") is not None else None,
-            error=str(raw["error"]) if raw.get("error") is not None else None,
+            error=_public_source_error(
+                str(raw.get("status", "unknown")),
+                bool(raw.get("fallback_used", False)),
+                raw.get("error"),
+            ),
             note=str(raw.get("note") or context["note"]),
             region=str(raw.get("region") or context["region"]),
             market_scope=str(raw.get("market_scope") or context["market_scope"]),
@@ -861,20 +1182,42 @@ def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
             usd_per_eur=float(raw["usd_per_eur"]) if raw.get("usd_per_eur") is not None else None,
             )
 
-    confidence_values = [detail.confidence_score for detail in typed_source_details.values()]
-    fallback_count = sum(1 for detail in typed_source_details.values() if detail.fallback_used)
-    confidence = _round(sum(confidence_values) / len(confidence_values), 3) if confidence_values else 1.0
-    fallback_rate = _round((fallback_count / len(typed_source_details)) * 100.0, 2) if typed_source_details else 0.0
     freshness_minutes = max(
         0,
         int((utcnow() - _ensure_utc_datetime(refreshed_at)).total_seconds() // 60),
     )
 
+    # When the refresh run itself is stale, cap confidence for fallback/proxy rows
+    # into the DATA_CONTRACT weak/stale band so product surfaces can warn.
+    if freshness_minutes >= STALE_SNAPSHOT_SOFT_MINUTES and typed_source_details:
+        capped: dict[str, MarketSourceDetail] = {}
+        for key, detail in typed_source_details.items():
+            if detail.fallback_used or detail.status in {"fallback", "seed"}:
+                capped[key] = detail.model_copy(
+                    update={
+                        "confidence_score": min(
+                            float(detail.confidence_score),
+                            STALE_SOURCE_CONFIDENCE_CAP,
+                        )
+                    }
+                )
+            else:
+                capped[key] = detail
+        typed_source_details = capped
+
+    confidence_values = [detail.confidence_score for detail in typed_source_details.values()]
+    fallback_count = sum(1 for detail in typed_source_details.values() if detail.fallback_used)
+    confidence = _round(sum(confidence_values) / len(confidence_values), 3) if confidence_values else 1.0
+    fallback_rate = _round((fallback_count / len(typed_source_details)) * 100.0, 2) if typed_source_details else 0.0
+
     derived: dict[str, float | str] = {}
     brent_for_decomp = values.get("brent_usd_per_bbl")
-    # Prefer live EU jet proxies; fall back to US jet only if EU missing.
     jet_for_decomp = values.get("rotterdam_jet_fuel_usd_per_l") or values.get("jet_eu_proxy_usd_per_l")
-    jet_source_label = "rotterdam_jet_fuel_usd_per_l" if values.get("rotterdam_jet_fuel_usd_per_l") else "jet_eu_proxy_usd_per_l"
+    jet_source_label = (
+        "rotterdam_jet_fuel_usd_per_l"
+        if values.get("rotterdam_jet_fuel_usd_per_l")
+        else "jet_eu_proxy_usd_per_l"
+    )
     if not jet_for_decomp:
         jet_for_decomp = values.get("jet_usd_per_l")
         jet_source_label = "jet_usd_per_l"
@@ -904,10 +1247,7 @@ def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
 
 
 def build_market_health_response(db: Session, *, runs_window: int = 10) -> MarketHealthResponse:
-    """Summarize recent market refresh runs for ops / trust UI.
-
-    Does not invent market prices. Status comes only from persisted refresh runs.
-    """
+    """Summarize recent market refresh runs for ops / trust UI."""
     window = max(1, min(50, int(runs_window)))
     interval = max(0, int(settings.market_refresh_interval_seconds))
     now = utcnow()
@@ -921,17 +1261,21 @@ def build_market_health_response(db: Session, *, runs_window: int = 10) -> Marke
     def _run_ok(status: str) -> bool:
         return status in {"ok", "degraded", "seed", "skipped-lock"}
 
+    def _ensure_utc(value: datetime) -> datetime:
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
+
     summaries = [
         MarketRefreshRunSummary(
             id=str(run.id),
-            refreshed_at=_ensure_utc_datetime(run.refreshed_at),
+            refreshed_at=_ensure_utc(run.refreshed_at),
             source_status=str(run.source_status),
             ingest=str(run.ingest),
             ok=_run_ok(str(run.source_status)),
         )
         for run in runs
     ]
-
     latest = summaries[0] if summaries else None
     age_seconds: int | None = None
     next_eta: int | None = None
@@ -944,8 +1288,6 @@ def build_market_health_response(db: Session, *, runs_window: int = 10) -> Marke
     total = len(summaries)
     success_rate = (ok_count / total) if total else None
 
-    # Healthy: have at least one recent run that is not hard-error, and age within 2 intervals
-    # (or any age if interval disabled).
     if latest is None:
         healthy = False
         note = "No market refresh runs recorded yet. Start API with refresh loop or POST /v1/market/refresh."
@@ -1031,6 +1373,10 @@ def build_market_history_response(
 
     metrics: dict[str, MarketMetricHistory] = {}
     for metric_key, metric_rows in rows_by_metric.items():
+        non_seed_rows = [row for row in metric_rows if not (row.payload or {}).get("seed")]
+        if non_seed_rows:
+            metric_rows = non_seed_rows
+
         latest = metric_rows[0]
         latest_value = float(latest.value)
         latest_as_of = latest.as_of

@@ -40,12 +40,56 @@ type ScenarioRecord = {
   saved_at: string;
 };
 
+export type MarketHealth = {
+  generated_at: string;
+  refresh_interval_seconds: number;
+  latest_refreshed_at: string | null;
+  latest_status: string | null;
+  latest_ingest: string | null;
+  age_seconds: number | null;
+  next_refresh_eta_seconds: number | null;
+  runs_window: number;
+  runs_total: number;
+  runs_ok: number;
+  success_rate: number | null;
+  healthy: boolean;
+  note: string;
+  recent_runs: Array<{
+    id: string;
+    refreshed_at: string;
+    source_status: string;
+    ingest: string;
+    ok: boolean;
+  }>;
+};
+
+export type CuratedAviationEvent = {
+  id: string;
+  as_of?: string;
+  source?: { title?: string; stand?: string };
+  entity?: { name?: string };
+  verified_facts?: Record<string, unknown>;
+  jetscope_mapping?: {
+    fare_pass_through_pct?: number;
+    labor_cost_impact_eur_m?: number;
+    extra_fuel_cost_eur_m?: number;
+  };
+};
+
 export type DashboardReadModel = {
   market: MarketSnapshot;
   reserve: ReserveSignal | null;
   tippingPoint: TippingPointResponse | null;
   airlineDecision: AirlineDecisionResponse | null;
   sourceCoverage: SourceCoverageResponse | null;
+  aviationEvent: CuratedAviationEvent | null;
+  marketHealth: MarketHealth | null;
+  analysisInputs: {
+    fossilJetUsdPerL: number;
+    carbonPriceEurPerT: number;
+    reserveWeeks: number;
+    jetSourceKey: string;
+  };
   scenarioCount: number;
   recentScenarioNames: string[];
   freshnessSignal: {
@@ -124,6 +168,14 @@ function fallbackReadModel(error: unknown): DashboardReadModel {
     tippingPoint: null,
     airlineDecision: null,
     sourceCoverage: null,
+    aviationEvent: null,
+    marketHealth: null,
+    analysisInputs: {
+      fossilJetUsdPerL: FALLBACK_VALUES.jet_eu_proxy_usd_per_l,
+      carbonPriceEurPerT: 92.5,
+      reserveWeeks: 3,
+      jetSourceKey: 'fallback'
+    },
     scenarioCount: 0,
     recentScenarioNames: [],
     freshnessSignal: {
@@ -195,14 +247,64 @@ function computeTopRiskSignal(history: MarketHistory | null): DashboardReadModel
 
 export async function getDashboardReadModel(locale: DisplayLocale = 'zh'): Promise<DashboardReadModel> {
   try {
-    const [market, scenarios, history, reserve, tippingPoint, airlineDecision, sourceCoverage] = await Promise.all([
+    const [market, scenarios, history, reserve, sourceCoverage, aviationEvent, marketHealth] = await Promise.all([
       fetchJson<MarketSnapshot>('/market/snapshot'),
       fetchJson<ScenarioRecord[]>(`/workspaces/${WORKSPACE_SLUG}/scenarios`).catch(() => []),
       fetchJson<MarketHistory>('/market/history').catch(() => ({ metrics: {} })),
       fetchJson<ReserveSignal>('/reserves/eu').catch(() => null),
-      fetchJson<TippingPointResponse>('/analysis/tipping-point?fossil_jet_usd_per_l=1.30&carbon_price_eur_per_t=95&subsidy_usd_per_l=0&blend_rate_pct=6').catch(() => null),
-      fetchJson<AirlineDecisionResponse>('/analysis/airline-decision?fossil_jet_usd_per_l=1.30&reserve_weeks=3&carbon_price_eur_per_t=95&pathway_key=hefa').catch(() => null),
-      fetchJson<SourceCoverageResponse>('/sources/coverage').catch(() => null)
+      fetchJson<SourceCoverageResponse>('/sources/coverage').catch(() => null),
+      fetchJson<CuratedAviationEvent>('/events/lufthansa-q2-2026-earnings').catch(() => null),
+      fetchJson<MarketHealth>('/market/health?runs_window=10').catch(() => null)
+    ]);
+
+    const values = market.values ?? {};
+    let jetSourceKey = 'unavailable';
+    let fossilJetUsdPerL = FALLBACK_VALUES.jet_eu_proxy_usd_per_l;
+    if (Number.isFinite(values.rotterdam_jet_fuel_usd_per_l) && values.rotterdam_jet_fuel_usd_per_l > 0) {
+      fossilJetUsdPerL = values.rotterdam_jet_fuel_usd_per_l;
+      jetSourceKey = 'rotterdam_jet_fuel_usd_per_l';
+    } else if (Number.isFinite(values.jet_eu_proxy_usd_per_l) && values.jet_eu_proxy_usd_per_l > 0) {
+      fossilJetUsdPerL = values.jet_eu_proxy_usd_per_l;
+      jetSourceKey = 'jet_eu_proxy_usd_per_l';
+    } else if (Number.isFinite(values.jet_usd_per_l) && values.jet_usd_per_l > 0) {
+      fossilJetUsdPerL = values.jet_usd_per_l;
+      jetSourceKey = 'jet_usd_per_l';
+    } else {
+      jetSourceKey = 'seed_fallback';
+    }
+    const carbonPriceEurPerT =
+      Number.isFinite(values.eu_ets_price_eur_per_t) && values.eu_ets_price_eur_per_t > 0
+        ? values.eu_ets_price_eur_per_t
+        : 92.5;
+    const reserveWeeks =
+      reserve && Number.isFinite(reserve.coverage_weeks) && reserve.coverage_weeks > 0
+        ? reserve.coverage_weeks
+        : 3;
+    const mapping = aviationEvent?.jetscope_mapping;
+    const tippingQuery = new URLSearchParams({
+      fossil_jet_usd_per_l: String(fossilJetUsdPerL),
+      carbon_price_eur_per_t: String(carbonPriceEurPerT),
+      subsidy_usd_per_l: '0',
+      blend_rate_pct: '6'
+    });
+    const decisionQuery = new URLSearchParams({
+      fossil_jet_usd_per_l: String(fossilJetUsdPerL),
+      reserve_weeks: String(reserveWeeks),
+      carbon_price_eur_per_t: String(carbonPriceEurPerT),
+      pathway_key: 'hefa'
+    });
+    if (mapping?.fare_pass_through_pct != null) {
+      decisionQuery.set('fare_pass_through_pct', String(mapping.fare_pass_through_pct));
+    }
+    if (mapping?.labor_cost_impact_eur_m != null) {
+      decisionQuery.set('labor_cost_impact_eur_m', String(mapping.labor_cost_impact_eur_m));
+    }
+    if (mapping?.extra_fuel_cost_eur_m != null) {
+      decisionQuery.set('extra_fuel_cost_eur_m', String(mapping.extra_fuel_cost_eur_m));
+    }
+    const [tippingPoint, airlineDecision] = await Promise.all([
+      fetchJson<TippingPointResponse>(`/analysis/tipping-point?${tippingQuery}`).catch(() => null),
+      fetchJson<AirlineDecisionResponse>(`/analysis/airline-decision?${decisionQuery}`).catch(() => null)
     ]);
 
     const topRiskSignal = computeTopRiskSignal(history);
@@ -213,6 +315,14 @@ export async function getDashboardReadModel(locale: DisplayLocale = 'zh'): Promi
       tippingPoint,
       airlineDecision,
       sourceCoverage,
+      aviationEvent,
+      marketHealth,
+      analysisInputs: {
+        fossilJetUsdPerL,
+        carbonPriceEurPerT,
+        reserveWeeks,
+        jetSourceKey
+      },
       scenarioCount: scenarios.length,
       recentScenarioNames: scenarios.slice(0, 3).map((item) => item.name),
       freshnessSignal: computeFreshnessSignal(market.generated_at),
