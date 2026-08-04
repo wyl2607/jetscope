@@ -1132,7 +1132,7 @@ def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
         values[key] = float(latest_by_metric[key].value)
 
     latest_run = db.scalar(
-        select(MarketRefreshRun).order_by(MarketRefreshRun.refreshed_at.desc())
+        select(MarketRefreshRun).order_by(MarketRefreshRun.refreshed_at.desc()).limit(1)
     )
     if latest_run is None:
         overall_status = "ok"
