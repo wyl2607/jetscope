@@ -2,7 +2,7 @@
 
 **Target host**: `usa-vps` → `racknerd-483e137` (`192.227.130.69`, also on Tailscale)
 **Production path**: `/opt/jetscope`
-**Running service (observed 2026-08)**: Docker container `jetscope-api` on `127.0.0.1:8000`
+**Running services (verified 2026-08-05)**: Docker Compose `jetscope-api` on `127.0.0.1:8000`; systemd-owned Next.js on `127.0.0.1:3000`; nginx serves `saf.meichen.beauty`
 **Legacy path**: `~/jetscope` (older rsync snapshot; prefer `/opt/jetscope`)
 
 ## V1 demo readiness checklist
@@ -15,11 +15,11 @@
 | `/v1/market/health` | Yes |
 | Honest reserve / source labels | Yes |
 | Deploy script + this doc | Yes |
-| Merge to `main` | Open — merge before long-lived prod pin |
+| Merge to `main` | Yes — production is pinned to the merged commit |
 | SSH from this machine | Working (`ssh usa-vps`) |
-| Full public web frontend container | API-only compose today; web may need separate nginx/static path |
+| Full public web frontend | Yes — Next.js is systemd-owned and nginx proxies the public domain |
 
-**Verdict**: **Enough for a USA VPS demo deploy of the V1 API + dashboard stack after merge (or direct branch deploy).**
+**Verdict**: **Demo stability verified on the USA VPS after commit-pinned deploy, bounded-load testing, and a reboot drill.**
 Not a claim of “finished commercial product” — seed/fallback honesty and live feed quality still matter.
 
 ## Preconditions
@@ -68,6 +68,7 @@ The 1.9 GiB VPS keeps the API and web processes under separate supervisors:
 
 - API: Docker Compose owns `jetscope-api`; `restart: unless-stopped`, `mem_limit: 512m`, `mem_reservation: 256m`, and `cpus: "1.0"` are defined in `docker-compose.prod.yml`.
 - Web: systemd owns Next.js through `infra/server/jetscope-web.service`; the unit waits for Docker/network readiness, restarts on failure, and caps Node/systemd memory at 512 MiB.
+- Provenance: `/opt/jetscope/.deploy-commit` and Git `HEAD` are checked against `origin/main` after commit-pinned deployment.
 - Do not add a second PM2 supervisor for the same Next.js process.
 
 After syncing a reviewed tree to `/opt/jetscope`, install and enable the web unit once:
@@ -114,10 +115,11 @@ deploy script still excludes `.env` and `data/*.db` and does not use `rsync --de
 
 ## Notes / risks
 
-- Compose file currently ships **API only** (`jetscope-api`). Public nginx today may still point other apps (e.g. ESG on `:8001`). Wire JetScope web explicitly before promising a public URL.
-- Do **not** rsync `--delete` against `/opt/jetscope` unless you intend to wipe ops files.
-- Market snapshot can be slow if upstream feeds hang; health endpoint is the operational signal.
-- Prefer: **merge PR #246 → deploy that commit** so prod matches `main`.
+- Compose owns the API; systemd owns Next.js; nginx proxies the public Host `saf.meichen.beauty`. A naked IP request is expected to hit the default nginx server and return 404.
+- The VPS currently uses Docker Compose 1.29.2. The deploy helpers remove only stale containers carrying the API service label before a rebuild; they do not use `rsync --delete`.
+- Market snapshot/history reads are bounded; still use the liveness endpoint as the watchdog signal and the external public smoke workflow for ingress/latency detection.
+- Keep off-host copies of verified SQLite backups; local timer retention does not protect against VPS or volume loss.
+- Deploy only a reviewed commit from `main` and verify the `.deploy-commit` marker after rollout.
 
 ## Rollback
 
