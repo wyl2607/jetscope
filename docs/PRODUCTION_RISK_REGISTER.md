@@ -15,6 +15,7 @@ not treated as proof of recovery, security, backup, or sustained performance.
 | R-006 | Sustained-load performance has no long-duration production baseline. | After #264, real HTTPS 20-concurrent probes were 20/20 for health, market health, snapshot, source coverage, and dashboard. Max observed times were 2.7s, 2.5s, 3.6s, 2.4s, and 9.8s; API memory was about 95 MiB / 512 MiB with no restart. | Mitigated | The bounded demo load is stable. Long-duration load testing, p95/p99 time-series, and capacity planning remain open. |
 | R-007 | Dependency updates could reintroduce a vulnerable sharp downgrade. | #251 is merged with CI/security audit green; the old Next #238 patch was closed because it downgraded sharp. Subsequent stability PRs also passed CI, CodeQL, Maintenance Gates, and Release Dry Run. | Monitored | Continue Dependabot review and require the security/audit gates for future upgrades. |
 | R-008 | Single-node capacity and failure domain remain. | API is capped at 512 MiB/1 CPU; API and Next share a roughly 1.9 GiB VPS; there is no HA or external database. | Accepted for Demo | This is suitable for a bounded demo, not HA/commercial production. Keep ceilings, backups, external smoke, and the documented rollback path. |
+| R-009 | Strict readiness is not green while optional capabilities are disabled or market sources are degraded. | `/v1/readiness` is `not_ready` with database healthy, market/source checks nonblocking but degraded, and AI research disabled. `/v1/health` remains 200; the default watchdog intentionally gates on liveness. | Accepted for Demo | Keep readiness advisory for this demo. If strict readiness is required, enable the configured AI pipeline and resolve source degradation before changing the watchdog gate. |
 
 ## Verification log
 
@@ -26,3 +27,4 @@ not treated as proof of recovery, security, backup, or sustained performance.
 - 2026-08-04: #251 dependency/security gates passed; #247/#242/#244/#245 were superseded/closed and #238 was closed because of the sharp downgrade risk.
 - 2026-08-05: Production was deployed at 6ca1cb5b0fabf108fccada7484d18149e60cb660; 20-concurrent public probes passed without API restart or cgroup OOM.
 - 2026-08-05: Controlled reboot recovery passed; final public smoke returned 200 for health, market health, snapshot, source coverage, curated Lufthansa events, and dashboard.
+- 2026-08-05: Readiness was rechecked and remains advisory `not_ready`; this is recorded separately from healthy liveness and does not claim strict readiness.
