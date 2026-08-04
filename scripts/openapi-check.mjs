@@ -61,8 +61,35 @@ async function main() {
 
     const committed = readFileSync(openApiPath, 'utf8');
     const generated = readFileSync(generatedPath, 'utf8');
-    if (committed !== generated) {
+    // Deep-stable stringify so Windows/Linux dict order / whitespace do not fail CI.
+    const stableStringify = (value) => {
+      if (Array.isArray(value)) {
+        return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+      }
+      if (value && typeof value === 'object') {
+        const keys = Object.keys(value).sort();
+        return `{${keys.map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+      }
+      return JSON.stringify(value);
+    };
+    let committedNorm;
+    let generatedNorm;
+    try {
+      committedNorm = stableStringify(JSON.parse(committed.replace(/^\uFEFF/, '')));
+      generatedNorm = stableStringify(JSON.parse(generated.replace(/^\uFEFF/, '')));
+    } catch (error) {
+      console.error('Failed to parse OpenAPI JSON for comparison:', error);
+      process.exit(1);
+    }
+    if (committedNorm !== generatedNorm) {
       console.error('OpenAPI schema is out of date. Run `npm run api:openapi` and commit apps/api/openapi.json.');
+      const cPaths = Object.keys(JSON.parse(committed).paths || {}).sort();
+      const gPaths = Object.keys(JSON.parse(generated).paths || {}).sort();
+      console.error(`committed paths=${cPaths.length} generated paths=${gPaths.length}`);
+      const onlyC = cPaths.filter((p) => !gPaths.includes(p));
+      const onlyG = gPaths.filter((p) => !cPaths.includes(p));
+      if (onlyC.length) console.error(`only committed: ${onlyC.join(', ')}`);
+      if (onlyG.length) console.error(`only generated: ${onlyG.join(', ')}`);
       process.exit(1);
     }
 
