@@ -1,11 +1,18 @@
 import { buildApiUrl } from '@/lib/api-config';
-import type { SourceCoverageMetric, SourceCoverageResponse } from '@/lib/source-coverage-contract';
+import {
+  formatSourceCoverageLag,
+  getSourceCoverageTrustState,
+  type SourceCoverageMetric,
+  type SourceCoverageResponse,
+  type SourceCoverageTrustState
+} from './source-coverage-contract';
+
+const DEFAULT_FETCH_TIMEOUT_MS = 2000;
 
 type MarketSnapshot = {
   generated_at: string;
   source_status: { overall: string };
   values: Record<string, number>;
-  source_details?: Record<string, DisplaySupplement>;
 };
 
 type MarketHistoryMetric = {
@@ -25,20 +32,42 @@ type MarketHistory = {
   metrics: Record<string, MarketHistoryMetric>;
 };
 
+export type SourceReviewAction = {
+  label: string;
+  detail: string;
+  href: string;
+  priority: 'normal' | 'review' | 'critical';
+};
+
 export type SourcesReadModel = {
   generatedAt: string;
   overallStatus: string;
   coverageMetrics: SourceCoverageMetric[];
+  summary: {
+    liveCount: number;
+    proxyCount: number;
+    fallbackCount: number;
+    degradedCount: number;
+    averageConfidence: number;
+    freshnessLabel: string;
+    trustLabel: string;
+    degradedReason: string;
+  };
   rows: Array<{
     surface: string;
     metricKey: string;
     source: string;
+    sourceType: string;
     scope: string;
     confidence: string;
+    confidenceScore: number;
     lag: string;
+    lagMinutes: number | null;
     status: string;
     fallback: string;
     asOf: string;
+    trustState: SourceCoverageTrustState;
+    degradedReason: string;
     value: string;
     change1d: string;
     change7d: string;
@@ -46,17 +75,12 @@ export type SourcesReadModel = {
     alertLevel: "normal" | "watch" | "alert";
     sparkline: string;
     note: string;
+    reviewAction: SourceReviewAction;
   }>;
   isFallback: boolean;
   error: string | null;
   completeness: number;
   degraded: boolean;
-  trustSummary: {
-    liveOk: number;
-    fallbackUsed: number;
-    seed: number;
-    unknown: number;
-  };
 };
 
 const PRIMARY_METRIC_ORDER = [
@@ -69,30 +93,14 @@ const PRIMARY_METRIC_ORDER = [
   'germany_premium_pct'
 ] as const;
 
-// LEGACY DISPLAY-ONLY BRIDGE — temporary mapping from canonical metric_key
-// to the legacy source_detail key used in MarketSnapshot.source_details.
-// This bridge is DISPLAY-ONLY. It must never be used for source/scope/status/
-// confidence/lag decisions. Those fields come from SourceCoverageMetric.
-// TODO: Remove once backend inlines display supplements (error, cbam_eur,
-// note, etc.) into SourceCoverageMetric.
-const SOURCE_DETAIL_KEY_BY_METRIC: Record<string, string> = {
-  brent_usd_per_bbl: 'brent',
-  jet_usd_per_l: 'jet',
-  carbon_proxy_usd_per_t: 'carbon',
-  jet_eu_proxy_usd_per_l: 'jet_eu_proxy',
-  rotterdam_jet_fuel_usd_per_l: 'rotterdam_jet_fuel',
-  eu_ets_price_eur_per_t: 'eu_ets',
-  germany_premium_pct: 'germany_premium'
-};
-
 const SURFACE_LABELS: Record<string, string> = {
   brent_usd_per_bbl: 'Brent',
-  jet_usd_per_l: 'Jet fuel',
-  carbon_proxy_usd_per_t: 'Carbon proxy',
-  jet_eu_proxy_usd_per_l: 'Jet fuel (EU proxy)',
-  rotterdam_jet_fuel_usd_per_l: 'Rotterdam jet fuel',
+  jet_usd_per_l: '航煤',
+  carbon_proxy_usd_per_t: '碳价代理',
+  jet_eu_proxy_usd_per_l: '航煤（欧盟代理）',
+  rotterdam_jet_fuel_usd_per_l: 'Rotterdam 航煤',
   eu_ets_price_eur_per_t: 'EU ETS',
-  germany_premium_pct: 'Germany premium'
+  germany_premium_pct: '德国溢价'
 };
 
 function formatNumber(value: number, digits = 2) {
@@ -103,13 +111,12 @@ function formatNumber(value: number, digits = 2) {
 }
 
 function sourceLabel(raw?: string) {
-  if (!raw) return "n/a";
+  if (!raw) return "无数据";
   if (raw === "eia") return "EIA Daily Prices";
   if (raw === "fred") return "FRED";
   if (raw === "cbam+ecb") return "CBAM + ECB";
   if (raw === "ara-rotterdam-public") return "ARA/Rotterdam (public)";
-  if (raw === "brent-derived") return "Brent-derived fallback";
-  if (raw === "seed-baseline") return "Seed baseline (deterministic)";
+  if (raw === "brent-derived") return "Brent 派生回退";
   return raw;
 }
 
@@ -118,20 +125,22 @@ function surfaceLabel(metricKey: string) {
 }
 
 function statusLabel(raw?: string) {
-  if (!raw) return "unknown";
+  if (!raw) return "未知";
   return raw;
 }
 
-function formatLagMinutes(value?: number | null) {
-  if (!Number.isFinite(value ?? NaN)) return "n/a";
-  const minutes = Number(value);
-  if (minutes < 60) return `${minutes}m`;
-  if (minutes < 1440) return `${Math.round(minutes / 60)}h`;
-  return `${Math.round(minutes / 1440)}d`;
+function sourceTypeLabel(raw?: string): string {
+  if (!raw) return '未知';
+  if (raw === 'market_primary') return '市场主来源';
+  if (raw === 'public_proxy') return '公开代理';
+  if (raw === 'regulatory_proxy') return '监管代理';
+  if (raw === 'derived') return '派生代理';
+  if (raw === 'official') return '官方来源';
+  return raw.replaceAll('_', ' ');
 }
 
 function formatChange(value?: number | null) {
-  if (!Number.isFinite(value ?? NaN)) return "n/a";
+  if (!Number.isFinite(value ?? NaN)) return "无数据";
   const numeric = Number(value);
   const sign = numeric > 0 ? "+" : "";
   return `${sign}${numeric.toFixed(2)}%`;
@@ -174,7 +183,7 @@ function metricHistoryFor(history: MarketHistory | null, key: string): MarketHis
 
 function formatMetricValue(metricKey: string, value: number | undefined): string {
   if (!Number.isFinite(value ?? NaN)) {
-    return 'n/a';
+    return '无数据';
   }
   if (metricKey === 'brent_usd_per_bbl') {
     return `${formatNumber(Number(value))} USD/bbl`;
@@ -191,46 +200,142 @@ function formatMetricValue(metricKey: string, value: number | undefined): string
   return `${formatNumber(Number(value), 3)} USD/L`;
 }
 
-// DISPLAY-ONLY SUPPLEMENT — fields that backend does not yet inline into
-// SourceCoverageMetric but are useful for note rendering only.
-// This type must never expand to include source/scope/status/confidence/lag.
-type DisplaySupplement = {
-  error?: string;
-  note?: string;
-  cbam_eur?: number;
-  usd_per_eur?: number;
-};
+function buildMetricNote(metric: SourceCoverageMetric): string {
+  if (metric.error) {
+    return sourceErrorLabel(metric.error);
+  }
+  if (typeof metric.cbam_eur === 'number' && typeof metric.usd_per_eur === 'number') {
+    return `CBAM ${formatNumber(metric.cbam_eur)} EUR × FX ${formatNumber(metric.usd_per_eur, 4)}`;
+  }
+  const parts: string[] = [];
+  if (metric.note) {
+    parts.push(metric.note);
+  }
+  if (metric.fallback_used) {
+    parts.push('回退');
+  }
+  return parts.join(' | ') || '实时';
+}
 
-function extractDisplaySupplement(snapshot: MarketSnapshot, metricKey: string): DisplaySupplement | null {
-  const detail = snapshot.source_details?.[metricKey] ?? snapshot.source_details?.[SOURCE_DETAIL_KEY_BY_METRIC[metricKey] ?? ''];
-  if (!detail) {
-    return null;
+function degradedReasonFor(metric: SourceCoverageMetric): string {
+  if (metric.error) return sourceErrorLabel(metric.error);
+  if (metric.fallback_used && metric.status === 'seed') return '实时覆盖不可用，已使用种子回退值';
+  if (metric.fallback_used) return '该指标使用了回退路径';
+  if (metric.status !== 'ok') return `来源状态为 ${metric.status}`;
+  if (metric.source_type.includes('proxy') || metric.source_type === 'derived') return '派生或代理指标；用于高风险决策前需要复核';
+  return '实时主来源或官方来源，未标记降级';
+}
+
+function sourceErrorLabel(error: string): string {
+  if (error === 'fallback_used') return '实时来源不可用，当前值来自回退路径';
+  if (error === 'source_unavailable') return '来源暂不可用';
+  return error;
+}
+
+function reviewActionFor(metric: SourceCoverageMetric): SourceReviewAction {
+  if (metric.error === 'source_unavailable') {
+    return {
+      label: '确认公开端点',
+      detail: '先在 Admin 触发市场刷新；若仍不可用，保留回退标记并人工核对外部报价。',
+      href: '/admin',
+      priority: 'critical'
+    };
+  }
+  if (metric.error === 'fallback_used' || metric.fallback_used || metric.status === 'seed' || metric.status === 'fallback') {
+    return {
+      label: '刷新并复核回退',
+      detail: '配置 JETSCOPE_ADMIN_TOKEN 后触发刷新；刷新后回到本页确认该指标脱离回退。',
+      href: '/admin',
+      priority: 'critical'
+    };
+  }
+  if (metric.error || metric.status !== 'ok') {
+    return {
+      label: '排查来源状态',
+      detail: `来源状态为 ${metric.status}；先刷新，再检查该供应商或解析器是否变更。`,
+      href: '/admin',
+      priority: 'critical'
+    };
+  }
+  if (metric.source_type.includes('proxy') || metric.source_type === 'derived') {
+    return {
+      label: '人工复核代理假设',
+      detail: '用于高风险定价或采购决策前，交叉核对原始报价、政策口径和报告说明。',
+      href: '/reports',
+      priority: 'review'
+    };
   }
   return {
-    error: detail.error,
-    note: detail.note,
-    cbam_eur: detail.cbam_eur,
-    usd_per_eur: detail.usd_per_eur
+    label: '保留快照证据',
+    detail: '当前来源可用；重大决策前记录生成时间、置信度和快照链接。',
+    href: '/reports',
+    priority: 'normal'
   };
 }
 
-function buildMetricNote(metric: SourceCoverageMetric, supplement?: DisplaySupplement | null): string {
-  if (supplement?.error) {
-    return supplement.error;
+function averageFinite(values: number[]): number {
+  const finiteValues = values.filter((value) => Number.isFinite(value));
+  return finiteValues.length
+    ? finiteValues.reduce((sum, value) => sum + value, 0) / finiteValues.length
+    : 0;
+}
+
+function freshestLagMinutes(rows: SourcesReadModel['rows']): number | null {
+  const lagMinutes = rows
+    .map((row) => row.lagMinutes)
+    .filter((value): value is number => Number.isFinite(value));
+  return lagMinutes.length ? Math.min(...lagMinutes) : null;
+}
+
+function summarizeCoverageTrust(rows: SourcesReadModel['rows']): Pick<
+  SourcesReadModel['summary'],
+  'liveCount' | 'proxyCount' | 'fallbackCount' | 'degradedCount'
+> {
+  const counts = {
+    liveCount: 0,
+    proxyCount: 0,
+    fallbackCount: 0,
+    degradedCount: 0
+  };
+
+  for (const row of rows) {
+    if (row.trustState === 'live') counts.liveCount += 1;
+    if (row.trustState === 'proxy') counts.proxyCount += 1;
+    if (row.trustState === 'fallback') counts.fallbackCount += 1;
+    if (row.trustState === 'degraded') counts.degradedCount += 1;
   }
-  if (typeof supplement?.cbam_eur === 'number' && typeof supplement.usd_per_eur === 'number') {
-    return `CBAM ${formatNumber(supplement.cbam_eur)} EUR × FX ${formatNumber(supplement.usd_per_eur, 4)}`;
-  }
-  const parts: string[] = [];
-  if (supplement?.note) {
-    parts.push(supplement.note);
-  }
-  if (metric.source_name && (metric.source_name.includes('seed') || metric.source_name === 'seed-baseline')) {
-    parts.push('seed baseline');
-  } else if (metric.fallback_used) {
-    parts.push('fallback');
-  }
-  return parts.join(' | ') || 'live';
+
+  return counts;
+}
+
+function buildSummary(rows: SourcesReadModel['rows'], completeness: number, degraded: boolean): SourcesReadModel['summary'] {
+  const { liveCount, proxyCount, fallbackCount, degradedCount } = summarizeCoverageTrust(rows);
+  const averageConfidence = averageFinite(rows.map((row) => row.confidenceScore));
+  const freshestLag = freshestLagMinutes(rows);
+  const freshnessLabel = freshestLag == null ? '新鲜度未知' : `最新来源 ${formatSourceCoverageLag(freshestLag)}`;
+  const trustLabel = degraded || fallbackCount > 0 || degradedCount > 0
+    ? '决策支持：请核验降级输入'
+    : proxyCount > 0
+      ? '决策支持：含代理来源'
+      : '决策支持：实时来源就绪';
+  const degradedReason = degraded
+    ? `覆盖完整度 ${Math.round(completeness * 100)}%；${fallbackCount} 个回退，${degradedCount} 个降级`
+    : fallbackCount > 0
+      ? `${fallbackCount} 个指标使用回退值`
+      : proxyCount > 0
+        ? `${proxyCount} 个指标为代理或派生估算`
+        : '所有指标均来自实时主来源或官方来源';
+
+  return {
+    liveCount,
+    proxyCount,
+    fallbackCount,
+    degradedCount,
+    averageConfidence,
+    freshnessLabel,
+    trustLabel,
+    degradedReason
+  };
 }
 
 function sortCoverageMetrics(metrics: SourceCoverageMetric[]): SourceCoverageMetric[] {
@@ -249,59 +354,44 @@ function buildRows(
 ): SourcesReadModel['rows'] {
   return coverageMetrics.map((metric) => {
     const historyMetric = metricHistoryFor(history, metric.metric_key);
-    const supplement = extractDisplaySupplement(snapshot, metric.metric_key);
     const snapshotValue = snapshot.values[metric.metric_key];
-
-    const asOfRaw = historyMetric?.latest_as_of || snapshot.generated_at;
-    let asOfLabel = 'n/a';
-    if (asOfRaw) {
-      const parsed = new Date(asOfRaw);
-      asOfLabel = Number.isNaN(parsed.getTime()) ? String(asOfRaw) : parsed.toLocaleString();
-    }
 
     return {
       surface: surfaceLabel(metric.metric_key),
       metricKey: metric.metric_key,
       source: sourceLabel(metric.source_name),
+      sourceType: sourceTypeLabel(metric.source_type),
       scope: `${metric.region} · ${metric.market_scope}`,
       confidence: Number.isFinite(metric.confidence_score) ? metric.confidence_score.toFixed(2) : 'n/a',
-      lag: formatLagMinutes(metric.lag_minutes),
+      confidenceScore: Number.isFinite(metric.confidence_score) ? metric.confidence_score : 0,
+      lag: formatSourceCoverageLag(metric.lag_minutes),
+      lagMinutes: Number.isFinite(metric.lag_minutes ?? NaN) ? Number(metric.lag_minutes) : null,
       status: statusLabel(metric.status),
       fallback: metric.fallback_used ? 'yes' : 'no',
-      asOf: asOfLabel,
+      asOf: (() => {
+        const raw = historyMetric?.latest_as_of || snapshot.generated_at;
+        if (!raw) return 'n/a';
+        const parsed = new Date(raw);
+        return Number.isNaN(parsed.getTime()) ? String(raw) : parsed.toLocaleString();
+      })(),
+      trustState: getSourceCoverageTrustState(metric),
+      degradedReason: degradedReasonFor(metric),
       value: formatMetricValue(metric.metric_key, snapshotValue),
       change1d: formatChange(historyMetric?.change_pct_1d),
       change7d: formatChange(historyMetric?.change_pct_7d),
       change30d: formatChange(historyMetric?.change_pct_30d),
       alertLevel: computeAlertLevel(historyMetric),
       sparkline: encodeSparklinePoints(historyMetric?.points ?? []),
-      note: buildMetricNote(metric, supplement)
+      note: buildMetricNote(metric),
+      reviewAction: reviewActionFor(metric)
     };
   });
-}
-
-function buildTrustSummary(metrics: SourceCoverageMetric[]): SourcesReadModel['trustSummary'] {
-  let liveOk = 0;
-  let fallbackUsed = 0;
-  let seed = 0;
-  let unknown = 0;
-  for (const metric of metrics) {
-    if (metric.fallback_used) fallbackUsed += 1;
-    if (metric.status === 'seed' || metric.source_type === 'deterministic_fallback') {
-      seed += 1;
-    } else if (metric.status === 'ok' && !metric.fallback_used) {
-      liveOk += 1;
-    } else if (metric.status === 'unknown') {
-      unknown += 1;
-    }
-  }
-  return { liveOk, fallbackUsed, seed, unknown };
 }
 
 function buildGenericFallbackCoverageMetrics(): SourceCoverageMetric[] {
   return PRIMARY_METRIC_ORDER.map((metricKey) => ({
     metric_key: metricKey,
-    source_name: 'coverage unavailable',
+    source_name: '覆盖不可用',
     source_type: 'unknown',
     confidence_score: 0,
     lag_minutes: null,
@@ -316,8 +406,7 @@ function emptySnapshot(): MarketSnapshot {
   return {
     generated_at: new Date().toISOString(),
     source_status: { overall: 'degraded' },
-    values: {},
-    source_details: {}
+    values: {}
   };
 }
 
@@ -327,22 +416,27 @@ function fallback(
   history: MarketHistory | null = null
 ): SourcesReadModel {
   const coverageMetrics = buildGenericFallbackCoverageMetrics();
+  const rows = buildRows(snapshot, history, coverageMetrics);
   return {
     generatedAt: snapshot.generated_at,
     overallStatus: snapshot.source_status?.overall ?? 'degraded',
     coverageMetrics,
-    rows: buildRows(snapshot, history, coverageMetrics),
+    summary: buildSummary(rows, 0, true),
+    rows,
     isFallback: true,
-    error: error instanceof Error ? error.message : "unknown error",
+    error: error instanceof Error ? error.message : "未知错误",
     completeness: 0.0,
-    degraded: true,
-    trustSummary: buildTrustSummary(coverageMetrics)
+    degraded: true
   };
 }
 
 export async function getSourcesReadModel(): Promise<SourcesReadModel> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
+  const timeoutMs = Number(process.env.JETSCOPE_MARKET_FETCH_TIMEOUT_MS ?? DEFAULT_FETCH_TIMEOUT_MS);
+  const timeout = setTimeout(
+    () => controller.abort(),
+    Number.isFinite(timeoutMs) && timeoutMs >= 100 ? timeoutMs : DEFAULT_FETCH_TIMEOUT_MS
+  );
   let snapshotPayload: MarketSnapshot | undefined;
   let historyPayload: MarketHistory | null = null;
   try {
@@ -373,21 +467,23 @@ export async function getSourcesReadModel(): Promise<SourcesReadModel> {
       ? ((await coverageResponse.json()) as SourceCoverageResponse)
       : null;
     if (!coveragePayload?.metrics?.length) {
-      throw new Error('coverage contract missing metrics');
+      throw new Error('来源覆盖合约缺少指标');
     }
     const coverageMetrics = sortCoverageMetrics(coveragePayload.metrics);
 
     const completeness = coveragePayload?.completeness ?? (coverageMetrics.length / PRIMARY_METRIC_ORDER.length);
+    const rows = buildRows(snapshotPayload, historyPayload, coverageMetrics);
+    const degraded = coveragePayload?.degraded ?? completeness < 1.0;
     return {
       generatedAt: coveragePayload?.generated_at ?? snapshotPayload.generated_at,
       overallStatus: snapshotPayload.source_status?.overall ?? "unknown",
       coverageMetrics,
-      rows: buildRows(snapshotPayload, historyPayload, coverageMetrics),
+      summary: buildSummary(rows, completeness, degraded),
+      rows,
       isFallback: false,
       error: null,
       completeness,
-      degraded: coveragePayload?.degraded ?? completeness < 1.0,
-      trustSummary: buildTrustSummary(coverageMetrics)
+      degraded
     };
   } catch (error) {
     return fallback(error, snapshotPayload, historyPayload);

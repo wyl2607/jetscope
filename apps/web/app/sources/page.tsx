@@ -1,9 +1,10 @@
 import { InfoCard } from '@/components/cards';
+import { ProvenanceSummary } from '@/components/provenance-summary';
 import { SourceCoveragePanel } from '@/components/source-coverage-panel';
 import { Shell } from '@/components/shell';
-import { getSourcesReadModel } from '@/lib/sources-read-model';
 import { buildApiUrl } from '@/lib/api-config';
-import type { Metadata } from 'next';
+import { getSourcesReadModel, type SourcesReadModel } from '@/lib/sources-read-model';
+import type { Metadata, Route } from 'next';
 import { buildPageMetadata } from '@/lib/seo';
 import Link from 'next/link';
 import { FocusScroll } from './focus-scroll';
@@ -11,29 +12,23 @@ import { FocusScroll } from './focus-scroll';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = buildPageMetadata({
-  title: 'Sources — Trust Center',
+  title: '来源 · Trust Center',
   description:
-    'JetScope source trust center: as-of, lag, status, fallback, confidence and market refresh health for every core metric.',
+    '查看 JetScope 来源溯源、as-of、置信度、滞后、回退状态与 market refresh 健康度。',
   path: '/sources'
 });
 
 type MarketHealth = {
   healthy: boolean;
   refresh_interval_seconds: number;
-  latest_refreshed_at: string | null;
-  latest_status: string | null;
   age_seconds: number | null;
   next_refresh_eta_seconds: number | null;
   runs_total: number;
   runs_ok: number;
   success_rate: number | null;
+  latest_status: string | null;
   note: string;
-  recent_runs: Array<{
-    refreshed_at: string;
-    source_status: string;
-    ingest: string;
-    ok: boolean;
-  }>;
+  recent_runs: Array<{ refreshed_at: string; source_status: string; ingest: string; ok: boolean }>;
 };
 
 async function getMarketHealth(): Promise<MarketHealth | null> {
@@ -52,11 +47,32 @@ function formatEta(seconds: number | null | undefined): string {
   return `${Math.round(seconds / 60)}m`;
 }
 
-function formatAge(seconds: number | null | undefined): string {
-  if (seconds == null || !Number.isFinite(seconds)) return 'n/a';
-  if (seconds < 60) return `${seconds}s`;
-  if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
-  return `${(seconds / 3600).toFixed(1)}h`;
+type SourceRow = SourcesReadModel['rows'][number];
+type SourceFilter = 'all' | 'review' | 'fallback' | 'proxy' | 'live';
+
+const SOURCE_FILTERS: Array<{ key: SourceFilter; label: string; hint: string }> = [
+  { key: 'all', label: '全部', hint: '完整矩阵' },
+  { key: 'review', label: '需复核', hint: '回退、降级、代理或波动警报' },
+  { key: 'fallback', label: '回退', hint: '当前依赖回退路径' },
+  { key: 'proxy', label: '代理', hint: '代理或派生估算' },
+  { key: 'live', label: '实时', hint: '实时主来源或官方来源' }
+];
+
+function normalizeSourceFilter(filter: string | undefined): SourceFilter {
+  if (filter === 'review' || filter === 'fallback' || filter === 'proxy' || filter === 'live') {
+    return filter;
+  }
+  return 'all';
+}
+
+function rowMatchesSourceFilter(row: SourceRow, filter: SourceFilter) {
+  if (filter === 'all') return true;
+  if (filter === 'review') {
+    return row.trustState !== 'live' || row.alertLevel !== 'normal' || row.status !== 'ok';
+  }
+  if (filter === 'fallback') return row.trustState === 'fallback' || row.status === 'seed' || row.status === 'fallback';
+  if (filter === 'proxy') return row.trustState === 'proxy' || row.sourceType.includes('代理') || row.sourceType.includes('派生');
+  return row.trustState === 'live';
 }
 
 export default async function SourcesPage({
@@ -66,25 +82,45 @@ export default async function SourcesPage({
 }) {
   const resolvedParams = searchParams ? await searchParams : {};
   const focusRaw = resolvedParams?.focus;
+  const filterRaw = resolvedParams?.filter;
   const focusMetricKey = Array.isArray(focusRaw) ? focusRaw[0] : focusRaw;
-  const [readModel, health] = await Promise.all([getSourcesReadModel(), getMarketHealth()]);
+  const activeFilter = normalizeSourceFilter(Array.isArray(filterRaw) ? filterRaw[0] : filterRaw);
+  const [readModel, marketHealth] = await Promise.all([getSourcesReadModel(), getMarketHealth()]);
+  const visibleRows = readModel.rows.filter((row) => rowMatchesSourceFilter(row, activeFilter));
+  const reviewRows = readModel.rows.filter((row) => rowMatchesSourceFilter(row, 'review'));
+  const actionRows = reviewRows.filter((row) => row.reviewAction.priority !== 'normal').slice(0, 4);
+  const hasActionRows = actionRows.length > 0;
+  const sourceFilterHref = (filter: SourceFilter) => {
+    const params = new URLSearchParams();
+    if (filter !== 'all') params.set('filter', filter);
+    if (focusMetricKey) params.set('focus', focusMetricKey);
+    const query = params.toString();
+    return (query ? `/sources?${query}` : '/sources') as Route;
+  };
+  const sourceFocusHref = (metricKey: string) => {
+    const params = new URLSearchParams();
+    if (activeFilter !== 'all') params.set('filter', activeFilter);
+    params.set('focus', metricKey);
+    return `/sources?${params.toString()}` as Route;
+  };
+  const clearFocusHref = (activeFilter === 'all' ? '/sources' : `/sources?filter=${activeFilter}`) as Route;
 
-  const alertLabel = (level: 'normal' | 'watch' | 'alert') => {
-    if (level === 'alert') return 'alert';
-    if (level === 'watch') return 'watch';
-    return 'normal';
+  const alertLabel = (level: "normal" | "watch" | "alert") => {
+    if (level === "alert") return "警报";
+    if (level === "watch") return "观察";
+    return "正常";
   };
 
-  const alertColor = (level: 'normal' | 'watch' | 'alert') => {
-    if (level === 'alert') return 'text-rose-300';
-    if (level === 'watch') return 'text-amber-300';
-    return 'text-emerald-300';
+  const alertColor = (level: "normal" | "watch" | "alert") => {
+    if (level === "alert") return "text-rose-700";
+    if (level === "watch") return "text-amber-700";
+    return "text-emerald-700";
   };
 
   const sparklineDataUrl = (encoded: string) => {
     if (!encoded) return null;
     const values = encoded
-      .split(',')
+      .split(",")
       .map((item) => Number.parseInt(item, 10))
       .filter((item) => Number.isFinite(item));
     if (values.length < 2) return null;
@@ -97,7 +133,7 @@ export default async function SourcesPage({
         const y = Number((height - (value / 100) * height).toFixed(2));
         return `${x},${y}`;
       })
-      .join(' ');
+      .join(" ");
     const svg =
       `<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'>` +
       `<polyline fill='none' stroke='rgb(56 189 248)' stroke-width='2' points='${points}'/>` +
@@ -105,149 +141,238 @@ export default async function SourcesPage({
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   };
 
-  const trust = readModel.trustSummary;
+  const trustClass = (state: string) => {
+    if (state === 'live') return 'border-emerald-200 bg-emerald-50 text-emerald-800';
+    if (state === 'proxy') return 'border-sky-200 bg-sky-50 text-sky-800';
+    if (state === 'fallback') return 'border-amber-200 bg-amber-50 text-amber-800';
+    return 'border-rose-200 bg-rose-50 text-rose-700';
+  };
+
+  const trustLabel = (state: string) => {
+    if (state === 'live') return '实时';
+    if (state === 'proxy') return '代理';
+    if (state === 'fallback') return '回退';
+    if (state === 'degraded') return '降级';
+    return state;
+  };
+
+  const actionToneClass = (priority: SourceRow['reviewAction']['priority']) => {
+    if (priority === 'critical') return 'border-rose-200 bg-rose-50 text-rose-700';
+    if (priority === 'review') return 'border-amber-200 bg-amber-50 text-amber-700';
+    return 'border-slate-200 bg-slate-50 text-slate-700';
+  };
+
+  const sourceTypeLabel = (sourceType: string) => {
+    if (sourceType === 'market primary') return '市场主要来源';
+    if (sourceType === 'public proxy') return '公开代理';
+    if (sourceType === 'regulatory proxy') return '监管代理';
+    if (sourceType === 'derived proxy') return '派生代理';
+    if (sourceType === 'official') return '官方';
+    if (sourceType === 'unknown') return '未知';
+    return sourceType;
+  };
+
+  const statusLabel = (status: string) => {
+    if (status === 'ok') return '正常';
+    if (status === 'seed') return '种子回退';
+    if (status === 'fallback') return '回退';
+    if (status === 'error') return '异常';
+    if (status === 'unknown') return '未知';
+    return status;
+  };
 
   return (
     <Shell
-      eyebrow="Trust Center"
-      title="Sources & provenance"
-      description="Every core market metric with as-of time, lag, status, fallback flag and confidence. Public/proxy feeds only — seed and fallback are always labeled."
+      eyebrow="来源目录"
+      title="来源与溯源视图"
+      description="在用于决策前，检查每个市场输入是实时、代理还是估算。"
     >
       <FocusScroll focusMetricKey={focusMetricKey} />
-
-      <section className="mb-6 grid gap-4 lg:grid-cols-2">
-        <InfoCard title="Trust legend" subtitle="How to read this page">
-          <ul className="space-y-2 text-sm leading-6 text-slate-300">
-            <li>
-              <span className="font-medium text-emerald-300">status=ok</span> — live/public fetch succeeded for this
-              cycle
-            </li>
-            <li>
-              <span className="font-medium text-amber-300">fallback=yes</span> — used secondary path or seed; not pure
-              primary quote
-            </li>
-            <li>
-              <span className="font-medium text-slate-200">lag</span> — typical publication delay of the source class
-            </li>
-            <li>
-              <span className="font-medium text-slate-200">as_of</span> — history latest point or snapshot time (never
-              invented)
-            </li>
-            <li>
-              Reserve / supply-gap are <strong>not</strong> IATA live feeds — see reserves API source_name.
-            </li>
-          </ul>
-          <p className="mt-3 text-xs text-slate-500">
-            Trust counts: live_ok={trust.liveOk} · fallback={trust.fallbackUsed} · seed={trust.seed} · unknown=
-            {trust.unknown}
-          </p>
-        </InfoCard>
-
-        <InfoCard
-          title="Market refresh health"
-          subtitle={health ? (health.healthy ? 'loop usable' : 'attention needed') : 'health API unavailable'}
-        >
-          {health ? (
-            <div className="space-y-2 text-sm text-slate-300">
-              <p>
-                Interval <strong className="text-white">{health.refresh_interval_seconds}s</strong> · age{' '}
-                <strong className="text-white">{formatAge(health.age_seconds)}</strong> · next ETA{' '}
-                <strong className="text-white">{formatEta(health.next_refresh_eta_seconds)}</strong>
-              </p>
-              <p>
-                Latest status <code className="text-sky-300">{health.latest_status ?? 'n/a'}</code> · runs{' '}
-                {health.runs_ok}/{health.runs_total}
-                {health.success_rate != null ? ` · success ${(health.success_rate * 100).toFixed(0)}%` : ''}
-              </p>
-              <p className="text-xs text-slate-400">{health.note}</p>
-              {health.recent_runs?.length > 0 && (
-                <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto text-xs text-slate-400">
-                  {health.recent_runs.slice(0, 6).map((run, idx) => (
-                    <li key={`${run.refreshed_at}-${idx}`}>
-                      {new Date(run.refreshed_at).toLocaleString()} · {run.source_status} · {run.ingest} ·{' '}
-                      {run.ok ? 'ok' : 'fail'}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-400">Could not load /v1/market/health. Start API and ensure refresh runs exist.</p>
-          )}
-        </InfoCard>
-      </section>
-
+      <div className="mb-6">
+        <ProvenanceSummary
+          summary={readModel.summary}
+          completeness={readModel.completeness}
+          generatedAt={readModel.generatedAt}
+        />
+      </div>
       <div className="mb-6">
         <SourceCoveragePanel
           metrics={readModel.coverageMetrics}
           completeness={readModel.completeness}
           degraded={readModel.degraded}
-          title="API source coverage"
-          subtitle={`${readModel.coverageMetrics.length} canonical metrics · last updated ${new Date(readModel.generatedAt).toLocaleString()}`}
+          title="来源覆盖"
+          subtitle={`${readModel.coverageMetrics.length} 个 canonical metrics · 最近更新 ${new Date(readModel.generatedAt).toLocaleString()}`}
         />
       </div>
-
-      <InfoCard title="Live source matrix" subtitle={`overall=${readModel.overallStatus}`}>
-        <p className="mb-3 text-xs text-slate-400">
-          generated_at: {new Date(readModel.generatedAt).toLocaleString()}
-          {readModel.isFallback && readModel.error ? ` | fallback due to ${readModel.error}` : ''}
+      <div className="mb-6">
+        <InfoCard
+          title="Market refresh health"
+          subtitle={marketHealth ? (marketHealth.healthy ? 'refresh loop usable' : 'attention needed') : 'health API unavailable'}
+        >
+          {marketHealth ? (
+            <div className="space-y-2 text-sm text-slate-700">
+              <p>
+                间隔 <strong>{marketHealth.refresh_interval_seconds}s</strong> · age{' '}
+                <strong>{formatEta(marketHealth.age_seconds)}</strong> · next ETA{' '}
+                <strong>{formatEta(marketHealth.next_refresh_eta_seconds)}</strong> · status{' '}
+                <code>{marketHealth.latest_status ?? 'n/a'}</code>
+              </p>
+              <p>
+                runs {marketHealth.runs_ok}/{marketHealth.runs_total}
+                {marketHealth.success_rate != null
+                  ? ` · success ${(marketHealth.success_rate * 100).toFixed(0)}%`
+                  : ''}
+              </p>
+              <p className="text-xs text-slate-500">{marketHealth.note}</p>
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">无法加载 /v1/market/health。请确认 API 已启动并有 refresh run。</p>
+          )}
+        </InfoCard>
+      </div>
+      <div className="mb-6">
+        <InfoCard
+          title="恢复步骤"
+          subtitle={hasActionRows ? '把降级来源转成可执行处理清单' : '当前没有必须处理的降级来源'}
+        >
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold text-slate-700">
+              需复核 {reviewRows.length}
+            </span>
+            <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold text-slate-700">
+              优先处理 {actionRows.length}
+            </span>
+            <Link
+              href={'/admin' as Route}
+              className="rounded-md border border-sky-200 bg-sky-50 px-3 py-1.5 font-semibold text-sky-800 hover:bg-sky-100"
+            >
+              打开 Admin 刷新
+            </Link>
+            <Link
+              href={'/sources?filter=review' as Route}
+              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 font-semibold text-slate-700 hover:border-sky-300 hover:bg-sky-50"
+            >
+              只看需复核
+            </Link>
+          </div>
+          {hasActionRows ? (
+            <ol className="mt-4 divide-y divide-slate-200 border-y border-slate-200">
+              {actionRows.map((row) => (
+                <li key={row.metricKey} className="grid gap-3 py-3 text-sm md:grid-cols-[minmax(10rem,14rem)_1fr_auto] md:items-start">
+                  <div>
+                    <p className="font-semibold text-slate-950">{row.surface}</p>
+                    <p className="mt-1 text-xs text-slate-500">{row.source} · {statusLabel(row.status)}</p>
+                  </div>
+                  <div>
+                    <span className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-semibold ${actionToneClass(row.reviewAction.priority)}`}>
+                      {row.reviewAction.label}
+                    </span>
+                    <p className="mt-2 leading-6 text-slate-700">{row.reviewAction.detail}</p>
+                  </div>
+                  <Link
+                    href={row.reviewAction.href as Route}
+                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-center text-xs font-semibold text-sky-800 hover:border-sky-300 hover:bg-sky-50"
+                  >
+                    处理入口
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="mt-4 border-y border-slate-200 py-3 text-sm leading-6 text-slate-700">
+              当前来源没有回退或降级行；代理来源仍应在重大采购、定价、披露前做人工复核。
+            </p>
+          )}
+        </InfoCard>
+      </div>
+      <InfoCard title="市场输入矩阵" subtitle={`总体状态：${readModel.overallStatus}`}>
+        <p className="mb-3 text-xs text-slate-600">
+          生成于 {new Date(readModel.generatedAt).toLocaleString()}
+          {readModel.isFallback ? ' · 实时来源覆盖不可用时显示回退估算' : ''}
         </p>
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          {SOURCE_FILTERS.map((filter) => {
+            const count = readModel.rows.filter((row) => rowMatchesSourceFilter(row, filter.key)).length;
+            const isActive = activeFilter === filter.key;
+            return (
+              <Link
+                key={filter.key}
+                href={sourceFilterHref(filter.key)}
+                className={`rounded-md border px-3 py-2 text-xs font-semibold transition ${
+                  isActive
+                    ? 'border-sky-500 bg-sky-50 text-sky-800'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50'
+                }`}
+                title={filter.hint}
+              >
+                {filter.label} <span className="ml-1 text-slate-500">{count}</span>
+              </Link>
+            );
+          })}
+          <span className="text-xs text-slate-500">
+            正在显示 {visibleRows.length} / {readModel.rows.length}
+          </span>
+        </div>
         {focusMetricKey ? (
-          <p className="mb-3 text-xs text-sky-300">
-            Focused from dashboard risk signal: <code>{focusMetricKey}</code>{' '}
-            <Link href="/sources" className="underline text-sky-200">
-              clear
+          <p className="mb-3 text-xs text-sky-700">
+            已从驾驶舱风险信号聚焦：<code>{focusMetricKey}</code>{' '}
+            <Link href={clearFocusHref} className="underline text-sky-800">
+              清除
             </Link>
           </p>
         ) : null}
         <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm text-slate-300">
+          <table className="min-w-full text-left text-sm text-slate-700">
             <thead>
-              <tr className="border-b border-slate-800 text-slate-400">
-                <th className="py-3 pr-4">Surface</th>
-                <th className="py-3 pr-4">Source</th>
-                <th className="py-3 pr-4">Scope</th>
+              <tr className="border-b border-slate-200 text-slate-600">
+                <th className="py-3 pr-4">界面</th>
+                <th className="py-3 pr-4">来源</th>
+                <th className="py-3 pr-4">可信状态</th>
+                <th className="py-3 pr-4">范围</th>
+                <th className="py-3 pr-4">置信度</th>
                 <th className="py-3 pr-4">As of</th>
-                <th className="py-3 pr-4">Confidence</th>
-                <th className="py-3 pr-4">Lag</th>
-                <th className="py-3 pr-4">Status</th>
+                <th className="py-3 pr-4">滞后</th>
+                <th className="py-3 pr-4">状态</th>
                 <th className="py-3 pr-4">Fallback</th>
-                <th className="py-3 pr-4">Value</th>
+                <th className="py-3 pr-4">数值</th>
                 <th className="py-3 pr-4">1d</th>
                 <th className="py-3 pr-4">7d</th>
                 <th className="py-3 pr-4">30d</th>
-                <th className="py-3 pr-4">Volatility</th>
-                <th className="py-3 pr-4">Trend</th>
-                <th className="py-3">Note</th>
+                <th className="py-3 pr-4">波动</th>
+                <th className="py-3 pr-4">趋势</th>
+                <th className="py-3 pr-4">操作</th>
+                <th className="py-3">可信原因 / 降级原因</th>
               </tr>
             </thead>
             <tbody>
-              {readModel.rows.map((row) => (
+              {visibleRows.map((row) => (
                 <tr
                   key={row.surface}
                   id={`metric-${row.metricKey}`}
-                  className={`border-b border-slate-900 ${
+                  className={`border-b border-slate-200 ${
                     focusMetricKey === row.metricKey
-                      ? 'ring-1 ring-sky-400/60 bg-sky-950/30'
+                      ? 'ring-1 ring-sky-400/60 bg-sky-50'
                       : row.alertLevel === 'alert'
-                        ? 'bg-rose-950/25'
-                        : row.alertLevel === 'watch'
-                          ? 'bg-amber-950/20'
-                          : ''
+                      ? 'bg-rose-50'
+                      : row.alertLevel === 'watch'
+                        ? 'bg-amber-50'
+                        : ''
                   }`}
                 >
-                  <td className="py-3 pr-4 font-medium text-white">{row.surface}</td>
+                  <td className="py-3 pr-4 font-medium text-slate-950">{row.surface}</td>
                   <td className="py-3 pr-4">{row.source}</td>
+                  <td className="py-3 pr-4">
+                    <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] ${trustClass(row.trustState)}`}>
+                      {trustLabel(row.trustState)}
+                    </span>
+                    <span className="mt-1 block text-xs text-slate-500">{sourceTypeLabel(row.sourceType)}</span>
+                  </td>
                   <td className="py-3 pr-4">{row.scope}</td>
-                  <td className="py-3 pr-4 text-xs text-slate-400">{row.asOf}</td>
                   <td className="py-3 pr-4">{row.confidence}</td>
+                  <td className="py-3 pr-4 text-xs text-slate-500">{row.asOf}</td>
                   <td className="py-3 pr-4">{row.lag}</td>
-                  <td className="py-3 pr-4">{row.status}</td>
-                  <td
-                    className={`py-3 pr-4 font-medium ${
-                      row.fallback === 'yes' ? 'text-amber-300' : 'text-emerald-300'
-                    }`}
-                  >
+                  <td className="py-3 pr-4">{statusLabel(row.status)}</td>
+                  <td className={`py-3 pr-4 font-medium ${row.fallback === 'yes' ? 'text-amber-700' : 'text-emerald-700'}`}>
                     {row.fallback}
                   </td>
                   <td className="py-3 pr-4">{row.value}</td>
@@ -260,8 +385,8 @@ export default async function SourcesPage({
                   <td className="py-3 pr-4">
                     {sparklineDataUrl(row.sparkline) ? (
                       <img
-                        src={sparklineDataUrl(row.sparkline) ?? ''}
-                        alt={`${row.surface} trend`}
+                        src={sparklineDataUrl(row.sparkline) ?? ""}
+                        alt={`${row.surface} 趋势`}
                         width={120}
                         height={28}
                       />
@@ -269,9 +394,37 @@ export default async function SourcesPage({
                       <span className="text-slate-500">n/a</span>
                     )}
                   </td>
-                  <td className="py-3">{row.note}</td>
+                  <td className="py-3 pr-4">
+                    <div className="flex min-w-24 flex-col gap-2">
+                      <Link
+                        href={sourceFocusHref(row.metricKey)}
+                        className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-center text-xs font-semibold text-sky-800 hover:border-sky-300 hover:bg-sky-50"
+                      >
+                        聚焦
+                      </Link>
+                      <Link
+                        href={row.reviewAction.href as Route}
+                        className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-center text-xs font-semibold text-slate-700 hover:border-sky-300 hover:bg-sky-50"
+                      >
+                        {row.reviewAction.priority === 'normal' ? '留证' : '处理'}
+                      </Link>
+                    </div>
+                  </td>
+                  <td className="py-3">
+                    <span className="block text-slate-700">{row.degradedReason}</span>
+                    {row.note !== row.degradedReason ? <span className="mt-1 block text-xs text-slate-500">{row.note}</span> : null}
+                    <span className="mt-2 block text-xs font-semibold text-slate-600">{row.reviewAction.label}</span>
+                    <span className="mt-1 block text-xs leading-5 text-slate-500">{row.reviewAction.detail}</span>
+                  </td>
                 </tr>
               ))}
+              {visibleRows.length === 0 ? (
+                <tr>
+                  <td colSpan={15} className="py-6 text-center text-sm text-slate-500">
+                    当前筛选没有匹配来源。
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>
