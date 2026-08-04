@@ -1,0 +1,12 @@
+[Unit]
+Description=Run JetScope SQLite backup daily
+Requires=jetscope-sqlite-backup.service
+
+[Timer]
+OnCalendar=*-*-* 03:15:00
+Persistent=true
+RandomizedDelaySec=15m
+Unit=jetscope-sqlite-backup.service
+
+[Install]
+WantedBy=timers.target
