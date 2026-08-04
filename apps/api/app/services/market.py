@@ -1324,89 +1324,62 @@ def _pct_change(latest: float, baseline: float | None) -> float | None:
     return _round(((latest - baseline) / baseline) * 100.0, 3)
 
 
-def _nearest_baseline_value(
-    rows: list[tuple[datetime, float, str]], target_time: datetime
-) -> float | None:
-    for as_of, value, _unit in rows:
-        if as_of <= target_time:
-            return float(value)
-    return None
-
-
 def build_market_history_response(
     db: Session,
     *,
     points_limit_per_metric: int = 120,
 ) -> MarketHistoryResponse:
-    """Build bounded history rows without materializing snapshot payload JSON."""
-    expected_metric_keys = {str(metric["metric_key"]) for metric in DEFAULT_MARKET_METRICS}
-    rows = db.execute(
-        select(
-            MarketSnapshot.metric_key,
-            MarketSnapshot.as_of,
-            MarketSnapshot.value,
-            MarketSnapshot.unit,
-            MarketSnapshot.payload["seed"].as_string().label("seed_marker"),
-        )
-        .where(MarketSnapshot.metric_key.in_(expected_metric_keys))
-        .order_by(MarketSnapshot.metric_key.asc(), MarketSnapshot.as_of.desc())
-    ).all()
+    """Build history with a bounded point window and indexed baseline seeks."""
+    expected_metrics = [str(metric["metric_key"]) for metric in DEFAULT_MARKET_METRICS]
 
-    def _group_history_rows(
-        raw_rows: list[tuple[object, datetime, float, str, object]],
-    ) -> dict[str, list[tuple[datetime, float, str, bool]]]:
-        grouped: dict[str, list[tuple[datetime, float, str, bool]]] = {}
-        for metric_key, as_of, value, unit, seed_marker in raw_rows:
-            grouped.setdefault(str(metric_key), []).append(
-                (as_of, float(value), str(unit), seed_marker is not None)
-            )
+    def _load_metric_rows(
+        metric_key: str,
+        *,
+        live_only: bool,
+    ) -> list[tuple[datetime, float, str]]:
+        statement = (
+            select(MarketSnapshot.as_of, MarketSnapshot.value, MarketSnapshot.unit)
+            .where(MarketSnapshot.metric_key == metric_key)
+            .order_by(MarketSnapshot.as_of.desc())
+            .limit(points_limit_per_metric)
+        )
+        if live_only:
+            statement = statement.where(MarketSnapshot.payload["seed"].as_string().is_(None))
+        return [
+            (as_of, float(value), str(unit))
+            for as_of, value, unit in db.execute(statement).all()
+        ]
+
+    def _load_history_rows() -> dict[str, list[tuple[datetime, float, str]]]:
+        grouped: dict[str, list[tuple[datetime, float, str]]] = {}
+        for metric_key in expected_metrics:
+            rows = _load_metric_rows(metric_key, live_only=True)
+            if not rows:
+                rows = _load_metric_rows(metric_key, live_only=False)
+            if rows:
+                grouped[metric_key] = rows
         return grouped
 
-    rows_by_metric_with_seed = _group_history_rows(rows)
-    if not rows_by_metric_with_seed:
+    rows_by_metric = _load_history_rows()
+    if not set(expected_metrics).issubset(rows_by_metric):
         seed_market_snapshot_set(db)
-        rows_by_metric_with_seed = _group_history_rows(
-            db.execute(
-                select(
-                    MarketSnapshot.metric_key,
-                    MarketSnapshot.as_of,
-                    MarketSnapshot.value,
-                    MarketSnapshot.unit,
-                    MarketSnapshot.payload["seed"].as_string().label("seed_marker"),
-                )
-                .where(MarketSnapshot.metric_key.in_(expected_metric_keys))
-                .order_by(MarketSnapshot.metric_key.asc(), MarketSnapshot.as_of.desc())
-            ).all()
-        )
-    elif not expected_metric_keys.issubset(rows_by_metric_with_seed):
-        seed_market_snapshot_set(db)
-        rows_by_metric_with_seed = _group_history_rows(
-            db.execute(
-                select(
-                    MarketSnapshot.metric_key,
-                    MarketSnapshot.as_of,
-                    MarketSnapshot.value,
-                    MarketSnapshot.unit,
-                    MarketSnapshot.payload["seed"].as_string().label("seed_marker"),
-                )
-                .where(MarketSnapshot.metric_key.in_(expected_metric_keys))
-                .order_by(MarketSnapshot.metric_key.asc(), MarketSnapshot.as_of.desc())
-            ).all()
-        )
+        rows_by_metric = _load_history_rows()
 
-    if not rows_by_metric_with_seed:
+    if not rows_by_metric:
         return MarketHistoryResponse(generated_at=utcnow(), metrics={})
 
-    rows_by_metric: dict[str, list[tuple[datetime, float, str]]] = {}
-    for metric_key, metric_rows in rows_by_metric_with_seed.items():
-        non_seed_rows = [
-            (as_of, value, unit)
-            for as_of, value, unit, is_seed in metric_rows
-            if not is_seed
-        ]
-        rows_by_metric[metric_key] = non_seed_rows or [
-            (as_of, value, unit) for as_of, value, unit, _is_seed in metric_rows
-        ]
+    def _nearest_live_baseline(metric_key: str, target_time: datetime) -> float | None:
+        row = db.execute(
+            select(MarketSnapshot.as_of, MarketSnapshot.value)
+            .where(
+                (MarketSnapshot.metric_key == metric_key)
+                & (MarketSnapshot.payload["seed"].as_string().is_(None))
+                & (MarketSnapshot.as_of <= target_time)
+            )
+            .order_by(MarketSnapshot.as_of.desc())
+            .limit(1)
+        ).first()
+        return float(row.value) if row is not None else None
 
     generated_at = max(row[0] for metric_rows in rows_by_metric.values() for row in metric_rows)
     windows = [1, 7, 30]
@@ -1417,21 +1390,20 @@ def build_market_history_response(
 
         change_1d = _pct_change(
             latest_value,
-            _nearest_baseline_value(metric_rows, latest_as_of - timedelta(days=1)),
+            _nearest_live_baseline(metric_key, latest_as_of - timedelta(days=1)),
         )
         change_7d = _pct_change(
             latest_value,
-            _nearest_baseline_value(metric_rows, latest_as_of - timedelta(days=7)),
+            _nearest_live_baseline(metric_key, latest_as_of - timedelta(days=7)),
         )
         change_30d = _pct_change(
             latest_value,
-            _nearest_baseline_value(metric_rows, latest_as_of - timedelta(days=30)),
+            _nearest_live_baseline(metric_key, latest_as_of - timedelta(days=30)),
         )
 
-        point_rows = metric_rows[:points_limit_per_metric]
         points = [
             MarketHistoryPoint(as_of=as_of, value=float(value))
-            for as_of, value, _unit in reversed(point_rows)
+            for as_of, value, _unit in reversed(metric_rows)
         ]
 
         metrics[metric_key] = MarketMetricHistory(
