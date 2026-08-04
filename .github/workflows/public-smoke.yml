@@ -1,0 +1,42 @@
+name: Public Smoke Monitor
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-smoke-monitor
+  cancel-in-progress: false
+
+jobs:
+  public-smoke:
+    name: Public HTTPS smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BASE_URL: https://saf.meichen.beauty
+    steps:
+      - name: Probe critical public paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          endpoints=(
+            "/v1/health"
+            "/v1/market/health"
+            "/v1/market/snapshot"
+            "/v1/events/lufthansa-q2-2026-earnings"
+            "/dashboard"
+          )
+          for endpoint in "${endpoints[@]}"; do
+            echo "::group::${endpoint}"
+            curl --fail --silent --show-error --location \
+              --connect-timeout 10 --max-time 20 \
+              --output /dev/null \
+              --write-out "status=%{http_code} time=%{time_total}s\n" \
+              "${BASE_URL}${endpoint}"
+            echo "::endgroup::"
+          done
