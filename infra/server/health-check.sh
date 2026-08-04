@@ -18,6 +18,9 @@ LOG="/var/log/jetscope-health.log"
 BUS_WRITE="${JETSCOPE_BUS_WRITE:-}"
 PRODUCER="infra/server/health-check.sh"
 ALLOW_RESTART="${JETSCOPE_HEALTH_ALLOW_RESTART:-0}"
+# Liveness is the default watchdog contract. Readiness can remain advisory when
+# optional capabilities (for example, the AI research pipeline) are disabled.
+REQUIRE_READINESS="${JETSCOPE_HEALTH_REQUIRE_READY:-0}"
 RESTART_TOKEN="${JETSCOPE_HEALTH_RESTART_TOKEN:-}"
 LEDGER_HELPER="/opt/jetscope/scripts/approval-token-ledger.sh"
 RESTART_APPROVED=0
@@ -69,7 +72,13 @@ api_is_ready() {
     READINESS_BODY=$(curl -s "$API_READINESS_URL" --connect-timeout 5 --max-time 10 2>/dev/null || true)
     READINESS_STATUS=$(printf '%s' "$READINESS_BODY" | grep -oE '"status"[[:space:]]*:[[:space:]]*"(ready|degraded|not_ready)"' | head -1 | grep -oE '(ready|degraded|not_ready)' | head -1 || true)
     [ -n "$READINESS_STATUS" ] || READINESS_STATUS="unknown"
-    [ "$API_STATUS" = "200" ] && printf '%s' "$READINESS_BODY" | grep -qE '"ready"[[:space:]]*:[[:space:]]*true'
+
+    [ "$API_STATUS" = "200" ] || return 1
+    if [ "$REQUIRE_READINESS" = "1" ]; then
+        printf '%s' "$READINESS_BODY" | grep -qE '"ready"[[:space:]]*:[[:space:]]*true'
+    else
+        return 0
+    fi
 }
 
 if ! api_is_ready; then
