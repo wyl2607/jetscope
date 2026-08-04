@@ -136,9 +136,12 @@ def test_reserves_coverage_has_country_timestamp_index(engine):
     assert "ix_reserves_coverage_country_iso_timestamp" in idx_names
 
 
-def test_market_snapshot_has_metric_as_of_index():
-    idx_names = {i.name for i in MarketSnapshot.__table__.indexes}
-    assert "ix_market_snapshots_metric_key_as_of" in idx_names
+def test_market_snapshot_has_covering_latest_index():
+    index = next(
+        i for i in MarketSnapshot.__table__.indexes
+        if i.name == "ix_market_snapshots_metric_key_as_of"
+    )
+    assert [column.name for column in index.columns] == ["metric_key", "as_of", "id"]
 
 
 def test_tipping_event_has_event_type_timestamp_index():
