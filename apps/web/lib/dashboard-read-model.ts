@@ -259,15 +259,15 @@ export async function getDashboardReadModel(locale: DisplayLocale = 'zh'): Promi
 
     const values = market.values ?? {};
     let jetSourceKey = 'unavailable';
-    let fossilJetUsdPerL = FALLBACK_VALUES.jet_eu_proxy_usd_per_l;
+    let fossilJetUsdPerL: number = Number(FALLBACK_VALUES.jet_eu_proxy_usd_per_l);
     if (Number.isFinite(values.rotterdam_jet_fuel_usd_per_l) && values.rotterdam_jet_fuel_usd_per_l > 0) {
-      fossilJetUsdPerL = values.rotterdam_jet_fuel_usd_per_l;
+      fossilJetUsdPerL = Number(values.rotterdam_jet_fuel_usd_per_l);
       jetSourceKey = 'rotterdam_jet_fuel_usd_per_l';
     } else if (Number.isFinite(values.jet_eu_proxy_usd_per_l) && values.jet_eu_proxy_usd_per_l > 0) {
-      fossilJetUsdPerL = values.jet_eu_proxy_usd_per_l;
+      fossilJetUsdPerL = Number(values.jet_eu_proxy_usd_per_l);
       jetSourceKey = 'jet_eu_proxy_usd_per_l';
     } else if (Number.isFinite(values.jet_usd_per_l) && values.jet_usd_per_l > 0) {
-      fossilJetUsdPerL = values.jet_usd_per_l;
+      fossilJetUsdPerL = Number(values.jet_usd_per_l);
       jetSourceKey = 'jet_usd_per_l';
     } else {
       jetSourceKey = 'seed_fallback';
