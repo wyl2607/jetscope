@@ -81,6 +81,21 @@ sudo systemctl is-enabled docker
 docker compose -f /opt/jetscope/docker-compose.prod.yml ps
 ```
 
+Install and enable the daily SQLite backup timer once:
+
+```bash
+sudo install -m 0644 /opt/jetscope/infra/server/jetscope-sqlite-backup.service /etc/systemd/system/jetscope-sqlite-backup.service
+sudo install -m 0644 /opt/jetscope/infra/server/jetscope-sqlite-backup.timer /etc/systemd/system/jetscope-sqlite-backup.timer
+sudo systemctl daemon-reload
+sudo systemctl enable --now jetscope-sqlite-backup.timer
+sudo systemctl start jetscope-sqlite-backup.service
+sudo systemctl status jetscope-sqlite-backup.timer --no-pager
+```
+
+The timer keeps local online-consistent backups under `/opt/jetscope/data/backups`.
+Copy a verified backup to off-host storage for disaster recovery; local retention alone
+does not protect against VPS or volume loss.
+
 Rollback is limited to the supervisor layer: restore the previous unit file, run
 `systemctl daemon-reload`, and restart `jetscope-web.service`; restore the
 previous known-good Compose tree and run `docker compose ... up -d api`. The

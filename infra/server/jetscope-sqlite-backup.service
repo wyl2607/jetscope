@@ -1,0 +1,9 @@
+[Unit]
+Description=JetScope SQLite online backup
+After=local-fs.target
+ConditionPathExists=/opt/jetscope/data/market.db
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/jetscope
+ExecStart=/bin/bash /opt/jetscope/scripts/backup-sqlite.sh
