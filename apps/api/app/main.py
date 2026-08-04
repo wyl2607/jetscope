@@ -7,7 +7,7 @@ from fastapi import FastAPI
 
 from app.api.router import api_router
 from app.core.config import settings
-from app.core.observability import configure_observability
+from app.core.observability import configure_logging, configure_observability
 from app.db.bootstrap import apply_schema_bootstrap
 from app.db.session import SessionLocal, engine
 from app.services.market import refresh_market_snapshot_set
@@ -144,6 +144,9 @@ def create_app() -> FastAPI:
         from app import models  # noqa: F401
 
         bootstrap_mode = apply_schema_bootstrap(engine)
+        # Alembic's fileConfig pins the root logger to WARN; re-assert the app's
+        # configuration so refresh-loop logs survive in-process migrations.
+        configure_logging()
         logger.info("schema_bootstrap_mode_applied mode=%s", bootstrap_mode)
         if settings.market_refresh_interval_seconds > 0:
             app.state.market_refresh_task = asyncio.create_task(

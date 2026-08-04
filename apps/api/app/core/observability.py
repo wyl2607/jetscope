@@ -11,6 +11,7 @@ plain uvicorn/root logging behaviour unless explicitly enabled:
 import json
 import logging
 from datetime import datetime, timezone
+from logging.config import fileConfig
 
 from app.core.config import settings
 
@@ -57,7 +58,25 @@ def _configure_sentry() -> None:
     sentry_sdk.init(dsn=dsn, environment=settings.app_env)
 
 
+def configure_alembic_logging(config_file_name: str | None) -> None:
+    """Apply Alembic's logging config without disabling the app's own loggers.
+
+    Migrations run in-process during FastAPI startup, so ``fileConfig``'s default
+    of ``disable_existing_loggers=True`` would permanently disable every logger
+    created at import time -- dropping even ERROR records from the market refresh
+    loop. uvicorn passes the same flag for the same reason.
+    """
+    if config_file_name is None:
+        return
+    fileConfig(config_file_name, disable_existing_loggers=False)
+
+
+def configure_logging() -> None:
+    """Apply the app's log configuration. Safe to re-apply after Alembic runs."""
+    _configure_json_logging()
+
+
 def configure_observability() -> None:
     """Set up structured logging and error tracking based on settings. No-op by default."""
-    _configure_json_logging()
+    configure_logging()
     _configure_sentry()
