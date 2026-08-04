@@ -191,6 +191,64 @@
               "title": "Pathway Key"
             },
             "description": "SAF pathway key"
+          },
+          {
+            "name": "fare_pass_through_pct",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional fare pass-through share (e.g. 0.60 LH Q2 2026)",
+              "title": "Fare Pass Through Pct"
+            },
+            "description": "Optional fare pass-through share (e.g. 0.60 LH Q2 2026)"
+          },
+          {
+            "name": "labor_cost_impact_eur_m",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional labor/strike cost EUR m",
+              "title": "Labor Cost Impact Eur M"
+            },
+            "description": "Optional labor/strike cost EUR m"
+          },
+          {
+            "name": "extra_fuel_cost_eur_m",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional extra fuel cost EUR m (context)",
+              "title": "Extra Fuel Cost Eur M"
+            },
+            "description": "Optional extra fuel cost EUR m (context)"
           }
         ],
         "responses": {
@@ -349,64 +407,45 @@
         }
       }
     },
-    "/v1/analysis/grid-parity": {
+    "/v1/events": {
       "get": {
         "tags": [
-          "grid"
+          "events"
         ],
-        "summary": "Get Grid Parity Analysis",
-        "operationId": "get_grid_parity_analysis_v1_analysis_grid_parity_get",
+        "summary": "List Events",
+        "operationId": "list_events_v1_events_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response List Events V1 Events Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/events/{event_id}": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Get Event",
+        "operationId": "get_event_v1_events__event_id__get",
         "parameters": [
           {
-            "name": "carbon_price_eur_per_t",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "number",
-              "minimum": 0,
-              "description": "EU ETS carbon price in EUR per metric ton",
-              "default": 65.0,
-              "title": "Carbon Price Eur Per T"
-            },
-            "description": "EU ETS carbon price in EUR per metric ton"
-          },
-          {
-            "name": "gas_fuel_eur_per_mwh_th",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "number",
-              "minimum": 0,
-              "description": "Gas fuel cost in EUR per MWh thermal",
-              "default": 30.0,
-              "title": "Gas Fuel Eur Per Mwh Th"
-            },
-            "description": "Gas fuel cost in EUR per MWh thermal"
-          },
-          {
-            "name": "coal_fuel_eur_per_mwh_th",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "number",
-              "minimum": 0,
-              "description": "Coal fuel cost in EUR per MWh thermal",
-              "default": 12.0,
-              "title": "Coal Fuel Eur Per Mwh Th"
-            },
-            "description": "Coal fuel cost in EUR per MWh thermal"
-          },
-          {
-            "name": "fossil_reference_key",
-            "in": "query",
-            "required": false,
+            "name": "event_id",
+            "in": "path",
+            "required": true,
             "schema": {
               "type": "string",
-              "description": "Fossil reference plant key (gas_ccgt | hard_coal)",
-              "default": "gas_ccgt",
-              "title": "Fossil Reference Key"
-            },
-            "description": "Fossil reference plant key (gas_ccgt | hard_coal)"
+              "title": "Event Id"
+            }
           }
         ],
         "responses": {
@@ -415,7 +454,9 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GridParityResponse"
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Event V1 Events  Event Id  Get"
                 }
               }
             }
@@ -426,298 +467,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/analysis/grid-parity/history": {
-      "get": {
-        "tags": [
-          "grid"
-        ],
-        "summary": "Get Grid Parity History",
-        "operationId": "get_grid_parity_history_v1_analysis_grid_parity_history_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GridHistoryResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/analysis/grid-parity/history/seed": {
-      "post": {
-        "tags": [
-          "grid"
-        ],
-        "summary": "Seed Grid Parity History",
-        "operationId": "seed_grid_parity_history_v1_analysis_grid_parity_history_seed_post",
-        "parameters": [
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Admin-Token"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GridHistorySeedResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/analysis/grid-parity/lcoe-sensitivity": {
-      "get": {
-        "tags": [
-          "grid"
-        ],
-        "summary": "Get Grid Lcoe Sensitivity",
-        "operationId": "get_grid_lcoe_sensitivity_v1_analysis_grid_parity_lcoe_sensitivity_get",
-        "parameters": [
-          {
-            "name": "tech_key",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "Renewable technology key",
-              "default": "solar_pv",
-              "title": "Tech Key"
-            },
-            "description": "Renewable technology key"
-          },
-          {
-            "name": "fossil_reference_key",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "Fossil reference plant key (gas_ccgt | hard_coal)",
-              "default": "gas_ccgt",
-              "title": "Fossil Reference Key"
-            },
-            "description": "Fossil reference plant key (gas_ccgt | hard_coal)"
-          },
-          {
-            "name": "gas_fuel_eur_per_mwh_th",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "number",
-              "minimum": 0,
-              "description": "Gas fuel cost in EUR per MWh thermal",
-              "default": 30.0,
-              "title": "Gas Fuel Eur Per Mwh Th"
-            },
-            "description": "Gas fuel cost in EUR per MWh thermal"
-          },
-          {
-            "name": "coal_fuel_eur_per_mwh_th",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "number",
-              "minimum": 0,
-              "description": "Coal fuel cost in EUR per MWh thermal",
-              "default": 12.0,
-              "title": "Coal Fuel Eur Per Mwh Th"
-            },
-            "description": "Coal fuel cost in EUR per MWh thermal"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GridLcoeSensitivityResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/analysis/heat-parity": {
-      "get": {
-        "tags": [
-          "heat"
-        ],
-        "summary": "Get Heat Parity Analysis",
-        "operationId": "get_heat_parity_analysis_v1_analysis_heat_parity_get",
-        "parameters": [
-          {
-            "name": "carbon_price",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "number",
-              "minimum": 0,
-              "description": "EU ETS2 carbon price in EUR per metric ton for heating fuels",
-              "default": 45.0,
-              "title": "Carbon Price"
-            },
-            "description": "EU ETS2 carbon price in EUR per metric ton for heating fuels"
-          },
-          {
-            "name": "elec_price",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "number",
-              "minimum": 0,
-              "description": "Residential electricity price in EUR per MWh electric",
-              "default": 300.0,
-              "title": "Elec Price"
-            },
-            "description": "Residential electricity price in EUR per MWh electric"
-          },
-          {
-            "name": "gas_price",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "number",
-              "minimum": 0,
-              "description": "Residential gas price in EUR per MWh thermal",
-              "default": 75.0,
-              "title": "Gas Price"
-            },
-            "description": "Residential gas price in EUR per MWh thermal"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HeatParityResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/analysis/heat-parity/sensitivity": {
-      "get": {
-        "tags": [
-          "heat"
-        ],
-        "summary": "Get Heat Sensitivity",
-        "operationId": "get_heat_sensitivity_v1_analysis_heat_parity_sensitivity_get",
-        "parameters": [
-          {
-            "name": "gas_price",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "number",
-              "minimum": 0,
-              "description": "Residential gas price in EUR per MWh thermal",
-              "default": 75.0,
-              "title": "Gas Price"
-            },
-            "description": "Residential gas price in EUR per MWh thermal"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HeatSensitivityResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/analysis/transition-summary": {
-      "get": {
-        "tags": [
-          "transition"
-        ],
-        "summary": "Get Transition Summary",
-        "operationId": "get_transition_summary_v1_analysis_transition_summary_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TransitionSummaryResponse"
                 }
               }
             }
@@ -760,6 +509,53 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MarketHistoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/market/health": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Get Market Health",
+        "operationId": "get_market_health_v1_market_health_get",
+        "parameters": [
+          {
+            "name": "runs_window",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "description": "How many recent refresh runs to include",
+              "default": 10,
+              "title": "Runs Window"
+            },
+            "description": "How many recent refresh runs to include"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketHealthResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -1294,148 +1090,6 @@
         }
       }
     },
-    "/v1/research/signals": {
-      "get": {
-        "tags": [
-          "research"
-        ],
-        "summary": "List Research Signals",
-        "operationId": "list_research_signals_v1_research_signals_get",
-        "parameters": [
-          {
-            "name": "since",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter records created at or after this ISO8601 timestamp. Defaults to the last 30 days.",
-              "title": "Since"
-            },
-            "description": "Filter records created at or after this ISO8601 timestamp. Defaults to the last 30 days."
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 200,
-              "minimum": 1,
-              "default": 50,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "signal_type",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "enum": [
-                    "SUPPLY_DISRUPTION",
-                    "POLICY_CHANGE",
-                    "PRICE_SHOCK",
-                    "CAPACITY_ANNOUNCEMENT",
-                    "TECHNOLOGY_BREAKTHROUGH",
-                    "GRID_INFRASTRUCTURE",
-                    "OTHER"
-                  ],
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Signal Type"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ResearchSignalResponse"
-                  },
-                  "title": "Response List Research Signals V1 Research Signals Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/research/refresh": {
-      "post": {
-        "tags": [
-          "research"
-        ],
-        "summary": "Refresh Research Signals",
-        "operationId": "refresh_research_signals_v1_research_refresh_post",
-        "parameters": [
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Admin-Token"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResearchRefreshResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/sources/coverage": {
       "get": {
         "tags": [
@@ -1902,6 +1556,43 @@
           "pathway_key": {
             "type": "string",
             "title": "Pathway Key"
+          },
+          "fare_pass_through_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fare Pass Through Pct"
+          },
+          "labor_cost_impact_eur_m": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Labor Cost Impact Eur M"
+          },
+          "extra_fuel_cost_eur_m": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra Fuel Cost Eur M"
           }
         },
         "type": "object",
@@ -1977,6 +1668,50 @@
               "incremental_adjustment"
             ],
             "title": "Signal"
+          },
+          "fare_pass_through_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fare Pass Through Pct"
+          },
+          "labor_cost_impact_eur_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Labor Cost Impact Eur M"
+          },
+          "extra_fuel_cost_eur_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra Fuel Cost Eur M"
+          },
+          "residual_fuel_cost_exposure": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Residual Fuel Cost Exposure"
           }
         },
         "type": "object",
@@ -2286,486 +2021,6 @@
         ],
         "title": "EuEtsPressureSource"
       },
-      "FossilReference": {
-        "properties": {
-          "plant_key": {
-            "type": "string",
-            "title": "Plant Key"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "efficiency": {
-            "type": "number",
-            "maximum": 1.0,
-            "exclusiveMinimum": 0.0,
-            "title": "Efficiency"
-          },
-          "fuel_cost_eur_per_mwh_th": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Fuel Cost Eur Per Mwh Th"
-          },
-          "var_o_m_eur_per_mwh": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Var O M Eur Per Mwh"
-          },
-          "emission_intensity_t_per_mwh": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Emission Intensity T Per Mwh"
-          },
-          "marginal_cost_eur_per_mwh": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Marginal Cost Eur Per Mwh"
-          }
-        },
-        "type": "object",
-        "required": [
-          "plant_key",
-          "name",
-          "efficiency",
-          "fuel_cost_eur_per_mwh_th",
-          "var_o_m_eur_per_mwh",
-          "emission_intensity_t_per_mwh",
-          "marginal_cost_eur_per_mwh"
-        ],
-        "title": "FossilReference"
-      },
-      "GasBoilerReference": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "efficiency": {
-            "type": "number",
-            "maximum": 1.0,
-            "exclusiveMinimum": 0.0,
-            "title": "Efficiency"
-          },
-          "gas_price_eur_per_mwh_th": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Gas Price Eur Per Mwh Th"
-          },
-          "emission_intensity_t_per_mwh_th": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Emission Intensity T Per Mwh Th"
-          },
-          "heat_cost_eur_per_mwh": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Heat Cost Eur Per Mwh"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "efficiency",
-          "gas_price_eur_per_mwh_th",
-          "emission_intensity_t_per_mwh_th",
-          "heat_cost_eur_per_mwh"
-        ],
-        "title": "GasBoilerReference"
-      },
-      "GridCarbonSweepEntry": {
-        "properties": {
-          "tech_key": {
-            "type": "string",
-            "title": "Tech Key"
-          },
-          "gap_vs_fossil_eur_per_mwh": {
-            "type": "number",
-            "title": "Gap Vs Fossil Eur Per Mwh"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "uneconomic",
-              "inflection",
-              "marginal_switch",
-              "dominant"
-            ],
-            "title": "Status"
-          }
-        },
-        "type": "object",
-        "required": [
-          "tech_key",
-          "gap_vs_fossil_eur_per_mwh",
-          "status"
-        ],
-        "title": "GridCarbonSweepEntry"
-      },
-      "GridCarbonSweepPoint": {
-        "properties": {
-          "carbon_price_eur_per_t": {
-            "type": "number",
-            "title": "Carbon Price Eur Per T"
-          },
-          "fossil_marginal_cost_eur_per_mwh": {
-            "type": "number",
-            "title": "Fossil Marginal Cost Eur Per Mwh"
-          },
-          "techs": {
-            "items": {
-              "$ref": "#/components/schemas/GridCarbonSweepEntry"
-            },
-            "type": "array",
-            "title": "Techs"
-          }
-        },
-        "type": "object",
-        "required": [
-          "carbon_price_eur_per_t",
-          "fossil_marginal_cost_eur_per_mwh",
-          "techs"
-        ],
-        "title": "GridCarbonSweepPoint"
-      },
-      "GridHistoryPoint": {
-        "properties": {
-          "year": {
-            "type": "integer",
-            "title": "Year"
-          },
-          "carbon_price_eur_per_t": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Carbon Price Eur Per T"
-          },
-          "fossil_marginal_cost_eur_per_mwh": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Fossil Marginal Cost Eur Per Mwh"
-          },
-          "solar_lcoe_eur_per_mwh": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Solar Lcoe Eur Per Mwh"
-          },
-          "solar_gap_eur_per_mwh": {
-            "type": "number",
-            "title": "Solar Gap Eur Per Mwh"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "uneconomic",
-              "inflection",
-              "marginal_switch",
-              "dominant"
-            ],
-            "title": "Status"
-          },
-          "source": {
-            "type": "string",
-            "title": "Source"
-          },
-          "confidence": {
-            "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "title": "Confidence"
-          },
-          "fallback": {
-            "type": "boolean",
-            "title": "Fallback"
-          }
-        },
-        "type": "object",
-        "required": [
-          "year",
-          "carbon_price_eur_per_t",
-          "fossil_marginal_cost_eur_per_mwh",
-          "solar_lcoe_eur_per_mwh",
-          "solar_gap_eur_per_mwh",
-          "status",
-          "source",
-          "confidence",
-          "fallback"
-        ],
-        "title": "GridHistoryPoint"
-      },
-      "GridHistoryResponse": {
-        "properties": {
-          "generated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Generated At"
-          },
-          "region": {
-            "type": "string",
-            "title": "Region"
-          },
-          "disclaimer": {
-            "type": "string",
-            "title": "Disclaimer"
-          },
-          "points": {
-            "items": {
-              "$ref": "#/components/schemas/GridHistoryPoint"
-            },
-            "type": "array",
-            "title": "Points"
-          }
-        },
-        "type": "object",
-        "required": [
-          "generated_at",
-          "region",
-          "disclaimer",
-          "points"
-        ],
-        "title": "GridHistoryResponse"
-      },
-      "GridHistorySeedResponse": {
-        "properties": {
-          "accepted": {
-            "type": "boolean",
-            "title": "Accepted"
-          },
-          "inserted_metric_count": {
-            "type": "integer",
-            "title": "Inserted Metric Count"
-          },
-          "message": {
-            "type": "string",
-            "title": "Message"
-          }
-        },
-        "type": "object",
-        "required": [
-          "accepted",
-          "inserted_metric_count",
-          "message"
-        ],
-        "title": "GridHistorySeedResponse"
-      },
-      "GridLcoeSensitivityCell": {
-        "properties": {
-          "discount_rate": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Discount Rate"
-          },
-          "full_load_hours": {
-            "type": "integer",
-            "exclusiveMinimum": 0.0,
-            "title": "Full Load Hours"
-          },
-          "lcoe_eur_per_mwh": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Lcoe Eur Per Mwh"
-          },
-          "breakeven_carbon_price_eur_per_t": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Breakeven Carbon Price Eur Per T"
-          }
-        },
-        "type": "object",
-        "required": [
-          "discount_rate",
-          "full_load_hours",
-          "lcoe_eur_per_mwh",
-          "breakeven_carbon_price_eur_per_t"
-        ],
-        "title": "GridLcoeSensitivityCell"
-      },
-      "GridLcoeSensitivityResponse": {
-        "properties": {
-          "generated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Generated At"
-          },
-          "tech_key": {
-            "type": "string",
-            "title": "Tech Key"
-          },
-          "tech_name": {
-            "type": "string",
-            "title": "Tech Name"
-          },
-          "fossil_reference_key": {
-            "type": "string",
-            "title": "Fossil Reference Key"
-          },
-          "discount_rates": {
-            "items": {
-              "type": "number"
-            },
-            "type": "array",
-            "title": "Discount Rates"
-          },
-          "full_load_hours": {
-            "items": {
-              "type": "integer"
-            },
-            "type": "array",
-            "title": "Full Load Hours"
-          },
-          "cells": {
-            "items": {
-              "$ref": "#/components/schemas/GridLcoeSensitivityCell"
-            },
-            "type": "array",
-            "title": "Cells"
-          },
-          "disclaimer": {
-            "type": "string",
-            "title": "Disclaimer"
-          }
-        },
-        "type": "object",
-        "required": [
-          "generated_at",
-          "tech_key",
-          "tech_name",
-          "fossil_reference_key",
-          "discount_rates",
-          "full_load_hours",
-          "cells",
-          "disclaimer"
-        ],
-        "title": "GridLcoeSensitivityResponse"
-      },
-      "GridParityInputs": {
-        "properties": {
-          "carbon_price_eur_per_t": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Carbon Price Eur Per T"
-          },
-          "gas_fuel_eur_per_mwh_th": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Gas Fuel Eur Per Mwh Th"
-          },
-          "coal_fuel_eur_per_mwh_th": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Coal Fuel Eur Per Mwh Th"
-          },
-          "fossil_reference_key": {
-            "type": "string",
-            "title": "Fossil Reference Key"
-          }
-        },
-        "type": "object",
-        "required": [
-          "carbon_price_eur_per_t",
-          "gas_fuel_eur_per_mwh_th",
-          "coal_fuel_eur_per_mwh_th",
-          "fossil_reference_key"
-        ],
-        "title": "GridParityInputs"
-      },
-      "GridParityResponse": {
-        "properties": {
-          "generated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Generated At"
-          },
-          "inputs": {
-            "$ref": "#/components/schemas/GridParityInputs"
-          },
-          "fossil_reference": {
-            "$ref": "#/components/schemas/FossilReference"
-          },
-          "rows": {
-            "items": {
-              "$ref": "#/components/schemas/GridParityRow"
-            },
-            "type": "array",
-            "title": "Rows"
-          },
-          "carbon_sweep": {
-            "items": {
-              "$ref": "#/components/schemas/GridCarbonSweepPoint"
-            },
-            "type": "array",
-            "title": "Carbon Sweep"
-          },
-          "signal": {
-            "type": "string",
-            "enum": [
-              "clear_leader",
-              "close_race",
-              "no_advantage"
-            ],
-            "title": "Signal"
-          }
-        },
-        "type": "object",
-        "required": [
-          "generated_at",
-          "inputs",
-          "fossil_reference",
-          "rows",
-          "carbon_sweep",
-          "signal"
-        ],
-        "title": "GridParityResponse"
-      },
-      "GridParityRow": {
-        "properties": {
-          "tech_key": {
-            "type": "string",
-            "title": "Tech Key"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "lcoe_mid_eur_per_mwh": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Lcoe Mid Eur Per Mwh"
-          },
-          "maturity_level": {
-            "type": "string",
-            "title": "Maturity Level"
-          },
-          "gap_vs_fossil_eur_per_mwh": {
-            "type": "number",
-            "title": "Gap Vs Fossil Eur Per Mwh"
-          },
-          "spread_pct": {
-            "type": "number",
-            "title": "Spread Pct"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "uneconomic",
-              "inflection",
-              "marginal_switch",
-              "dominant"
-            ],
-            "title": "Status"
-          }
-        },
-        "type": "object",
-        "required": [
-          "tech_key",
-          "name",
-          "lcoe_mid_eur_per_mwh",
-          "maturity_level",
-          "gap_vs_fossil_eur_per_mwh",
-          "spread_pct",
-          "status"
-        ],
-        "title": "GridParityRow"
-      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2779,311 +2034,125 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
-      "HeatCarbonSweepEntry": {
-        "properties": {
-          "tech_key": {
-            "type": "string",
-            "title": "Tech Key"
-          },
-          "gap_vs_gas_eur_per_mwh": {
-            "type": "number",
-            "title": "Gap Vs Gas Eur Per Mwh"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "uneconomic",
-              "inflection",
-              "marginal_switch",
-              "dominant"
-            ],
-            "title": "Status"
-          }
-        },
-        "type": "object",
-        "required": [
-          "tech_key",
-          "gap_vs_gas_eur_per_mwh",
-          "status"
-        ],
-        "title": "HeatCarbonSweepEntry"
-      },
-      "HeatCarbonSweepPoint": {
-        "properties": {
-          "carbon_price_eur_per_t": {
-            "type": "number",
-            "title": "Carbon Price Eur Per T"
-          },
-          "gas_heat_cost_eur_per_mwh": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Gas Heat Cost Eur Per Mwh"
-          },
-          "techs": {
-            "items": {
-              "$ref": "#/components/schemas/HeatCarbonSweepEntry"
-            },
-            "type": "array",
-            "title": "Techs"
-          }
-        },
-        "type": "object",
-        "required": [
-          "carbon_price_eur_per_t",
-          "gas_heat_cost_eur_per_mwh",
-          "techs"
-        ],
-        "title": "HeatCarbonSweepPoint"
-      },
-      "HeatParityInputs": {
-        "properties": {
-          "carbon_price_eur_per_t": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Carbon Price Eur Per T"
-          },
-          "elec_price_eur_per_mwh_el": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Elec Price Eur Per Mwh El"
-          },
-          "gas_price_eur_per_mwh_th": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Gas Price Eur Per Mwh Th"
-          }
-        },
-        "type": "object",
-        "required": [
-          "carbon_price_eur_per_t",
-          "elec_price_eur_per_mwh_el",
-          "gas_price_eur_per_mwh_th"
-        ],
-        "title": "HeatParityInputs"
-      },
-      "HeatParityResponse": {
+      "MarketHealthResponse": {
         "properties": {
           "generated_at": {
             "type": "string",
             "format": "date-time",
             "title": "Generated At"
           },
-          "inputs": {
-            "$ref": "#/components/schemas/HeatParityInputs"
+          "refresh_interval_seconds": {
+            "type": "integer",
+            "title": "Refresh Interval Seconds"
           },
-          "gas_boiler_reference": {
-            "$ref": "#/components/schemas/GasBoilerReference"
-          },
-          "heat_pump_references": {
-            "items": {
-              "$ref": "#/components/schemas/HeatPumpReference"
-            },
-            "type": "array",
-            "title": "Heat Pump References"
-          },
-          "rows": {
-            "items": {
-              "$ref": "#/components/schemas/HeatParityRow"
-            },
-            "type": "array",
-            "title": "Rows"
-          },
-          "carbon_sweep": {
-            "items": {
-              "$ref": "#/components/schemas/HeatCarbonSweepPoint"
-            },
-            "type": "array",
-            "title": "Carbon Sweep"
-          },
-          "signal": {
-            "type": "string",
-            "enum": [
-              "clear_leader",
-              "close_race",
-              "no_advantage"
+          "latest_refreshed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Signal"
+            "title": "Latest Refreshed At"
+          },
+          "latest_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Status"
+          },
+          "latest_ingest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Ingest"
+          },
+          "age_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age Seconds"
+          },
+          "next_refresh_eta_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Refresh Eta Seconds"
+          },
+          "runs_window": {
+            "type": "integer",
+            "title": "Runs Window",
+            "default": 10
+          },
+          "runs_total": {
+            "type": "integer",
+            "title": "Runs Total",
+            "default": 0
+          },
+          "runs_ok": {
+            "type": "integer",
+            "title": "Runs Ok",
+            "default": 0
+          },
+          "success_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Rate"
+          },
+          "healthy": {
+            "type": "boolean",
+            "title": "Healthy"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "recent_runs": {
+            "items": {
+              "$ref": "#/components/schemas/MarketRefreshRunSummary"
+            },
+            "type": "array",
+            "title": "Recent Runs"
           }
         },
         "type": "object",
         "required": [
           "generated_at",
-          "inputs",
-          "gas_boiler_reference",
-          "heat_pump_references",
-          "rows",
-          "carbon_sweep",
-          "signal"
+          "refresh_interval_seconds",
+          "healthy",
+          "note"
         ],
-        "title": "HeatParityResponse"
-      },
-      "HeatParityRow": {
-        "properties": {
-          "tech_key": {
-            "type": "string",
-            "title": "Tech Key"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "cop": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Cop"
-          },
-          "hp_heat_cost_eur_per_mwh": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Hp Heat Cost Eur Per Mwh"
-          },
-          "gas_heat_cost_eur_per_mwh": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Gas Heat Cost Eur Per Mwh"
-          },
-          "gap_vs_gas_eur_per_mwh": {
-            "type": "number",
-            "title": "Gap Vs Gas Eur Per Mwh"
-          },
-          "spread_pct": {
-            "type": "number",
-            "title": "Spread Pct"
-          },
-          "breakeven_carbon_price_eur_per_t": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Breakeven Carbon Price Eur Per T"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "uneconomic",
-              "inflection",
-              "marginal_switch",
-              "dominant"
-            ],
-            "title": "Status"
-          }
-        },
-        "type": "object",
-        "required": [
-          "tech_key",
-          "name",
-          "cop",
-          "hp_heat_cost_eur_per_mwh",
-          "gas_heat_cost_eur_per_mwh",
-          "gap_vs_gas_eur_per_mwh",
-          "spread_pct",
-          "breakeven_carbon_price_eur_per_t",
-          "status"
-        ],
-        "title": "HeatParityRow"
-      },
-      "HeatPumpReference": {
-        "properties": {
-          "tech_key": {
-            "type": "string",
-            "title": "Tech Key"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "cop": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Cop"
-          }
-        },
-        "type": "object",
-        "required": [
-          "tech_key",
-          "name",
-          "cop"
-        ],
-        "title": "HeatPumpReference"
-      },
-      "HeatSensitivityCell": {
-        "properties": {
-          "cop": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Cop"
-          },
-          "elec_price_eur_per_mwh_el": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Elec Price Eur Per Mwh El"
-          },
-          "hp_heat_cost_eur_per_mwh": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Hp Heat Cost Eur Per Mwh"
-          },
-          "breakeven_carbon_price_eur_per_t": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Breakeven Carbon Price Eur Per T"
-          }
-        },
-        "type": "object",
-        "required": [
-          "cop",
-          "elec_price_eur_per_mwh_el",
-          "hp_heat_cost_eur_per_mwh",
-          "breakeven_carbon_price_eur_per_t"
-        ],
-        "title": "HeatSensitivityCell"
-      },
-      "HeatSensitivityResponse": {
-        "properties": {
-          "generated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Generated At"
-          },
-          "gas_price_eur_per_mwh_th": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Gas Price Eur Per Mwh Th"
-          },
-          "cops": {
-            "items": {
-              "type": "number"
-            },
-            "type": "array",
-            "title": "Cops"
-          },
-          "elec_prices": {
-            "items": {
-              "type": "number"
-            },
-            "type": "array",
-            "title": "Elec Prices"
-          },
-          "cells": {
-            "items": {
-              "$ref": "#/components/schemas/HeatSensitivityCell"
-            },
-            "type": "array",
-            "title": "Cells"
-          },
-          "disclaimer": {
-            "type": "string",
-            "title": "Disclaimer"
-          }
-        },
-        "type": "object",
-        "required": [
-          "generated_at",
-          "gas_price_eur_per_mwh_th",
-          "cops",
-          "elec_prices",
-          "cells",
-          "disclaimer"
-        ],
-        "title": "HeatSensitivityResponse"
+        "title": "MarketHealthResponse"
       },
       "MarketHistoryBackfillResponse": {
         "properties": {
@@ -3299,6 +2368,40 @@
         ],
         "title": "MarketRefreshResponse"
       },
+      "MarketRefreshRunSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "refreshed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Refreshed At"
+          },
+          "source_status": {
+            "type": "string",
+            "title": "Source Status"
+          },
+          "ingest": {
+            "type": "string",
+            "title": "Ingest"
+          },
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "refreshed_at",
+          "source_status",
+          "ingest",
+          "ok"
+        ],
+        "title": "MarketRefreshRunSummary"
+      },
       "MarketSnapshotResponse": {
         "properties": {
           "generated_at": {
@@ -3322,6 +2425,20 @@
             },
             "type": "object",
             "title": "Source Details"
+          },
+          "derived": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Derived"
           }
         },
         "type": "object",
@@ -4139,152 +3256,6 @@
         ],
         "title": "ReadinessResponse"
       },
-      "ResearchRefreshResponse": {
-        "properties": {
-          "accepted": {
-            "type": "boolean",
-            "title": "Accepted"
-          },
-          "message": {
-            "type": "string",
-            "title": "Message"
-          },
-          "fetched": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Fetched"
-          },
-          "extracted": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Extracted"
-          },
-          "persisted": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Persisted"
-          },
-          "skipped_budget": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Skipped Budget"
-          }
-        },
-        "type": "object",
-        "required": [
-          "accepted",
-          "message",
-          "fetched",
-          "extracted",
-          "persisted",
-          "skipped_budget"
-        ],
-        "title": "ResearchRefreshResponse"
-      },
-      "ResearchSignalResponse": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At"
-          },
-          "source_url": {
-            "type": "string",
-            "title": "Source Url"
-          },
-          "signal_type": {
-            "type": "string",
-            "enum": [
-              "SUPPLY_DISRUPTION",
-              "POLICY_CHANGE",
-              "PRICE_SHOCK",
-              "CAPACITY_ANNOUNCEMENT",
-              "TECHNOLOGY_BREAKTHROUGH",
-              "GRID_INFRASTRUCTURE",
-              "OTHER"
-            ],
-            "title": "Signal Type"
-          },
-          "entities": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Entities"
-          },
-          "impact_direction": {
-            "type": "string",
-            "enum": [
-              "BEARISH",
-              "BULLISH",
-              "NEUTRAL"
-            ],
-            "title": "Impact Direction"
-          },
-          "confidence": {
-            "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "title": "Confidence"
-          },
-          "summary_en": {
-            "type": "string",
-            "title": "Summary En"
-          },
-          "summary_cn": {
-            "type": "string",
-            "title": "Summary Cn"
-          },
-          "raw_title": {
-            "type": "string",
-            "title": "Raw Title"
-          },
-          "raw_excerpt": {
-            "type": "string",
-            "title": "Raw Excerpt"
-          },
-          "published_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Published At"
-          },
-          "claude_model": {
-            "type": "string",
-            "title": "Claude Model"
-          },
-          "prompt_cache_hit": {
-            "type": "boolean",
-            "title": "Prompt Cache Hit"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "created_at",
-          "updated_at",
-          "source_url",
-          "signal_type",
-          "impact_direction",
-          "confidence",
-          "summary_en",
-          "summary_cn",
-          "raw_title",
-          "raw_excerpt",
-          "published_at",
-          "claude_model",
-          "prompt_cache_hit"
-        ],
-        "title": "ResearchSignalResponse"
-      },
       "ReserveSignalResponse": {
         "properties": {
           "generated_at": {
@@ -4794,99 +3765,6 @@
         ],
         "title": "TippingPointResponse"
       },
-      "TransitionDomain": {
-        "properties": {
-          "domain_key": {
-            "type": "string",
-            "title": "Domain Key"
-          },
-          "domain_name": {
-            "type": "string",
-            "title": "Domain Name"
-          },
-          "carbon_driver": {
-            "type": "string",
-            "title": "Carbon Driver"
-          },
-          "reference_carbon_price_eur_per_t": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Reference Carbon Price Eur Per T"
-          },
-          "techs": {
-            "items": {
-              "$ref": "#/components/schemas/TransitionTech"
-            },
-            "type": "array",
-            "title": "Techs"
-          }
-        },
-        "type": "object",
-        "required": [
-          "domain_key",
-          "domain_name",
-          "carbon_driver",
-          "reference_carbon_price_eur_per_t",
-          "techs"
-        ],
-        "title": "TransitionDomain"
-      },
-      "TransitionSummaryResponse": {
-        "properties": {
-          "generated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Generated At"
-          },
-          "disclaimer": {
-            "type": "string",
-            "title": "Disclaimer"
-          },
-          "domains": {
-            "items": {
-              "$ref": "#/components/schemas/TransitionDomain"
-            },
-            "type": "array",
-            "title": "Domains"
-          }
-        },
-        "type": "object",
-        "required": [
-          "generated_at",
-          "disclaimer",
-          "domains"
-        ],
-        "title": "TransitionSummaryResponse"
-      },
-      "TransitionTech": {
-        "properties": {
-          "tech_key": {
-            "type": "string",
-            "title": "Tech Key"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "breakeven_carbon_price_eur_per_t": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Breakeven Carbon Price Eur Per T"
-          },
-          "competitive_at_reference": {
-            "type": "boolean",
-            "title": "Competitive At Reference"
-          }
-        },
-        "type": "object",
-        "required": [
-          "tech_key",
-          "name",
-          "breakeven_carbon_price_eur_per_t",
-          "competitive_at_reference"
-        ],
-        "title": "TransitionTech"
-      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -4910,13 +3788,6 @@
           "type": {
             "type": "string",
             "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
           }
         },
         "type": "object",
