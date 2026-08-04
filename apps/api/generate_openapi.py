@@ -38,8 +38,9 @@ def main() -> int:
 
     output_path = Path(os.environ.get("JETSCOPE_OPENAPI_OUTPUT", SCRIPT_DIR / "openapi.json"))
     try:
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(schema, f, indent=2, ensure_ascii=False)
+        # newline='\n' keeps LF on Windows so CI drift checks stay stable.
+        with open(output_path, "w", encoding="utf-8", newline="\n") as f:
+            json.dump(schema, f, indent=2, ensure_ascii=False, sort_keys=True)
             f.write("\n")
     except Exception as exc:
         print(f"Failed to write OpenAPI schema to {output_path}: {exc}", file=sys.stderr)

@@ -98,11 +98,26 @@ export default async function DashboardPage() {
       : `级别：${riskLevelLabel(risk.level)} · 截至：${formatAsOf(risk.latestAsOf)} · 样本：${risk.sampleCount}`;
 
   const alertBanners = computeDashboardAlertBanners(readModel.market, risk);
+  const derived = readModel.market.derived ?? {};
+  const health = readModel.marketHealth;
+  const event = readModel.aviationEvent;
+  const analysis = readModel.analysisInputs;
+  const decision = readModel.airlineDecision;
+  const spread =
+    typeof derived.jet_vs_brent_spread_usd_per_l === 'number' ? derived.jet_vs_brent_spread_usd_per_l : null;
+  const multiplier =
+    typeof derived.jet_vs_brent_multiplier === 'number' ? derived.jet_vs_brent_multiplier : null;
+  const facts = (event?.verified_facts ?? {}) as Record<string, unknown>;
+  const formatEta = (seconds: number | null | undefined) => {
+    if (seconds == null || !Number.isFinite(seconds)) return 'n/a';
+    if (seconds < 60) return `${seconds}s`;
+    return `${Math.round(seconds / 60)}m`;
+  };
 
   let pathwayComparison: Awaited<ReturnType<typeof loadPathwayComparison>> | null = null;
   try {
     pathwayComparison = await loadPathwayComparison({
-      fossilJetUsdPerL: market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l ?? 0.9,
+      fossilJetUsdPerL: analysis?.fossilJetUsdPerL ?? market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l ?? 0.9,
       carbonPriceEurPerT: Number(((market.carbon_proxy_usd_per_t ?? 0) / 1.08).toFixed(2)),
       subsidyUsdPerL: 0,
       blendRatePct: 6
@@ -130,6 +145,78 @@ export default async function DashboardPage() {
       title="JetScope 决策驾驶舱"
       description="面向 SAF 决策的实时市场快照、情景建模与转型风险信号。"
     >
+      <section
+        className={`mb-6 rounded-xl border p-4 ${
+          health?.healthy === false
+            ? 'border-rose-800/60 bg-rose-950/20'
+            : 'border-emerald-800/50 bg-emerald-950/20'
+        }`}
+      >
+        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">Live market strip</p>
+        <p className="mt-1 text-sm text-slate-200">
+          Snapshot as_of <strong className="text-white">{formatAsOf(readModel.market.generated_at)}</strong>
+          {' · '}
+          freshness <strong className="text-white">{freshnessLabel(freshness.level)}</strong> ({freshness.minutes}m)
+          {' · '}
+          overall <code className="text-sky-300">{sourceStatusLabel(readModel.market.source_status.overall)}</code>
+          {spread != null && (
+            <>
+              {' · '}
+              Jet–Brent spread <strong className="text-white">${formatNumber(spread, 3)}/L</strong>
+              {multiplier != null ? ` (×${formatNumber(multiplier, 3)})` : ''}
+            </>
+          )}
+        </p>
+        <p className="mt-1 text-xs text-slate-400">
+          Analysis jet: {analysis?.jetSourceKey ?? 'n/a'}=$
+          {formatNumber(analysis?.fossilJetUsdPerL ?? market.jet_eu_proxy_usd_per_l ?? 0, 3)}/L · ETS €
+          {formatNumber(analysis?.carbonPriceEurPerT ?? 0)}/t · refresh interval{' '}
+          {health?.refresh_interval_seconds ?? '—'}s · next ETA {formatEta(health?.next_refresh_eta_seconds)} · health{' '}
+          {health == null ? 'n/a' : health.healthy ? 'ok' : 'attention'}
+          {health?.runs_total != null ? ` · runs ${health.runs_ok}/${health.runs_total}` : ''}
+        </p>
+        {health?.note ? <p className="mt-1 text-xs text-slate-500">{health.note}</p> : null}
+        <div className="mt-3 flex flex-wrap gap-2">
+          <a href="/sources" className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white">
+            Trust center →
+          </a>
+          <a
+            href="/crisis/saf-tipping-point?lh=1"
+            className="rounded-lg border border-amber-700/50 px-3 py-1.5 text-xs font-medium text-amber-100"
+          >
+            LH Q2 2026 playbook
+          </a>
+        </div>
+      </section>
+
+      {event && (
+        <section className="mb-6 rounded-xl border border-sky-800/60 bg-sky-950/30 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-sky-300">
+            Aviation event · curated only · as_of {event.as_of ?? 'n/a'}
+          </p>
+          <h2 className="mt-1 text-base font-semibold text-white">
+            {event.entity?.name ?? 'Lufthansa'} — {event.source?.title ?? event.id}
+          </h2>
+          <p className="mt-2 text-sm text-slate-300">
+            Q2 adj. profit €{String(facts.q2_adjusted_operating_profit_eur_m ?? '—')}m (
+            {String(facts.q2_adjusted_operating_profit_yoy_change_pct ?? '—')}%) · extra kerosene €
+            {String(facts.q2_extra_kerosene_cost_iran_war_eur_m ?? '—')}m · strikes ~€
+            {String(facts.q2_strike_cost_eur_m_approx ?? '—')}m · pass-through ~
+            {String(facts.kerosene_cost_pass_through_pct_approx ?? '—')}% · FY fuel €
+            {String(facts.fy_fuel_cost_expected_eur_bn ?? '—')}bn
+          </p>
+          {decision?.residual_fuel_cost_exposure != null && (
+            <p className="mt-2 text-sm text-amber-200">
+              Residual fuel-cost exposure (model index): {formatNumber(decision.residual_fuel_cost_exposure, 3)} ·
+              pass-through{' '}
+              {decision.fare_pass_through_pct != null
+                ? `${Math.round(decision.fare_pass_through_pct * 100)}%`
+                : 'n/a'}
+            </p>
+          )}
+        </section>
+      )}
+
       {alertBanners.length > 0 && (
         <section className="mb-6 space-y-3">
           {alertBanners.map((banner, idx) => (

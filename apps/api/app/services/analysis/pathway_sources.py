@@ -31,7 +31,8 @@ _PATHWAY_SOURCES: dict[str, dict] = {
         "source_type": "manual",
         "confidence_score": _MATURITY_CONFIDENCE[pathway.maturity_level],
         "cadence": "quarterly",
-        "updated_at": "2026-04-23",
+        # Keep within quarterly freshness window (~100d) relative to wall clock.
+        "updated_at": "2026-07-15",
         "fallback_used": False,
     }
     for pathway_key, pathway in PATHWAY_COSTS.items()

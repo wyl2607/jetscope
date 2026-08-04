@@ -64,6 +64,8 @@ export type SourcesReadModel = {
     lag: string;
     lagMinutes: number | null;
     status: string;
+    fallback: string;
+    asOf: string;
     trustState: SourceCoverageTrustState;
     degradedReason: string;
     value: string;
@@ -365,6 +367,13 @@ function buildRows(
       lag: formatSourceCoverageLag(metric.lag_minutes),
       lagMinutes: Number.isFinite(metric.lag_minutes ?? NaN) ? Number(metric.lag_minutes) : null,
       status: statusLabel(metric.status),
+      fallback: metric.fallback_used ? 'yes' : 'no',
+      asOf: (() => {
+        const raw = historyMetric?.latest_as_of || snapshot.generated_at;
+        if (!raw) return 'n/a';
+        const parsed = new Date(raw);
+        return Number.isNaN(parsed.getTime()) ? String(raw) : parsed.toLocaleString();
+      })(),
       trustState: getSourceCoverageTrustState(metric),
       degradedReason: degradedReasonFor(metric),
       value: formatMetricValue(metric.metric_key, snapshotValue),

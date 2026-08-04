@@ -2,6 +2,7 @@ import { InfoCard } from '@/components/cards';
 import { ProvenanceSummary } from '@/components/provenance-summary';
 import { SourceCoveragePanel } from '@/components/source-coverage-panel';
 import { Shell } from '@/components/shell';
+import { buildApiUrl } from '@/lib/api-config';
 import { getSourcesReadModel, type SourcesReadModel } from '@/lib/sources-read-model';
 import type { Metadata, Route } from 'next';
 import { buildPageMetadata } from '@/lib/seo';
@@ -11,11 +12,40 @@ import { FocusScroll } from './focus-scroll';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = buildPageMetadata({
-  title: '来源',
+  title: '来源 · Trust Center',
   description:
-    '查看 JetScope 来源溯源、置信度、滞后、回退状态与实时市场来源健康度。',
+    '查看 JetScope 来源溯源、as-of、置信度、滞后、回退状态与 market refresh 健康度。',
   path: '/sources'
 });
+
+type MarketHealth = {
+  healthy: boolean;
+  refresh_interval_seconds: number;
+  age_seconds: number | null;
+  next_refresh_eta_seconds: number | null;
+  runs_total: number;
+  runs_ok: number;
+  success_rate: number | null;
+  latest_status: string | null;
+  note: string;
+  recent_runs: Array<{ refreshed_at: string; source_status: string; ingest: string; ok: boolean }>;
+};
+
+async function getMarketHealth(): Promise<MarketHealth | null> {
+  try {
+    const response = await fetch(buildApiUrl('/market/health?runs_window=10'), { cache: 'no-store' });
+    if (!response.ok) return null;
+    return (await response.json()) as MarketHealth;
+  } catch {
+    return null;
+  }
+}
+
+function formatEta(seconds: number | null | undefined): string {
+  if (seconds == null || !Number.isFinite(seconds)) return 'n/a';
+  if (seconds < 60) return `${seconds}s`;
+  return `${Math.round(seconds / 60)}m`;
+}
 
 type SourceRow = SourcesReadModel['rows'][number];
 type SourceFilter = 'all' | 'review' | 'fallback' | 'proxy' | 'live';
@@ -55,7 +85,7 @@ export default async function SourcesPage({
   const filterRaw = resolvedParams?.filter;
   const focusMetricKey = Array.isArray(focusRaw) ? focusRaw[0] : focusRaw;
   const activeFilter = normalizeSourceFilter(Array.isArray(filterRaw) ? filterRaw[0] : filterRaw);
-  const readModel = await getSourcesReadModel();
+  const [readModel, marketHealth] = await Promise.all([getSourcesReadModel(), getMarketHealth()]);
   const visibleRows = readModel.rows.filter((row) => rowMatchesSourceFilter(row, activeFilter));
   const reviewRows = readModel.rows.filter((row) => rowMatchesSourceFilter(row, 'review'));
   const actionRows = reviewRows.filter((row) => row.reviewAction.priority !== 'normal').slice(0, 4);
@@ -176,6 +206,32 @@ export default async function SourcesPage({
       </div>
       <div className="mb-6">
         <InfoCard
+          title="Market refresh health"
+          subtitle={marketHealth ? (marketHealth.healthy ? 'refresh loop usable' : 'attention needed') : 'health API unavailable'}
+        >
+          {marketHealth ? (
+            <div className="space-y-2 text-sm text-slate-700">
+              <p>
+                间隔 <strong>{marketHealth.refresh_interval_seconds}s</strong> · age{' '}
+                <strong>{formatEta(marketHealth.age_seconds)}</strong> · next ETA{' '}
+                <strong>{formatEta(marketHealth.next_refresh_eta_seconds)}</strong> · status{' '}
+                <code>{marketHealth.latest_status ?? 'n/a'}</code>
+              </p>
+              <p>
+                runs {marketHealth.runs_ok}/{marketHealth.runs_total}
+                {marketHealth.success_rate != null
+                  ? ` · success ${(marketHealth.success_rate * 100).toFixed(0)}%`
+                  : ''}
+              </p>
+              <p className="text-xs text-slate-500">{marketHealth.note}</p>
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">无法加载 /v1/market/health。请确认 API 已启动并有 refresh run。</p>
+          )}
+        </InfoCard>
+      </div>
+      <div className="mb-6">
+        <InfoCard
           title="恢复步骤"
           subtitle={hasActionRows ? '把降级来源转成可执行处理清单' : '当前没有必须处理的降级来源'}
         >
@@ -274,8 +330,10 @@ export default async function SourcesPage({
                 <th className="py-3 pr-4">可信状态</th>
                 <th className="py-3 pr-4">范围</th>
                 <th className="py-3 pr-4">置信度</th>
+                <th className="py-3 pr-4">As of</th>
                 <th className="py-3 pr-4">滞后</th>
                 <th className="py-3 pr-4">状态</th>
+                <th className="py-3 pr-4">Fallback</th>
                 <th className="py-3 pr-4">数值</th>
                 <th className="py-3 pr-4">1d</th>
                 <th className="py-3 pr-4">7d</th>
@@ -311,8 +369,12 @@ export default async function SourcesPage({
                   </td>
                   <td className="py-3 pr-4">{row.scope}</td>
                   <td className="py-3 pr-4">{row.confidence}</td>
+                  <td className="py-3 pr-4 text-xs text-slate-500">{row.asOf}</td>
                   <td className="py-3 pr-4">{row.lag}</td>
                   <td className="py-3 pr-4">{statusLabel(row.status)}</td>
+                  <td className={`py-3 pr-4 font-medium ${row.fallback === 'yes' ? 'text-amber-700' : 'text-emerald-700'}`}>
+                    {row.fallback}
+                  </td>
                   <td className="py-3 pr-4">{row.value}</td>
                   <td className="py-3 pr-4">{row.change1d}</td>
                   <td className="py-3 pr-4">{row.change7d}</td>

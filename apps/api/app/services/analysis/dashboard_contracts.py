@@ -116,6 +116,9 @@ def build_airline_decision_response(
     reserve_weeks: float,
     carbon_price_eur_per_t: float,
     pathway_key: str,
+    fare_pass_through_pct: float | None = None,
+    labor_cost_impact_eur_m: float | None = None,
+    extra_fuel_cost_eur_m: float | None = None,
 ) -> AirlineDecisionResponse:
     get_pathway_cost(pathway_key)
     assessment = compute_airline_decision(
@@ -123,6 +126,9 @@ def build_airline_decision_response(
         reserve_weeks=reserve_weeks,
         carbon_price_eur_per_t=carbon_price_eur_per_t,
         pathway_key=pathway_key,
+        fare_pass_through_pct=fare_pass_through_pct,
+        labor_cost_impact_eur_m=labor_cost_impact_eur_m,
+        extra_fuel_cost_eur_m=extra_fuel_cost_eur_m,
     )
     return AirlineDecisionResponse(
         generated_at=utcnow(),
@@ -131,15 +137,22 @@ def build_airline_decision_response(
             reserve_weeks=reserve_weeks,
             carbon_price_eur_per_t=carbon_price_eur_per_t,
             pathway_key=pathway_key,
+            fare_pass_through_pct=fare_pass_through_pct,
+            labor_cost_impact_eur_m=labor_cost_impact_eur_m,
+            extra_fuel_cost_eur_m=extra_fuel_cost_eur_m,
         ),
         probabilities=assessment.probabilities,
         signal=_decision_signal(assessment),
+        fare_pass_through_pct=assessment.fare_pass_through_pct,
+        labor_cost_impact_eur_m=assessment.labor_cost_impact_eur_m,
+        extra_fuel_cost_eur_m=assessment.extra_fuel_cost_eur_m,
+        residual_fuel_cost_exposure=assessment.residual_fuel_cost_exposure,
     )
 
 
 def _reserve_source_name(source_type: str) -> str:
     if source_type == "manual":
-        return "IATA / EUROCONTROL curated estimate"
+        return "JetScope curated / env override (not IATA/EUROCONTROL live feed)"
     if source_type == "official":
         return "IEA Oil Market Report"
     if source_type == "derived":

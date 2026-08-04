@@ -64,10 +64,16 @@ export type ReserveSignal = {
   coverageDays: number;
   coverageWeeks: number;
   stressLevel: ReserveStressLevel;
-  estimatedSupplyGapPct: number;
+  /** null/undefined when no verified gap estimate exists */
+  estimatedSupplyGapPct: number | null;
   sourceType: SourceType;
   sourceName: string;
   confidenceScore: number;
+  coverageSource?: string | null;
+  supplyGapSource?: string | null;
+  stressSource?: string | null;
+  supplyStatusNote?: string | null;
+  supplyStatusAsOf?: string | null;
 };
 
 export type SafPathway = {

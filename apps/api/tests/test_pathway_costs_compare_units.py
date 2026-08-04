@@ -134,5 +134,5 @@ def test_pathway_sources_cover_all_keys_and_validate_fields() -> None:
         assert source["source_type"] in allowed_source_types
         assert 0.0 <= source["confidence_score"] <= 1.0
         assert source["cadence"] == "quarterly"
-        assert source["updated_at"] == "2026-04-23"
+        assert source["updated_at"] == "2026-07-15"
         assert source["fallback_used"] is False

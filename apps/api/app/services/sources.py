@@ -28,6 +28,7 @@ _SEED_FALLBACKS: dict[str, tuple[str, str, float, str, str]] = {
     "germany_premium_pct": ("Derived comparison", "derived", 0.60, "de", "price_differential"),
 }
 
+
 def _classify_source_type(source_name: str, fallback_used: bool) -> str:
     normalized = source_name.lower()
     if fallback_used:
@@ -108,6 +109,7 @@ def build_source_coverage_response(db: Session) -> SourceCoverageResponse:
                 )
             )
 
+    # Completeness counts only metrics present on the live snapshot, not seed backfill.
     completeness = len(present_keys) / len(_EXPECTED_METRIC_KEYS) if had_source_details else 0.0
     fallback_or_seed = any(metric.fallback_used or metric.status == "seed" for metric in metrics)
     return SourceCoverageResponse(

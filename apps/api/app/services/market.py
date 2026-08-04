@@ -9,13 +9,16 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models.tables import MarketRefreshRun, MarketSnapshot
 from app.schemas.market import (
+    MarketHealthResponse,
     MarketHistoryPoint,
     MarketHistoryResponse,
     MarketMetricHistory,
+    MarketRefreshRunSummary,
     MarketSnapshotResponse,
     MarketSourceDetail,
     SourceStatus,
 )
+from app.services.analysis.jet_decomposition import compute_jet_brent_decomposition
 from app.services.bootstrap import utcnow
 
 MARKET_SOURCE_URLS = {
@@ -1207,6 +1210,27 @@ def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
     confidence = _round(sum(confidence_values) / len(confidence_values), 3) if confidence_values else 1.0
     fallback_rate = _round((fallback_count / len(typed_source_details)) * 100.0, 2) if typed_source_details else 0.0
 
+    derived: dict[str, float | str] = {}
+    brent_for_decomp = values.get("brent_usd_per_bbl")
+    jet_for_decomp = values.get("rotterdam_jet_fuel_usd_per_l") or values.get("jet_eu_proxy_usd_per_l")
+    jet_source_label = (
+        "rotterdam_jet_fuel_usd_per_l"
+        if values.get("rotterdam_jet_fuel_usd_per_l")
+        else "jet_eu_proxy_usd_per_l"
+    )
+    if not jet_for_decomp:
+        jet_for_decomp = values.get("jet_usd_per_l")
+        jet_source_label = "jet_usd_per_l"
+    if brent_for_decomp and jet_for_decomp and brent_for_decomp > 0 and jet_for_decomp > 0:
+        try:
+            derived = compute_jet_brent_decomposition(
+                float(brent_for_decomp),
+                float(jet_for_decomp),
+                jet_source=jet_source_label,
+            )
+        except ValueError:
+            derived = {}
+
     return MarketSnapshotResponse(
         generated_at=generated_at,
         source_status=SourceStatus(
@@ -1218,6 +1242,80 @@ def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
         ),
         values=values,
         source_details=typed_source_details,
+        derived=derived,
+    )
+
+
+def build_market_health_response(db: Session, *, runs_window: int = 10) -> MarketHealthResponse:
+    """Summarize recent market refresh runs for ops / trust UI."""
+    window = max(1, min(50, int(runs_window)))
+    interval = max(0, int(settings.market_refresh_interval_seconds))
+    now = utcnow()
+
+    runs = list(
+        db.scalars(
+            select(MarketRefreshRun).order_by(MarketRefreshRun.refreshed_at.desc()).limit(window)
+        ).all()
+    )
+
+    def _run_ok(status: str) -> bool:
+        return status in {"ok", "degraded", "seed", "skipped-lock"}
+
+    def _ensure_utc(value: datetime) -> datetime:
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
+
+    summaries = [
+        MarketRefreshRunSummary(
+            id=str(run.id),
+            refreshed_at=_ensure_utc(run.refreshed_at),
+            source_status=str(run.source_status),
+            ingest=str(run.ingest),
+            ok=_run_ok(str(run.source_status)),
+        )
+        for run in runs
+    ]
+    latest = summaries[0] if summaries else None
+    age_seconds: int | None = None
+    next_eta: int | None = None
+    if latest is not None:
+        age_seconds = max(0, int((now - latest.refreshed_at).total_seconds()))
+        if interval > 0:
+            next_eta = max(0, interval - age_seconds)
+
+    ok_count = sum(1 for item in summaries if item.ok)
+    total = len(summaries)
+    success_rate = (ok_count / total) if total else None
+
+    if latest is None:
+        healthy = False
+        note = "No market refresh runs recorded yet. Start API with refresh loop or POST /v1/market/refresh."
+    elif latest.source_status == "error":
+        healthy = False
+        note = "Latest refresh status is error."
+    elif interval > 0 and age_seconds is not None and age_seconds > interval * 2:
+        healthy = False
+        note = f"Latest refresh is stale (age {age_seconds}s > 2× interval {interval}s)."
+    else:
+        healthy = True
+        note = "Refresh loop and/or manual refreshes are producing usable snapshots."
+
+    return MarketHealthResponse(
+        generated_at=now,
+        refresh_interval_seconds=interval,
+        latest_refreshed_at=latest.refreshed_at if latest else None,
+        latest_status=latest.source_status if latest else None,
+        latest_ingest=latest.ingest if latest else None,
+        age_seconds=age_seconds,
+        next_refresh_eta_seconds=next_eta,
+        runs_window=window,
+        runs_total=total,
+        runs_ok=ok_count,
+        success_rate=round(success_rate, 3) if success_rate is not None else None,
+        healthy=healthy,
+        note=note,
+        recent_runs=summaries,
     )
 
 

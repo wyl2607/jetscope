@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.tables import MarketSnapshot
 from app.schemas.market import (
+    MarketHealthResponse,
     MarketHistoryBackfillResponse,
     MarketHistoryResponse,
     MarketRefreshResponse,
@@ -12,9 +13,10 @@ from app.schemas.market import (
 )
 from app.security import require_admin_token
 from app.services.market import (
+    backfill_market_history_from_public_sources,
+    build_market_health_response,
     build_market_history_response,
     build_market_snapshot_response,
-    backfill_market_history_from_public_sources,
     refresh_market_snapshot_set,
 )
 
@@ -29,6 +31,14 @@ def get_market_snapshot(db: Session = Depends(get_db)) -> MarketSnapshotResponse
 @router.get("/history", response_model=MarketHistoryResponse)
 def get_market_history(db: Session = Depends(get_db)) -> MarketHistoryResponse:
     return build_market_history_response(db)
+
+
+@router.get("/health", response_model=MarketHealthResponse)
+def get_market_health(
+    db: Session = Depends(get_db),
+    runs_window: int = Query(10, ge=1, le=50, description="How many recent refresh runs to include"),
+) -> MarketHealthResponse:
+    return build_market_health_response(db, runs_window=runs_window)
 
 
 @router.post("/history/backfill", response_model=MarketHistoryBackfillResponse)

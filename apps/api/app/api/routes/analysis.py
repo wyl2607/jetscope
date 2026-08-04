@@ -50,6 +50,9 @@ def get_airline_decision_analysis(
     reserve_weeks: float = Query(..., gt=0, description="Estimated reserve coverage in weeks"),
     carbon_price_eur_per_t: float = Query(0.0, ge=0, description="Carbon price in EUR per metric ton"),
     pathway_key: str = Query(DEFAULT_ANALYSIS_PATHWAY_KEY, description="SAF pathway key"),
+    fare_pass_through_pct: float | None = Query(None, ge=0, le=1, description="Optional fare pass-through share (e.g. 0.60 LH Q2 2026)"),
+    labor_cost_impact_eur_m: float | None = Query(None, ge=0, description="Optional labor/strike cost EUR m"),
+    extra_fuel_cost_eur_m: float | None = Query(None, ge=0, description="Optional extra fuel cost EUR m (context)"),
 ) -> AirlineDecisionResponse:
     try:
         get_pathway_cost(pathway_key)
@@ -61,6 +64,9 @@ def get_airline_decision_analysis(
         reserve_weeks=reserve_weeks,
         carbon_price_eur_per_t=carbon_price_eur_per_t,
         pathway_key=pathway_key,
+        fare_pass_through_pct=fare_pass_through_pct,
+        labor_cost_impact_eur_m=labor_cost_impact_eur_m,
+        extra_fuel_cost_eur_m=extra_fuel_cost_eur_m,
     )
 
 

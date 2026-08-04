@@ -2,7 +2,7 @@ import type { AirlineDecisionResponse } from '@/lib/product-read-model';
 import { getAirlineDecisionSignalLabel } from '@/lib/market-signals';
 
 type Props = {
-  decision: Pick<AirlineDecisionResponse, 'signal' | 'probabilities'> | null;
+  decision: Pick<AirlineDecisionResponse, 'signal' | 'probabilities' | 'fare_pass_through_pct' | 'labor_cost_impact_eur_m' | 'extra_fuel_cost_eur_m' | 'residual_fuel_cost_exposure'> | null;
   reserveWeeks: number;
   pathwayKey: string;
 };
@@ -12,24 +12,24 @@ const DECISION_COPY: Record<
   { title: string; body: string }
 > = {
   raise_fares: {
-    title: '提高票价',
-    body: '将燃油与碳成本压力传导到票价。'
+    title: 'µÅÉÚ½ÿþÑ¿õ╗À',
+    body: 'Õ░åþçâµ▓╣õ©Äþó│µêÉµ£¼ÕÄïÕèøõ╝áÕ»╝Õê░þÑ¿õ╗ÀÒÇé'
   },
   cut_capacity: {
-    title: '削减运力',
-    body: '减少短途或低利润航班频次以保护利润率。'
+    title: 'ÕëèÕçÅÞ┐ÉÕèø',
+    body: 'ÕçÅÕ░æþƒ¡ÚÇöµêûõ¢ÄÕê®µÂªÞê¬þÅ¡Úóæµ¼íõ╗Ñõ┐ØµèñÕê®µÂªþÄçÒÇé'
   },
   buy_spot_saf: {
-    title: '现货采购 SAF',
-    body: '合规压力上升时增加短期 SAF 采购。'
+    title: 'þÄ░Þ┤ºÚççÞ┤¡ SAF',
+    body: 'ÕÉêÞºäÕÄïÕèøõ©èÕìçµùÂÕó×Õèáþƒ¡µ£ƒ SAF ÚççÞ┤¡ÒÇé'
   },
   sign_long_term_offtake: {
-    title: '签署长期承购',
-    body: '采购从机会型买入转向结构化供给协议。'
+    title: 'þ¡¥þ¢▓Úò┐µ£ƒµë┐Þ┤¡',
+    body: 'ÚççÞ┤¡õ╗Äµ£║õ╝ÜÕ×ïõ╣░ÕàÑÞ¢¼ÕÉæþ╗ôµ×äÕîûõ¥øþ╗ÖÕìÅÞ««ÒÇé'
   },
   ground_routes: {
-    title: '停飞航线',
-    body: '航线经济性失效时的最高压力边界情形。'
+    title: 'Õü£Úú×Þê¬þ║┐',
+    body: 'Þê¬þ║┐þ╗ÅµÁÄµÇºÕñ▒µòêµùÂþÜäµ£ÇÚ½ÿÕÄïÕèøÞ¥╣þòîµâàÕ¢óÒÇé'
   }
 };
 
@@ -44,14 +44,14 @@ export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Pr
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
-              航司决策矩阵
+              Þê¬ÕÅ©Õå│þ¡ûþƒ®ÚÿÁ
             </h4>
             <p className="mt-2 text-sm text-slate-500">
-              储备压力 {reserveWeeks.toFixed(1)} 周 · 已选路径 {pathwayKey.toUpperCase()}
+              Õé¿ÕñçÕÄïÕèø {reserveWeeks.toFixed(1)} Õæ¿ ┬À ÕÀ▓ÚÇëÞÀ»Õ¥ä {pathwayKey.toUpperCase()}
             </p>
           </div>
         </div>
-        <p className="text-sm text-slate-600">决策模型暂不可用。</p>
+        <p className="text-sm text-slate-600">Õå│þ¡ûµ¿íÕ×ïµÜéõ©ìÕÅ»þö¿ÒÇé</p>
       </section>
     );
   }
@@ -65,16 +65,39 @@ export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Pr
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
-            航司决策矩阵
+            Þê¬ÕÅ©Õå│þ¡ûþƒ®ÚÿÁ
           </h4>
           <p className="mt-2 text-sm text-slate-500">
-            储备压力 {reserveWeeks.toFixed(1)} 周 · 已选路径 {pathwayKey.toUpperCase()}
+            Õé¿ÕñçÕÄïÕèø {reserveWeeks.toFixed(1)} Õæ¿ ┬À ÕÀ▓ÚÇëÞÀ»Õ¥ä {pathwayKey.toUpperCase()}
           </p>
         </div>
         <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs uppercase tracking-[0.18em] text-sky-800">
           {getAirlineDecisionSignalLabel(decision.signal)}
         </span>
       </div>
+
+      {(decision.fare_pass_through_pct != null ||
+        decision.labor_cost_impact_eur_m != null ||
+        decision.residual_fuel_cost_exposure != null) && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">LH residual context</p>
+          <p className="mt-1">
+            Pass-through{' '}
+            {decision.fare_pass_through_pct != null
+              ? `${Math.round(decision.fare_pass_through_pct * 100)}%`
+              : 'n/a'}
+            {' · '}
+            residual index{' '}
+            {decision.residual_fuel_cost_exposure != null
+              ? decision.residual_fuel_cost_exposure.toFixed(3)
+              : 'n/a'}
+            {' · '}
+            labor €{decision.labor_cost_impact_eur_m ?? '—'}m
+            {' · '}
+            extra fuel €{decision.extra_fuel_cost_eur_m ?? '—'}m
+          </p>
+        </div>
+      )}
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {rows.map(([key, value]) => {

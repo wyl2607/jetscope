@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     analysis,
+    events,
     grid,
     heat,
     health,
@@ -21,6 +22,7 @@ from app.core.config import settings
 api_router = APIRouter()
 api_router.include_router(health.router, tags=["health"])
 api_router.include_router(analysis.router, prefix="/analysis", tags=["analysis"])
+api_router.include_router(events.router, prefix="/events", tags=["events"])
 api_router.include_router(grid.router, prefix="/analysis", tags=["grid"])
 api_router.include_router(heat.router, prefix="/analysis", tags=["heat"])
 api_router.include_router(transition.router, prefix="/analysis", tags=["transition"])

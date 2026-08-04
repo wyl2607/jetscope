@@ -53,6 +53,10 @@ class AirlineDecisionAssessment(BaseModel):
     probabilities: AirlineDecisionProbabilities
     dominant_response: str
     reserve_signal: str
+    fare_pass_through_pct: float | None = Field(default=None, ge=0, le=1)
+    labor_cost_impact_eur_m: float | None = Field(default=None, ge=0)
+    extra_fuel_cost_eur_m: float | None = Field(default=None, ge=0)
+    residual_fuel_cost_exposure: float | None = None
 
 
 class TippingPointInputs(BaseModel):
@@ -85,6 +89,9 @@ class AirlineDecisionInputs(BaseModel):
     reserve_weeks: float = Field(gt=0)
     carbon_price_eur_per_t: float = Field(ge=0)
     pathway_key: str
+    fare_pass_through_pct: float | None = Field(default=None, ge=0, le=1)
+    labor_cost_impact_eur_m: float | None = Field(default=None, ge=0)
+    extra_fuel_cost_eur_m: float | None = Field(default=None, ge=0)
 
 
 class AirlineDecisionResponse(BaseModel):
@@ -92,6 +99,10 @@ class AirlineDecisionResponse(BaseModel):
     inputs: AirlineDecisionInputs
     probabilities: AirlineDecisionProbabilities
     signal: AirlineDecisionSignal
+    fare_pass_through_pct: float | None = None
+    labor_cost_impact_eur_m: float | None = None
+    extra_fuel_cost_eur_m: float | None = None
+    residual_fuel_cost_exposure: float | None = None
 
 
 class TippingEventResponse(BaseModel):

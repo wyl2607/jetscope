@@ -12,6 +12,7 @@ export type MarketSnapshot = {
     is_fallback?: boolean | null;
   };
   values: Record<string, number>;
+  derived?: Record<string, number | string>;
 };
 
 export type ReserveSignal = {
@@ -20,7 +21,7 @@ export type ReserveSignal = {
   coverage_days: number;
   coverage_weeks: number;
   stress_level: string;
-  estimated_supply_gap_pct: number;
+  estimated_supply_gap_pct: number | null;
   source_type: string;
   source_name: string;
   confidence_score: number;
@@ -60,6 +61,10 @@ export type DecisionReadModel = {
     sign_long_term_offtake: number;
     ground_routes: number;
   };
+  fare_pass_through_pct?: number | null;
+  labor_cost_impact_eur_m?: number | null;
+  extra_fuel_cost_eur_m?: number | null;
+  residual_fuel_cost_exposure?: number | null;
 };
 
 export type TippingPointResponse = {
@@ -82,6 +87,9 @@ export type AirlineDecisionResponse = {
     reserve_weeks: number;
     carbon_price_eur_per_t: number;
     pathway_key: string;
+    fare_pass_through_pct?: number | null;
+    labor_cost_impact_eur_m?: number | null;
+    extra_fuel_cost_eur_m?: number | null;
   };
   signal: string;
   probabilities: {
@@ -91,6 +99,10 @@ export type AirlineDecisionResponse = {
     sign_long_term_offtake: number;
     ground_routes: number;
   };
+  fare_pass_through_pct?: number | null;
+  labor_cost_impact_eur_m?: number | null;
+  extra_fuel_cost_eur_m?: number | null;
+  residual_fuel_cost_exposure?: number | null;
 };
 
 export type MarketHistoryMetric = {
@@ -248,6 +260,10 @@ export function toDecisionReadModel(
       sign_long_term_offtake: response.probabilities?.sign_long_term_offtake ?? 0,
       ground_routes: response.probabilities?.ground_routes ?? 0,
     },
+    fare_pass_through_pct: response.fare_pass_through_pct ?? null,
+    labor_cost_impact_eur_m: response.labor_cost_impact_eur_m ?? null,
+    extra_fuel_cost_eur_m: response.extra_fuel_cost_eur_m ?? null,
+    residual_fuel_cost_exposure: response.residual_fuel_cost_exposure ?? null,
   };
 }
 
