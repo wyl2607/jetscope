@@ -69,7 +69,7 @@ ssh "$HOST" bash -s -- "$REMOTE_DIR" "$DEPLOY_COMMIT" <<'REMOTE'
 set -euo pipefail
 REMOTE_DIR="$1"
 DEPLOY_COMMIT="$2"
-printf '%s\\n' "$DEPLOY_COMMIT" > "$REMOTE_DIR/.deploy-commit"
+printf '%s\n' "$DEPLOY_COMMIT" > "$REMOTE_DIR/.deploy-commit"
 chmod 0644 "$REMOTE_DIR/.deploy-commit"
 REMOTE
 
