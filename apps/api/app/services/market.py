@@ -859,25 +859,19 @@ def _persist_market_snapshot_set(
 
 
 def _latest_market_snapshots_by_metric(db: Session) -> dict[str, MarketSnapshot]:
-    """Load only the newest snapshot row for each expected market metric."""
-    metric_keys = [item["metric_key"] for item in DEFAULT_MARKET_METRICS]
-    latest_as_of = (
-        select(
-            MarketSnapshot.metric_key,
-            func.max(MarketSnapshot.as_of).label("latest_as_of"),
+    """Load the newest snapshot row for each expected metric with indexed seeks."""
+    latest_by_metric: dict[str, MarketSnapshot] = {}
+    for metric in DEFAULT_MARKET_METRICS:
+        metric_key = str(metric["metric_key"])
+        row = db.scalar(
+            select(MarketSnapshot)
+            .where(MarketSnapshot.metric_key == metric_key)
+            .order_by(MarketSnapshot.as_of.desc(), MarketSnapshot.id.desc())
+            .limit(1)
         )
-        .where(MarketSnapshot.metric_key.in_(metric_keys))
-        .group_by(MarketSnapshot.metric_key)
-        .subquery()
-    )
-    rows = db.scalars(
-        select(MarketSnapshot).join(
-            latest_as_of,
-            (MarketSnapshot.metric_key == latest_as_of.c.metric_key)
-            & (MarketSnapshot.as_of == latest_as_of.c.latest_as_of),
-        )
-    ).all()
-    return {row.metric_key: row for row in rows}
+        if row is not None:
+            latest_by_metric[metric_key] = row
+    return latest_by_metric
 
 
 def _latest_market_values_by_metric(db: Session) -> dict[str, float]:
