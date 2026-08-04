@@ -84,6 +84,12 @@ if command -v docker >/dev/null 2>&1; then
   if docker compose version >/dev/null 2>&1; then
     docker compose -f docker-compose.prod.yml up -d --build api
   else
+    docker-compose -f docker-compose.prod.yml down || true
+    while IFS= read -r container_id; do
+      [ -n "$container_id" ] || continue
+      docker rm -f "$container_id" || true
+    done < <(docker ps -aq --filter label=com.docker.compose.service=api)
+    docker rm -f jetscope-api || true
     docker-compose -f docker-compose.prod.yml up -d --build api
   fi
   docker ps --filter name=jetscope-api --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
