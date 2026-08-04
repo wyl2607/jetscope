@@ -3,7 +3,11 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
+from app.db.base import Base
+from app.models.tables import MarketSnapshot
 from app.services import market
 
 
@@ -131,3 +135,39 @@ def test_ingest_jet_eu_market_value_falls_back_to_brent_when_public_quote_fails(
     assert source_detail["status"] == "fallback"
     assert source_detail["source"] == "brent-derived"
     assert source_detail["primary_error"] == "source down"
+
+
+def test_latest_market_snapshots_query_returns_one_row_per_metric() -> None:
+    engine = create_engine("sqlite:///:memory:", future=True)
+    Base.metadata.create_all(bind=engine)
+
+    with Session(engine) as db:
+        older = datetime(2026, 1, 1, tzinfo=UTC)
+        newer = datetime(2026, 1, 2, tzinfo=UTC)
+        for item in market.DEFAULT_MARKET_METRICS:
+            db.add(
+                MarketSnapshot(
+                    source_key=item["source_key"],
+                    metric_key=item["metric_key"],
+                    value=1.0,
+                    unit=item["unit"],
+                    as_of=older,
+                    payload={},
+                )
+            )
+            db.add(
+                MarketSnapshot(
+                    source_key=item["source_key"],
+                    metric_key=item["metric_key"],
+                    value=2.0,
+                    unit=item["unit"],
+                    as_of=newer,
+                    payload={},
+                )
+            )
+        db.commit()
+
+        latest = market._latest_market_snapshots_by_metric(db)
+
+    assert set(latest) == {item["metric_key"] for item in market.DEFAULT_MARKET_METRICS}
+    assert all(float(row.value) == 2.0 for row in latest.values())
