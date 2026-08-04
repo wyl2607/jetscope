@@ -1,7 +1,7 @@
 import asyncio
 import contextlib
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from fastapi import FastAPI
 
@@ -32,9 +32,20 @@ async def _market_refresh_loop(interval_seconds: int) -> None:
     next_reserves_refresh_at = utcnow()
     next_ai_research_refresh_at = utcnow()
     while True:
-        db = SessionLocal()
         try:
-            refreshed_at, status = refresh_market_snapshot_set(db)
+            (
+                refreshed_at,
+                status,
+                next_tipping_eval_at,
+                next_reserves_refresh_at,
+                next_ai_research_refresh_at,
+            ) = await asyncio.to_thread(
+                _run_background_maintenance_cycle,
+                tipping_engine,
+                next_tipping_eval_at,
+                next_reserves_refresh_at,
+                next_ai_research_refresh_at,
+            )
             consecutive_failures = 0
             logger.info(
                 "market_refresh_cycle status=%s refreshed_at=%s interval_seconds=%s",
@@ -43,43 +54,6 @@ async def _market_refresh_loop(interval_seconds: int) -> None:
                 interval_seconds,
             )
 
-            now = utcnow()
-            if now >= next_reserves_refresh_at:
-                try:
-                    inserted = refresh_reserves_coverage(db)
-                    reserves_logger.info(
-                        "reserves_refresh_cycle inserted=%s next_in_seconds=%s",
-                        inserted,
-                        int(RESERVES_REFRESH_INTERVAL.total_seconds()),
-                    )
-                except Exception:
-                    reserves_logger.exception("reserves_refresh_cycle_failed")
-                next_reserves_refresh_at = now + RESERVES_REFRESH_INTERVAL
-
-            if now >= next_tipping_eval_at:
-                events = tipping_engine.evaluate(now=now, db=db)
-                tipping_engine.record_events(events, db)
-                tipping_logger.info(
-                    "tipping_point_cycle events=%s next_in_seconds=%s",
-                    len(events),
-                    int(TIPPING_EVALUATION_INTERVAL.total_seconds()),
-                )
-                next_tipping_eval_at = now + TIPPING_EVALUATION_INTERVAL
-
-            if settings.ai_research_enabled and now >= next_ai_research_refresh_at:
-                try:
-                    result = run_daily_pipeline(db)
-                    logger.info(
-                        "ai_research_cycle fetched=%s extracted=%s persisted=%s skipped_budget=%s next_in_seconds=%s",
-                        result.get("fetched", 0),
-                        result.get("extracted", 0),
-                        result.get("persisted", 0),
-                        result.get("skipped_budget", 0),
-                        int(AI_RESEARCH_REFRESH_INTERVAL.total_seconds()),
-                    )
-                except Exception:
-                    logger.exception("ai_research_cycle_failed")
-                next_ai_research_refresh_at = now + AI_RESEARCH_REFRESH_INTERVAL
         except Exception:
             consecutive_failures += 1
             logger.exception(
@@ -87,9 +61,71 @@ async def _market_refresh_loop(interval_seconds: int) -> None:
                 consecutive_failures,
                 interval_seconds,
             )
-        finally:
-            db.close()
         await asyncio.sleep(interval_seconds)
+
+
+def _run_background_maintenance_cycle(
+    tipping_engine: TippingPointEngine,
+    next_tipping_eval_at: datetime,
+    next_reserves_refresh_at: datetime,
+    next_ai_research_refresh_at: datetime,
+) -> tuple[datetime, str, datetime, datetime, datetime]:
+    """Run blocking maintenance away from the FastAPI event loop.
+
+    The session is created and closed in the worker thread so SQLite connections
+    are never reused across threads.
+    """
+    db = SessionLocal()
+    try:
+        refreshed_at, status = refresh_market_snapshot_set(db)
+        now = utcnow()
+
+        if now >= next_reserves_refresh_at:
+            try:
+                inserted = refresh_reserves_coverage(db)
+                reserves_logger.info(
+                    "reserves_refresh_cycle inserted=%s next_in_seconds=%s",
+                    inserted,
+                    int(RESERVES_REFRESH_INTERVAL.total_seconds()),
+                )
+            except Exception:
+                reserves_logger.exception("reserves_refresh_cycle_failed")
+            next_reserves_refresh_at = now + RESERVES_REFRESH_INTERVAL
+
+        if now >= next_tipping_eval_at:
+            events = tipping_engine.evaluate(now=now, db=db)
+            tipping_engine.record_events(events, db)
+            tipping_logger.info(
+                "tipping_point_cycle events=%s next_in_seconds=%s",
+                len(events),
+                int(TIPPING_EVALUATION_INTERVAL.total_seconds()),
+            )
+            next_tipping_eval_at = now + TIPPING_EVALUATION_INTERVAL
+
+        if settings.ai_research_enabled and now >= next_ai_research_refresh_at:
+            try:
+                result = run_daily_pipeline(db)
+                logger.info(
+                    "ai_research_cycle fetched=%s extracted=%s persisted=%s skipped_budget=%s next_in_seconds=%s",
+                    result.get("fetched", 0),
+                    result.get("extracted", 0),
+                    result.get("persisted", 0),
+                    result.get("skipped_budget", 0),
+                    int(AI_RESEARCH_REFRESH_INTERVAL.total_seconds()),
+                )
+            except Exception:
+                logger.exception("ai_research_cycle_failed")
+            next_ai_research_refresh_at = now + AI_RESEARCH_REFRESH_INTERVAL
+
+        return (
+            refreshed_at,
+            status,
+            next_tipping_eval_at,
+            next_reserves_refresh_at,
+            next_ai_research_refresh_at,
+        )
+    finally:
+        db.close()
 
 
 def create_app() -> FastAPI:

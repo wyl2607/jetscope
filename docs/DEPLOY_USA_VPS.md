@@ -62,6 +62,30 @@ curl -fsS http://127.0.0.1:8000/v1/events/lufthansa-q2-2026-earnings | head
 curl -fsS http://127.0.0.1:8000/v1/market/health | head
 ```
 
+## Runtime ownership and reboot recovery
+
+The 1.9 GiB VPS keeps the API and web processes under separate supervisors:
+
+- API: Docker Compose owns `jetscope-api`; `restart: unless-stopped`, `mem_limit: 512m`, `mem_reservation: 256m`, and `cpus: "1.0"` are defined in `docker-compose.prod.yml`.
+- Web: systemd owns Next.js through `infra/server/jetscope-web.service`; the unit waits for Docker/network readiness, restarts on failure, and caps Node/systemd memory at 512 MiB.
+- Do not add a second PM2 supervisor for the same Next.js process.
+
+After syncing a reviewed tree to `/opt/jetscope`, install and enable the web unit once:
+
+```bash
+sudo install -m 0644 /opt/jetscope/infra/server/jetscope-web.service /etc/systemd/system/jetscope-web.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now jetscope-web.service
+sudo systemctl is-enabled jetscope-web.service
+sudo systemctl is-enabled docker
+docker compose -f /opt/jetscope/docker-compose.prod.yml ps
+```
+
+Rollback is limited to the supervisor layer: restore the previous unit file, run
+`systemctl daemon-reload`, and restart `jetscope-web.service`; restore the
+previous known-good Compose tree and run `docker compose ... up -d api`. The
+deploy script still excludes `.env` and `data/*.db` and does not use `rsync --delete`.
+
 ## Post-deploy smoke
 
 | Check | Expect |

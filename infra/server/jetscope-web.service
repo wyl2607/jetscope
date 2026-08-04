@@ -1,6 +1,8 @@
 [Unit]
 Description=JetScope Next.js Web Frontend
-After=network.target
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
 
 [Service]
 Type=simple
@@ -9,9 +11,14 @@ WorkingDirectory=/opt/jetscope/apps/web
 Environment=NODE_ENV=production
 Environment=JETSCOPE_API_BASE_URL=http://127.0.0.1:8000
 Environment=PORT=3000
+Environment=NODE_OPTIONS=--max-old-space-size=384
 ExecStart=/opt/jetscope/node_modules/.bin/next start --hostname 127.0.0.1 --port 3000
-Restart=always
+Restart=on-failure
 RestartSec=5
+MemoryHigh=384M
+MemoryMax=512M
+CPUQuota=100%
+LimitNOFILE=4096
 StandardOutput=append:/var/log/jetscope-web.log
 StandardError=append:/var/log/jetscope-web.log
 
