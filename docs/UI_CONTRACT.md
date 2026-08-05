@@ -19,7 +19,7 @@ Measured on `agent/front-end-stability-design` (2026-08-05):
   block** that repaints dark utility classes (`bg-slate-900`, `text-slate-100`,
   …) into light values with `!important`. While that block exists, *the class a
   developer writes is not the color that renders* — and **50 of 100 `.tsx` files
-  still depend on it**, across **2,271 raw color utilities in 72 files**.
+  still depend on it**, across **2,303 raw color utilities in 75 files**.
 - `tailwind.config.ts` exposed `ink` / `panel` / `accent` and was never loaded at
   all: this app runs Tailwind v4, where a config file only applies via `@config`,
   which `globals.css` never declared. So the theme was dead code and components
@@ -49,15 +49,15 @@ Do not introduce a second naming scheme.
 | `--js-ink` | `text-ink` | primary copy |
 | `--js-muted` | `text-muted` | secondary copy, labels |
 | `--js-subtle` | `text-subtle` | captions, timestamps |
-
-Every token above clears 4.5:1 on `surface`, so any of them is safe for body
-text: ink 16.45 · accent 5.97 · muted 5.43 · warning 5.19 · success 5.00 ·
-danger 6.46 · subtle 4.82. `subtle` was originally `#8390a1` (3.25:1) and was
-darkened to meet section 5.
 | `--js-accent` / `--js-accent-soft` | `text-accent` / `bg-accent-soft` | brand, links, focus |
 | `--js-success` / `--js-success-soft` | `text-success` / `bg-success-soft` | within target, improving |
 | `--js-warning` / `--js-warning-soft` | `text-warning` / `bg-warning-soft` | watch, **assumption-based** |
 | `--js-danger` / `--js-danger-soft` | `text-danger` / `bg-danger-soft` | threshold breached |
+
+Measured contrast on `surface`, so nothing above needs re-deriving: ink 16.45 ·
+danger 6.46 · accent 5.97 · muted 5.43 · warning 5.19 · success 5.00 · subtle
+4.82. Every token clears 4.5:1 and is therefore safe for body text. `subtle`
+started at `#8390a1` (3.25:1) and was darkened to meet section 5.
 
 Rules:
 
@@ -185,7 +185,7 @@ A rule that isn't checked will drift. `npm run web:gate` runs, in order:
 records how many violations each legacy file is currently allowed. A file not in
 the baseline must be clean; a baselined file may never get worse; a file that
 improves must have its baseline lowered (`--update`) so the gain is locked in.
-That is how a 2,271-violation codebase gets a working gate on day one instead of
+That is how a 2,303-violation codebase gets a working gate on day one instead of
 after a 2,000-line unreviewable diff.
 
 ---
