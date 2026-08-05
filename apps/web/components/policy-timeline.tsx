@@ -163,26 +163,26 @@ export function PolicyTimeline({ currentTimestamp = Date.now(), className = '', 
       case 'past':
         return {
           container: 'opacity-70',
-          dot: 'bg-green-500/60 ring-green-500/30',
-          line: 'bg-green-500/40',
-          content: 'text-slate-400',
-          badge: 'bg-green-500/20 text-green-300',
+          dot: 'bg-success/60 ring-success/30',
+          line: 'bg-success/40',
+          content: 'text-muted',
+          badge: 'bg-success-soft text-success',
         };
       case 'current':
         return {
-          container: 'ring-1 ring-blue-500/50 rounded-lg p-4 bg-blue-500/5',
-          dot: 'bg-blue-500 ring-blue-400 ring-2',
-          line: 'bg-blue-500',
-          content: 'text-slate-100',
-          badge: 'bg-blue-500/30 text-blue-200 animate-pulse',
+          container: 'ring-1 ring-accent/50 rounded-lg p-4 bg-accent-soft',
+          dot: 'bg-accent ring-accent ring-2',
+          line: 'bg-accent',
+          content: 'text-ink',
+          badge: 'bg-accent-soft text-accent animate-pulse',
         };
       case 'future':
         return {
           container: 'opacity-50 hover:opacity-75 transition-opacity',
-          dot: 'bg-slate-600/50 ring-slate-500/30',
-          line: 'bg-slate-600/30',
-          content: 'text-slate-500',
-          badge: 'bg-slate-700/40 text-slate-300',
+          dot: 'bg-line-strong ring-line',
+          line: 'bg-line',
+          content: 'text-muted',
+          badge: 'bg-surface-muted text-muted',
         };
     }
   };
@@ -190,15 +190,15 @@ export function PolicyTimeline({ currentTimestamp = Date.now(), className = '', 
   return (
     <div className={`policy-timeline ${className}`}>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-100">{copy.heading}</h2>
-        <p className="text-sm text-slate-400 mt-1">
+        <h2 className="text-2xl font-bold text-ink">{copy.heading}</h2>
+        <p className="text-sm text-muted mt-1">
           {copy.subheadingPrefix} {new Date(currentTimestamp).toLocaleDateString(copy.dateLocale)} {copy.subheadingSuffix}
         </p>
       </div>
 
       <div className="relative space-y-6 pl-8">
         {/* Vertical timeline line */}
-        <div className="absolute left-3 top-0 bottom-0 w-px bg-gradient-to-b from-slate-700 via-slate-600 to-slate-700" />
+        <div className="absolute left-3 top-0 bottom-0 w-px bg-gradient-to-b from-line-strong via-line to-line-strong" />
 
         {milestones.map((milestone, idx) => {
           const status = getMilestoneStatus(milestone.year);
@@ -219,7 +219,7 @@ export function PolicyTimeline({ currentTimestamp = Date.now(), className = '', 
               {/* Content */}
               <div className="space-y-2">
                 <div className="flex items-baseline gap-3 flex-wrap">
-                  <span className="text-3xl font-bold text-slate-100">{milestone.year}</span>
+                  <span className="text-3xl font-bold text-ink">{milestone.year}</span>
                   <span className={`text-xs font-semibold px-2 py-1 rounded ${styles.badge}`}>
                     {copy.status[status]}
                   </span>
@@ -235,10 +235,10 @@ export function PolicyTimeline({ currentTimestamp = Date.now(), className = '', 
                       key={region}
                       className={`text-xs px-2 py-1 rounded-full border ${
                         status === 'past'
-                          ? 'border-green-500/30 bg-green-500/10 text-green-300'
+                          ? 'border-success bg-success-soft text-success'
                           : status === 'current'
-                            ? 'border-blue-500/50 bg-blue-500/15 text-blue-200'
-                            : 'border-slate-600/50 bg-slate-700/20 text-slate-400'
+                            ? 'border-accent bg-accent-soft text-accent'
+                            : 'border-line bg-surface-muted text-muted'
                       }`}
                     >
                       {region}
@@ -248,13 +248,13 @@ export function PolicyTimeline({ currentTimestamp = Date.now(), className = '', 
 
                 {milestone.target && (
                   <p className={`text-sm font-medium mt-2 ${styles.content}`}>
-                    {copy.target} <span className="text-slate-200">{milestone.target}</span>
+                    {copy.target} <span className="text-ink">{milestone.target}</span>
                   </p>
                 )}
 
                 {/* "From now to next milestone" text for future milestones */}
                 {status === 'future' && idx < milestones.length - 1 && (
-                  <p className="text-xs text-slate-500 mt-2 italic">
+                  <p className="text-xs text-muted mt-2 italic">
                     {copy.yearsUntil(milestones[idx + 1].year - milestone.year)}
                   </p>
                 )}
@@ -265,18 +265,18 @@ export function PolicyTimeline({ currentTimestamp = Date.now(), className = '', 
       </div>
 
       {/* Legend */}
-      <div className="mt-8 pt-6 border-t border-slate-700 grid grid-cols-3 gap-4 text-sm">
+      <div className="mt-8 pt-6 border-t border-line grid grid-cols-3 gap-4 text-sm">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-green-500/60 ring-2 ring-green-500/30" />
-          <span className="text-slate-400">{copy.legendPast}</span>
+          <div className="w-3 h-3 rounded-full bg-success/60 ring-2 ring-success/30" />
+          <span className="text-muted">{copy.legendPast}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-blue-500 ring-2 ring-blue-400 animate-pulse" />
-          <span className="text-slate-300">{copy.legendCurrent}</span>
+          <div className="w-3 h-3 rounded-full bg-accent ring-2 ring-accent animate-pulse" />
+          <span className="text-muted">{copy.legendCurrent}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-slate-600/50 ring-2 ring-slate-500/30" />
-          <span className="text-slate-500">{copy.legendFuture}</span>
+          <div className="w-3 h-3 rounded-full bg-line-strong ring-2 ring-line" />
+          <span className="text-muted">{copy.legendFuture}</span>
         </div>
       </div>
     </div>

@@ -21,10 +21,10 @@ export default function ClientBreakevenCalculator() {
   const premiumVsJet = ((blendedCost / totalJet) - 1) * 100;
 
   return (
-    <section className="rounded-lg border border-emerald-800/50 bg-slate-950 p-6 space-y-6">
+    <section className="rounded-lg border border-success bg-surface p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-emerald-300">SAF Breakeven-Rechner</h2>
-        <span className="text-xs text-slate-500">Interaktiv: Parameter anpassen</span>
+        <h2 className="text-xl font-bold text-success">SAF Breakeven-Rechner</h2>
+        <span className="text-xs text-muted">Interaktiv: Parameter anpassen</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -98,7 +98,7 @@ export default function ClientBreakevenCalculator() {
         />
       </div>
 
-      <div className="text-xs text-slate-500 space-y-1">
+      <div className="text-xs text-muted space-y-1">
         <p>Annahmen: 3.15 tCO₂/m³ Jet | 0.63 tCO₂/m³ SAF (80% RED) | 158.987 L/bbl</p>
         <p>EU ETS gilt nur für nicht-SAF-Anteil; SAF zählt 80% reduziert.</p>
       </div>
@@ -117,10 +117,10 @@ function SliderControl({ label, value, min, max, step, unit, onChange, highlight
   highlight?: boolean;
 }) {
   return (
-    <div className={`p-3 rounded border ${highlight ? 'border-emerald-700 bg-emerald-950/20' : 'border-slate-800 bg-slate-900/50'}`}>
+    <div className={`p-3 rounded border ${highlight ? 'border-success bg-success-soft' : 'border-line bg-surface-muted'}`}>
       <div className="flex justify-between items-center mb-2">
-        <label className="text-sm text-slate-300">{label}</label>
-        <span className="text-sm font-mono text-sky-300">{value.toFixed(step < 1 ? 2 : 0)} {unit}</span>
+        <label className="text-sm text-muted">{label}</label>
+        <span className="text-sm font-mono text-accent">{value.toFixed(step < 1 ? 2 : 0)} {unit}</span>
       </div>
       <input
         type="range"
@@ -129,7 +129,7 @@ function SliderControl({ label, value, min, max, step, unit, onChange, highlight
         step={step}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500"
+        className="w-full h-2 bg-surface rounded-lg appearance-none cursor-pointer accent-accent"
       />
     </div>
   );
@@ -143,26 +143,26 @@ function ResultCard({ label, value, unit, color, subValue }: {
   subValue?: string;
 }) {
   const colorMap = {
-    blue: 'border-blue-800/50 bg-blue-950/20',
-    emerald: 'border-emerald-800/50 bg-emerald-950/20',
-    green: 'border-green-800/50 bg-green-950/20',
-    yellow: 'border-yellow-800/50 bg-yellow-950/20',
-    red: 'border-red-800/50 bg-red-950/20',
+    blue: 'border-accent bg-accent-soft',
+    emerald: 'border-success bg-success-soft',
+    green: 'border-success bg-success-soft',
+    yellow: 'border-warning bg-warning-soft',
+    red: 'border-danger bg-danger-soft',
   };
 
   const textMap = {
-    blue: 'text-blue-300',
-    emerald: 'text-emerald-300',
-    green: 'text-green-300',
-    yellow: 'text-yellow-300',
-    red: 'text-red-300',
+    blue: 'text-accent',
+    emerald: 'text-success',
+    green: 'text-success',
+    yellow: 'text-warning',
+    red: 'text-danger',
   };
 
   return (
     <div className={`p-4 rounded border ${colorMap[color]} text-center`}>
-      <p className="text-xs text-slate-400 uppercase">{label}</p>
-      <p className="text-2xl font-bold text-white mt-1">{value}</p>
-      <p className="text-xs text-slate-500">{unit}</p>
+      <p className="text-xs text-muted uppercase">{label}</p>
+      <p className="text-2xl font-bold text-ink mt-1">{value}</p>
+      <p className="text-xs text-muted">{unit}</p>
       {subValue && (
         <p className={`text-xs mt-1 font-mono ${textMap[color]}`}>{subValue}</p>
       )}
