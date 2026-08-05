@@ -181,7 +181,7 @@ function LineChart({
   if (finitePoints.length === 0) {
     return (
       <div
-        className="flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 p-4 text-slate-500"
+        className="flex items-center justify-center rounded-lg border border-line bg-surface-muted p-4 text-muted"
         style={{ width, height }}
       >
         历史点暂不可用
@@ -230,7 +230,7 @@ function LineChart({
   const endDate = pointDates[pointDates.length - 1] ?? startDate;
 
   return (
-    <svg width={width} height={height} className="rounded-lg bg-white">
+    <svg width={width} height={height} className="rounded-lg bg-surface">
       {/* Grid lines */}
       {[0, 0.25, 0.5, 0.75, 1].map((ratio) => (
         <line
@@ -239,7 +239,7 @@ function LineChart({
           y1={padding.top + chartHeight * ratio}
           x2={width - padding.right}
           y2={padding.top + chartHeight * ratio}
-          stroke="#cbd5e1"
+          className="stroke-line"
           strokeWidth="1"
           strokeDasharray="4"
         />
@@ -255,7 +255,7 @@ function LineChart({
             y={padding.top + chartHeight * ratio + 5}
             textAnchor="end"
             fontSize="12"
-            fill="#64748b"
+            className="fill-muted"
           >
             {formatAxisValue(value)}
           </text>
@@ -263,14 +263,14 @@ function LineChart({
       })}
 
       {/* Y-axis */}
-      <line x1={padding.left} y1={padding.top} x2={padding.left} y2={padding.top + chartHeight} stroke="#94a3b8" strokeWidth="2" />
-      <text x={padding.left} y={12} fontSize="11" fill="#475569">
+      <line className="stroke-line-strong" x1={padding.left} y1={padding.top} x2={padding.left} y2={padding.top + chartHeight} strokeWidth="2" />
+      <text className="fill-muted" x={padding.left} y={12} fontSize="11">
         左轴：{metricMeta.axisUnit}
       </text>
 
       {/* X-axis */}
-      <line x1={padding.left} y1={padding.top + chartHeight} x2={width - padding.right} y2={padding.top + chartHeight} stroke="#94a3b8" strokeWidth="2" />
-      <text x={width - padding.right} y={padding.top + chartHeight - 8} textAnchor="end" fontSize="11" fill="#475569">
+      <line className="stroke-line-strong" x1={padding.left} y1={padding.top + chartHeight} x2={width - padding.right} y2={padding.top + chartHeight} strokeWidth="2" />
+      <text className="fill-muted" x={width - padding.right} y={padding.top + chartHeight - 8} textAnchor="end" fontSize="11">
         横轴：日期
       </text>
 
@@ -281,14 +281,13 @@ function LineChart({
           cx={getX(index)}
           cy={getY(point.value)}
           r="3"
-          fill="#60a5fa"
-          stroke="#ffffff"
+          className="fill-accent stroke-line-strong"
           strokeWidth="1"
         />
       ))}
 
       {/* Line path */}
-      <path d={pathData} stroke="#60a5fa" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={pathData} className="stroke-accent fill-none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
 
       {/* Event markers */}
       {events
@@ -303,15 +302,15 @@ function LineChart({
 
           const x = getX(pointIndex);
           const eventColors: Record<MarketEvent['type'], string> = {
-            lufthansa: '#f97316',
-            breakeven: '#eab308',
-            shock: '#ef4444'
+            lufthansa: 'fill-warning',
+            breakeven: 'fill-success',
+            shock: 'fill-danger'
           };
 
           return (
             <g key={`event-${idx}`}>
-              <circle cx={x} cy={padding.top + chartHeight + 10} r="5" fill={eventColors[event.type]} opacity="0.7" />
-              <text x={x} y={padding.top + chartHeight + 25} textAnchor="middle" fontSize="10" fill="#475569" className="truncate">
+              <circle className={eventColors[event.type]} cx={x} cy={padding.top + chartHeight + 10} r="5" opacity="0.7" />
+              <text className="fill-muted truncate" x={x} y={padding.top + chartHeight + 25} textAnchor="middle" fontSize="10">
                 {event.label.substring(0, 8)}
               </text>
             </g>
@@ -319,10 +318,10 @@ function LineChart({
         })}
 
       {/* X-axis labels (start and end dates) */}
-      <text x={padding.left} y={height - 8} fontSize="12" fill="#64748b">
+      <text className="fill-muted" x={padding.left} y={height - 8} fontSize="12">
         {formatDateLabel(startDate)}
       </text>
-      <text x={width - padding.right} y={height - 8} textAnchor="end" fontSize="12" fill="#64748b">
+      <text className="fill-muted" x={width - padding.right} y={height - 8} textAnchor="end" fontSize="12">
         {formatDateLabel(endDate)}
       </text>
     </svg>
@@ -333,8 +332,8 @@ function LineChart({
 function ChartSkeleton() {
   return (
     <div className="animate-pulse space-y-4">
-      <div className="h-64 rounded-lg bg-slate-100"></div>
-      <div className="h-6 rounded bg-slate-100"></div>
+      <div className="h-64 rounded-lg bg-surface-muted"></div>
+      <div className="h-6 rounded bg-surface-muted"></div>
     </div>
   );
 }
@@ -353,9 +352,9 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
+      <div className="rounded-2xl border border-warning bg-warning-soft p-6 text-warning">
         <p className="font-medium">价格趋势历史暂不可用</p>
-        <p className="mt-1 text-sm text-amber-800">
+        <p className="mt-1 text-sm text-warning">
           上方仍显示当前回退估算。将趋势变化用于决策前，请先复核来源质量。
         </p>
       </div>
@@ -364,7 +363,7 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
 
   if (!metricKeys.length) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-slate-500">
+      <div className="rounded-2xl border border-line bg-surface-muted p-6 text-muted">
         <p>暂无可用指标</p>
       </div>
     );
@@ -374,7 +373,7 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
 
   if (!data) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-slate-500">
+      <div className="rounded-2xl border border-line bg-surface-muted p-6 text-muted">
         <p>所选指标暂无数据</p>
       </div>
     );
@@ -393,11 +392,11 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
   const activeWindowNeedsMoreHistory = Boolean(activeWindow?.days && localCoverageDays < activeWindow.days);
 
   const getChangeClass = (value: number | null) => {
-    if (value == null) return 'text-slate-500';
+    if (value == null) return 'text-muted';
     const magnitude = Math.abs(value);
-    if (magnitude >= 20) return 'text-rose-700';
-    if (magnitude >= 10) return 'text-amber-700';
-    return 'text-emerald-700';
+    if (magnitude >= 20) return 'text-danger';
+    if (magnitude >= 10) return 'text-warning';
+    return 'text-success';
   };
 
   const formatChange = (value: number | null) => {
@@ -407,19 +406,19 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
   };
 
   return (
-    <article className="rounded-2xl border border-sky-200 bg-sky-50/70 p-6">
+    <article className="rounded-2xl border border-accent bg-accent-soft/70 p-6">
       <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_0.75fr]">
         <div>
-          <h3 className="text-lg font-medium text-slate-950">价格趋势</h3>
-          <p className="mt-1 text-sm text-slate-600">
+          <h3 className="text-lg font-medium text-ink">价格趋势</h3>
+          <p className="mt-1 text-sm text-muted">
             像交易网站一样切换指标和时间窗口。左轴显示当前指标单位，横轴显示本地历史库日期。
           </p>
         </div>
-        <div className="rounded-xl border border-sky-200 bg-white p-4 text-sm text-slate-700">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">当前指标</p>
-          <p className="mt-2 font-semibold text-slate-950">{selectedMeta.label}</p>
+        <div className="rounded-xl border border-accent bg-surface p-4 text-sm text-muted">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">当前指标</p>
+          <p className="mt-2 font-semibold text-ink">{selectedMeta.label}</p>
           <p className="mt-2 leading-6">{selectedMeta.explanation}</p>
-          <p className="mt-2 text-xs leading-5 text-slate-500">{selectedMeta.comparison}</p>
+          <p className="mt-2 text-xs leading-5 text-muted">{selectedMeta.comparison}</p>
         </div>
       </div>
 
@@ -435,7 +434,7 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
               onClick={() => setSelectedMetric(key)}
               aria-pressed={isSelected}
               className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                isSelected ? 'bg-sky-600 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50'
+                isSelected ? 'bg-accent text-surface hover:bg-ink' : 'border border-line bg-surface text-muted hover:border-line-strong hover:bg-surface-muted'
               }`}
             >
               {meta.shortLabel}
@@ -455,7 +454,7 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
               onClick={() => setTimeWindow(item.key)}
               aria-pressed={isSelected}
               className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
-                isSelected ? 'bg-slate-950 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:border-slate-500'
+                isSelected ? 'bg-ink text-surface' : 'border border-line bg-surface text-muted hover:border-line-strong hover:bg-surface-muted'
               }`}
             >
               <span>{item.label}</span>
@@ -470,44 +469,44 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
         <LineChart points={windowPoints} metricKey={selectedMetric} events={events} width={600} height={300} />
       </div>
 
-      <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
-        <p className="font-semibold text-slate-950">当前窗口：{activeWindowLabel}</p>
+      <div className="mb-6 rounded-xl border border-line bg-surface p-4 text-sm text-muted">
+        <p className="font-semibold text-ink">当前窗口：{activeWindowLabel}</p>
         <p className="mt-1">
           样本 {windowPoints.length} 个，日期 {formatDateLabel(firstPoint?.as_of)} 至 {formatDateLabel(lastPoint?.as_of)}。
           窗口内变化 {formatChange(windowChange)}。
         </p>
-        <p className={activeWindowNeedsMoreHistory ? 'mt-2 text-sm font-medium text-amber-800' : 'mt-2 text-sm font-medium text-emerald-700'}>
+        <p className={activeWindowNeedsMoreHistory ? 'mt-2 text-sm font-medium text-warning' : 'mt-2 text-sm font-medium text-success'}>
           数据覆盖：本地历史约 {formatCoverageDays(localCoverageDays)}
           {activeWindow?.days ? ` / 目标 ${activeWindow.days} 天` : ''}。
           {activeWindowNeedsMoreHistory ? ' 该窗口仍在积累中，未用模拟数据补齐。' : ' 当前窗口已有足够本地覆盖。'}
         </p>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-muted">
           左轴：{selectedMeta.axisUnit}；横轴：本地历史日期。若某个窗口样本不足，图表会保留可用历史点而不伪造数据。
         </p>
       </div>
 
       {/* Metrics display */}
       <div className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <p className="text-sm text-slate-500">最新值</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">
+        <div className="rounded-lg border border-line bg-surface p-4">
+          <p className="text-sm text-muted">最新值</p>
+          <p className="mt-2 text-2xl font-semibold text-ink">
             {data.latest_value?.toFixed(2) ?? '无数据'} {data.unit}
           </p>
-          <p className="mt-1 text-xs text-slate-500">截至 {new Date(data.latest_as_of).toLocaleString('zh-CN')}</p>
+          <p className="mt-1 text-xs text-muted">截至 {new Date(data.latest_as_of).toLocaleString('zh-CN')}</p>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <p className="text-sm text-slate-500">1日</p>
+        <div className="rounded-lg border border-line bg-surface p-4">
+          <p className="text-sm text-muted">1日</p>
           <p className={`mt-2 text-xl font-semibold ${getChangeClass(data.change_pct_1d)}`}>{formatChange(data.change_pct_1d)}</p>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <p className="text-sm text-slate-500">7日</p>
+        <div className="rounded-lg border border-line bg-surface p-4">
+          <p className="text-sm text-muted">7日</p>
           <p className={`mt-2 text-xl font-semibold ${getChangeClass(data.change_pct_7d)}`}>{formatChange(data.change_pct_7d)}</p>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <p className="text-sm text-slate-500">30日</p>
+        <div className="rounded-lg border border-line bg-surface p-4">
+          <p className="text-sm text-muted">30日</p>
           <p className={`mt-2 text-xl font-semibold ${getChangeClass(data.change_pct_30d)}`}>{formatChange(data.change_pct_30d)}</p>
         </div>
       </div>

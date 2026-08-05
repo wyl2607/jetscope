@@ -31,11 +31,11 @@ function formatChange(value: number | null): string {
 }
 
 function changeClass(value: number | null): string {
-  if (!Number.isFinite(value ?? NaN)) return 'text-slate-400';
+  if (!Number.isFinite(value ?? NaN)) return 'text-muted';
   const magnitude = Math.abs(Number(value));
-  if (magnitude >= 20) return 'text-rose-300';
-  if (magnitude >= 10) return 'text-amber-300';
-  return 'text-emerald-300';
+  if (magnitude >= 20) return 'text-danger';
+  if (magnitude >= 10) return 'text-warning';
+  return 'text-success';
 }
 
 function formatAsOf(value: string | null): string {
@@ -97,22 +97,22 @@ export default async function GermanyJetFuelPricePage() {
             title={metricDisplayLabel(metric.label)}
             subtitle={`${formatAsOf(metric.latestAsOf)} · ${statusLabel(readModel.overallStatus)}`}
           >
-            <p className="text-3xl font-semibold text-white">{formatMetricValue(metric.value, metric.digits, metric.unit)}</p>
+            <p className="text-3xl font-semibold text-ink">{formatMetricValue(metric.value, metric.digits, metric.unit)}</p>
             <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
               <div>
-                <p className="text-slate-500">1d</p>
+                <p className="text-muted">1d</p>
                 <p className={changeClass(metric.changePct1d)}>{formatChange(metric.changePct1d)}</p>
               </div>
               <div>
-                <p className="text-slate-500">7d</p>
+                <p className="text-muted">7d</p>
                 <p className={changeClass(metric.changePct7d)}>{formatChange(metric.changePct7d)}</p>
               </div>
               <div>
-                <p className="text-slate-500">30d</p>
+                <p className="text-muted">30d</p>
                 <p className={changeClass(metric.changePct30d)}>{formatChange(metric.changePct30d)}</p>
               </div>
             </div>
-            {metric.note ? <p className="mt-3 text-xs text-amber-300">{metricNoteLabel(metric.note)}</p> : null}
+            {metric.note ? <p className="mt-3 text-xs text-warning">{metricNoteLabel(metric.note)}</p> : null}
           </InfoCard>
         ))}
       </section>
@@ -127,7 +127,7 @@ export default async function GermanyJetFuelPricePage() {
 
       <section className="mt-8 grid gap-6 lg:grid-cols-2">
         <InfoCard title="风险说明" subtitle="用于决策支持，不用于交易执行">
-          <ul className="space-y-2 text-sm leading-7 text-slate-300">
+          <ul className="space-y-2 text-sm leading-7 text-muted">
             <li>• 航油价格为代理指标，可能与德国具体机场的合约结算价存在差异。</li>
             <li>• 区域数据源不可用时，EU 航油代理价可能临时回退到全球航油序列。</li>
             <li>• 碳价代理跟踪政策成本压力，应结合航线与掺混假设解读。</li>
@@ -136,16 +136,16 @@ export default async function GermanyJetFuelPricePage() {
         </InfoCard>
 
         <InfoCard title="来源" subtitle="追踪每个指标的溯源详情">
-          <ul className="space-y-3 text-sm text-slate-300">
+          <ul className="space-y-3 text-sm text-muted">
             {sourceLinks.map((source) => (
               <li key={source.key}>
-                <a className="underline decoration-sky-500/40 hover:decoration-sky-300" href={source.href}>
+                <a className="text-accent underline decoration-accent/40 hover:decoration-accent" href={source.href}>
                   {source.label}
                 </a>
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-xs text-slate-500">
+          <p className="mt-4 text-xs text-muted">
             生成于 {new Date(readModel.generatedAt).toLocaleString()}
             {readModel.isFallback ? ' · 实时市场历史不可用时显示回退估算' : ''}
           </p>
