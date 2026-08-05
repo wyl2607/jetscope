@@ -610,10 +610,16 @@ test('localized crisis pages are source-backed and stay in their locale', async 
     /危机监测|储备压力|来源可信度|研究姿态|Fuel Stress Brief|Reserve stress|Source confidence|Research posture/
   );
 
-  assert.match(shellSource, /\/en\/crisis/);
-  assert.match(shellSource, /Crisis Monitor/);
-  assert.match(shellSource, /\/de\/crisis/);
-  assert.match(shellSource, /Krisenmonitor/);
+  // Navigation moved to a single source of truth (docs/UI_CONTRACT.md section 4).
+  // The shell must no longer carry literal routes; navigation.ts owns them.
+  const navigationSource = await readFile(new URL('../apps/web/lib/navigation.ts', import.meta.url), 'utf8');
+  assert.match(navigationSource, /\/en\/crisis/);
+  assert.match(navigationSource, /Crisis Monitor/);
+  assert.match(navigationSource, /\/de\/crisis/);
+  assert.match(navigationSource, /Krisenmonitor/);
+  assert.doesNotMatch(shellSource, /navByLocale/);
+  assert.doesNotMatch(shellSource, /'\/(de|en)\//);
+  assert.match(shellSource, /navigationFor\(locale\)/);
   assert.doesNotMatch(
     `${englishCrisisSource}\n${germanCrisisSource}`,
     /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/
