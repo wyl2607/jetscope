@@ -49,6 +49,11 @@ Do not introduce a second naming scheme.
 | `--js-ink` | `text-ink` | primary copy |
 | `--js-muted` | `text-muted` | secondary copy, labels |
 | `--js-subtle` | `text-subtle` | captions, timestamps |
+
+Every token above clears 4.5:1 on `surface`, so any of them is safe for body
+text: ink 16.45 · accent 5.97 · muted 5.43 · warning 5.19 · success 5.00 ·
+danger 6.46 · subtle 4.82. `subtle` was originally `#8390a1` (3.25:1) and was
+darkened to meet section 5.
 | `--js-accent` / `--js-accent-soft` | `text-accent` / `bg-accent-soft` | brand, links, focus |
 | `--js-success` / `--js-success-soft` | `text-success` / `bg-success-soft` | within target, improving |
 | `--js-warning` / `--js-warning-soft` | `text-warning` / `bg-warning-soft` | watch, **assumption-based** |
