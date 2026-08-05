@@ -112,9 +112,9 @@ export default async function SourcesPage({
   };
 
   const alertColor = (level: "normal" | "watch" | "alert") => {
-    if (level === "alert") return "text-rose-700";
-    if (level === "watch") return "text-amber-700";
-    return "text-emerald-700";
+    if (level === "alert") return "text-danger";
+    if (level === "watch") return "text-warning";
+    return "text-success";
   };
 
   const sparklineDataUrl = (encoded: string) => {
@@ -142,10 +142,10 @@ export default async function SourcesPage({
   };
 
   const trustClass = (state: string) => {
-    if (state === 'live') return 'border-emerald-200 bg-emerald-50 text-emerald-800';
-    if (state === 'proxy') return 'border-sky-200 bg-sky-50 text-sky-800';
-    if (state === 'fallback') return 'border-amber-200 bg-amber-50 text-amber-800';
-    return 'border-rose-200 bg-rose-50 text-rose-700';
+    if (state === 'live') return 'border-success bg-success-soft text-success';
+    if (state === 'proxy') return 'border-accent bg-accent-soft text-accent';
+    if (state === 'fallback') return 'border-warning bg-warning-soft text-warning';
+    return 'border-danger bg-danger-soft text-danger';
   };
 
   const trustLabel = (state: string) => {
@@ -157,9 +157,9 @@ export default async function SourcesPage({
   };
 
   const actionToneClass = (priority: SourceRow['reviewAction']['priority']) => {
-    if (priority === 'critical') return 'border-rose-200 bg-rose-50 text-rose-700';
-    if (priority === 'review') return 'border-amber-200 bg-amber-50 text-amber-700';
-    return 'border-slate-200 bg-slate-50 text-slate-700';
+    if (priority === 'critical') return 'border-danger bg-danger-soft text-danger';
+    if (priority === 'review') return 'border-warning bg-warning-soft text-warning';
+    return 'border-line bg-surface-muted text-muted';
   };
 
   const sourceTypeLabel = (sourceType: string) => {
@@ -210,7 +210,7 @@ export default async function SourcesPage({
           subtitle={marketHealth ? (marketHealth.healthy ? 'refresh loop usable' : 'attention needed') : 'health API unavailable'}
         >
           {marketHealth ? (
-            <div className="space-y-2 text-sm text-slate-700">
+            <div className="space-y-2 text-sm text-muted">
               <p>
                 间隔 <strong>{marketHealth.refresh_interval_seconds}s</strong> · age{' '}
                 <strong>{formatEta(marketHealth.age_seconds)}</strong> · next ETA{' '}
@@ -223,10 +223,10 @@ export default async function SourcesPage({
                   ? ` · success ${(marketHealth.success_rate * 100).toFixed(0)}%`
                   : ''}
               </p>
-              <p className="text-xs text-slate-500">{marketHealth.note}</p>
+              <p className="text-xs text-subtle">{marketHealth.note}</p>
             </div>
           ) : (
-            <p className="text-sm text-slate-500">无法加载 /v1/market/health。请确认 API 已启动并有 refresh run。</p>
+            <p className="text-sm text-subtle">无法加载 /v1/market/health。请确认 API 已启动并有 refresh run。</p>
           )}
         </InfoCard>
       </div>
@@ -236,42 +236,42 @@ export default async function SourcesPage({
           subtitle={hasActionRows ? '把降级来源转成可执行处理清单' : '当前没有必须处理的降级来源'}
         >
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold text-slate-700">
+            <span className="rounded-md border border-line bg-surface-muted px-3 py-1.5 font-semibold text-muted">
               需复核 {reviewRows.length}
             </span>
-            <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold text-slate-700">
+            <span className="rounded-md border border-line bg-surface-muted px-3 py-1.5 font-semibold text-muted">
               优先处理 {actionRows.length}
             </span>
             <Link
               href={'/admin' as Route}
-              className="rounded-md border border-sky-200 bg-sky-50 px-3 py-1.5 font-semibold text-sky-800 hover:bg-sky-100"
+              className="rounded-md border border-accent bg-accent-soft px-3 py-1.5 font-semibold text-accent hover:bg-accent-hover"
             >
               打开 Admin 刷新
             </Link>
             <Link
               href={'/sources?filter=review' as Route}
-              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 font-semibold text-slate-700 hover:border-sky-300 hover:bg-sky-50"
+              className="rounded-md border border-line bg-surface px-3 py-1.5 font-semibold text-muted hover:border-accent hover:bg-accent-soft"
             >
               只看需复核
             </Link>
           </div>
           {hasActionRows ? (
-            <ol className="mt-4 divide-y divide-slate-200 border-y border-slate-200">
+            <ol className="mt-4 divide-y divide-line border-y border-line">
               {actionRows.map((row) => (
                 <li key={row.metricKey} className="grid gap-3 py-3 text-sm md:grid-cols-[minmax(10rem,14rem)_1fr_auto] md:items-start">
                   <div>
-                    <p className="font-semibold text-slate-950">{row.surface}</p>
-                    <p className="mt-1 text-xs text-slate-500">{row.source} · {statusLabel(row.status)}</p>
+                    <p className="font-semibold text-ink">{row.surface}</p>
+                    <p className="mt-1 text-xs text-subtle">{row.source} · {statusLabel(row.status)}</p>
                   </div>
                   <div>
                     <span className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-semibold ${actionToneClass(row.reviewAction.priority)}`}>
                       {row.reviewAction.label}
                     </span>
-                    <p className="mt-2 leading-6 text-slate-700">{row.reviewAction.detail}</p>
+                    <p className="mt-2 leading-6 text-muted">{row.reviewAction.detail}</p>
                   </div>
                   <Link
                     href={row.reviewAction.href as Route}
-                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-center text-xs font-semibold text-sky-800 hover:border-sky-300 hover:bg-sky-50"
+                    className="rounded-md border border-line bg-surface px-3 py-1.5 text-center text-xs font-semibold text-accent hover:border-accent hover:bg-accent-soft"
                   >
                     处理入口
                   </Link>
@@ -279,14 +279,14 @@ export default async function SourcesPage({
               ))}
             </ol>
           ) : (
-            <p className="mt-4 border-y border-slate-200 py-3 text-sm leading-6 text-slate-700">
+            <p className="mt-4 border-y border-line py-3 text-sm leading-6 text-muted">
               当前来源没有回退或降级行；代理来源仍应在重大采购、定价、披露前做人工复核。
             </p>
           )}
         </InfoCard>
       </div>
       <InfoCard title="市场输入矩阵" subtitle={`总体状态：${readModel.overallStatus}`}>
-        <p className="mb-3 text-xs text-slate-600">
+        <p className="mb-3 text-xs text-muted">
           生成于 {new Date(readModel.generatedAt).toLocaleString()}
           {readModel.isFallback ? ' · 实时来源覆盖不可用时显示回退估算' : ''}
         </p>
@@ -300,31 +300,31 @@ export default async function SourcesPage({
                 href={sourceFilterHref(filter.key)}
                 className={`rounded-md border px-3 py-2 text-xs font-semibold transition ${
                   isActive
-                    ? 'border-sky-500 bg-sky-50 text-sky-800'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50'
+                    ? 'border-accent bg-accent-soft text-accent'
+                    : 'border-line bg-surface text-muted hover:border-line-strong hover:bg-surface-muted'
                 }`}
                 title={filter.hint}
               >
-                {filter.label} <span className="ml-1 text-slate-500">{count}</span>
+                {filter.label} <span className="ml-1 text-subtle">{count}</span>
               </Link>
             );
           })}
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-subtle">
             正在显示 {visibleRows.length} / {readModel.rows.length}
           </span>
         </div>
         {focusMetricKey ? (
-          <p className="mb-3 text-xs text-sky-700">
+          <p className="mb-3 text-xs text-accent">
             已从驾驶舱风险信号聚焦：<code>{focusMetricKey}</code>{' '}
-            <Link href={clearFocusHref} className="underline text-sky-800">
+            <Link href={clearFocusHref} className="underline text-accent">
               清除
             </Link>
           </p>
         ) : null}
         <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm text-slate-700">
+          <table className="min-w-full text-left text-sm text-muted">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-600">
+              <tr className="border-b border-line text-muted">
                 <th className="py-3 pr-4">界面</th>
                 <th className="py-3 pr-4">来源</th>
                 <th className="py-3 pr-4">可信状态</th>
@@ -349,30 +349,30 @@ export default async function SourcesPage({
                 <tr
                   key={row.surface}
                   id={`metric-${row.metricKey}`}
-                  className={`border-b border-slate-200 ${
+                  className={`border-b border-line ${
                     focusMetricKey === row.metricKey
-                      ? 'ring-1 ring-sky-400/60 bg-sky-50'
+                      ? 'ring-1 ring-accent/60 bg-accent-soft'
                       : row.alertLevel === 'alert'
-                      ? 'bg-rose-50'
+                      ? 'bg-danger-soft'
                       : row.alertLevel === 'watch'
-                        ? 'bg-amber-50'
+                        ? 'bg-warning-soft'
                         : ''
                   }`}
                 >
-                  <td className="py-3 pr-4 font-medium text-slate-950">{row.surface}</td>
+                  <td className="py-3 pr-4 font-medium text-ink">{row.surface}</td>
                   <td className="py-3 pr-4">{row.source}</td>
                   <td className="py-3 pr-4">
                     <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] ${trustClass(row.trustState)}`}>
                       {trustLabel(row.trustState)}
                     </span>
-                    <span className="mt-1 block text-xs text-slate-500">{sourceTypeLabel(row.sourceType)}</span>
+                    <span className="mt-1 block text-xs text-subtle">{sourceTypeLabel(row.sourceType)}</span>
                   </td>
                   <td className="py-3 pr-4">{row.scope}</td>
                   <td className="py-3 pr-4">{row.confidence}</td>
-                  <td className="py-3 pr-4 text-xs text-slate-500">{row.asOf}</td>
+                  <td className="py-3 pr-4 text-xs text-subtle">{row.asOf}</td>
                   <td className="py-3 pr-4">{row.lag}</td>
                   <td className="py-3 pr-4">{statusLabel(row.status)}</td>
-                  <td className={`py-3 pr-4 font-medium ${row.fallback === 'yes' ? 'text-amber-700' : 'text-emerald-700'}`}>
+                  <td className={`py-3 pr-4 font-medium ${row.fallback === 'yes' ? 'text-warning' : 'text-success'}`}>
                     {row.fallback}
                   </td>
                   <td className="py-3 pr-4">{row.value}</td>
@@ -391,36 +391,36 @@ export default async function SourcesPage({
                         height={28}
                       />
                     ) : (
-                      <span className="text-slate-500">n/a</span>
+                      <span className="text-subtle">n/a</span>
                     )}
                   </td>
                   <td className="py-3 pr-4">
                     <div className="flex min-w-24 flex-col gap-2">
                       <Link
                         href={sourceFocusHref(row.metricKey)}
-                        className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-center text-xs font-semibold text-sky-800 hover:border-sky-300 hover:bg-sky-50"
+                        className="rounded-md border border-line bg-surface px-2.5 py-1 text-center text-xs font-semibold text-accent hover:border-accent hover:bg-accent-soft"
                       >
                         聚焦
                       </Link>
                       <Link
                         href={row.reviewAction.href as Route}
-                        className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-center text-xs font-semibold text-slate-700 hover:border-sky-300 hover:bg-sky-50"
+                        className="rounded-md border border-line bg-surface px-2.5 py-1 text-center text-xs font-semibold text-muted hover:border-accent hover:bg-accent-soft"
                       >
                         {row.reviewAction.priority === 'normal' ? '留证' : '处理'}
                       </Link>
                     </div>
                   </td>
                   <td className="py-3">
-                    <span className="block text-slate-700">{row.degradedReason}</span>
-                    {row.note !== row.degradedReason ? <span className="mt-1 block text-xs text-slate-500">{row.note}</span> : null}
-                    <span className="mt-2 block text-xs font-semibold text-slate-600">{row.reviewAction.label}</span>
-                    <span className="mt-1 block text-xs leading-5 text-slate-500">{row.reviewAction.detail}</span>
+                    <span className="block text-muted">{row.degradedReason}</span>
+                    {row.note !== row.degradedReason ? <span className="mt-1 block text-xs text-subtle">{row.note}</span> : null}
+                    <span className="mt-2 block text-xs font-semibold text-muted">{row.reviewAction.label}</span>
+                    <span className="mt-1 block text-xs leading-5 text-subtle">{row.reviewAction.detail}</span>
                   </td>
                 </tr>
               ))}
               {visibleRows.length === 0 ? (
                 <tr>
-                  <td colSpan={15} className="py-6 text-center text-sm text-slate-500">
+                  <td colSpan={15} className="py-6 text-center text-sm text-subtle">
                     当前筛选没有匹配来源。
                   </td>
                 </tr>
