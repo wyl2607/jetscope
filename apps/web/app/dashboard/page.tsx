@@ -11,6 +11,7 @@ import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-t
 import { loadPathwayComparison } from '@/lib/pathways-read-model';
 import { EuEtsPressurePanel } from '@/components/eu-ets-pressure-panel';
 import { loadEuEtsPressure } from '@/lib/eu-ets-pressure-read-model';
+import { StatusBanner } from '@/components/status-banner';
 import type { Metadata } from 'next';
 import { buildPageMetadata } from '@/lib/seo';
 
@@ -145,148 +146,132 @@ export default async function DashboardPage() {
       title="JetScope 决策驾驶舱"
       description="面向 SAF 决策的实时市场快照、情景建模与转型风险信号。"
     >
-      <section
-        className={`mb-6 rounded-xl border p-4 ${
-          health?.healthy === false
-            ? 'border-rose-800/60 bg-rose-950/20'
-            : 'border-emerald-800/50 bg-emerald-950/20'
-        }`}
+      <StatusBanner
+        tone={health?.healthy === false ? 'warning' : 'success'}
+        label="实时市场状态"
+        title={`${sourceStatusLabel(readModel.market.source_status.overall)} · ${freshnessLabel(freshness.level)}`}
+        detail={
+          <>
+            分析航油：{analysis?.jetSourceKey ?? 'n/a'}=${formatNumber(
+              analysis?.fossilJetUsdPerL ?? market.jet_eu_proxy_usd_per_l ?? 0,
+              3
+            )}/L · ETS €{formatNumber(analysis?.carbonPriceEurPerT ?? 0)}/t · 刷新间隔{' '}
+            {health?.refresh_interval_seconds ?? '—'}s · 下次预计 {formatEta(health?.next_refresh_eta_seconds)} · 健康度{' '}
+            {health == null ? 'n/a' : health.healthy ? 'ok' : 'attention'}
+            {health?.runs_total != null ? ` · runs ${health.runs_ok}/${health.runs_total}` : ''}
+          </>
+        }
+        actions={
+          <>
+            <a href="/sources" className="js-status-action js-status-action-primary">
+              查看来源 →
+            </a>
+            <a href="/crisis/saf-tipping-point?lh=1" className="js-status-action js-status-action-secondary">
+              LH Q2 2026 →
+            </a>
+          </>
+        }
       >
-        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">Live market strip</p>
-        <p className="mt-1 text-sm text-slate-200">
-          Snapshot as_of <strong className="text-white">{formatAsOf(readModel.market.generated_at)}</strong>
-          {' · '}
-          freshness <strong className="text-white">{freshnessLabel(freshness.level)}</strong> ({freshness.minutes}m)
-          {' · '}
-          overall <code className="text-sky-300">{sourceStatusLabel(readModel.market.source_status.overall)}</code>
-          {spread != null && (
-            <>
-              {' · '}
-              Jet–Brent spread <strong className="text-white">${formatNumber(spread, 3)}/L</strong>
-              {multiplier != null ? ` (×${formatNumber(multiplier, 3)})` : ''}
-            </>
-          )}
-        </p>
-        <p className="mt-1 text-xs text-slate-400">
-          Analysis jet: {analysis?.jetSourceKey ?? 'n/a'}=$
-          {formatNumber(analysis?.fossilJetUsdPerL ?? market.jet_eu_proxy_usd_per_l ?? 0, 3)}/L · ETS €
-          {formatNumber(analysis?.carbonPriceEurPerT ?? 0)}/t · refresh interval{' '}
-          {health?.refresh_interval_seconds ?? '—'}s · next ETA {formatEta(health?.next_refresh_eta_seconds)} · health{' '}
-          {health == null ? 'n/a' : health.healthy ? 'ok' : 'attention'}
-          {health?.runs_total != null ? ` · runs ${health.runs_ok}/${health.runs_total}` : ''}
-        </p>
-        {health?.note ? <p className="mt-1 text-xs text-slate-500">{health.note}</p> : null}
-        <div className="mt-3 flex flex-wrap gap-2">
-          <a href="/sources" className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white">
-            Trust center →
-          </a>
-          <a
-            href="/crisis/saf-tipping-point?lh=1"
-            className="rounded-lg border border-amber-700/50 px-3 py-1.5 text-xs font-medium text-amber-100"
-          >
-            LH Q2 2026 playbook
-          </a>
-        </div>
-      </section>
+        快照时间 <strong>{formatAsOf(readModel.market.generated_at)}</strong> · 数据新鲜度{' '}
+        <strong>{freshnessLabel(freshness.level)}</strong>（{freshness.minutes}m） · 来源总体{' '}
+        <code>{sourceStatusLabel(readModel.market.source_status.overall)}</code>
+        {spread != null && (
+          <>
+            {' · '}Jet–Brent spread <strong>${formatNumber(spread, 3)}/L</strong>
+            {multiplier != null ? ` (×${formatNumber(multiplier, 3)})` : ''}
+          </>
+        )}
+      </StatusBanner>
+
+      {health?.note ? <p className="js-dashboard-note">{health.note}</p> : null}
 
       {event && (
-        <section className="mb-6 rounded-xl border border-sky-800/60 bg-sky-950/30 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-sky-300">
-            Aviation event · curated only · as_of {event.as_of ?? 'n/a'}
-          </p>
-          <h2 className="mt-1 text-base font-semibold text-white">
-            {event.entity?.name ?? 'Lufthansa'} — {event.source?.title ?? event.id}
-          </h2>
-          <p className="mt-2 text-sm text-slate-300">
-            Q2 adj. profit €{String(facts.q2_adjusted_operating_profit_eur_m ?? '—')}m (
-            {String(facts.q2_adjusted_operating_profit_yoy_change_pct ?? '—')}%) · extra kerosene €
-            {String(facts.q2_extra_kerosene_cost_iran_war_eur_m ?? '—')}m · strikes ~€
-            {String(facts.q2_strike_cost_eur_m_approx ?? '—')}m · pass-through ~
-            {String(facts.kerosene_cost_pass_through_pct_approx ?? '—')}% · FY fuel €
-            {String(facts.fy_fuel_cost_expected_eur_bn ?? '—')}bn
-          </p>
+        <StatusBanner
+          tone="info"
+          label={`航空事件 · 仅策展数据 · as_of ${event.as_of ?? 'n/a'}`}
+          title={`${event.entity?.name ?? 'Lufthansa'} — ${event.source?.title ?? event.id}`}
+        >
+          Q2 adj. profit €{String(facts.q2_adjusted_operating_profit_eur_m ?? '—')}m (
+          {String(facts.q2_adjusted_operating_profit_yoy_change_pct ?? '—')}%) · extra kerosene €
+          {String(facts.q2_extra_kerosene_cost_iran_war_eur_m ?? '—')}m · strikes ~€
+          {String(facts.q2_strike_cost_eur_m_approx ?? '—')}m · pass-through ~
+          {String(facts.kerosene_cost_pass_through_pct_approx ?? '—')}% · FY fuel €
+          {String(facts.fy_fuel_cost_expected_eur_bn ?? '—')}bn
           {decision?.residual_fuel_cost_exposure != null && (
-            <p className="mt-2 text-sm text-amber-200">
-              Residual fuel-cost exposure (model index): {formatNumber(decision.residual_fuel_cost_exposure, 3)} ·
-              pass-through{' '}
-              {decision.fare_pass_through_pct != null
-                ? `${Math.round(decision.fare_pass_through_pct * 100)}%`
-                : 'n/a'}
-            </p>
+            <span className="js-status-inline-emphasis">
+              Residual exposure {formatNumber(decision.residual_fuel_cost_exposure, 3)} · pass-through{' '}
+              {decision.fare_pass_through_pct != null ? `${Math.round(decision.fare_pass_through_pct * 100)}%` : 'n/a'}
+            </span>
           )}
-        </section>
+        </StatusBanner>
       )}
 
       {alertBanners.length > 0 && (
-        <section className="mb-6 space-y-3">
+        <div className="js-status-stack">
           {alertBanners.map((banner, idx) => (
-            <div
+            <StatusBanner
               key={idx}
-              className={`rounded-xl border p-4 ${
-                banner.level === 'alert'
-                  ? 'border-rose-800 bg-rose-950/40'
-                  : 'border-amber-800 bg-amber-950/40'
-              }`}
-            >
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p
-                    className={`text-xs font-semibold uppercase tracking-wider ${
-                      banner.level === 'alert' ? 'text-rose-300' : 'text-amber-300'
-                    }`}
-                  >
-                    {banner.title}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-200">{banner.message}</p>
-                </div>
-                {banner.href && (
-                  <a
-                    href={banner.href}
-                    className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium ${
-                      banner.level === 'alert'
-                        ? 'bg-rose-600 text-white hover:bg-rose-500'
-                        : 'bg-amber-600 text-white hover:bg-amber-500'
-                    }`}
-                  >
+              tone={banner.level === 'alert' ? 'danger' : 'warning'}
+              label={banner.title}
+              actions={
+                banner.href ? (
+                  <a href={banner.href} className="js-status-action js-status-action-primary">
                     查看详情 →
                   </a>
-                )}
-              </div>
-            </div>
+                ) : null
+              }
+            >
+              {banner.message}
+            </StatusBanner>
           ))}
-        </section>
+        </div>
       )}
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          label="市场快照"
-          value={`$${formatNumber(market.brent_usd_per_bbl)}/bbl`}
-          hint={`Jet(全球) $${formatNumber(market.jet_usd_per_l, 3)}/L | Jet(EU 代理) $${formatNumber(market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l, 3)}/L | 碳价 $${formatNumber(market.carbon_proxy_usd_per_t)}/tCO2`}
-        />
-        <MetricCard
-          label="情景模式"
-          value={`${readModel.scenarioCount}`}
-          hint={readModel.scenarioCount > 0 ? '已有保存情景，可用于对比。' : '暂无保存情景；需要假设推演时可从情景工作区开始。'}
-        />
-        <MetricCard label="管理控制" value="必需" hint="路线成本、政策参数、来源维护" />
-        <MetricCard
-          label="交付状态"
-          value={readModel.isFallback ? '回退' : '实时切片'}
-          hint={dashboardFallbackHint(readModel)}
-        />
-        <MetricCard
-          label="最高风险信号"
-          value={riskValue}
-          hint={riskHint}
-          valueClassName={riskColor}
-          valueHref={riskHref}
-        />
-        <MetricCard
-          label="德国航油价格页"
-          value="打开实时页面"
-          hint="服务端市场页，展示 Brent、全球航油、EU 航油代理价、碳价及 1d/7d/30d 变化"
-          cardHref="/prices/germany-jet-fuel"
-        />
+      <section className="js-dashboard-section">
+        <div className="js-section-heading">
+          <div>
+            <p className="js-section-label">决策信号</p>
+            <h2 className="js-section-title">先看四项变化，再进入模型</h2>
+            <p className="js-section-description">把当前市场、风险、数据交付和情景准备度放在同一层，减少在页面之间来回寻找。</p>
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <MetricCard
+            label="市场快照"
+            value={`$${formatNumber(market.brent_usd_per_bbl)}/bbl`}
+            hint={`Jet(全球) $${formatNumber(market.jet_usd_per_l, 3)}/L | Jet(EU 代理) $${formatNumber(market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l, 3)}/L | 碳价 $${formatNumber(market.carbon_proxy_usd_per_t)}/tCO2`}
+          />
+          <MetricCard
+            label="最高风险信号"
+            value={riskValue}
+            hint={riskHint}
+            valueClassName={riskColor}
+            valueHref={riskHref}
+          />
+          <MetricCard
+            label="交付状态"
+            value={readModel.isFallback ? '回退' : '实时切片'}
+            hint={dashboardFallbackHint(readModel)}
+          />
+          <MetricCard
+            label="情景准备度"
+            value={`${readModel.scenarioCount} 个情景`}
+            hint={readModel.scenarioCount > 0 ? '已有保存情景，可用于对比。' : '暂无保存情景；需要假设推演时可从情景工作区开始。'}
+            cardHref="/scenarios"
+          />
+        </div>
+      </section>
+
+      <section className="js-dashboard-section js-dashboard-section-compact">
+        <div className="grid gap-4 md:grid-cols-2">
+          <MetricCard label="管理控制" value="打开管理" hint="路线成本、政策参数、来源维护" cardHref="/admin" />
+          <MetricCard
+            label="德国航油价格页"
+            value="打开实时页面"
+            hint="展示 Brent、全球航油、EU 航油代理价、碳价及 1d/7d/30d 变化"
+            cardHref="/prices/germany-jet-fuel"
+          />
+        </div>
       </section>
 
       <section className="mt-8">

@@ -3,7 +3,7 @@ import { ScenarioRegistry } from '@/components/scenario-registry';
 import { Shell } from '@/components/shell';
 import { TransitionReadinessDashboard } from '@/components/transition-readiness-dashboard';
 import { buildApiUrl } from '@/lib/api-config';
-import { getDashboardReadModel, type AirlineDecisionResponse, type ReserveSignal, type TippingPointResponse } from '@/lib/product-read-model';
+import { getDashboardReadModel, type AirlineDecisionResponse, type TippingPointResponse } from '@/lib/product-read-model';
 import type { Metadata } from 'next';
 import { buildPageMetadata } from '@/lib/seo';
 
@@ -35,20 +35,6 @@ type PolicyTarget = {
   synthetic_share_pct: number;
   label: string;
 };
-
-function defaultReserveSignal(): ReserveSignal {
-  return {
-    generated_at: new Date().toISOString(),
-    region: 'eu',
-    coverage_days: 21,
-    coverage_weeks: 3,
-    stress_level: 'elevated',
-    estimated_supply_gap_pct: 25,
-    source_type: 'manual',
-    source_name: 'IATA / EUROCONTROL curated estimate',
-    confidence_score: 0.62
-  };
-}
 
 function defaultTippingPointResponse(): TippingPointResponse {
   return {
@@ -112,7 +98,7 @@ export default async function ScenariosPage() {
     getDashboardReadModel(),
     getPolicyTargets()
   ]);
-  const reserve = dashboardReadModel.reserve ?? defaultReserveSignal();
+  const reserve = dashboardReadModel.reserve;
   const tippingPoint = dashboardReadModel.tippingPoint ?? defaultTippingPointResponse();
   const airlineDecision = dashboardReadModel.airlineDecision ?? defaultAirlineDecisionResponse();
 
