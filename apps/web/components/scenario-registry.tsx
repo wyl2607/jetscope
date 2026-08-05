@@ -20,12 +20,12 @@ const CRUDE_SOURCES = ['manual', 'brentEia', 'brentFred'] as const;
 const CARBON_SOURCES = ['manual', 'cbamCarbonProxyUsd'] as const;
 const BENCHMARK_MODES = ['crude-proxy', 'live-jet-spot'] as const;
 const fieldClassName =
-  'mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100';
+  'mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent';
 const textAreaClassName =
-  'mt-1 h-32 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-950 shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100';
-const labelClassName = 'block text-xs font-semibold uppercase tracking-[0.14em] text-slate-600';
-const compactLabelClassName = 'text-xs font-semibold text-slate-600';
-const panelClassName = 'rounded-xl border border-slate-200 bg-slate-50 p-3';
+  'mt-1 h-32 w-full rounded-lg border border-line bg-surface px-3 py-2 font-mono text-xs text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent';
+const labelClassName = 'block text-xs font-semibold uppercase tracking-[0.14em] text-muted';
+const compactLabelClassName = 'text-xs font-semibold text-muted';
+const panelClassName = 'rounded-xl border border-line bg-surface-muted p-3';
 
 function formatTime(value: string): string {
   const date = new Date(value);
@@ -305,13 +305,13 @@ export function ScenarioRegistry() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
               onClick={() => loadScenarios({ preserveSelection: true })}
               disabled={loading || saving}
             >
               {loading ? '加载中...' : '刷新列表'}
             </button>
-            <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-600">
+            <span className="rounded-lg border border-line bg-surface-muted px-3 py-1.5 text-xs text-muted">
               {status}
             </span>
           </div>
@@ -328,29 +328,31 @@ export function ScenarioRegistry() {
             />
           </label>
           {error ? (
-            <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+            <p className="rounded-lg border border-danger bg-danger-soft px-3 py-2 text-xs text-danger">
               {error}
             </p>
           ) : null}
-          <div className="max-h-80 overflow-y-auto rounded-xl border border-slate-200 bg-white">
+          <div className="max-h-80 overflow-y-auto rounded-xl border border-line bg-surface">
             {scenarios.length === 0 ? (
-              <p className="px-3 py-4 text-sm text-slate-600">尚未保存情景。</p>
+              <p className="px-3 py-4 text-sm text-muted">尚未保存情景。</p>
             ) : (
               <ul>
                 {scenarios.map((item) => (
-                  <li key={item.id} className="border-b border-slate-100 last:border-none">
+                  <li key={item.id}>
                     <button
                       type="button"
-                      className={`w-full px-3 py-3 text-left transition ${
-                        selectedId === item.id ? 'bg-sky-50' : 'hover:bg-slate-50'
+                      className={`w-full border px-3 py-3 text-left transition ${
+                        selectedId === item.id
+                          ? 'border-accent bg-accent-soft'
+                          : 'border-line bg-surface hover:border-line-strong hover:bg-surface-muted'
                       }`}
                       onClick={() => populateFromScenario(item)}
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <span className="font-medium text-slate-950">{item.name}</span>
-                        <span className="text-xs text-slate-500">{formatTime(item.saved_at)}</span>
+                        <span className="font-medium text-ink">{item.name}</span>
+                        <span className="text-xs text-muted">{formatTime(item.saved_at)}</span>
                       </div>
-                      <p className="mt-1 text-xs text-slate-500">版本 {item.id}</p>
+                      <p className="mt-1 text-xs text-muted">版本 {item.id}</p>
                     </button>
                   </li>
                 ))}
@@ -375,7 +377,7 @@ export function ScenarioRegistry() {
             <span
               id="scenario-name-limit"
               className={`mt-1 block text-[11px] normal-case tracking-normal ${
-                nameTooLong ? 'text-rose-700' : 'text-slate-500'
+                nameTooLong ? 'text-danger' : 'text-muted'
               }`}
             >
               {trimmedName.length}/{SCENARIO_NAME_MAX_LENGTH} 个字符
@@ -383,7 +385,7 @@ export function ScenarioRegistry() {
           </label>
 
           <div className={panelClassName}>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">引导式偏好设置</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">引导式偏好设置</p>
             <div className="mt-3 grid gap-3 md:grid-cols-3">
               <label className={compactLabelClassName}>
                 原油基准
@@ -492,7 +494,7 @@ export function ScenarioRegistry() {
           </div>
 
           <div className={panelClassName}>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">引导式主航线编辑</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">引导式主航线编辑</p>
             <div className="mt-3 grid gap-3 md:grid-cols-3">
               <label className={compactLabelClassName}>
                 主航线
@@ -535,8 +537,8 @@ export function ScenarioRegistry() {
             </div>
           </div>
 
-          <details className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
+          <details className="rounded-xl border border-line bg-surface-muted p-3">
+            <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.14em] text-muted">
               高级 JSON 设置
             </summary>
             <div className="mt-3 space-y-3">
@@ -547,7 +549,7 @@ export function ScenarioRegistry() {
                   value={preferencesJson}
                   onChange={(event) => setPreferencesJson(event.target.value)}
                 />
-                <span className="mt-1 block text-[11px] normal-case tracking-normal text-slate-500">
+                <span className="mt-1 block text-[11px] normal-case tracking-normal text-muted">
                   用于保留来源、模式和有限数值校验，默认无需展开。
                 </span>
               </label>
@@ -559,7 +561,7 @@ export function ScenarioRegistry() {
                   value={routeEditsJson}
                   onChange={(event) => setRouteEditsJson(event.target.value)}
                 />
-                <span className="mt-1 block text-[11px] normal-case tracking-normal text-slate-500">
+                <span className="mt-1 block text-[11px] normal-case tracking-normal text-muted">
                   用于保留多航线成本和减排假设，默认无需展开。
                 </span>
               </label>
@@ -567,12 +569,12 @@ export function ScenarioRegistry() {
           </details>
 
           <div className="flex flex-wrap gap-2">
-            <p className="basis-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs leading-5 text-slate-600">
+            <p className="basis-full rounded-lg border border-line bg-surface px-3 py-2 text-xs leading-5 text-muted">
               {writeHint}
             </p>
             <button
               type="button"
-              className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-line bg-success-soft px-3 py-1.5 text-xs font-semibold text-success transition hover:border-success disabled:cursor-not-allowed disabled:opacity-60"
               onClick={createScenario}
               disabled={createDisabled}
             >
@@ -580,7 +582,7 @@ export function ScenarioRegistry() {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-line bg-warning-soft px-3 py-1.5 text-xs font-semibold text-warning transition hover:border-warning disabled:cursor-not-allowed disabled:opacity-60"
               onClick={updateScenario}
               disabled={updateDisabled}
             >
@@ -588,7 +590,7 @@ export function ScenarioRegistry() {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-800 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-line bg-danger-soft px-3 py-1.5 text-xs font-semibold text-danger transition hover:border-danger disabled:cursor-not-allowed disabled:opacity-60"
               onClick={deleteScenario}
               disabled={deleteDisabled}
             >
@@ -596,7 +598,7 @@ export function ScenarioRegistry() {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-muted transition hover:border-accent hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-60"
               onClick={resetForm}
               disabled={saving}
             >

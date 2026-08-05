@@ -30,11 +30,11 @@ function formatChange(value: number | null): string {
 }
 
 function changeClass(value: number | null): string {
-  if (!Number.isFinite(value ?? NaN)) return 'text-slate-400';
+  if (!Number.isFinite(value ?? NaN)) return 'text-muted';
   const magnitude = Math.abs(Number(value));
-  if (magnitude >= 20) return 'text-rose-300';
-  if (magnitude >= 10) return 'text-amber-300';
-  return 'text-emerald-300';
+  if (magnitude >= 20) return 'text-danger';
+  if (magnitude >= 10) return 'text-warning';
+  return 'text-success';
 }
 
 function formatAsOf(value: string | null): string {
@@ -82,29 +82,29 @@ export default async function GermanGermanyJetFuelPricePage() {
             title={metric.label}
             subtitle={`Stand: ${formatAsOf(metric.latestAsOf)} | Status: ${sourceStatusLabel(readModel.overallStatus)}`}
           >
-            <p className="text-3xl font-semibold text-white">{formatMetricValue(metric.value, metric.digits, metric.unit)}</p>
+            <p className="text-3xl font-semibold text-ink">{formatMetricValue(metric.value, metric.digits, metric.unit)}</p>
             <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
               <div>
-                <p className="text-slate-500">1d</p>
+                <p className="text-muted">1d</p>
                 <p className={changeClass(metric.changePct1d)}>{formatChange(metric.changePct1d)}</p>
               </div>
               <div>
-                <p className="text-slate-500">7d</p>
+                <p className="text-muted">7d</p>
                 <p className={changeClass(metric.changePct7d)}>{formatChange(metric.changePct7d)}</p>
               </div>
               <div>
-                <p className="text-slate-500">30d</p>
+                <p className="text-muted">30d</p>
                 <p className={changeClass(metric.changePct30d)}>{formatChange(metric.changePct30d)}</p>
               </div>
             </div>
-            {metric.note ? <p className="mt-3 text-xs text-amber-300">{metric.note}</p> : null}
+            {metric.note ? <p className="mt-3 text-xs text-warning">{metric.note}</p> : null}
           </InfoCard>
         ))}
       </section>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-2">
         <InfoCard title="Risikohinweis" subtitle="Entscheidungsunterstützung, kein Ausführungsfeed">
-          <ul className="space-y-2 text-sm leading-7 text-slate-300">
+          <ul className="space-y-2 text-sm leading-7 text-muted">
             <li>• Jet-Preise sind Proxies und können von standortspezifischen Vertragswerten in Deutschland abweichen.</li>
             <li>• Der EU-Jet-Proxy kann bei Datenfeed-Ausfall vorübergehend auf die globale Jet-Serie zurückfallen.</li>
             <li>• Carbon-Proxy zeigt Richtlinien-Kostendruck und muss mit Route und Beimischungsannahmen gelesen werden.</li>
@@ -113,16 +113,16 @@ export default async function GermanGermanyJetFuelPricePage() {
         </InfoCard>
 
         <InfoCard title="Quellen" subtitle="Jede Metrik mit Herkunft prüfbar">
-          <ul className="space-y-3 text-sm text-slate-300">
+          <ul className="space-y-3 text-sm text-muted">
             {sourceLinks.map((source) => (
               <li key={source.key}>
-                <Link className="underline decoration-sky-500/40 hover:decoration-sky-300" href={source.href}>
+                <Link className="text-accent underline decoration-accent/40 hover:decoration-accent" href={source.href}>
                   {source.label}
                 </Link>
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-xs text-slate-500">
+          <p className="mt-4 text-xs text-muted">
             Erstellt: {new Date(readModel.generatedAt).toLocaleString('de-DE')}
             {readModel.isFallback && readModel.error ? ` | Fallback wegen: ${readModel.error}` : ''}
           </p>
