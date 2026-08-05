@@ -52,9 +52,9 @@ function checkStatusLabel(status: string): string {
 }
 
 function readinessToneClass(tone: LaunchReadinessCheck['tone']): string {
-  if (tone === 'critical') return 'border-rose-200 bg-rose-50 text-rose-700';
-  if (tone === 'review') return 'border-amber-200 bg-amber-50 text-amber-700';
-  return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+  if (tone === 'critical') return 'border-danger bg-danger-soft text-danger';
+  if (tone === 'review') return 'border-warning bg-warning-soft text-warning';
+  return 'border-success bg-success-soft text-success';
 }
 
 function launchImpactLabel(check: LaunchReadinessCheck): string {
@@ -64,9 +64,9 @@ function launchImpactLabel(check: LaunchReadinessCheck): string {
 }
 
 function launchImpactClass(check: LaunchReadinessCheck): string {
-  if (check.blocking) return 'border-rose-200 bg-rose-50 text-rose-700';
-  if (check.severity === 'review') return 'border-amber-200 bg-amber-50 text-amber-700';
-  return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+  if (check.blocking) return 'border-danger bg-danger-soft text-danger';
+  if (check.severity === 'review') return 'border-warning bg-warning-soft text-warning';
+  return 'border-success bg-success-soft text-success';
 }
 
 function actionFor(check: LaunchReadinessCheck): { label: string; href: Route } {
@@ -104,7 +104,7 @@ export default async function EnglishAdminPage() {
     >
       <section className="grid gap-5 lg:grid-cols-[1fr_1fr]">
         <InfoCard title="Protected operations" subtitle="Readiness first, writes only in the primary console">
-          <ul className="space-y-3 text-sm leading-7 text-slate-700">
+          <ul className="space-y-3 text-sm leading-7 text-muted">
             {protectedOperations.map((task) => (
               <li key={task}>{task}</li>
             ))}
@@ -112,7 +112,7 @@ export default async function EnglishAdminPage() {
         </InfoCard>
 
         <InfoCard title="Backend contract" subtitle="FastAPI readiness without exposing secrets">
-          <div className="space-y-3 text-sm leading-7 text-slate-700">
+          <div className="space-y-3 text-sm leading-7 text-muted">
             <p>Database bootstrap, market snapshots, source coverage, admin token configuration, and AI research readiness are reported by the API readiness contract.</p>
             <p>Secret values are never returned by readiness and are not requested by this English page.</p>
             <p>Protected parameter editing, manual refresh, and token entry stay in the primary admin console.</p>
@@ -123,29 +123,29 @@ export default async function EnglishAdminPage() {
       <section className="mt-5">
         <InfoCard title="Launch readiness checks" subtitle={`API readiness: ${readinessStatusLabel(readiness.status)}`}>
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className={`rounded-md border px-3 py-1.5 font-semibold ${readiness.ready ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
+            <span className={`rounded-md border px-3 py-1.5 font-semibold ${readiness.ready ? 'border-success bg-success-soft text-success' : 'border-danger bg-danger-soft text-danger'}`}>
               {readiness.ready ? 'Ready' : 'Not ready'}
             </span>
             {readiness.degraded ? (
-              <span className="rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 font-semibold text-amber-700">
+              <span className="rounded-md border border-warning bg-warning-soft px-3 py-1.5 font-semibold text-warning">
                 Degraded
               </span>
             ) : null}
-            <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold text-slate-700">
+            <span className="rounded-md border border-line bg-surface-muted px-3 py-1.5 font-semibold text-muted">
               {readiness.environment} | {readiness.apiPrefix} | schema {readiness.schemaBootstrapMode}
             </span>
           </div>
           {readiness.error ? (
-            <p className="mt-4 border-y border-rose-200 py-3 text-sm leading-6 text-rose-700">
+            <p className="mt-4 border-y border-danger py-3 text-sm leading-6 text-danger">
               Readiness API is unavailable: {readiness.error}
             </p>
           ) : (
-            <div className="mt-4 divide-y divide-slate-200 border-y border-slate-200">
+            <div className="mt-4 divide-y divide-line border-y border-line">
               {readiness.checks.map((check) => {
                 const action = actionFor(check);
                 return (
                   <div key={check.key} className="grid gap-3 py-3 text-sm md:grid-cols-[minmax(9rem,12rem)_minmax(11rem,13rem)_1fr_auto] md:items-start">
-                    <p className="font-semibold text-slate-950">{checkLabels[check.key] ?? check.key}</p>
+                    <p className="font-semibold text-ink">{checkLabels[check.key] ?? check.key}</p>
                     <div className="flex flex-col items-start gap-1.5">
                       <span className={`inline-flex w-fit rounded-md border px-2.5 py-1 text-xs font-semibold ${readinessToneClass(check.tone)}`}>
                         {checkStatusLabel(check.status)}
@@ -154,13 +154,13 @@ export default async function EnglishAdminPage() {
                         {launchImpactLabel(check)}
                       </span>
                     </div>
-                    <div className="space-y-2 leading-6 text-slate-700">
+                    <div className="space-y-2 leading-6 text-muted">
                       <p>{safeDetail(check.detail)}</p>
                       {check.configKeys.length > 0 ? (
-                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-600">
-                          <span className="font-semibold text-slate-700">Related config:</span>
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted">
+                          <span className="font-semibold text-muted">Related config:</span>
                           {check.configKeys.map((configKey) => (
-                            <code key={configKey} className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[0.72rem] text-slate-700">
+                            <code key={configKey} className="rounded border border-line bg-surface-muted px-1.5 py-0.5 font-mono text-[0.72rem] text-muted">
                               {configKey}
                             </code>
                           ))}
@@ -169,7 +169,7 @@ export default async function EnglishAdminPage() {
                     </div>
                     <Link
                       href={action.href}
-                      className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-center text-xs font-semibold text-sky-800 hover:border-sky-300 hover:bg-sky-50"
+                      className="rounded-md border border-line bg-surface px-3 py-1.5 text-center text-xs font-semibold text-accent hover:border-accent hover:bg-accent-soft"
                     >
                       {action.label}
                     </Link>

@@ -28,10 +28,10 @@ const actionLinks: Array<{ label: string; href: Route; description: string }> = 
 ];
 
 function toneForImpact(impact: string): string {
-  if (impact === 'positive') return 'border-emerald-200 bg-emerald-50 text-emerald-800';
-  if (impact === 'negative') return 'border-rose-200 bg-rose-50 text-rose-800';
-  if (impact === 'neutral') return 'border-slate-200 bg-white text-slate-700';
-  return 'border-amber-200 bg-amber-50 text-amber-800';
+  if (impact === 'positive') return 'border-success bg-success-soft text-success';
+  if (impact === 'negative') return 'border-danger bg-danger-soft text-danger';
+  if (impact === 'neutral') return 'border-line bg-surface text-muted';
+  return 'border-warning bg-warning-soft text-warning';
 }
 
 function impactLabel(impact: string): string {
@@ -88,9 +88,9 @@ export default async function ResearchPage() {
       </section>
 
       {!AI_RESEARCH_ENABLED ? (
-        <section className="mt-8 rounded-2xl border border-dashed border-sky-300 bg-sky-50 p-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-800">开启研究流水线</p>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-700">
+        <section className="mt-8 rounded-2xl border border-dashed border-accent bg-accent-soft p-6">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">开启研究流水线</p>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-muted">
             后端研究任务部署后设置 <code>JETSCOPE_AI_RESEARCH_ENABLED=true</code>。在此之前，
             页面保持可构建、可导航、可解释边界，但不会冒充实时 Claude 分析结果。
           </p>
@@ -98,7 +98,7 @@ export default async function ResearchPage() {
       ) : null}
 
       {result.status === 'error' ? (
-        <section className="mt-8 rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <section className="mt-8 rounded-2xl border border-danger bg-danger-soft p-6 text-sm text-danger">
           Research API 错误：{result.message}
         </section>
       ) : null}
@@ -110,26 +110,26 @@ export default async function ResearchPage() {
       <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.85fr]">
         <InfoCard title="信号列表" subtitle="按当前 read model 返回结果展示">
           {result.status !== 'error' && result.signals.length === 0 ? (
-            <p className="text-sm leading-7 text-slate-700">
+            <p className="text-sm leading-7 text-muted">
               暂无研究信号。每日研究任务尚未持久化信号前，这是预期状态；报告仍应以市场、储备和来源状态为主。
             </p>
           ) : result.status === 'error' ? (
-            <p className="text-sm leading-7 text-slate-700">错误恢复前不展示信号列表，避免把不完整数据写进报告判断。</p>
+            <p className="text-sm leading-7 text-muted">错误恢复前不展示信号列表，避免把不完整数据写进报告判断。</p>
           ) : (
             <div className="space-y-4">
               {result.signals.map((signal) => (
-                <article key={signal.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <article key={signal.id} className="rounded-lg border border-line bg-surface-muted p-4">
                   <div className="flex flex-wrap items-center gap-3">
                     <span className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${toneForImpact(signal.impact_direction)}`}>
                       {impactLabel(signal.impact_direction)}
                     </span>
-                    <span className="text-xs uppercase tracking-[0.14em] text-slate-500">{signal.signal_type}</span>
-                    <span className="text-xs text-slate-500">{formatTime(signal.published_at)}</span>
+                    <span className="text-xs uppercase tracking-[0.14em] text-muted">{signal.signal_type}</span>
+                    <span className="text-xs text-muted">{formatTime(signal.published_at)}</span>
                   </div>
-                  <h3 className="mt-4 text-lg font-semibold text-slate-950">{signal.title}</h3>
-                  <p className="mt-3 text-sm leading-7 text-slate-700">{signal.summary_cn}</p>
-                  <p className="mt-3 text-sm leading-7 text-slate-600">{signal.summary_en}</p>
-                  <p className="mt-4 text-xs uppercase tracking-[0.14em] text-slate-500">
+                  <h3 className="mt-4 text-lg font-semibold text-ink">{signal.title}</h3>
+                  <p className="mt-3 text-sm leading-7 text-muted">{signal.summary_cn}</p>
+                  <p className="mt-3 text-sm leading-7 text-muted">{signal.summary_en}</p>
+                  <p className="mt-4 text-xs uppercase tracking-[0.14em] text-muted">
                     置信度 {(signal.confidence * 100).toFixed(0)}%
                   </p>
                 </article>
@@ -144,10 +144,10 @@ export default async function ResearchPage() {
               <Link
                 key={action.href}
                 href={action.href}
-                className="block rounded-lg border border-slate-200 bg-white p-4 transition hover:border-sky-300 hover:bg-sky-50"
+                className="block rounded-lg border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
               >
-                <p className="font-semibold text-slate-950">{action.label}</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">{action.description}</p>
+                <p className="font-semibold text-ink">{action.label}</p>
+                <p className="mt-1 text-sm leading-6 text-muted">{action.description}</p>
               </Link>
             ))}
           </div>

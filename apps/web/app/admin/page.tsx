@@ -23,9 +23,9 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 function readinessToneClass(tone: LaunchReadinessCheck['tone']): string {
-  if (tone === 'critical') return 'border-rose-200 bg-rose-50 text-rose-700';
-  if (tone === 'review') return 'border-amber-200 bg-amber-50 text-amber-700';
-  return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+  if (tone === 'critical') return 'border-danger bg-danger-soft text-danger';
+  if (tone === 'review') return 'border-warning bg-warning-soft text-warning';
+  return 'border-success bg-success-soft text-success';
 }
 
 export default async function AdminPage() {
@@ -39,7 +39,7 @@ export default async function AdminPage() {
     >
       <section className="grid gap-5 lg:grid-cols-[1fr_1fr]">
         <InfoCard title="当前可操作范围" subtitle="真实 API 写入，不是占位文本">
-          <ul className="space-y-3 text-sm leading-7 text-slate-700">
+          <ul className="space-y-3 text-sm leading-7 text-muted">
             {adminTasks.map((task) => (
               <li key={task}>• {task}</li>
             ))}
@@ -47,11 +47,11 @@ export default async function AdminPage() {
         </InfoCard>
 
         <InfoCard title="后端数据合同" subtitle="FastAPI / 本地 SQLite 或 PostgreSQL">
-          <div className="space-y-3 text-sm leading-7 text-slate-700">
-            <p><code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700">route_catalog</code>：维护默认路线定义</p>
-            <p><code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700">policy_parameters</code>：维护政策、补贴与 mandate 参数</p>
-            <p><code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700">market_snapshots</code>：保存定时任务抓取结果</p>
-            <p><code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700">scenarios</code>：版本化假设，支持对比与导出</p>
+          <div className="space-y-3 text-sm leading-7 text-muted">
+            <p><code className="rounded bg-surface-muted px-1.5 py-0.5 font-mono text-xs text-muted">route_catalog</code>：维护默认路线定义</p>
+            <p><code className="rounded bg-surface-muted px-1.5 py-0.5 font-mono text-xs text-muted">policy_parameters</code>：维护政策、补贴与 mandate 参数</p>
+            <p><code className="rounded bg-surface-muted px-1.5 py-0.5 font-mono text-xs text-muted">market_snapshots</code>：保存定时任务抓取结果</p>
+            <p><code className="rounded bg-surface-muted px-1.5 py-0.5 font-mono text-xs text-muted">scenarios</code>：版本化假设，支持对比与导出</p>
           </div>
         </InfoCard>
       </section>
@@ -59,42 +59,42 @@ export default async function AdminPage() {
       <section className="mt-5">
         <InfoCard title="上线前置状态" subtitle={`API readiness：${readiness.statusLabel}`}>
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className={`rounded-md border px-3 py-1.5 font-semibold ${readiness.ready ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
+            <span className={`rounded-md border px-3 py-1.5 font-semibold ${readiness.ready ? 'border-success bg-success-soft text-success' : 'border-danger bg-danger-soft text-danger'}`}>
               {readiness.ready ? 'Ready' : 'Not ready'}
             </span>
             {readiness.degraded ? (
-              <span className="rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 font-semibold text-amber-700">
+              <span className="rounded-md border border-warning bg-warning-soft px-3 py-1.5 font-semibold text-warning">
                 Degraded
               </span>
             ) : null}
-            <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold text-slate-700">
+            <span className="rounded-md border border-line bg-surface-muted px-3 py-1.5 font-semibold text-muted">
               {readiness.environment} · {readiness.apiPrefix} · schema {readiness.schemaBootstrapMode}
             </span>
           </div>
           {readiness.error ? (
-            <p className="mt-4 border-y border-rose-200 py-3 text-sm leading-6 text-rose-700">
+            <p className="mt-4 border-y border-danger py-3 text-sm leading-6 text-danger">
               Readiness API 暂不可用：{readiness.error}
             </p>
           ) : (
-            <div className="mt-4 divide-y divide-slate-200 border-y border-slate-200">
+            <div className="mt-4 divide-y divide-line border-y border-line">
               {readiness.checks.map((check) => (
                 <div key={check.key} className="grid gap-3 py-3 text-sm md:grid-cols-[minmax(9rem,12rem)_minmax(9rem,10rem)_1fr_auto] md:items-start">
-                  <p className="font-semibold text-slate-950">{check.label}</p>
+                  <p className="font-semibold text-ink">{check.label}</p>
                   <div className="flex flex-wrap gap-2">
                     <span className={`inline-flex w-fit rounded-md border px-2.5 py-1 text-xs font-semibold ${readinessToneClass(check.tone)}`}>
                       {check.statusLabel}
                     </span>
-                    <span className={`inline-flex w-fit rounded-md border px-2.5 py-1 text-xs font-semibold ${check.blocking ? 'border-rose-200 bg-rose-50 text-rose-700' : check.severity === 'review' ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+                    <span className={`inline-flex w-fit rounded-md border px-2.5 py-1 text-xs font-semibold ${check.blocking ? 'border-danger bg-danger-soft text-danger' : check.severity === 'review' ? 'border-warning bg-warning-soft text-warning' : 'border-success bg-success-soft text-success'}`}>
                       {check.blocking ? '阻塞上线' : check.severity === 'review' ? '需复核' : '可用'}
                     </span>
                   </div>
-                  <div className="space-y-2 leading-6 text-slate-700">
+                  <div className="space-y-2 leading-6 text-muted">
                     <p>{check.detail}</p>
                     {check.configKeys.length ? (
-                      <p className="text-xs text-slate-600">
+                      <p className="text-xs text-muted">
                         相关配置：
                         {check.configKeys.map((key) => (
-                          <code key={key} className="ml-1 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700">
+                          <code key={key} className="ml-1 rounded bg-surface-muted px-1.5 py-0.5 font-mono text-xs text-muted">
                             {key}
                           </code>
                         ))}
@@ -103,7 +103,7 @@ export default async function AdminPage() {
                   </div>
                   <Link
                     href={check.actionHref as Route}
-                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-center text-xs font-semibold text-sky-800 hover:border-sky-300 hover:bg-sky-50"
+                    className="rounded-md border border-line bg-surface px-3 py-1.5 text-center text-xs font-semibold text-accent hover:border-accent hover:bg-accent-soft"
                   >
                     {check.actionLabel}
                   </Link>
