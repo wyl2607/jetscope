@@ -70,7 +70,7 @@ export default async function GermanDashboardPage() {
   const freshness = readModel.freshnessSignal;
 
   const riskColor =
-    risk?.level === 'alert' ? 'text-rose-300' : risk?.level === 'watch' ? 'text-amber-300' : 'text-emerald-300';
+    risk?.level === 'alert' ? 'text-danger' : risk?.level === 'watch' ? 'text-warning' : 'text-success';
   const riskValue =
     risk == null
       ? 'n/a'
@@ -126,7 +126,7 @@ export default async function GermanDashboardPage() {
 
       <section className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <InfoCard title="Dashboard-Verantwortung" subtitle="Produktoberfläche für Entscheidungsunterstützung">
-          <ul className="space-y-3 text-sm leading-7 text-slate-300">
+          <ul className="space-y-3 text-sm leading-7 text-muted">
             {priorities.map((item) => (
               <li key={item}>• {item}</li>
             ))}
@@ -134,7 +134,7 @@ export default async function GermanDashboardPage() {
         </InfoCard>
 
         <InfoCard title="Migrationsregel" subtitle="Von Prototype zu Product">
-          <div className="space-y-3 text-sm leading-7 text-slate-300">
+          <div className="space-y-3 text-sm leading-7 text-muted">
             <p>1. Erst vertikale End-to-End Slice für market + scenarios, dann Funktionsumfang erweitern.</p>
             <p>2. Bei API-Ausfall bleibt eine sichere Fallback-Darstellung aktiv.</p>
             <p>3. Als Nächstes Vergleichs- und Sweep-Ansichten auf dasselbe Workspace-Modell konsolidieren.</p>
@@ -145,13 +145,13 @@ export default async function GermanDashboardPage() {
       <section className="mt-8">
         <InfoCard title="Aktuelle Szenarien" subtitle="Quelle: FastAPI / PostgreSQL">
           {readModel.recentScenarioNames.length ? (
-            <ul className="space-y-2 text-sm leading-7 text-slate-300">
+            <ul className="space-y-2 text-sm leading-7 text-muted">
               {readModel.recentScenarioNames.map((name) => (
                 <li key={name}>• {name}</li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm leading-7 text-slate-300">
+            <p className="text-sm leading-7 text-muted">
               Noch keine gespeicherten Szenarien. Lege ein Szenario über die API an, um CRUD Ende-zu-Ende zu prüfen.
             </p>
           )}

@@ -20,19 +20,19 @@ export function PricesPanel({ prices }: PricesPanelProps) {
     <InfoCard title="按优先级排序的价格" subtitle="EU ETS > Rotterdam > Germany > Cache">
       <div className="space-y-4">
         {sortedPrices.map((price, index) => (
-          <div key={price.source} className="flex items-center justify-between p-3 border border-slate-700 rounded-lg bg-slate-800/50">
+          <div key={price.source} className="flex items-center justify-between p-3 border border-line-strong rounded-lg bg-surface">
             <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-slate-400">#{index + 1}</span>
+              <span className="text-sm font-medium text-subtle">#{index + 1}</span>
               <div>
-                <p className="font-semibold text-white">{price.source}</p>
-                <p className="text-sm text-slate-300">
+                <p className="font-semibold text-ink">{price.source}</p>
+                <p className="text-sm text-muted">
                   {price.value} {price.unit}
-                  {price.is_fallback && <span className="ml-2 text-amber-300">回退值</span>}
+                  {price.is_fallback && <span className="ml-2 text-warning">回退值</span>}
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-xs text-slate-500">优先级：{price.priority}</p>
+              <p className="text-xs text-subtle">优先级：{price.priority}</p>
             </div>
           </div>
         ))}

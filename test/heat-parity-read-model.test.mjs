@@ -61,8 +61,13 @@ test('label and tone helpers map heat parity statuses and signals', async () => 
   assert.equal(heatStatusLabel('dominant'), '热泵占优');
   assert.equal(heatStatusLabel('uneconomic'), '暂不经济');
   assert.equal(heatSignalLabel('clear_leader'), '热泵明确领先');
-  assert.match(heatStatusTone('dominant'), /emerald/);
-  assert.match(heatStatusTone('uneconomic'), /rose/);
+  assert.match(heatStatusTone('dominant'), /text-success/);
+  assert.match(heatStatusTone('uneconomic'), /text-danger/);
+
+  // See the grid test: distinctness is the property that survives a palette
+  // migration, the literal color name is not.
+  const tones = ['dominant', 'marginal_switch', 'inflection', 'uneconomic'].map(heatStatusTone);
+  assert.equal(new Set(tones).size, tones.length, `heat status tones must stay distinct: ${tones.join(' | ')}`);
 });
 
 test('loadHeatParity hits heat-parity endpoint with carbon and price query', async (t) => {

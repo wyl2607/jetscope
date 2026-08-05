@@ -86,8 +86,14 @@ test('label and tone helpers map statuses and signals', async () => {
   assert.equal(gridStatusLabel('dominant'), '清洁占优');
   assert.equal(gridStatusLabel('uneconomic'), '不经济');
   assert.equal(gridSignalLabel('clear_leader'), '清洁能源明确领先');
-  assert.match(gridStatusTone('dominant'), /emerald/);
-  assert.match(gridStatusTone('uneconomic'), /rose/);
+  assert.match(gridStatusTone('dominant'), /text-success/);
+  assert.match(gridStatusTone('uneconomic'), /text-danger/);
+
+  // Four statuses, four distinct tones. Asserting distinctness rather than
+  // specific palette classes is what catches a migration collapsing two states
+  // onto the same color - which is exactly what happened to marginal_switch.
+  const tones = ['dominant', 'marginal_switch', 'inflection', 'uneconomic'].map(gridStatusTone);
+  assert.equal(new Set(tones).size, tones.length, `grid status tones must stay distinct: ${tones.join(' | ')}`);
 });
 
 test('loadGridParity hits grid-parity endpoint with carbon price query', async (t) => {

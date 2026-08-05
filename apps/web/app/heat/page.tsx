@@ -45,16 +45,16 @@ export default async function HeatParityPage() {
 
           {sensitivity && <HeatSensitivityMatrix initial={sensitivity} />}
 
-          <article className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Methodology</p>
-            <h3 className="mt-2 text-lg font-medium text-slate-950">方法论</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-700">
+          <article className="rounded-2xl border border-line bg-surface-muted p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Methodology</p>
+            <h3 className="mt-2 text-lg font-medium text-ink">方法论</h3>
+            <p className="mt-2 text-sm leading-6 text-muted">
               成本单位为 €/MWh 有用热。燃气侧将居民燃气价格和 ETS2 建筑/供暖燃料碳价按锅炉效率折算；热泵侧用居民电价除以 COP。电力上游碳排放不纳入本直接对比范围。
             </p>
           </article>
         </div>
       ) : (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800">
+        <div className="rounded-2xl border border-line bg-warning-soft p-6 text-sm text-warning">
           供暖平价数据当前不可用。请确认 API 已启动（本地：<code className="font-mono">npm run api:dev</code>）。
         </div>
       )}

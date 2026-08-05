@@ -125,7 +125,7 @@ export default async function GermanScenariosPage() {
           label="Höchstes Risikosignal"
           value={riskValue}
           hint={riskHint}
-          valueClassName={risk?.level === 'alert' ? 'text-rose-700' : risk?.level === 'watch' ? 'text-amber-700' : 'text-emerald-700'}
+          valueClassName={risk?.level === 'alert' ? 'text-danger' : risk?.level === 'watch' ? 'text-warning' : 'text-success'}
         />
         <MetricCard
           label="Geschützte Schreibgrenze"
@@ -137,20 +137,20 @@ export default async function GermanScenariosPage() {
       <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
         <InfoCard title="Szenarioannahmen" subtitle="Gespeicherte Workspace-Datensätze">
           {readModel.recentScenarioNames.length ? (
-            <ul className="space-y-3 text-sm leading-7 text-slate-700">
+            <ul className="space-y-3 text-sm leading-7 text-muted">
               {readModel.recentScenarioNames.map((name, index) => (
                 <li key={`${name}-${index}`}>{safeScenarioName(name, index)}</li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm leading-7 text-slate-700">
+            <p className="text-sm leading-7 text-muted">
               Noch keine gespeicherten Annahmen verfügbar. Nutze den primären Szenario-Editor, um überprüfbare Fälle für Preis-, Reserve-, Routen- und Policy-Diskussionen anzulegen.
             </p>
           )}
         </InfoCard>
 
         <InfoCard title="Entscheidungskontext" subtitle="Szenarien mit aktueller Evidenz nutzen">
-          <div className="space-y-3 text-sm leading-7 text-slate-700">
+          <div className="space-y-3 text-sm leading-7 text-muted">
             <p>{deliveryHint(readModel)}</p>
             <p>Szenarien sind Evidenzdatensätze für Review und Teamdiskussion; sie ersetzen keine Beschaffungsfreigabe, Quellenvalidierung oder geschützte Admin-Konfiguration.</p>
             <p>Vor dem Vergleich von Annahmen prüfen, ob Quellenabdeckung und Startbereitschaft Fallbacks oder deaktivierte Systemteile sichtbar machen.</p>
@@ -165,10 +165,10 @@ export default async function GermanScenariosPage() {
               <Link
                 key={action.href}
                 href={action.href}
-                className="block rounded-md border border-slate-200 bg-white p-4 transition hover:border-sky-300 hover:bg-sky-50"
+                className="block rounded-md border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
               >
-                <p className="font-semibold text-slate-950">{action.label}</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">{action.description}</p>
+                <p className="font-semibold text-ink">{action.label}</p>
+                <p className="mt-1 text-sm leading-6 text-muted">{action.description}</p>
               </Link>
             ))}
           </div>

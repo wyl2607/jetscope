@@ -90,8 +90,8 @@ export function getReserveSeverity(weeks: number): ReserveSeverity {
     return {
       level: 'critical',
       label: 'CRITICAL — Immediate action required',
-      color: 'text-rose-300',
-      barColor: 'bg-rose-500',
+      color: 'text-danger',
+      barColor: 'bg-danger',
       tone: 'red'
     };
   }
@@ -99,8 +99,8 @@ export function getReserveSeverity(weeks: number): ReserveSeverity {
     return {
       level: 'elevated',
       label: 'ELEVATED — SAF switch window opening',
-      color: 'text-amber-300',
-      barColor: 'bg-amber-500',
+      color: 'text-warning',
+      barColor: 'bg-warning',
       tone: 'amber'
     };
   }
@@ -108,16 +108,16 @@ export function getReserveSeverity(weeks: number): ReserveSeverity {
     return {
       level: 'watch',
       label: 'WATCH — Monitor closely',
-      color: 'text-yellow-300',
-      barColor: 'bg-yellow-500',
+      color: 'text-accent',
+      barColor: 'bg-accent',
       tone: 'blue'
     };
   }
   return {
     level: 'normal',
     label: 'NORMAL',
-    color: 'text-emerald-300',
-    barColor: 'bg-emerald-500',
+    color: 'text-success',
+    barColor: 'bg-success',
     tone: 'blue'
   };
 }

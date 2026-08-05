@@ -96,10 +96,10 @@ const SIGNAL_LABELS: Record<GridParitySignal, string> = {
 };
 
 const STATUS_TONES: Record<GridParityStatus, string> = {
-  uneconomic: 'border-rose-200 bg-rose-50 text-rose-700',
-  inflection: 'border-amber-200 bg-amber-50 text-amber-800',
-  marginal_switch: 'border-sky-200 bg-sky-50 text-sky-800',
-  dominant: 'border-emerald-200 bg-emerald-50 text-emerald-800'
+  uneconomic: 'border-line bg-danger-soft text-danger',
+  inflection: 'border-line bg-warning-soft text-warning',
+  marginal_switch: 'border-line bg-accent-soft text-accent',
+  dominant: 'border-line bg-success-soft text-success'
 };
 
 export function gridStatusLabel(status: GridParityStatus): string {
