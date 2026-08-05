@@ -85,6 +85,21 @@ Rules:
    | Item in a selection group, unselected | `border-line bg-surface` | `border-line-strong bg-surface-muted` |
    | Item in a selection group, selected | `border-accent bg-accent-soft` | — |
    | **Status card** (carries a semantic tint) | `border-line bg-{semantic}-soft` | `border-{semantic}`, **tint unchanged** |
+   | **Solid control** (filled primary button) | `bg-{semantic} text-surface` | `bg-ink` |
+
+   A solid fill takes **`text-surface`, never `text-ink`.** Every semantic token
+   is dark enough to clear 4.5:1 against white and nowhere near it against ink:
+
+   | Fill | white text | ink text |
+   | --- | ---: | ---: |
+   | `accent` | 5.97 | **2.76** |
+   | `success` | 5.00 | 2.31 |
+   | `warning` | 5.19 | 2.40 |
+   | `danger` | 6.46 | 2.99 |
+
+   The ink column is the whole reason this row exists: a filled button written
+   as `bg-accent text-ink` looks deliberate, passes every lint, and fails WCAG.
+   It shipped twice before this row was written.
 
    The last row is the one that gets misread. **A status card keeps its tint on
    hover.** Sending it to `surface-muted` drains the color that encodes the
@@ -178,6 +193,11 @@ type Figure = {
 
 - Contrast ≥ 4.5:1 body text, ≥ 3:1 large text and non-text indicators, measured
   against the token background it actually renders on.
+- **A shape must survive its own container.** `surface-muted` inside an
+  `opacity-50` wrapper is white on white - the element is simply gone. Dots,
+  connectors, rules and other non-text marks use `line` or `line-strong`, never
+  `surface` or `surface-muted`, whenever the thing behind them is also light.
+  A timeline lost its entire future half to this.
 - Color is never the only carrier of meaning — pair with label, icon, or shape.
 - Every interactive element is keyboard reachable with a visible focus ring
   (`ring-2 ring-accent`). No `outline: none` without a replacement.
