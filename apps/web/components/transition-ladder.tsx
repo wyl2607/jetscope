@@ -49,12 +49,12 @@ export function TransitionLadder({ summary }: Props) {
   const refColors = ['#38bdf8', '#e879f9', '#fbbf24'];
 
   return (
-    <article className="rounded-2xl border border-slate-700/60 bg-slate-900/40 p-6">
+    <article className="rounded-2xl border border-line-strong bg-surface p-6">
       <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-lg font-medium text-slate-50">脱碳碳价阶梯</h3>
-        <span className="text-xs uppercase tracking-[0.16em] text-emerald-300">同一碳价 · 多域交叉</span>
+        <h3 className="text-lg font-medium text-ink">脱碳碳价阶梯</h3>
+        <span className="text-xs uppercase tracking-[0.16em] text-muted">同一碳价 · 多域交叉</span>
       </div>
-      <p className="mb-4 text-sm text-slate-400">
+      <p className="mb-4 text-sm text-subtle">
         每个清洁技术击败其化石参照所需的最低碳价（€/t）。同一条 EU ETS / ETS2 价格轴贯穿电网与供暖两个脱碳前沿。
       </p>
       <svg
@@ -106,7 +106,7 @@ export function TransitionLadder({ summary }: Props) {
           </g>
         ))}
       </svg>
-      <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-400">
+      <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-subtle">
         <span className="flex items-center gap-1">
           <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: '#34d399' }} aria-hidden="true" />
           当前碳价下已具竞争力
@@ -116,7 +116,7 @@ export function TransitionLadder({ summary }: Props) {
           仍需更高碳价
         </span>
       </div>
-      <p className="mt-2 text-xs text-slate-500">{summary.disclaimer}</p>
+      <p className="mt-2 text-xs text-subtle">{summary.disclaimer}</p>
     </article>
   );
 }

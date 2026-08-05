@@ -110,7 +110,7 @@ export default async function EnglishScenariosPage() {
           label="Highest risk signal"
           value={riskValue}
           hint={riskHint}
-          valueClassName={risk?.level === 'alert' ? 'text-rose-700' : risk?.level === 'watch' ? 'text-amber-700' : 'text-emerald-700'}
+          valueClassName={risk?.level === 'alert' ? 'text-danger' : risk?.level === 'watch' ? 'text-warning' : 'text-success'}
         />
         <MetricCard
           label="Protected write boundary"
@@ -122,7 +122,7 @@ export default async function EnglishScenariosPage() {
       <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
         <InfoCard title="Scenario assumptions" subtitle="Saved workspace records">
           {readModel.recentScenarioNames.length ? (
-            <ul className="space-y-3 text-sm leading-7 text-slate-700">
+            <ul className="space-y-3 text-sm leading-7 text-muted">
               {readModel.recentScenarioNames.map((name, index) => (
                 <li key={`${name}-${index}`}>
                   {safeScenarioName(name, index)}
@@ -130,14 +130,14 @@ export default async function EnglishScenariosPage() {
               ))}
             </ul>
           ) : (
-            <p className="text-sm leading-7 text-slate-700">
+            <p className="text-sm leading-7 text-muted">
               No saved assumptions are available yet. Use the primary scenario editor to create reviewable cases for pricing, reserve, route, and policy discussions.
             </p>
           )}
         </InfoCard>
 
         <InfoCard title="Decision context" subtitle="Use scenarios with current evidence">
-          <div className="space-y-3 text-sm leading-7 text-slate-700">
+          <div className="space-y-3 text-sm leading-7 text-muted">
             <p>{deliveryHint(readModel)}</p>
             <p>Scenarios are evidence records for review and team discussion; they do not replace procurement approval, source validation, or protected admin configuration.</p>
             <p>Before comparing assumptions, confirm that source coverage and launch readiness are not hiding fallback or disabled-state boundaries.</p>
@@ -152,10 +152,10 @@ export default async function EnglishScenariosPage() {
               <Link
                 key={action.href}
                 href={action.href}
-                className="block rounded-lg border border-slate-200 bg-white p-4 transition hover:border-sky-300 hover:bg-sky-50"
+                className="block rounded-lg border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
               >
-                <p className="font-semibold text-slate-950">{action.label}</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">{action.description}</p>
+                <p className="font-semibold text-ink">{action.label}</p>
+                <p className="mt-1 text-sm leading-6 text-muted">{action.description}</p>
               </Link>
             ))}
           </div>

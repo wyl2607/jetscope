@@ -33,17 +33,17 @@ export function HeatSensitivityMatrix({ initial }: Props) {
   const span = maxBreakeven - minBreakeven;
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white/90 p-6">
+    <article className="rounded-2xl border border-line bg-surface p-6">
       <div className="mb-4">
-        <h3 className="text-lg font-medium text-slate-950">供暖敏感性</h3>
-        <p className="mt-1 text-sm text-slate-600">
+        <h3 className="text-lg font-medium text-ink">供暖敏感性</h3>
+        <p className="mt-1 text-sm text-muted">
           交叉点碳价 = 热泵击败燃气锅炉所需的最低 EU ETS2 碳价（燃气基线 €{initial.gas_price_eur_per_mwh_th.toFixed(0)}/MWh）。
         </p>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm text-slate-700">
+        <table className="w-full text-sm text-muted">
           <thead>
-            <tr className="border-b border-slate-300 text-left">
+            <tr className="border-b border-line text-left">
               <th className="py-2 pr-4">居民电价</th>
               {initial.cops.map((cop) => (
                 <th key={cop} className="py-2 pr-4 text-right">
@@ -54,13 +54,13 @@ export function HeatSensitivityMatrix({ initial }: Props) {
           </thead>
           <tbody>
             {initial.elec_prices.map((elec) => (
-              <tr key={elec} className="border-b border-slate-200">
+              <tr key={elec} className="border-b border-line">
                 <td className="py-2 pr-4 font-mono">€{elec.toFixed(0)}/MWh</td>
                 {initial.cops.map((cop) => {
                   const cell = cellByKey.get(`${elec}:${cop}`);
                   if (!cell) {
                     return (
-                      <td key={`${elec}:${cop}`} className="px-1 py-1 text-right font-mono text-slate-400">
+                      <td key={`${elec}:${cop}`} className="px-1 py-1 text-right font-mono text-subtle">
                         —
                       </td>
                     );
@@ -70,7 +70,7 @@ export function HeatSensitivityMatrix({ initial }: Props) {
                   return (
                     <td key={`${elec}:${cop}`} className="px-1 py-1">
                       <div
-                        className="rounded-md px-2 py-1.5 text-right font-mono text-slate-900"
+                        className="rounded-md px-2 py-1.5 text-right font-mono text-ink"
                         style={{ backgroundColor: heatColor(t) }}
                         title={label}
                         aria-label={label}
@@ -85,7 +85,7 @@ export function HeatSensitivityMatrix({ initial }: Props) {
           </tbody>
         </table>
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-subtle">
         <span>交叉点碳价</span>
         <span>低（热泵更早胜）</span>
         <span
@@ -98,7 +98,7 @@ export function HeatSensitivityMatrix({ initial }: Props) {
         />
         <span>高</span>
       </div>
-      <p className="mt-2 text-xs text-slate-400">{initial.disclaimer}</p>
+      <p className="mt-2 text-xs text-subtle">{initial.disclaimer}</p>
     </article>
   );
 }
