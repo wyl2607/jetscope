@@ -119,14 +119,14 @@ export default async function ScenariosPage() {
       <section className="mt-8 grid gap-5 md:grid-cols-3">
         {cards.map((card) => (
           <InfoCard key={card.title} title={card.title}>
-            <p className="text-sm leading-7 text-slate-700">{card.body}</p>
+            <p className="text-sm leading-7 text-muted">{card.body}</p>
           </InfoCard>
         ))}
       </section>
 
       <section className="mt-6 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
         <InfoCard title="页面职责" subtitle="每个页面只回答一个核心问题">
-          <div className="space-y-3 text-sm leading-7 text-slate-700">
+          <div className="space-y-3 text-sm leading-7 text-muted">
             <p>实时价格在决策驾驶舱，负责回答“现在发生了什么”。</p>
             <p>危机监测解释压力来源，负责回答“为什么需要行动”。</p>
             <p>情景工作区保存假设和比较结果，负责回答“下一步怎么选择”。</p>
@@ -134,7 +134,7 @@ export default async function ScenariosPage() {
         </InfoCard>
 
         <InfoCard title="数据真实性" subtitle="结论必须带来源与更新时间">
-          <ul className="space-y-3 text-sm leading-7 text-slate-700">
+          <ul className="space-y-3 text-sm leading-7 text-muted">
             <li>• 来源复核在数据来源页，显示每项指标的置信度、延迟和回退状态。</li>
             <li>• 政策目标、储备和价格趋势只使用本地历史库或已标注的代理指标。</li>
             <li>• 情景保存用于复盘和团队讨论，不替代真实采购审批。</li>

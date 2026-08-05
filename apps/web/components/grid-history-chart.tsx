@@ -100,7 +100,7 @@ export function GridHistoryChart({ points }: Props) {
           €0/t
         </text>
       </svg>
-      <figcaption className="mt-2 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+      <figcaption className="mt-2 flex flex-wrap items-center gap-4 text-xs text-subtle">
         <span className="flex items-center gap-1">
           <span className="inline-block h-0.5 w-4" style={{ backgroundColor: '#64748b' }} aria-hidden="true" />
           化石边际成本

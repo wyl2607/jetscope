@@ -32,9 +32,9 @@ export default function AnalysisIndexPage() {
       <section className="grid gap-5">
         {ANALYSIS_ENTRIES.map((entry) => (
           <InfoCard key={entry.href} title={entry.title} subtitle={entry.href}>
-            <p className="text-sm leading-7 text-slate-300">{entry.summary}</p>
+            <p className="text-sm leading-7 text-muted">{entry.summary}</p>
             <p className="mt-4 text-sm">
-              <Link className="text-sky-300 underline" href={entry.href}>
+              <Link className="text-accent underline" href={entry.href}>
                 Open analysis page
               </Link>
             </p>

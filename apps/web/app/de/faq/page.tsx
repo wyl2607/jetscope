@@ -65,9 +65,9 @@ export default function GermanFaqPage() {
       <section className="grid gap-4 md:grid-cols-2">
         {questions.map((item) => (
           <InfoCard key={item.title} title={item.title} subtitle={item.action}>
-            <p className="text-sm leading-7 text-slate-700">{item.body}</p>
+            <p className="text-sm leading-7 text-muted">{item.body}</p>
             <p className="mt-4 text-sm">
-              <Link className="font-semibold text-sky-700 underline" href={item.href}>
+              <Link className="font-semibold text-accent underline" href={item.href}>
                 {item.action}
               </Link>
             </p>
