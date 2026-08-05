@@ -51,6 +51,9 @@ jobs:
       - name: Typecheck web app
         run: npm --prefix apps/web run typecheck
 
+      - name: Run web component tests
+        run: npm --prefix apps/web run test
+
       - name: Enforce UI design contract
         run: node scripts/design-system-lint.mjs
 
