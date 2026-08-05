@@ -76,11 +76,21 @@ Rules:
 6. One theme. No dark mode until this contract adds one.
 7. **An interactive element must not look the same in two different states.**
    A hover style equal to the resting style is a dead affordance, and a selected
-   style equal to a hovered style makes selection unreadable. When a surface
-   already sits on `accent-soft`, its hover is `accent-hover`; when it sits on
-   `surface`, its hover is `accent-soft`. Selection is carried by
-   `border-accent` plus a tint, hover on an unselected item by
-   `border-line-strong` plus `surface-muted`, so the two never collide.
+   style equal to a hovered style makes selection unreadable.
+
+   | Element | Resting | Hover |
+   | --- | --- | --- |
+   | Neutral control | `border-line bg-surface` | `border-accent bg-accent-soft` |
+   | Accent control | `border-accent bg-accent-soft` | `bg-accent-hover` |
+   | Item in a selection group, unselected | `border-line bg-surface` | `border-line-strong bg-surface-muted` |
+   | Item in a selection group, selected | `border-accent bg-accent-soft` | — |
+   | **Status card** (carries a semantic tint) | `border-line bg-{semantic}-soft` | `border-{semantic}`, **tint unchanged** |
+
+   The last row is the one that gets misread. **A status card keeps its tint on
+   hover.** Sending it to `surface-muted` drains the color that encodes the
+   status, so the card reads as having changed state when the user merely moved
+   the mouse. Only the selection-group row uses the neutral hover, because there
+   the neutral is what distinguishes hovered from selected.
 
 Scale — no other values:
 
