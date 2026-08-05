@@ -3,49 +3,9 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import Link from 'next/link';
 import { ReactNode } from 'react';
 import { ShellNav } from '@/components/shell-nav';
+import { homeHrefFor, navigationFor, type NavLocale } from '@/lib/navigation';
 
-type ShellLocale = 'zh' | 'de' | 'en';
-
-const navByLocale = {
-  zh: [
-    { href: '/dashboard', label: '决策驾驶舱' },
-    { href: '/crisis', label: '危机监测' },
-    { href: '/grid', label: '电网平价' },
-    { href: '/heat', label: '供暖平价' },
-    { href: '/scenarios', label: '情景推演' },
-    { href: '/research', label: '研究信号' },
-    { href: '/reports', label: '分析报告' },
-    { href: '/sources', label: '数据来源' },
-    { href: '/admin', label: '管理' },
-    { href: '/faq', label: '常见问题' }
-  ],
-  de: [
-    { href: '/de', label: 'Startseite' },
-    { href: '/de/dashboard', label: 'Entscheidungscockpit' },
-    { href: '/de/crisis', label: 'Krisenmonitor' },
-    { href: '/de/prices/germany-jet-fuel', label: 'Preise' },
-    { href: '/de/sources', label: 'Quellen' },
-    { href: '/de/scenarios', label: 'Szenarien' },
-    { href: '/de/reports', label: 'Berichte' },
-    { href: '/de/research', label: 'Forschung' },
-    { href: '/de/admin', label: 'Bereitschaft' },
-    { href: '/de/lufthansa-saf-2026', label: 'Analyse' },
-    { href: '/de/faq', label: 'FAQ' }
-  ],
-  en: [
-    { href: '/en', label: 'Home' },
-    { href: '/en/dashboard', label: 'Decision Cockpit' },
-    { href: '/en/crisis', label: 'Crisis Monitor' },
-    { href: '/en/prices/germany-jet-fuel', label: 'Prices' },
-    { href: '/en/sources', label: 'Sources' },
-    { href: '/en/research', label: 'Research' },
-    { href: '/en/reports', label: 'Reports' },
-    { href: '/en/admin', label: 'Admin' },
-    { href: '/en/scenarios', label: 'Scenarios' },
-    { href: '/en/lufthansa-saf-2026', label: 'Analysis' },
-    { href: '/en/faq', label: 'FAQ' }
-  ]
-} as const satisfies Record<ShellLocale, readonly { href: string; label: string }[]>;
+type ShellLocale = NavLocale;
 
 export function Shell({
   title,
@@ -60,14 +20,14 @@ export function Shell({
   children: ReactNode;
   locale?: ShellLocale;
 }) {
-  const nav = navByLocale[locale];
-  const homeHref = locale === 'de' ? '/de' : locale === 'en' ? '/en' : '/';
+  const nav = navigationFor(locale);
+  const homeHref = homeHrefFor(locale);
   const navigationLabel = locale === 'de' ? 'Hauptnavigation' : locale === 'en' ? 'Main navigation' : '主导航';
   const menuLabel = locale === 'de' ? 'Menü' : locale === 'en' ? 'Menu' : '菜单';
   const closeLabel = locale === 'de' ? 'Schließen' : locale === 'en' ? 'Close' : '关闭';
 
   return (
-    <div className="jetscope-workbench js-app-shell min-h-screen text-slate-950">
+    <div className="jetscope-workbench js-app-shell min-h-screen text-ink">
       <header className="js-shell-header">
         <div className="js-shell-header-inner">
           <div className="js-brand-group">
