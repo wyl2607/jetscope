@@ -15,15 +15,15 @@ export function FocusScroll({ focusMetricKey }: { focusMetricKey?: string }) {
     }
 
     element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-    element.classList.add('ring-2', 'ring-sky-300');
+    element.classList.add('ring-2', 'ring-accent');
 
     const timer = window.setTimeout(() => {
-      element.classList.remove('ring-2', 'ring-sky-300');
+      element.classList.remove('ring-2', 'ring-accent');
     }, 1800);
 
     return () => {
       window.clearTimeout(timer);
-      element.classList.remove('ring-2', 'ring-sky-300');
+      element.classList.remove('ring-2', 'ring-accent');
     };
   }, [focusMetricKey]);
 

@@ -41,7 +41,7 @@ export function MetricCard({
     <>
       <p className="js-metric-label">{label}</p>
       {canLinkValue ? (
-        <a href={valueHref} className={`${valueClass} underline decoration-sky-500/40 hover:decoration-sky-400`}>
+        <a href={valueHref} className={`${valueClass} underline decoration-accent/40 hover:decoration-accent`}>
           {value}
         </a>
       ) : (

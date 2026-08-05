@@ -43,8 +43,8 @@ export function PolicyTimelineWithMarketTime({ locale = 'zh' }: { locale?: 'zh' 
 
   if (error) {
     return (
-      <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
-        <p className="text-sm text-amber-200">
+      <div className="rounded-lg border border-line bg-warning-soft p-4">
+        <p className="text-sm text-warning">
           {locale === 'de'
             ? 'Live-Markt-Snapshot ist nicht verfuegbar; die Zeitlinie nutzt voruebergehend lokale Zeit.'
             : '实时市场快照暂不可用，时间线暂用本地时间。'}

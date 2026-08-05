@@ -249,12 +249,12 @@ export function LanguageSwitcher() {
   const labels = localeLabels[currentLocale];
 
   return (
-    <div className="inline-flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+    <div className="inline-flex shrink-0 items-center gap-2 rounded-full border border-line bg-surface-muted px-3 py-1 text-xs font-medium text-muted">
       <label htmlFor="jetscope-language-switcher">{controlLabel}</label>
       <select
         id="jetscope-language-switcher"
         aria-label={controlLabel}
-        className="bg-transparent text-xs font-semibold text-slate-950 outline-none"
+        className="bg-transparent text-xs font-semibold text-ink outline-none"
         value={currentLocale}
         onChange={(event) => {
           const nextLocale = event.target.value;
