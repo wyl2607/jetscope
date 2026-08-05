@@ -81,10 +81,10 @@ function trustLabel(state: string): string {
 }
 
 function trustClass(state: string): string {
-  if (state === 'live') return 'border-emerald-200 bg-emerald-50 text-emerald-800';
-  if (state === 'proxy') return 'border-sky-200 bg-sky-50 text-sky-800';
-  if (state === 'fallback') return 'border-amber-200 bg-amber-50 text-amber-800';
-  return 'border-rose-200 bg-rose-50 text-rose-700';
+  if (state === 'live') return 'border-success bg-success-soft text-success';
+  if (state === 'proxy') return 'border-accent bg-accent-soft text-accent';
+  if (state === 'fallback') return 'border-warning bg-warning-soft text-warning';
+  return 'border-danger bg-danger-soft text-danger';
 }
 
 function statusLabel(status: string): string {
@@ -110,15 +110,15 @@ function alertLabel(level: SourceRow['alertLevel']): string {
 }
 
 function alertColor(level: SourceRow['alertLevel']): string {
-  if (level === 'alert') return 'text-rose-700';
-  if (level === 'watch') return 'text-amber-700';
-  return 'text-emerald-700';
+  if (level === 'alert') return 'text-danger';
+  if (level === 'watch') return 'text-warning';
+  return 'text-success';
 }
 
 function actionToneClass(priority: SourceRow['reviewAction']['priority']): string {
-  if (priority === 'critical') return 'border-rose-200 bg-rose-50 text-rose-700';
-  if (priority === 'review') return 'border-amber-200 bg-amber-50 text-amber-700';
-  return 'border-slate-200 bg-slate-50 text-slate-700';
+  if (priority === 'critical') return 'border-danger bg-danger-soft text-danger';
+  if (priority === 'review') return 'border-warning bg-warning-soft text-warning';
+  return 'border-line bg-surface-muted text-muted';
 }
 
 function reviewAction(row: SourceRow): { label: string; detail: string; href: Route } {
@@ -218,16 +218,16 @@ export default async function EnglishSourcesPage({
     >
       <section className="grid gap-4 md:grid-cols-4">
         <InfoCard title="Live" subtitle="Primary or official">
-          <p className="text-3xl font-semibold text-emerald-700">{readModel.summary.liveCount}</p>
+          <p className="text-3xl font-semibold text-success">{readModel.summary.liveCount}</p>
         </InfoCard>
         <InfoCard title="Proxy" subtitle="Derived assumptions">
-          <p className="text-3xl font-semibold text-sky-700">{readModel.summary.proxyCount}</p>
+          <p className="text-3xl font-semibold text-accent">{readModel.summary.proxyCount}</p>
         </InfoCard>
         <InfoCard title="Fallback" subtitle="Needs recovery">
-          <p className="text-3xl font-semibold text-amber-700">{readModel.summary.fallbackCount}</p>
+          <p className="text-3xl font-semibold text-warning">{readModel.summary.fallbackCount}</p>
         </InfoCard>
         <InfoCard title="Confidence" subtitle="Average source confidence">
-          <p className="text-3xl font-semibold text-slate-950">{Math.round(readModel.summary.averageConfidence * 100)}%</p>
+          <p className="text-3xl font-semibold text-ink">{Math.round(readModel.summary.averageConfidence * 100)}%</p>
         </InfoCard>
       </section>
 
@@ -237,34 +237,34 @@ export default async function EnglishSourcesPage({
           subtitle={actionRows.length ? 'Turn degraded rows into an operator checklist' : 'No critical source recovery is required'}
         >
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold text-slate-700">
+            <span className="rounded-md border border-line bg-surface-muted px-3 py-1.5 font-semibold text-muted">
               Needs review {reviewRows.length}
             </span>
-            <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold text-slate-700">
+            <span className="rounded-md border border-line bg-surface-muted px-3 py-1.5 font-semibold text-muted">
               Priority rows {actionRows.length}
             </span>
             <Link
               href={'/admin' as Route}
-              className="rounded-md border border-sky-200 bg-sky-50 px-3 py-1.5 font-semibold text-sky-800 hover:bg-sky-100"
+              className="rounded-md border border-accent bg-accent-soft px-3 py-1.5 font-semibold text-accent hover:bg-accent-hover"
             >
               Open Admin refresh
             </Link>
             <Link
               href={'/en/sources?filter=review' as Route}
-              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 font-semibold text-slate-700 hover:border-sky-300 hover:bg-sky-50"
+              className="rounded-md border border-line bg-surface px-3 py-1.5 font-semibold text-muted hover:border-accent hover:bg-accent-soft"
             >
               Show review rows
             </Link>
           </div>
           {actionRows.length ? (
-            <ol className="mt-4 divide-y divide-slate-200 border-y border-slate-200">
+            <ol className="mt-4 divide-y divide-line border-y border-line">
               {actionRows.map((row) => {
                 const action = reviewAction(row);
                 return (
                   <li key={row.metricKey} className="grid gap-3 py-3 text-sm md:grid-cols-[minmax(10rem,14rem)_1fr_auto] md:items-start">
                     <div>
-                      <p className="font-semibold text-slate-950">{surfaceLabel(row.metricKey)}</p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="font-semibold text-ink">{surfaceLabel(row.metricKey)}</p>
+                      <p className="mt-1 text-xs text-subtle">
                         {sourceLabel(row.source)} · {statusLabel(row.status)}
                       </p>
                     </div>
@@ -272,11 +272,11 @@ export default async function EnglishSourcesPage({
                       <span className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-semibold ${actionToneClass(row.reviewAction.priority)}`}>
                         {action.label}
                       </span>
-                      <p className="mt-2 leading-6 text-slate-700">{action.detail}</p>
+                      <p className="mt-2 leading-6 text-muted">{action.detail}</p>
                     </div>
                     <Link
                       href={action.href}
-                      className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-center text-xs font-semibold text-sky-800 hover:border-sky-300 hover:bg-sky-50"
+                      className="rounded-md border border-line bg-surface px-3 py-1.5 text-center text-xs font-semibold text-accent hover:border-accent hover:bg-accent-soft"
                     >
                       Open action
                     </Link>
@@ -285,7 +285,7 @@ export default async function EnglishSourcesPage({
               })}
             </ol>
           ) : (
-            <p className="mt-4 border-y border-slate-200 py-3 text-sm leading-6 text-slate-700">
+            <p className="mt-4 border-y border-line py-3 text-sm leading-6 text-muted">
               No fallback or degraded row is currently critical. Proxy rows still deserve manual review before major pricing, purchasing, or disclosure decisions.
             </p>
           )}
@@ -294,7 +294,7 @@ export default async function EnglishSourcesPage({
 
       <section className="mt-6">
         <InfoCard title="Market input matrix" subtitle={`Overall status: ${readModel.overallStatus}`}>
-          <p className="mb-3 text-xs text-slate-600">
+          <p className="mb-3 text-xs text-muted">
             Generated at {new Date(readModel.generatedAt).toLocaleString('en-US')}
             {readModel.isFallback ? ' | showing fallback estimates because live coverage is unavailable' : ''}
           </p>
@@ -308,31 +308,31 @@ export default async function EnglishSourcesPage({
                   href={sourceFilterHref(filter.key, focusMetricKey)}
                   className={`rounded-md border px-3 py-2 text-xs font-semibold transition ${
                     isActive
-                      ? 'border-sky-500 bg-sky-50 text-sky-800'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50'
+                      ? 'border-accent bg-accent-soft text-accent'
+                      : 'border-line bg-surface text-muted hover:border-line-strong hover:bg-surface-muted'
                   }`}
                   title={filter.hint}
                 >
-                  {filter.label} <span className="ml-1 text-slate-500">{count}</span>
+                  {filter.label} <span className="ml-1 text-subtle">{count}</span>
                 </Link>
               );
             })}
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-subtle">
               Showing {visibleRows.length} / {readModel.rows.length}
             </span>
           </div>
           {focusMetricKey ? (
-            <p className="mb-3 text-xs text-sky-700">
+            <p className="mb-3 text-xs text-accent">
               Focused from another surface: <code>{focusMetricKey}</code>{' '}
-              <Link href={clearFocusHref(activeFilter)} className="underline text-sky-800">
+              <Link href={clearFocusHref(activeFilter)} className="underline text-accent">
                 Clear
               </Link>
             </p>
           ) : null}
           <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm text-slate-700">
+            <table className="min-w-full text-left text-sm text-muted">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-600">
+                <tr className="border-b border-line text-muted">
                   <th className="py-3 pr-4">Metric</th>
                   <th className="py-3 pr-4">Source</th>
                   <th className="py-3 pr-4">Trust</th>
@@ -358,23 +358,23 @@ export default async function EnglishSourcesPage({
                     <tr
                       key={row.surface}
                       id={`metric-${row.metricKey}`}
-                      className={`border-b border-slate-200 ${
+                      className={`border-b border-line ${
                         focusMetricKey === row.metricKey
-                          ? 'ring-1 ring-sky-400/60 bg-sky-50'
+                          ? 'ring-1 ring-accent/60 bg-accent-soft'
                           : row.alertLevel === 'alert'
-                            ? 'bg-rose-50'
+                            ? 'bg-danger-soft'
                             : row.alertLevel === 'watch'
-                              ? 'bg-amber-50'
+                              ? 'bg-warning-soft'
                               : ''
                       }`}
                     >
-                      <td className="py-3 pr-4 font-medium text-slate-950">{surfaceLabel(row.metricKey)}</td>
+                      <td className="py-3 pr-4 font-medium text-ink">{surfaceLabel(row.metricKey)}</td>
                       <td className="py-3 pr-4">{sourceLabel(row.source)}</td>
                       <td className="py-3 pr-4">
                         <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] ${trustClass(row.trustState)}`}>
                           {trustLabel(row.trustState)}
                         </span>
-                        <span className="mt-1 block text-xs text-slate-500">{sourceTypeLabel(row)}</span>
+                        <span className="mt-1 block text-xs text-subtle">{sourceTypeLabel(row)}</span>
                       </td>
                       <td className="py-3 pr-4">{row.scope}</td>
                       <td className="py-3 pr-4">{row.confidence}</td>
@@ -396,36 +396,36 @@ export default async function EnglishSourcesPage({
                             height={28}
                           />
                         ) : (
-                          <span className="text-slate-500">n/a</span>
+                          <span className="text-subtle">n/a</span>
                         )}
                       </td>
                       <td className="py-3 pr-4">
                         <div className="flex min-w-24 flex-col gap-2">
                           <Link
                             href={sourceFocusHref(row.metricKey, activeFilter)}
-                            className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-center text-xs font-semibold text-sky-800 hover:border-sky-300 hover:bg-sky-50"
+                            className="rounded-md border border-line bg-surface px-2.5 py-1 text-center text-xs font-semibold text-accent hover:border-accent hover:bg-accent-soft"
                           >
                             Focus
                           </Link>
                           <Link
                             href={action.href}
-                            className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-center text-xs font-semibold text-slate-700 hover:border-sky-300 hover:bg-sky-50"
+                            className="rounded-md border border-line bg-surface px-2.5 py-1 text-center text-xs font-semibold text-muted hover:border-accent hover:bg-accent-soft"
                           >
                             {row.reviewAction.priority === 'normal' ? 'Record' : 'Handle'}
                           </Link>
                         </div>
                       </td>
                       <td className="py-3">
-                        <span className="block text-slate-700">{reasonFor(row)}</span>
-                        <span className="mt-2 block text-xs font-semibold text-slate-600">{action.label}</span>
-                        <span className="mt-1 block text-xs leading-5 text-slate-500">{action.detail}</span>
+                        <span className="block text-muted">{reasonFor(row)}</span>
+                        <span className="mt-2 block text-xs font-semibold text-muted">{action.label}</span>
+                        <span className="mt-1 block text-xs leading-5 text-subtle">{action.detail}</span>
                       </td>
                     </tr>
                   );
                 })}
                 {visibleRows.length === 0 ? (
                   <tr>
-                    <td colSpan={15} className="py-6 text-center text-sm text-slate-500">
+                    <td colSpan={15} className="py-6 text-center text-sm text-subtle">
                       No source rows match this filter.
                     </td>
                   </tr>
