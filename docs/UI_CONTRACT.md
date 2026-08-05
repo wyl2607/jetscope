@@ -50,6 +50,7 @@ Do not introduce a second naming scheme.
 | `--js-muted` | `text-muted` | secondary copy, labels |
 | `--js-subtle` | `text-subtle` | captions, timestamps |
 | `--js-accent` / `--js-accent-soft` | `text-accent` / `bg-accent-soft` | brand, links, focus |
+| `--js-accent-hover` | `bg-accent-hover` | hover / active tint for a surface already on `accent-soft` |
 | `--js-success` / `--js-success-soft` | `text-success` / `bg-success-soft` | within target, improving |
 | `--js-warning` / `--js-warning-soft` | `text-warning` / `bg-warning-soft` | watch, **assumption-based** |
 | `--js-danger` / `--js-danger-soft` | `text-danger` / `bg-danger-soft` | threshold breached |
@@ -73,6 +74,13 @@ Rules:
 5. Semantic colors carry meaning. `danger` on screen means a threshold was
    breached — never "red looked better here".
 6. One theme. No dark mode until this contract adds one.
+7. **An interactive element must not look the same in two different states.**
+   A hover style equal to the resting style is a dead affordance, and a selected
+   style equal to a hovered style makes selection unreadable. When a surface
+   already sits on `accent-soft`, its hover is `accent-hover`; when it sits on
+   `surface`, its hover is `accent-soft`. Selection is carried by
+   `border-accent` plus a tint, hover on an unselected item by
+   `border-line-strong` plus `surface-muted`, so the two never collide.
 
 Scale — no other values:
 
