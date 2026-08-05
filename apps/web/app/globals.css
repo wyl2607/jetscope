@@ -18,6 +18,7 @@
   --color-subtle: #667385;
   --color-accent: #0f6b8f;
   --color-accent-soft: #e8f3f7;
+  --color-accent-hover: #d3e7ef;
   --color-success: #087f5b;
   --color-success-soft: #e8f6f0;
   --color-warning: #a15c08;
@@ -41,6 +42,7 @@
   --js-line-strong: var(--color-line-strong);
   --js-accent: var(--color-accent);
   --js-accent-soft: var(--color-accent-soft);
+  --js-accent-hover: var(--color-accent-hover);
   --js-success: var(--color-success);
   --js-success-soft: var(--color-success-soft);
   --js-warning: var(--color-warning);
