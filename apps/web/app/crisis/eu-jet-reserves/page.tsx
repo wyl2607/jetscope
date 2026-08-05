@@ -350,7 +350,7 @@ export default async function EuJetReserveCrisisPage() {
         <div className="mt-4 flex flex-wrap gap-3">
           <Link
             href={"/de/lufthansa-saf-2026" as Route}
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-ink hover:bg-accent-hover"
+            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-surface hover:bg-ink"
           >
             德语分析 →
           </Link>

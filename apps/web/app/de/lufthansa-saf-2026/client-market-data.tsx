@@ -58,13 +58,13 @@ export default function ClientMarketData() {
 
   if (loading) {
     return (
-      <section className="rounded-lg border border-slate-700 bg-slate-900 p-6">
+      <section className="rounded-lg border border-line bg-surface p-6">
         <div className="animate-pulse space-y-3">
-          <div className="h-4 bg-slate-700 rounded w-1/3" />
+          <div className="h-4 bg-surface rounded w-1/3" />
           <div className="grid grid-cols-3 gap-4">
-            <div className="h-16 bg-slate-800 rounded" />
-            <div className="h-16 bg-slate-800 rounded" />
-            <div className="h-16 bg-slate-800 rounded" />
+            <div className="h-16 bg-surface rounded" />
+            <div className="h-16 bg-surface rounded" />
+            <div className="h-16 bg-surface rounded" />
           </div>
         </div>
       </section>
@@ -73,8 +73,8 @@ export default function ClientMarketData() {
 
   if (error || !data) {
     return (
-      <section className="rounded-lg border border-red-800/50 bg-red-950/20 p-6">
-        <p className="text-red-300 text-sm">Marktdaten nicht verfügbar: {error || 'unbekannte Ursache'}</p>
+      <section className="rounded-lg border border-danger bg-danger-soft p-6">
+        <p className="text-danger text-sm">Marktdaten nicht verfügbar: {error || 'unbekannte Ursache'}</p>
       </section>
     );
   }
@@ -88,13 +88,13 @@ export default function ClientMarketData() {
   const sourceStatus = data.source_status?.overall ?? 'unknown';
 
   return (
-    <section className="rounded-lg border border-sky-800/50 bg-slate-950 p-6 space-y-4">
+    <section className="rounded-lg border border-accent bg-surface p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-sky-300">Echtzeit-Marktdaten</h2>
+        <h2 className="text-xl font-bold text-accent">Echtzeit-Marktdaten</h2>
         <span className={`text-xs px-2 py-1 rounded ${
-          sourceStatus === 'ok' ? 'bg-green-900/50 text-green-300' :
-          sourceStatus === 'degraded' ? 'bg-yellow-900/50 text-yellow-300' :
-          'bg-red-900/50 text-red-300'
+          sourceStatus === 'ok' ? 'bg-success-soft text-success' :
+          sourceStatus === 'degraded' ? 'bg-warning-soft text-warning' :
+          'bg-danger-soft text-danger'
         }`}>
           {sourceStatusLabel(sourceStatus)}
         </span>
@@ -134,7 +134,7 @@ export default function ClientMarketData() {
         />
       </div>
 
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted">
         Stand: {new Date(data.generated_at).toLocaleString('de-DE')}
       </p>
     </section>
@@ -148,18 +148,18 @@ function MetricCard({ label, value, unit, detail, highlight }: {
   detail?: SourceCoverageMetric;
   highlight?: boolean;
 }) {
-  const statusColor = detail?.fallback_used || detail?.status === 'seed' ? 'border-yellow-800/50' :
-    detail?.status === 'ok' ? 'border-green-800/50' :
-    detail ? 'border-red-800/50' :
-    'border-slate-800';
+  const statusColor = detail?.fallback_used || detail?.status === 'seed' ? 'border-warning' :
+    detail?.status === 'ok' ? 'border-success' :
+    detail ? 'border-danger' :
+    'border-line';
 
   return (
-    <div className={`p-3 rounded border ${statusColor} ${highlight ? 'bg-sky-950/30' : 'bg-slate-900/50'}`}>
-      <p className="text-xs text-slate-400 uppercase tracking-wide">{label}</p>
-      <p className="text-lg font-bold text-white mt-1">{value}</p>
-      <p className="text-xs text-slate-500">{unit}</p>
+    <div className={`p-3 rounded border ${statusColor} ${highlight ? 'bg-accent-soft' : 'bg-surface-muted'}`}>
+      <p className="text-xs text-muted uppercase tracking-wide">{label}</p>
+      <p className="text-lg font-bold text-ink mt-1">{value}</p>
+      <p className="text-xs text-muted">{unit}</p>
       {detail?.confidence_score !== undefined && (
-        <p className="text-xs text-slate-600 mt-1">
+        <p className="text-xs text-muted mt-1">
           Vertrauen: {(detail.confidence_score * 100).toFixed(0)}%
         </p>
       )}
