@@ -333,37 +333,37 @@ export function AdminDataOps() {
     <section className="mt-8 grid gap-5 lg:grid-cols-[1fr_1fr]">
       <InfoCard title="路径管理" subtitle="数据库支撑的 /v1/pathways">
         <div className="space-y-3">
-          <div className="grid gap-3 rounded-xl border border-slate-200 p-3 md:grid-cols-2">
-            <label className="text-xs text-slate-600">
+          <div className="grid gap-3 rounded-xl border border-line p-3 md:grid-cols-2">
+            <label className="text-xs text-muted">
               pathway_id
               <input
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
                 value={draftPathwayId}
                 onChange={(event) => setDraftPathwayId(event.target.value)}
               />
             </label>
-            <label className="text-xs text-slate-600">
+            <label className="text-xs text-muted">
               name
               <input
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
                 value={draftPathwayName}
                 onChange={(event) => setDraftPathwayName(event.target.value)}
               />
             </label>
-            <label className="text-xs text-slate-600">
+            <label className="text-xs text-muted">
               base_cost_usd_per_l
               <input
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
                 type="number"
                 step="0.01"
                 value={draftPathwayCost}
                 onChange={(event) => setDraftPathwayCost(event.target.value)}
               />
             </label>
-            <label className="text-xs text-slate-600">
+            <label className="text-xs text-muted">
               co2_savings_kg_per_l
               <input
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
                 type="number"
                 step="0.01"
                 value={draftPathwaySavings}
@@ -372,7 +372,7 @@ export function AdminDataOps() {
             </label>
             <button
               type="button"
-              className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800 md:col-span-2"
+              className="rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent md:col-span-2"
               onClick={appendDraftPathway}
               disabled={loading || saving}
             >
@@ -380,17 +380,17 @@ export function AdminDataOps() {
             </button>
           </div>
           <textarea
-            className="h-72 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-mono text-xs text-slate-950"
+            className="h-72 w-full rounded-xl border border-line bg-surface px-3 py-2 font-mono text-xs text-ink"
             value={pathwaysJson}
             onChange={(event) => setPathwaysJson(event.target.value)}
           />
-          <p className="text-[11px] leading-5 text-slate-500">
+          <p className="text-[11px] leading-5 text-muted">
             必须为数组，且每条记录包含 pathway_id/name/pathway/category 与有限数值字段。
           </p>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700"
+              className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-muted"
               onClick={formatAndValidatePathways}
               disabled={loading || saving}
             >
@@ -398,7 +398,7 @@ export function AdminDataOps() {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-line bg-success-soft px-3 py-1.5 text-xs font-semibold text-success transition hover:border-success disabled:cursor-not-allowed disabled:opacity-60"
               onClick={savePathways}
               disabled={loading || saving || writeLocked}
             >
@@ -410,10 +410,10 @@ export function AdminDataOps() {
 
       <InfoCard title="政策管理" subtitle="数据库支撑的 /v1/policies/refuel-eu">
         <div className="space-y-3">
-          <label className="block text-xs uppercase tracking-[0.14em] text-slate-600">
+          <label className="block text-xs uppercase tracking-[0.14em] text-muted">
             管理令牌（写操作必需）
             <input
-              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+              className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
               type="password"
               autoComplete="off"
               spellCheck={false}
@@ -422,43 +422,43 @@ export function AdminDataOps() {
               placeholder="x-admin-token"
             />
           </label>
-          <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs leading-5 text-slate-600">
+          <p className="rounded-lg border border-line bg-surface px-3 py-2 text-xs leading-5 text-muted">
             {writeLocked
               ? '未输入管理令牌：可以加载、编辑草案和校验 JSON；保存与市场刷新会保持锁定。'
               : '管理令牌已填写：保存或刷新时会发送 x-admin-token 到本地 API。'}
           </p>
-          <div className="grid gap-3 rounded-xl border border-slate-200 p-3 md:grid-cols-2">
-            <label className="text-xs text-slate-600">
+          <div className="grid gap-3 rounded-xl border border-line p-3 md:grid-cols-2">
+            <label className="text-xs text-muted">
               year
               <input
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
                 type="number"
                 value={draftPolicyYear}
                 onChange={(event) => setDraftPolicyYear(event.target.value)}
               />
             </label>
-            <label className="text-xs text-slate-600">
+            <label className="text-xs text-muted">
               label
               <input
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
                 value={draftPolicyLabel}
                 onChange={(event) => setDraftPolicyLabel(event.target.value)}
               />
             </label>
-            <label className="text-xs text-slate-600">
+            <label className="text-xs text-muted">
               saf_share_pct
               <input
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
                 type="number"
                 step="0.1"
                 value={draftPolicySaf}
                 onChange={(event) => setDraftPolicySaf(event.target.value)}
               />
             </label>
-            <label className="text-xs text-slate-600">
+            <label className="text-xs text-muted">
               synthetic_share_pct
               <input
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
                 type="number"
                 step="0.1"
                 value={draftPolicySynthetic}
@@ -467,7 +467,7 @@ export function AdminDataOps() {
             </label>
             <button
               type="button"
-              className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800 md:col-span-2"
+              className="rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent md:col-span-2"
               onClick={appendDraftPolicy}
               disabled={loading || saving}
             >
@@ -475,17 +475,17 @@ export function AdminDataOps() {
             </button>
           </div>
           <textarea
-            className="h-72 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-mono text-xs text-slate-950"
+            className="h-72 w-full rounded-xl border border-line bg-surface px-3 py-2 font-mono text-xs text-ink"
             value={policiesJson}
             onChange={(event) => setPoliciesJson(event.target.value)}
           />
-          <p className="text-[11px] leading-5 text-slate-500">
+          <p className="text-[11px] leading-5 text-muted">
             必须为数组；`year` 为整数，share 字段为有限数值，`label` 为非空字符串。
           </p>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700"
+              className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-muted"
               onClick={formatAndValidatePolicies}
               disabled={loading || saving}
             >
@@ -493,7 +493,7 @@ export function AdminDataOps() {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-line bg-warning-soft px-3 py-1.5 text-xs font-semibold text-warning transition hover:border-warning disabled:cursor-not-allowed disabled:opacity-60"
               onClick={savePolicies}
               disabled={loading || saving || writeLocked}
             >
@@ -501,7 +501,7 @@ export function AdminDataOps() {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
               onClick={triggerMarketRefresh}
               disabled={loading || saving || writeLocked}
             >
@@ -509,7 +509,7 @@ export function AdminDataOps() {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-800 transition hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-line bg-success-soft px-3 py-1.5 text-xs font-semibold text-success transition hover:border-success disabled:cursor-not-allowed disabled:opacity-60"
               onClick={triggerResearchRefresh}
               disabled={loading || saving || writeLocked}
             >
@@ -517,41 +517,41 @@ export function AdminDataOps() {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700"
+              className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-muted"
               onClick={loadAll}
               disabled={loading || saving}
             >
               重新加载
             </button>
           </div>
-          <p className="text-xs text-slate-600">{status}</p>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-6 text-slate-700">
-            <p className="font-semibold text-slate-950">刷新写入证据</p>
+          <p className="text-xs text-muted">{status}</p>
+          <div className="rounded-xl border border-line bg-surface-muted p-4 text-xs leading-6 text-muted">
+            <p className="font-semibold text-ink">刷新写入证据</p>
             {refreshEvidence ? (
               <div className="mt-2 grid gap-2 md:grid-cols-2">
                 <p>
                   本地数据库：
-                  <span className="font-mono text-slate-950">
+                  <span className="font-mono text-ink">
                     market_snapshots +{refreshEvidence.persistedMetricCount}
                   </span>
                 </p>
                 <p>
                   后端刷新状态：
-                  <span className="font-mono text-slate-950">{refreshEvidence.sourceStatus}</span>
+                  <span className="font-mono text-ink">{refreshEvidence.sourceStatus}</span>
                 </p>
                 <p>
                   写入时间：
-                  <span className="font-mono text-slate-950">{refreshEvidence.refreshedAt}</span>
+                  <span className="font-mono text-ink">{refreshEvidence.refreshedAt}</span>
                 </p>
                 <p>
                   前端读回：
-                  <span className="font-mono text-slate-950">
+                  <span className="font-mono text-ink">
                     /api/market generated_at={refreshEvidence.snapshotGeneratedAt}
                   </span>
                 </p>
                 <p className="md:col-span-2">
                   读回状态：
-                  <span className="font-mono text-slate-950">{refreshEvidence.snapshotOverall}</span>
+                  <span className="font-mono text-ink">{refreshEvidence.snapshotOverall}</span>
                 </p>
               </div>
             ) : (
@@ -561,29 +561,29 @@ export function AdminDataOps() {
               </p>
             )}
           </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-6 text-slate-700">
-            <p className="font-semibold text-slate-950">研究刷新证据</p>
+          <div className="rounded-xl border border-line bg-surface-muted p-4 text-xs leading-6 text-muted">
+            <p className="font-semibold text-ink">研究刷新证据</p>
             {researchRefreshEvidence ? (
               <div className="mt-2 grid gap-2 md:grid-cols-2">
                 <p>
                   抓取文章：
-                  <span className="font-mono text-slate-950">{researchRefreshEvidence.fetched}</span>
+                  <span className="font-mono text-ink">{researchRefreshEvidence.fetched}</span>
                 </p>
                 <p>
                   抽取信号：
-                  <span className="font-mono text-slate-950">{researchRefreshEvidence.extracted}</span>
+                  <span className="font-mono text-ink">{researchRefreshEvidence.extracted}</span>
                 </p>
                 <p>
                   写入信号：
-                  <span className="font-mono text-slate-950">{researchRefreshEvidence.persisted}</span>
+                  <span className="font-mono text-ink">{researchRefreshEvidence.persisted}</span>
                 </p>
                 <p>
                   预算跳过：
-                  <span className="font-mono text-slate-950">{researchRefreshEvidence.skippedBudget}</span>
+                  <span className="font-mono text-ink">{researchRefreshEvidence.skippedBudget}</span>
                 </p>
                 <p className="md:col-span-2">
                   后端消息：
-                  <span className="font-mono text-slate-950">{researchRefreshEvidence.message}</span>
+                  <span className="font-mono text-ink">{researchRefreshEvidence.message}</span>
                 </p>
               </div>
             ) : (
@@ -593,7 +593,7 @@ export function AdminDataOps() {
             )}
           </div>
           {error ? (
-            <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+            <p className="rounded-lg border border-danger bg-danger-soft px-3 py-2 text-xs text-danger">
               {error}
             </p>
           ) : null}
