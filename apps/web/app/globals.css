@@ -1,23 +1,52 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+ * Design tokens - the single source of truth for color.
+ * Contract: docs/UI_CONTRACT.md section 1. Values are defined here and nowhere
+ * else. Declaring them in @theme is what makes `bg-surface`, `text-muted`,
+ * `border-line`, `text-danger` etc. exist as utilities, so component code never
+ * needs a raw palette class such as `bg-slate-900`.
+ * ------------------------------------------------------------------------- */
+@theme {
+  --color-canvas: #f3f6fa;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f7f9fc;
+  --color-line: #dce4ee;
+  --color-line-strong: #c9d5e3;
+  --color-ink: #102033;
+  --color-muted: #5d6b7d;
+  --color-subtle: #8390a1;
+  --color-accent: #0f6b8f;
+  --color-accent-soft: #e8f3f7;
+  --color-success: #087f5b;
+  --color-success-soft: #e8f6f0;
+  --color-warning: #a15c08;
+  --color-warning-soft: #fff4df;
+  --color-danger: #b4233e;
+  --color-danger-soft: #fff0f2;
+}
+
 :root {
   color-scheme: light;
-  --js-canvas: #f3f6fa;
-  --js-surface: #ffffff;
-  --js-surface-muted: #f7f9fc;
-  --js-ink: #102033;
-  --js-muted: #5d6b7d;
-  --js-subtle: #8390a1;
-  --js-line: #dce4ee;
-  --js-line-strong: #c9d5e3;
-  --js-accent: #0f6b8f;
-  --js-accent-soft: #e8f3f7;
-  --js-success: #087f5b;
-  --js-success-soft: #e8f6f0;
-  --js-warning: #a15c08;
-  --js-warning-soft: #fff4df;
-  --js-danger: #b4233e;
-  --js-danger-soft: #fff0f2;
+
+  /* Alias layer consumed by the .js-* component classes below. These MUST stay
+   * references to the @theme tokens above - never re-declare a literal here. */
+  --js-canvas: var(--color-canvas);
+  --js-surface: var(--color-surface);
+  --js-surface-muted: var(--color-surface-muted);
+  --js-ink: var(--color-ink);
+  --js-muted: var(--color-muted);
+  --js-subtle: var(--color-subtle);
+  --js-line: var(--color-line);
+  --js-line-strong: var(--color-line-strong);
+  --js-accent: var(--color-accent);
+  --js-accent-soft: var(--color-accent-soft);
+  --js-success: var(--color-success);
+  --js-success-soft: var(--color-success-soft);
+  --js-warning: var(--color-warning);
+  --js-warning-soft: var(--color-warning-soft);
+  --js-danger: var(--color-danger);
+  --js-danger-soft: var(--color-danger-soft);
 }
 
 * {
@@ -323,6 +352,18 @@ a:hover {
   }
 }
 
+/* ---------------------------------------------------------------------------
+ * DEPRECATED COMPATIBILITY LAYER - DO NOT EXTEND.
+ *
+ * Everything below repaints dark-era Tailwind palette classes into light values
+ * with !important. It exists only because 50 files still ship those classes.
+ * While it exists, the class a developer writes is not the color that renders.
+ *
+ * Removal condition: scripts/design-system-baseline.json is empty. At that point
+ * delete this whole block in one commit. Adding a selector here is a contract
+ * violation (docs/UI_CONTRACT.md section 1) - migrate the component to tokens
+ * instead.
+ * ------------------------------------------------------------------------- */
 .jetscope-workbench .bg-slate-950,
 .jetscope-workbench .bg-slate-950\/80,
 .jetscope-workbench .bg-slate-950\/60,
