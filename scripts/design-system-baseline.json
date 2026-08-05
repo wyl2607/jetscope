@@ -3,9 +3,6 @@
   "files": {
     "apps/web/app/admin/page.tsx": 54,
     "apps/web/app/analysis/lufthansa-flight-cuts-2026-04/page.tsx": 121,
-    "apps/web/app/crisis/eu-jet-reserves/page.tsx": 105,
-    "apps/web/app/crisis/page.tsx": 75,
-    "apps/web/app/crisis/saf-tipping-point/page.tsx": 58,
     "apps/web/app/dashboard/page.tsx": 14,
     "apps/web/app/de/admin/page.tsx": 48,
     "apps/web/app/de/crisis/page.tsx": 13,

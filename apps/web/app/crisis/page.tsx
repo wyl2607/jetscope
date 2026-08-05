@@ -63,21 +63,21 @@ function buildCrisisLinks(safWorkbenchHref: Route, reviewSourcesHref: Route): Cr
       title: '打开储备详情',
       description: '先检查覆盖周数、来源类型、置信度和供应缺口，再调整采购判断。',
       href: '/crisis/eu-jet-reserves' as Route,
-      tone: 'border-sky-200 bg-white hover:border-sky-400 hover:bg-sky-50',
+      tone: 'border-line bg-surface hover:border-accent hover:bg-accent-soft',
       eyebrow: '储备'
     },
     {
       title: '打开 SAF 工作台',
       description: '带入当前燃油、碳价和储备读数，直接测试 SAF 路径敏感性。',
       href: safWorkbenchHref,
-      tone: 'border-emerald-200 bg-emerald-50 hover:border-emerald-400 hover:bg-emerald-100',
+      tone: 'border-line bg-success-soft hover:border-success',
       eyebrow: '模拟'
     },
     {
       title: '复核数据来源',
       description: '查看需要复核的市场输入，确认实时、代理、回退和降级状态。',
       href: reviewSourcesHref,
-      tone: 'border-amber-200 bg-amber-50 hover:border-amber-400 hover:bg-amber-100',
+      tone: 'border-line bg-warning-soft hover:border-warning',
       eyebrow: '来源'
     }
   ];
@@ -92,10 +92,10 @@ function stressLabel(level?: string): string {
 }
 
 function stressTone(level?: string): string {
-  if (level === 'critical') return 'border-rose-300 bg-rose-50 text-rose-700';
-  if (level === 'elevated') return 'border-amber-300 bg-amber-50 text-amber-800';
-  if (level === 'normal') return 'border-emerald-300 bg-emerald-50 text-emerald-700';
-  return 'border-sky-200 bg-sky-50 text-sky-800';
+  if (level === 'critical') return 'border-danger bg-danger-soft text-danger';
+  if (level === 'elevated') return 'border-warning bg-warning-soft text-warning';
+  if (level === 'normal') return 'border-success bg-success-soft text-success';
+  return 'border-accent bg-accent-soft text-accent';
 }
 
 function sourceTypeLabel(sourceType?: string): string {
@@ -107,17 +107,17 @@ function sourceTypeLabel(sourceType?: string): string {
 }
 
 function sourceTone(sourceType?: string): string {
-  if (sourceType === 'official') return 'border-emerald-200 bg-emerald-50 text-emerald-800';
-  if (sourceType === 'manual') return 'border-amber-200 bg-amber-50 text-amber-800';
-  if (sourceType === 'derived') return 'border-sky-200 bg-sky-50 text-sky-800';
-  return 'border-rose-200 bg-rose-50 text-rose-700';
+  if (sourceType === 'official') return 'border-success bg-success-soft text-success';
+  if (sourceType === 'manual') return 'border-warning bg-warning-soft text-warning';
+  if (sourceType === 'derived') return 'border-accent bg-accent-soft text-accent';
+  return 'border-danger bg-danger-soft text-danger';
 }
 
 function confidenceTone(value?: number): string {
-  if (value == null) return 'border-rose-200 bg-rose-50 text-rose-700';
-  if (value >= 0.85) return 'border-emerald-200 bg-emerald-50 text-emerald-800';
-  if (value >= 0.7) return 'border-sky-200 bg-sky-50 text-sky-800';
-  return 'border-amber-200 bg-amber-50 text-amber-800';
+  if (value == null) return 'border-danger bg-danger-soft text-danger';
+  if (value >= 0.85) return 'border-success bg-success-soft text-success';
+  if (value >= 0.7) return 'border-accent bg-accent-soft text-accent';
+  return 'border-warning bg-warning-soft text-warning';
 }
 
 function confidenceLabel(value?: number): string {
@@ -135,10 +135,10 @@ function signalLabel(signal?: string): string {
 }
 
 function signalTone(signal?: string): string {
-  if (signal === 'saf_cost_advantaged') return 'border-emerald-200 bg-emerald-50 text-emerald-800';
-  if (signal === 'switch_window_opening') return 'border-amber-200 bg-amber-50 text-amber-800';
-  if (signal === 'fossil_still_advantaged') return 'border-sky-200 bg-sky-50 text-sky-800';
-  return 'border-rose-200 bg-rose-50 text-rose-700';
+  if (signal === 'saf_cost_advantaged') return 'border-success bg-success-soft text-success';
+  if (signal === 'switch_window_opening') return 'border-warning bg-warning-soft text-warning';
+  if (signal === 'fossil_still_advantaged') return 'border-accent bg-accent-soft text-accent';
+  return 'border-danger bg-danger-soft text-danger';
 }
 
 function formatAsOf(value?: string): string {
@@ -191,14 +191,14 @@ export default async function CrisisPage() {
     >
       <div className="space-y-6">
         <section className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-2xl border border-line bg-surface p-6 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">当前读数</p>
-                <h3 className="mt-2 text-2xl font-semibold text-slate-950">
+                <p className="text-xs uppercase tracking-[0.18em] text-subtle">当前读数</p>
+                <h3 className="mt-2 text-2xl font-semibold text-ink">
                   {reserveWeeks ? `EU 航油覆盖约 ${reserveWeeks.toFixed(2)} 周` : '储备覆盖需要重新连接'}
                 </h3>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
                   {reserve
                     ? '储备压力数据已返回。页面按来源类型和置信度标注可信层级，避免把人工估算当作官方实时报价。'
                     : '本次会话未连上储备服务，页面会保留分析流程，并明确标注哪些读数来自情景基线。'}
@@ -210,10 +210,10 @@ export default async function CrisisPage() {
             </div>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
-                <p className="text-xs uppercase tracking-[0.15em] text-sky-700">数据时间</p>
-                <p className="mt-2 text-sm font-semibold text-slate-950">{formatAsOf(reserve?.generated_at)}</p>
-                <p className="mt-1 text-xs text-sky-700">来自后端最新储备信号</p>
+              <div className="rounded-xl border border-accent bg-accent-soft p-4">
+                <p className="text-xs uppercase tracking-[0.15em] text-accent">数据时间</p>
+                <p className="mt-2 text-sm font-semibold text-ink">{formatAsOf(reserve?.generated_at)}</p>
+                <p className="mt-1 text-xs text-accent">来自后端最新储备信号</p>
               </div>
               <div className={`rounded-xl border p-4 ${sourceTone(sourceType)}`}>
                 <p className="text-xs uppercase tracking-[0.15em] opacity-75">来源类型</p>
@@ -234,7 +234,7 @@ export default async function CrisisPage() {
             <p className="mt-3 text-sm leading-6 opacity-85">
               {reserveStatus}。化石航油基线为 ${fallbackFossil.toFixed(2)}/L，SAF 路径敏感性在下方继续展开。
             </p>
-            <p className="mt-4 rounded-xl border border-white/70 bg-white/70 p-3 text-sm">
+            <p className="mt-4 rounded-xl border border-surface/70 bg-surface/70 p-3 text-sm">
               市场数据置信度：{marketConfidenceText}。建议路径：先确认储备可信度，再测试 SAF 经济性。
             </p>
           </div>
@@ -247,9 +247,9 @@ export default async function CrisisPage() {
               href={item.href}
               className={`rounded-2xl border p-5 shadow-sm transition ${item.tone}`}
             >
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-600">{item.eyebrow}</p>
-              <h3 className="mt-2 text-xl font-semibold text-slate-950">{item.title}</h3>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{item.description}</p>
+              <p className="text-xs uppercase tracking-[0.16em] text-muted">{item.eyebrow}</p>
+              <h3 className="mt-2 text-xl font-semibold text-ink">{item.title}</h3>
+              <p className="mt-3 text-sm leading-6 text-muted">{item.description}</p>
             </a>
           ))}
         </section>
