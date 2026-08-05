@@ -40,10 +40,10 @@ const actionLinks: Array<{ label: string; href: Route; description: string }> = 
 ];
 
 function toneForImpact(impact: ResearchSignal['impact_direction']): string {
-  if (impact === 'positive') return 'border-emerald-200 bg-emerald-50 text-emerald-800';
-  if (impact === 'negative') return 'border-rose-200 bg-rose-50 text-rose-800';
-  if (impact === 'neutral') return 'border-slate-200 bg-white text-slate-700';
-  return 'border-amber-200 bg-amber-50 text-amber-800';
+  if (impact === 'positive') return 'border-success bg-success-soft text-success';
+  if (impact === 'negative') return 'border-danger bg-danger-soft text-danger';
+  if (impact === 'neutral') return 'border-line bg-surface text-muted';
+  return 'border-warning bg-warning-soft text-warning';
 }
 
 function impactLabel(impact: ResearchSignal['impact_direction']): string {
@@ -121,16 +121,16 @@ export default async function GermanResearchPage() {
       </section>
 
       {!AI_RESEARCH_ENABLED ? (
-        <section className="mt-8 rounded-2xl border border-dashed border-sky-300 bg-sky-50 p-6">
-          <p className="text-sm font-semibold uppercase text-sky-800">Forschungspipeline aktivieren</p>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-700">
+        <section className="mt-8 rounded-2xl border border-dashed border-accent bg-accent-soft p-6">
+          <p className="text-sm font-semibold uppercase text-accent">Forschungspipeline aktivieren</p>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-muted">
             Nach Deployment des Backend-Forschungsjobs <code>JETSCOPE_AI_RESEARCH_ENABLED=true</code> setzen. Bis dahin bleibt JetScope navigierbar und ehrlich über den deaktivierten Zustand.
           </p>
         </section>
       ) : null}
 
       {result.status === 'error' ? (
-        <section className="mt-8 rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <section className="mt-8 rounded-2xl border border-danger bg-danger-soft p-6 text-sm text-danger">
           Forschungs-API ist aktuell nicht verfügbar. Forschungssignale erst nach Wiederherstellung für Berichtserklärungen nutzen.
         </section>
       ) : null}
@@ -138,19 +138,19 @@ export default async function GermanResearchPage() {
       <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.85fr]">
         <InfoCard title="Entscheidungsnotiz" subtitle="Forschung ist erklärende Evidenz, keine autonome Empfehlung">
           {result.status === 'error' ? (
-            <p className="text-sm leading-7 text-slate-700">
+            <p className="text-sm leading-7 text-muted">
               Die Forschungsebene ist eingeschränkt. Markt- und Reserve-Evidenz sichtbar halten, aber Forschungssignale erst nach Wiederherstellung zur Erklärung von Wahrscheinlichkeitsänderungen nutzen.
             </p>
           ) : result.signals.length === 0 ? (
-            <p className="text-sm leading-7 text-slate-700">
+            <p className="text-sm leading-7 text-muted">
               Kein aktives Forschungssignal verfügbar. Das ist erwartbar, solange die Pipeline deaktiviert ist oder der tägliche Ingestion-Job noch keine neue Evidenz persistiert hat.
             </p>
           ) : (
             <div className="grid gap-3 text-sm md:grid-cols-4">
-              <p className="rounded-md border border-sky-200 bg-sky-50 p-3">Aktiv: {result.signals.length}</p>
-              <p className="rounded-md border border-emerald-200 bg-emerald-50 p-3">Positiv: {positiveCount}</p>
-              <p className="rounded-md border border-rose-200 bg-rose-50 p-3">Negativ: {negativeCount}</p>
-              <p className="rounded-md border border-slate-200 bg-white p-3">Neutral: {neutralCount}</p>
+              <p className="rounded-md border border-accent bg-accent-soft p-3">Aktiv: {result.signals.length}</p>
+              <p className="rounded-md border border-success bg-success-soft p-3">Positiv: {positiveCount}</p>
+              <p className="rounded-md border border-danger bg-danger-soft p-3">Negativ: {negativeCount}</p>
+              <p className="rounded-md border border-line bg-surface p-3">Neutral: {neutralCount}</p>
             </div>
           )}
         </InfoCard>
@@ -161,10 +161,10 @@ export default async function GermanResearchPage() {
               <Link
                 key={action.href}
                 href={action.href}
-                className="block rounded-md border border-slate-200 bg-white p-4 transition hover:border-sky-300 hover:bg-sky-50"
+                className="block rounded-md border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
               >
-                <p className="font-semibold text-slate-950">{action.label}</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">{action.description}</p>
+                <p className="font-semibold text-ink">{action.label}</p>
+                <p className="mt-1 text-sm leading-6 text-muted">{action.description}</p>
               </Link>
             ))}
           </div>
@@ -174,27 +174,27 @@ export default async function GermanResearchPage() {
       <section className="mt-8">
         <InfoCard title="Signalliste" subtitle="Aktuelles Read-Model-Ergebnis">
           {result.status !== 'error' && result.signals.length === 0 ? (
-            <p className="text-sm leading-7 text-slate-700">
+            <p className="text-sm leading-7 text-muted">
               Für diesen Prüfzeitraum wurden keine Forschungssignale persistiert. Berichte sollen weiter auf Markt-, Reserve-, Szenario- und Quellen-Evidenz aufbauen.
             </p>
           ) : result.status === 'error' ? (
-            <p className="text-sm leading-7 text-slate-700">
+            <p className="text-sm leading-7 text-muted">
               Die Signalliste bleibt verborgen, bis die Forschungs-API wiederhergestellt ist.
             </p>
           ) : (
             <div className="space-y-4">
               {result.signals.map((signal, index) => (
-                <article key={signal.id} className="rounded-md border border-slate-200 bg-slate-50 p-4">
+                <article key={signal.id} className="rounded-md border border-line bg-surface-muted p-4">
                   <div className="flex flex-wrap items-center gap-3">
                     <span className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase ${toneForImpact(signal.impact_direction)}`}>
                       {impactLabel(signal.impact_direction)}
                     </span>
-                    <span className="text-xs uppercase text-slate-500">{signal.signal_type}</span>
-                    <span className="text-xs text-slate-500">{formatTime(signal.published_at)}</span>
+                    <span className="text-xs uppercase text-muted">{signal.signal_type}</span>
+                    <span className="text-xs text-muted">{formatTime(signal.published_at)}</span>
                   </div>
-                  <h3 className="mt-4 text-lg font-semibold text-slate-950">{signalTitle(signal, index)}</h3>
-                  <p className="mt-3 text-sm leading-7 text-slate-700">{signalSummary()}</p>
-                  <p className="mt-4 text-xs uppercase text-slate-500">
+                  <h3 className="mt-4 text-lg font-semibold text-ink">{signalTitle(signal, index)}</h3>
+                  <p className="mt-3 text-sm leading-7 text-muted">{signalSummary()}</p>
+                  <p className="mt-4 text-xs uppercase text-muted">
                     Konfidenz {(signal.confidence * 100).toFixed(0)}%
                   </p>
                 </article>

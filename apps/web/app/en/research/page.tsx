@@ -37,10 +37,10 @@ const actionLinks: Array<{ label: string; href: Route; description: string }> = 
 ];
 
 function toneForImpact(impact: ResearchSignal['impact_direction']): string {
-  if (impact === 'positive') return 'border-emerald-200 bg-emerald-50 text-emerald-800';
-  if (impact === 'negative') return 'border-rose-200 bg-rose-50 text-rose-800';
-  if (impact === 'neutral') return 'border-slate-200 bg-white text-slate-700';
-  return 'border-amber-200 bg-amber-50 text-amber-800';
+  if (impact === 'positive') return 'border-success bg-success-soft text-success';
+  if (impact === 'negative') return 'border-danger bg-danger-soft text-danger';
+  if (impact === 'neutral') return 'border-line bg-surface text-muted';
+  return 'border-warning bg-warning-soft text-warning';
 }
 
 function impactLabel(impact: ResearchSignal['impact_direction']): string {
@@ -120,9 +120,9 @@ export default async function EnglishResearchPage() {
       </section>
 
       {!AI_RESEARCH_ENABLED ? (
-        <section className="mt-8 rounded-2xl border border-dashed border-sky-300 bg-sky-50 p-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-800">Enable research pipeline</p>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-700">
+        <section className="mt-8 rounded-2xl border border-dashed border-accent bg-accent-soft p-6">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Enable research pipeline</p>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-muted">
             Set <code>JETSCOPE_AI_RESEARCH_ENABLED=true</code> after the backend research job is deployed. Until then,
             JetScope keeps this page buildable and navigable, but it does not pretend Claude-backed research extraction is live.
           </p>
@@ -130,7 +130,7 @@ export default async function EnglishResearchPage() {
       ) : null}
 
       {result.status === 'error' ? (
-        <section className="mt-8 rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <section className="mt-8 rounded-2xl border border-danger bg-danger-soft p-6 text-sm text-danger">
           Research API error: {result.message}
         </section>
       ) : null}
@@ -138,19 +138,19 @@ export default async function EnglishResearchPage() {
       <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.85fr]">
         <InfoCard title="Decision brief" subtitle="Research is explanatory evidence, not an autonomous recommendation">
           {result.status === 'error' ? (
-            <p className="text-sm leading-7 text-slate-700">
+            <p className="text-sm leading-7 text-muted">
               The research layer is degraded. Keep market and reserve evidence visible, but do not use research signals to explain probability changes until the API recovers.
             </p>
           ) : result.signals.length === 0 ? (
-            <p className="text-sm leading-7 text-slate-700">
+            <p className="text-sm leading-7 text-muted">
               No active research signal is available. This is expected while the research pipeline is disabled or before the daily ingestion job persists new evidence.
             </p>
           ) : (
             <div className="grid gap-3 text-sm md:grid-cols-4">
-              <p className="rounded-xl border border-sky-200 bg-sky-50 p-3">Active: {result.signals.length}</p>
-              <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">Positive: {positiveCount}</p>
-              <p className="rounded-xl border border-rose-200 bg-rose-50 p-3">Negative: {negativeCount}</p>
-              <p className="rounded-xl border border-slate-200 bg-white p-3">Neutral: {neutralCount}</p>
+              <p className="rounded-xl border border-accent bg-accent-soft p-3">Active: {result.signals.length}</p>
+              <p className="rounded-xl border border-success bg-success-soft p-3">Positive: {positiveCount}</p>
+              <p className="rounded-xl border border-danger bg-danger-soft p-3">Negative: {negativeCount}</p>
+              <p className="rounded-xl border border-line bg-surface p-3">Neutral: {neutralCount}</p>
             </div>
           )}
         </InfoCard>
@@ -161,10 +161,10 @@ export default async function EnglishResearchPage() {
               <Link
                 key={action.href}
                 href={action.href}
-                className="block rounded-lg border border-slate-200 bg-white p-4 transition hover:border-sky-300 hover:bg-sky-50"
+                className="block rounded-lg border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
               >
-                <p className="font-semibold text-slate-950">{action.label}</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">{action.description}</p>
+                <p className="font-semibold text-ink">{action.label}</p>
+                <p className="mt-1 text-sm leading-6 text-muted">{action.description}</p>
               </Link>
             ))}
           </div>
@@ -174,27 +174,27 @@ export default async function EnglishResearchPage() {
       <section className="mt-8">
         <InfoCard title="Signal list" subtitle="Current read model result">
           {result.status !== 'error' && result.signals.length === 0 ? (
-            <p className="text-sm leading-7 text-slate-700">
+            <p className="text-sm leading-7 text-muted">
               No research signals have been persisted for this review window. Reports should continue to rely on market, reserve, scenario, and source evidence.
             </p>
           ) : result.status === 'error' ? (
-            <p className="text-sm leading-7 text-slate-700">
+            <p className="text-sm leading-7 text-muted">
               The signal list is hidden until the research API recovers, preventing incomplete evidence from entering report decisions.
             </p>
           ) : (
             <div className="space-y-4">
               {result.signals.map((signal, index) => (
-                <article key={signal.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <article key={signal.id} className="rounded-lg border border-line bg-surface-muted p-4">
                   <div className="flex flex-wrap items-center gap-3">
                     <span className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${toneForImpact(signal.impact_direction)}`}>
                       {impactLabel(signal.impact_direction)}
                     </span>
-                    <span className="text-xs uppercase tracking-[0.14em] text-slate-500">{signal.signal_type}</span>
-                    <span className="text-xs text-slate-500">{formatTime(signal.published_at)}</span>
+                    <span className="text-xs uppercase tracking-[0.14em] text-muted">{signal.signal_type}</span>
+                    <span className="text-xs text-muted">{formatTime(signal.published_at)}</span>
                   </div>
-                  <h3 className="mt-4 text-lg font-semibold text-slate-950">{signalTitle(signal, index)}</h3>
-                  <p className="mt-3 text-sm leading-7 text-slate-700">{signalSummary(signal)}</p>
-                  <p className="mt-4 text-xs uppercase tracking-[0.14em] text-slate-500">
+                  <h3 className="mt-4 text-lg font-semibold text-ink">{signalTitle(signal, index)}</h3>
+                  <p className="mt-3 text-sm leading-7 text-muted">{signalSummary(signal)}</p>
+                  <p className="mt-4 text-xs uppercase tracking-[0.14em] text-muted">
                     Confidence {(signal.confidence * 100).toFixed(0)}%
                   </p>
                 </article>
