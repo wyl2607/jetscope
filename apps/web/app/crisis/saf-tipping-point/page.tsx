@@ -42,10 +42,10 @@ function sourceTrustLabel(state: SourceCoverageTrustState): string {
 }
 
 function sourceTrustTone(state: SourceCoverageTrustState): string {
-  if (state === 'live') return 'border-emerald-200 bg-emerald-50 text-emerald-800';
-  if (state === 'proxy') return 'border-sky-200 bg-sky-50 text-sky-800';
-  if (state === 'fallback') return 'border-amber-200 bg-amber-50 text-amber-800';
-  return 'border-rose-200 bg-rose-50 text-rose-700';
+  if (state === 'live') return 'border-success bg-success-soft text-success';
+  if (state === 'proxy') return 'border-accent bg-accent-soft text-accent';
+  if (state === 'fallback') return 'border-warning bg-warning-soft text-warning';
+  return 'border-danger bg-danger-soft text-danger';
 }
 
 function sourceMetricLabel(metricKey: string): string {
@@ -116,42 +116,42 @@ export default async function SafTippingPointPage() {
       <div className="mb-6 flex flex-wrap gap-3">
         <Link
           href="/crisis/eu-jet-reserves"
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-500 hover:text-slate-950"
+          className="rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-muted hover:border-line-strong hover:bg-accent-soft hover:text-ink"
         >
           ← 储备监测
         </Link>
         <Link
           href="/de/lufthansa-saf-2026"
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-500 hover:text-slate-950"
+          className="rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-muted hover:border-line-strong hover:bg-accent-soft hover:text-ink"
         >
           Lufthansa 分析 →
         </Link>
       </div>
 
       {/* Introduction */}
-      <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-8">
-        <h2 className="text-xl font-bold text-slate-950">核心问题</h2>
-        <p className="mt-3 text-slate-700 leading-relaxed">
+      <section className="mb-8 rounded-2xl border border-line bg-surface p-8">
+        <h2 className="text-xl font-bold text-ink">核心问题</h2>
+        <p className="mt-3 text-muted leading-relaxed">
           在什么燃油价格、碳价与供应约束下，SAF 会从
-          <strong className="text-slate-800">合规成本</strong>转为
-          <strong className="text-emerald-700">理性采购选择</strong>？
+          <strong className="text-ink">合规成本</strong>转为
+          <strong className="text-success">理性采购选择</strong>？
         </p>
-        <p className="mt-4 text-sm text-slate-600">
+        <p className="mt-4 text-sm text-muted">
           本页提供交互工具，用于评估航空燃料转型经济性。
           市场输入优先使用实时来源；当来源降级时，计算会明确标出代理或回退路径。
         </p>
       </section>
 
-      <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6">
+      <section className="mb-8 rounded-2xl border border-line bg-surface p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">计算输入</p>
-            <h2 className="mt-2 text-xl font-bold text-slate-950">本次计算可信度</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">{sourceCoverageSummary}</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-subtle">计算输入</p>
+            <h2 className="mt-2 text-xl font-bold text-ink">本次计算可信度</h2>
+            <p className="mt-2 text-sm leading-6 text-muted">{sourceCoverageSummary}</p>
           </div>
           <Link
             href={REVIEW_SOURCES_ROUTE}
-            className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800 hover:border-sky-500 hover:bg-sky-100"
+            className="rounded-lg border border-accent bg-accent-soft px-3 py-2 text-xs font-semibold text-accent hover:bg-accent-hover"
           >
             查看需复核来源
           </Link>
@@ -171,7 +171,7 @@ export default async function SafTippingPointPage() {
               </article>
             ))
           ) : (
-            <p className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+            <p className="rounded-xl border border-danger bg-danger-soft p-4 text-sm text-danger">
               未能读取来源覆盖合约。请先检查 API readiness 和来源页。
             </p>
           )}
@@ -194,16 +194,16 @@ export default async function SafTippingPointPage() {
       />
 
       {pathwayComparison ? (
-        <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6">
+        <section className="mb-8 rounded-2xl border border-line bg-surface p-6">
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">路径对比</p>
-              <h2 className="mt-2 text-xl font-bold text-slate-950">SAF 路径净成本与来源可信度</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
+              <p className="text-xs uppercase tracking-[0.18em] text-subtle">路径对比</p>
+              <h2 className="mt-2 text-xl font-bold text-ink">SAF 路径净成本与来源可信度</h2>
+              <p className="mt-2 text-sm leading-6 text-muted">
                 以当前市场输入计算各路径的净成本区间与价差，并标注每条路径的来源类型与置信度。
               </p>
             </div>
-            <span className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">
+            <span className="rounded-lg border border-line px-3 py-2 text-xs font-semibold text-muted">
               对比信号：{pathwayComparison.signalLabel}
             </span>
           </div>
@@ -230,33 +230,33 @@ export default async function SafTippingPointPage() {
       ) : null}
 
       {/* Model Boundaries */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-8">
-        <h2 className="text-xl font-bold text-slate-950 mb-4">模型边界与使用建议</h2>
+      <section className="rounded-2xl border border-line bg-surface p-8">
+        <h2 className="text-xl font-bold text-ink mb-4">模型边界与使用建议</h2>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-600 mb-2">输入解释</h3>
-            <p className="text-sm text-slate-700">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted mb-2">输入解释</h3>
+            <p className="text-sm text-muted">
               计算面板优先采用实时市场来源；当实时来源不可用时，会显示代理、回退或降级状态。
               进入来源页可复核每个输入的来源、滞后与置信度。
             </p>
           </div>
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-600 mb-2">SAF 路径</h3>
-            <p className="text-sm text-slate-700">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted mb-2">SAF 路径</h3>
+            <p className="text-sm text-muted">
               成本曲线基于 2026 年研究（Energy Solutions、RMI、EASA）。
               路径成熟度分级：commercial、scaling、limited、future。
             </p>
           </div>
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-600 mb-2">储备信号</h3>
-            <p className="text-sm text-slate-700">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted mb-2">储备信号</h3>
+            <p className="text-sm text-muted">
               EU 航油储备估算由 IATA 与 EUROCONTROL 评估人工维护。
               每周更新。人工信号置信度为 0.62。
             </p>
           </div>
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-600 mb-2">分析模型</h3>
-            <p className="text-sm text-slate-700">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted mb-2">分析模型</h3>
+            <p className="text-sm text-muted">
               临界点与航司决策引擎作为共享 Python 服务运行。
               模型与 API 合约由后端分析服务维护。
             </p>

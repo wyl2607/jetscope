@@ -568,9 +568,30 @@ test('crisis page uses light semantic data cards instead of gray dark boxes', as
   assert.match(crisisSource, /sources\?filter=review/);
   assert.match(crisisSource, /fuel: fallbackFossil\.toFixed\(3\)/);
   assert.match(crisisSource, /reserve: reserveWeeks\?\.toFixed\(2\)/);
-  assert.match(crisisSource, /border-emerald-200 bg-emerald-50/);
-  assert.match(crisisSource, /border-amber-200 bg-amber-50/);
-  assert.match(crisisSource, /border-sky-200 bg-sky-50/);
+  // Asserted through the design tokens rather than palette literals, which any
+  // migration necessarily breaks. See docs/UI_CONTRACT.md section 1.
+  assert.match(crisisSource, /bg-success-soft/);
+  assert.match(crisisSource, /bg-warning-soft/);
+  assert.match(crisisSource, /bg-accent-soft/);
+  assert.match(crisisSource, /bg-danger-soft/);
+
+  // A style migration must not quietly downgrade what the page communicates:
+  // unknown provenance, missing confidence, and an unrecognised signal all stay
+  // problem-coloured rather than fading to neutral grey.
+  assert.match(
+    crisisSource,
+    /if \(value == null\) return 'border-danger/,
+    'missing confidence must stay a problem tone, not neutral grey'
+  );
+  for (const helper of ['sourceTone', 'signalTone']) {
+    const body = crisisSource.slice(crisisSource.indexOf(`function ${helper}(`));
+    const lastReturn = body.slice(0, body.indexOf('}' + String.fromCharCode(10)));
+    assert.match(
+      lastReturn.slice(lastReturn.lastIndexOf('return')),
+      /danger/,
+      `${helper} fallthrough must stay a problem tone, not neutral grey`
+    );
+  }
 });
 
 test('localized crisis pages are source-backed and stay in their locale', async () => {
@@ -636,7 +657,7 @@ test('reserve price trends guard finite chart coordinates and highlight the curr
 
   assert.match(reserveSource, /CurrentSafBreakpointRow/);
   assert.match(reserveSource, /当前拐点/);
-  assert.match(reserveSource, /ring-2 ring-amber-300/);
+  assert.match(reserveSource, /ring-2 ring-warning/);
   assert.match(reserveSource, /历史价格趋势/);
   assert.match(reserveSource, /本地 market_snapshots 历史库/);
   assert.match(reserveSource, /阅读方式/);
