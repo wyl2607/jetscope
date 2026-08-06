@@ -193,14 +193,21 @@ export default async function EuJetReserveCrisisPage() {
 
       <Panel title="危机链条" why="把储备变化连接到价格、航线经济性与 SAF 采购窗口，避免用单个价格信号直接下结论。">
         <div className="grid gap-6 md:grid-cols-4">
+          {/*
+            The four steps are an explanation, not four states. Colouring them
+            danger -> warning -> muted -> success reads as a live assessment:
+            step 4 would render green while the SAF window is shut. The state
+            that is real lives in the SignalRow above, where it moves with the
+            data.
+          */}
           {[
-            ['步骤 1', '储备消耗', `EU 航油库存约 ${formatNumber(reserve.weeks, 1)} 周，地缘扰动与炼化瓶颈共同推高压力。`, 'border-danger bg-danger-soft text-danger'],
-            ['步骤 2', '价格跳升', `当前 EU 代理价 $${formatNumber(jetEu, 3)}/L，储备稀缺可能放大区域 basis。`, 'border-warning bg-warning-soft text-warning'],
-            ['步骤 3', '航线承压', '燃油约占短途运营成本 30%，薄利航线会更早失去缓冲。', 'border-line bg-surface-muted text-muted'],
-            ['步骤 4', 'SAF 窗口', `HEFA SAF 当前溢价约 ${formatNumber(safSpreadLow, 0)}–${formatNumber(safSpreadHigh, 0)}%。`, 'border-success bg-success-soft text-success']
-          ].map(([step, title, body, tone]) => (
-            <div key={step} className={`rounded-2xl border p-6 ${tone}`}>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em]">{step}</p>
+            ['步骤 1', '储备消耗', `EU 航油库存约 ${formatNumber(reserve.weeks, 1)} 周，地缘扰动与炼化瓶颈共同推高压力。`],
+            ['步骤 2', '价格跳升', `当前 EU 代理价 $${formatNumber(jetEu, 3)}/L，储备稀缺可能放大区域 basis。`],
+            ['步骤 3', '航线承压', '燃油约占短途运营成本 30%，薄利航线会更早失去缓冲。'],
+            ['步骤 4', 'SAF 窗口', `HEFA SAF 当前溢价约 ${formatNumber(safSpreadLow, 0)}–${formatNumber(safSpreadHigh, 0)}%。`]
+          ].map(([step, title, body]) => (
+            <div key={step} className="rounded-2xl border border-line bg-surface p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">{step}</p>
               <p className="mt-2 text-sm font-semibold text-ink">{title}</p>
               <p className="mt-1 text-xs leading-6 text-muted">{body}</p>
             </div>
