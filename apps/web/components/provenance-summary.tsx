@@ -5,11 +5,17 @@ import Link from 'next/link';
 type Props = {
   summary: SourcesReadModel['summary'];
   completeness: number;
-  generatedAt: string;
+  /**
+   * Null when the read model is on fallback. The fallback stamps itself with the
+   * current time, so there is no honest timestamp to show - say so explicitly
+   * rather than passing '' and relying on the date parse to fail.
+   */
+  generatedAt: string | null;
   href?: Route;
 };
 
-function formatGeneratedAt(value: string): string {
+function formatGeneratedAt(value: string | null): string {
+  if (!value) return '未知';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '未知';
   return date.toLocaleString('zh-CN');

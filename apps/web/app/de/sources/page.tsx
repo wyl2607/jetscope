@@ -1,5 +1,7 @@
-import { InfoCard } from '@/components/cards';
-import { Shell } from '@/components/shell';
+import { MetricCard } from '@/components/cards';
+import { PageTemplate, SignalRow } from '@/components/page-template';
+import { Panel } from '@/components/panel';
+import { SourceFooter } from '@/components/source-footer';
 import { getSourcesReadModel, type SourcesReadModel } from '@/lib/sources-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata, Route } from 'next';
@@ -215,56 +217,86 @@ export default async function GermanSourcesPage({
   const visibleRows = readModel.rows.filter((row) => rowMatchesSourceFilter(row, activeFilter));
   const reviewRows = readModel.rows.filter((row) => rowMatchesSourceFilter(row, 'review'));
   const actionRows = reviewRows.filter((row) => row.reviewAction.priority !== 'normal').slice(0, 4);
+  const asOf = readModel.isFallback ? null : readModel.generatedAt;
+  const needsReview = reviewRows.length;
+  const reviewTone = needsReview > 0
+    ? readModel.isFallback || readModel.summary.fallbackCount > 0 || readModel.summary.degradedCount > 0
+      ? 'text-danger'
+      : 'text-warning'
+    : 'text-success';
+  const trustTone = readModel.isFallback || readModel.summary.fallbackCount > 0 || readModel.summary.degradedCount > 0
+    ? 'text-danger'
+    : readModel.summary.proxyCount > 0
+      ? 'text-warning'
+      : 'text-success';
+  const trustPosture = readModel.isFallback || readModel.summary.fallbackCount > 0 || readModel.summary.degradedCount > 0
+    ? 'Degradierung prüfen'
+    : readModel.summary.proxyCount > 0
+      ? 'Mit Proxy-Quellen'
+      : 'Live-Quellen bereit';
 
   return (
-    <Shell
+    <PageTemplate
       locale="de"
       eyebrow="Quellenprüfung"
       title="Quellenprüfung"
-      description="Prüfe vor operativen Entscheidungen, ob jede Markteingabe live, proxygestützt oder im Fallback-Zustand ist."
+      question="Welche Markteingaben können aktuell noch nicht direkt als Entscheidungsgrundlage verwendet werden?"
+      asOf={asOf}
     >
-      <section className="grid gap-4 md:grid-cols-4">
-        <InfoCard title="Live" subtitle="Primär oder offiziell">
-          <p className="text-3xl font-semibold text-success">{readModel.summary.liveCount}</p>
-        </InfoCard>
-        <InfoCard title="Proxy" subtitle="Abgeleitete Annahmen">
-          <p className="text-3xl font-semibold text-accent">{readModel.summary.proxyCount}</p>
-        </InfoCard>
-        <InfoCard title="Fallback" subtitle="Wiederherstellung nötig">
-          <p className="text-3xl font-semibold text-warning">{readModel.summary.fallbackCount}</p>
-        </InfoCard>
-        <InfoCard title="Vertrauen" subtitle="Durchschnittliches Quellenvertrauen">
-          <p className="text-3xl font-semibold text-ink">{Math.round(readModel.summary.averageConfidence * 100)}%</p>
-        </InfoCard>
-      </section>
+      <SignalRow label="Vertrauenssignale">
+        <MetricCard
+          label="Prüfzeilen"
+          value={`${needsReview}`}
+          valueClassName={`${reviewTone} tabular-nums`}
+          hint={needsReview > 0 ? `${readModel.summary.fallbackCount} Fallback-, ${readModel.summary.degradedCount} eingeschränkte oder proxy-/volatilitätsmarkierte Zeilen.` : 'Keine Zeile braucht aktuell zusätzliche Prüfung.'}
+        />
+        <MetricCard
+          label="Vertrauenshaltung"
+          value={trustPosture}
+          valueClassName={trustTone}
+          hint={readModel.summary.trustLabel}
+        />
+        <MetricCard
+          label="Durchschnittliche Konfidenz"
+          value={`${Math.round(readModel.summary.averageConfidence * 100)}%`}
+          valueClassName={`${trustTone} tabular-nums`}
+          hint={`Abdeckung ${Math.round(readModel.completeness * 100)}% · ${readModel.summary.freshnessLabel}`}
+        />
+        <MetricCard
+          label="Input-Struktur"
+          value={`${readModel.summary.liveCount} live`}
+          valueClassName="tabular-nums"
+          hint={`Proxy ${readModel.summary.proxyCount} · Fallback ${readModel.summary.fallbackCount} · eingeschränkt ${readModel.summary.degradedCount}`}
+        />
+      </SignalRow>
 
-      <section className="mt-6">
-        <InfoCard
-          title="Wiederherstellungsaktionen"
-          subtitle={actionRows.length ? 'Eingeschränkte Zeilen als operative Checkliste' : 'Keine kritische Quellenwiederherstellung nötig'}
-        >
+      <Panel
+        locale="de"
+        title="Wiederherstellungsaktionen"
+        why="Eingeschränkte Zeilen werden zu einer operativen Checkliste, damit eine Datenlücke nicht nur als Label stehen bleibt."
+      >
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="rounded-md border border-line bg-surface-muted px-3 py-1.5 font-semibold text-muted">
+            <span className="rounded-xl border border-line bg-surface-muted px-3 py-1.5 font-semibold text-muted">
               Prüfzeilen {reviewRows.length}
             </span>
-            <span className="rounded-md border border-line bg-surface-muted px-3 py-1.5 font-semibold text-muted">
+            <span className="rounded-xl border border-line bg-surface-muted px-3 py-1.5 font-semibold text-muted">
               Priorisierte Zeilen {actionRows.length}
             </span>
             <Link
               href={'/admin' as Route}
-              className="rounded-md border border-accent bg-accent-soft px-3 py-1.5 font-semibold text-accent hover:bg-accent-hover"
+              className="rounded-xl border border-accent bg-accent-soft px-3 py-1.5 font-semibold text-accent hover:bg-accent-hover"
             >
               Admin-Aktualisierung öffnen
             </Link>
             <Link
               href={'/de/sources?filter=review' as Route}
-              className="rounded-md border border-line bg-surface px-3 py-1.5 font-semibold text-muted hover:border-accent hover:bg-accent-soft"
+              className="rounded-xl border border-line bg-surface px-3 py-1.5 font-semibold text-muted hover:border-accent hover:bg-accent-soft"
             >
               Prüfzeilen anzeigen
             </Link>
             <Link
               href={'/de/dashboard' as Route}
-              className="rounded-md border border-line bg-surface px-3 py-1.5 font-semibold text-muted hover:border-accent hover:bg-accent-soft"
+              className="rounded-xl border border-line bg-surface px-3 py-1.5 font-semibold text-muted hover:border-accent hover:bg-accent-soft"
             >
               Zurück zum Dashboard
             </Link>
@@ -282,14 +314,14 @@ export default async function GermanSourcesPage({
                       </p>
                     </div>
                     <div>
-                      <span className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-semibold ${actionToneClass(row.reviewAction.priority)}`}>
+                      <span className={`inline-flex rounded-xl border px-2.5 py-1 text-xs font-semibold ${actionToneClass(row.reviewAction.priority)}`}>
                         {action.label}
                       </span>
                       <p className="mt-2 leading-6 text-muted">{action.detail}</p>
                     </div>
                     <Link
                       href={action.href}
-                      className="rounded-md border border-line bg-surface px-3 py-1.5 text-center text-xs font-semibold text-accent hover:border-accent hover:bg-accent-soft"
+                      className="rounded-xl border border-line bg-surface px-3 py-1.5 text-center text-xs font-semibold text-accent hover:border-accent hover:bg-accent-soft"
                     >
                       Aktion öffnen
                     </Link>
@@ -302,13 +334,15 @@ export default async function GermanSourcesPage({
               Keine Fallback- oder Degradierungszeile ist aktuell kritisch. Proxy-Zeilen sollten vor größeren Preis-, Einkaufs- oder Offenlegungsentscheidungen trotzdem manuell geprüft werden.
             </p>
           )}
-        </InfoCard>
-      </section>
+      </Panel>
 
-      <section className="mt-6">
-        <InfoCard title="Quellenmatrix" subtitle={`Gesamtstatus: ${statusLabel(readModel.overallStatus)}`}>
+      <Panel
+        locale="de"
+        title="Quellenmatrix"
+        why="Jede Zeile verbindet Quelle, Zeit, Verzögerung, Wert und Aktion, damit Markteingaben vor ihrer Verwendung prüfbar bleiben."
+      >
           <p className="mb-3 text-xs text-muted">
-            Generiert am {new Date(readModel.generatedAt).toLocaleString('de-DE')}
+             {asOf ? `Generiert am ${new Date(asOf).toLocaleString('de-DE')}` : 'Generierungszeit ist kein Datenstand'}
             {readModel.isFallback ? ' | zeigt Fallback-Schätzungen, weil Live-Abdeckung nicht verfügbar ist' : ''}
           </p>
           <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -319,7 +353,7 @@ export default async function GermanSourcesPage({
                 <Link
                   key={filter.key}
                   href={sourceFilterHref(filter.key, focusMetricKey)}
-                  className={`rounded-md border px-3 py-2 text-xs font-semibold transition ${
+                  className={`rounded-xl border px-3 py-2 text-xs font-semibold transition ${
                     isActive
                       ? 'border-accent bg-accent-soft text-accent'
                       : 'border-line bg-surface text-muted hover:border-line-strong hover:bg-surface-muted'
@@ -343,7 +377,7 @@ export default async function GermanSourcesPage({
             </p>
           ) : null}
           <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm text-muted">
+             <table className="min-w-full text-left text-sm tabular-nums text-muted">
               <thead>
                 <tr className="border-b border-line text-muted">
                   <th className="py-3 pr-4">Kennzahl</th>
@@ -384,7 +418,7 @@ export default async function GermanSourcesPage({
                       <td className="py-3 pr-4 font-medium text-ink">{surfaceLabel(row.metricKey)}</td>
                       <td className="py-3 pr-4">{sourceLabel(row.source)}</td>
                       <td className="py-3 pr-4">
-                        <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] ${trustClass(row.trustState)}`}>
+                        <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.18em] ${trustClass(row.trustState)}`}>
                           {trustLabel(row.trustState)}
                         </span>
                         <span className="mt-1 block text-xs text-subtle">{sourceTypeLabel(row)}</span>
@@ -416,13 +450,13 @@ export default async function GermanSourcesPage({
                         <div className="flex min-w-24 flex-col gap-2">
                           <Link
                             href={sourceFocusHref(row.metricKey, activeFilter)}
-                            className="rounded-md border border-line bg-surface px-2.5 py-1 text-center text-xs font-semibold text-accent hover:border-accent hover:bg-accent-soft"
+                            className="rounded-xl border border-line bg-surface px-2.5 py-1 text-center text-xs font-semibold text-accent hover:border-accent hover:bg-accent-soft"
                           >
                             Fokussieren
                           </Link>
                           <Link
                             href={action.href}
-                            className="rounded-md border border-line bg-surface px-2.5 py-1 text-center text-xs font-semibold text-muted hover:border-accent hover:bg-accent-soft"
+                            className="rounded-xl border border-line bg-surface px-2.5 py-1 text-center text-xs font-semibold text-muted hover:border-accent hover:bg-accent-soft"
                           >
                             {row.reviewAction.priority === 'normal' ? 'Dokumentieren' : 'Bearbeiten'}
                           </Link>
@@ -446,8 +480,28 @@ export default async function GermanSourcesPage({
               </tbody>
             </table>
           </div>
-        </InfoCard>
-      </section>
-    </Shell>
+      </Panel>
+
+      <SourceFooter
+        locale="de"
+        sources={[
+          {
+            id: 'sources-read-model',
+            label: readModel.isFallback
+              ? `Quellen-Read-Model nicht verfügbar; Fallback-Schätzungen werden verwendet (${readModel.error ?? 'unbekannter Grund'})`
+              : 'Quellen-Read-Model (Abdeckung, Konfidenz, Verzögerung, Fallback- und Prüfstatus)',
+            asOf,
+            basis: readModel.isFallback ? 'assumption' : 'observed'
+          }
+        ]}
+        methodHref="/de/sources"
+        methodLabel="Methode der Quellenabdeckung und Prüfung"
+        limitations={[
+          'Der Quellenstatus beschreibt die Qualität der Eingabe, nicht die Gültigkeit jedes Werts für jeden Flughafen, Vertrag oder Trade.',
+          'Proxy-, abgeleitete, Fallback- und eingeschränkte Zeilen müssen vor wesentlichen Preis-, Einkaufs- oder Offenlegungsentscheidungen manuell geprüft werden.',
+          'Die Fallback-Generierungszeit ist keine Beobachtungszeit; deshalb wird sie nicht als Datenstand ausgegeben.'
+        ]}
+      />
+    </PageTemplate>
   );
 }
