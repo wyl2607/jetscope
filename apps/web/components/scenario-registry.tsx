@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { InfoCard } from '@/components/cards';
 import { validateScenarioPayload } from '@/lib/admin-validation';
 
 type ScenarioRecord = {
@@ -299,8 +298,10 @@ export function ScenarioRegistry() {
   }
 
   return (
-    <section className="mt-8 grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
-      <InfoCard title="情景库" subtitle="保存团队确认过的转型假设">
+    <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+      <section>
+        <h3 className="text-lg font-medium text-ink">情景库</h3>
+        <p className="mt-1 text-sm leading-6 text-muted">保存团队确认过的转型假设。</p>
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2">
             <button
@@ -360,9 +361,11 @@ export function ScenarioRegistry() {
             )}
           </div>
         </div>
-      </InfoCard>
+      </section>
 
-      <InfoCard title="情景编辑器" subtitle="创建 / 更新 / 删除">
+      <section>
+        <h3 className="text-lg font-medium text-ink">情景编辑器</h3>
+        <p className="mt-1 text-sm leading-6 text-muted">创建、更新或删除受保护的情景记录。</p>
         <div className="space-y-4">
           <label className={labelClassName}>
             名称
@@ -606,7 +609,7 @@ export function ScenarioRegistry() {
             </button>
           </div>
         </div>
-      </InfoCard>
-    </section>
+      </section>
+    </div>
   );
 }

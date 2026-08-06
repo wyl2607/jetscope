@@ -26,7 +26,13 @@ const CONVERTED_PAGES = [
   'apps/web/app/en/sources/page.tsx',
   'apps/web/app/prices/germany-jet-fuel/page.tsx',
   'apps/web/app/de/prices/germany-jet-fuel/page.tsx',
-  'apps/web/app/en/prices/germany-jet-fuel/page.tsx'
+  'apps/web/app/en/prices/germany-jet-fuel/page.tsx',
+  'apps/web/app/research/page.tsx',
+  'apps/web/app/de/research/page.tsx',
+  'apps/web/app/en/research/page.tsx',
+  'apps/web/app/scenarios/page.tsx',
+  'apps/web/app/de/scenarios/page.tsx',
+  'apps/web/app/en/scenarios/page.tsx'
 ];
 
 /** Pages that render a read model with an isFallback flag. */
@@ -42,7 +48,9 @@ const FALLBACK_AWARE_PAGES = [
   'apps/web/app/en/sources/page.tsx',
   'apps/web/app/prices/germany-jet-fuel/page.tsx',
   'apps/web/app/de/prices/germany-jet-fuel/page.tsx',
-  'apps/web/app/en/prices/germany-jet-fuel/page.tsx'
+  'apps/web/app/en/prices/germany-jet-fuel/page.tsx',
+  'apps/web/app/de/scenarios/page.tsx',
+  'apps/web/app/en/scenarios/page.tsx'
 ];
 
 /**
@@ -120,6 +128,30 @@ test('a crisis-brief page on fallback data never stamps it with a fresh timestam
       `${path} must label fallback data as an assumption, never as observed`
     );
   }
+});
+
+test('scenario pages never stamp default analysis timestamps as fresh data', async () => {
+  const primarySource = await read('apps/web/app/scenarios/page.tsx');
+  assert.match(
+    primarySource,
+    /const\s+asOf\s*=\s*usingDefaultTippingPoint\s*\?\s*null\s*:\s*tippingPoint\.generated_at/,
+    'apps/web/app/scenarios/page.tsx must suppress the default tipping-point timestamp'
+  );
+  assert.match(
+    primarySource,
+    /asOf:\s*usingDefaultDecision\s*\?\s*null\s*:\s*airlineDecision\.generated_at/,
+    'apps/web/app/scenarios/page.tsx must suppress the default decision timestamp'
+  );
+  assert.match(
+    primarySource,
+    /basis:\s*usingDefaultTippingPoint\s*\?\s*'assumption'\s*:\s*'derived'/,
+    'apps/web/app/scenarios/page.tsx must label default tipping-point values as assumptions'
+  );
+  assert.match(
+    primarySource,
+    /basis:\s*usingDefaultDecision\s*\?\s*'assumption'\s*:\s*'derived'/,
+    'apps/web/app/scenarios/page.tsx must label default decision values as assumptions'
+  );
 });
 
 test('a reserve reading is labelled by how it was produced, not assumed observed', async () => {

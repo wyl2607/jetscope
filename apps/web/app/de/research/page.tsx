@@ -1,5 +1,7 @@
-import { InfoCard, MetricCard } from '@/components/cards';
-import { Shell } from '@/components/shell';
+import { MetricCard } from '@/components/cards';
+import { PageTemplate, SignalRow } from '@/components/page-template';
+import { Panel } from '@/components/panel';
+import { SourceFooter } from '@/components/source-footer';
 import { AI_RESEARCH_ENABLED, getResearchSignals, type ResearchSignal } from '@/lib/research-signals-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata, Route } from 'next';
@@ -38,6 +40,53 @@ const actionLinks: Array<{ label: string; href: Route; description: string }> = 
       'Forschungskonfiguration, Admin-Token und geschützte Refresh-Bereitschaft vor operativer Nutzung bestätigen.'
   }
 ];
+
+type PipelineState = 'disabled' | 'waiting' | 'not_found' | 'error' | 'ready';
+
+function getPipelineState(enabled: boolean, status: string, signalCount: number): PipelineState {
+  if (!enabled) return 'disabled';
+  if (status === 'error') return 'error';
+  if (status === 'not_found') return 'not_found';
+  if (signalCount === 0) return 'waiting';
+  return 'ready';
+}
+
+function pipelineStateLabel(state: PipelineState): string {
+  if (state === 'disabled') return 'Deaktiviert';
+  if (state === 'waiting') return 'Wartet auf Signale';
+  if (state === 'not_found') return 'Nicht bereitgestellt';
+  if (state === 'error') return 'Fehler';
+  return 'Aktiv';
+}
+
+function pipelineStateTone(state: PipelineState): string {
+  if (state === 'disabled') return 'border-accent bg-accent-soft text-accent';
+  if (state === 'waiting') return 'border-warning bg-warning-soft text-warning';
+  if (state === 'not_found') return 'border-warning border-dashed bg-warning-soft text-warning';
+  if (state === 'error') return 'border-danger bg-danger-soft text-danger';
+  return 'border-success bg-success-soft text-success';
+}
+
+function pipelineValueTone(state: PipelineState): string {
+  if (state === 'disabled') return 'text-accent';
+  if (state === 'waiting' || state === 'not_found') return 'text-warning';
+  if (state === 'error') return 'text-danger';
+  return 'text-success';
+}
+
+function pipelineStateDetail(state: PipelineState, message: string | null): string {
+  if (state === 'disabled') {
+    return 'Die Forschungspipeline ist deaktiviert. Diese Seite behauptet keine laufende AI-Analyse.';
+  }
+  if (state === 'waiting') {
+    return 'Die Forschungs-API ist aktiviert, aber es gibt noch kein persistiertes Signal. Der tägliche Forschungsjob muss erst Evidenz liefern.';
+  }
+  if (state === 'not_found') {
+    return 'Der Forschungsdienst ist noch nicht bereitgestellt oder in dieser Umgebung nicht auffindbar. Ein leeres Ergebnis ist kein Marktbefund.';
+  }
+  if (state === 'error') return `Forschungs-API-Fehler: ${message ?? 'unbekannte Ursache'}. Forschungsergebnisse erst nach Wiederherstellung nutzen.`;
+  return 'Die Forschungs-API ist aktiviert; diese Seite zeigt persistierte Signale aus dem aktuellen Prüfzeitraum.';
+}
 
 function toneForImpact(impact: ResearchSignal['impact_direction']): string {
   if (impact === 'positive') return 'border-success bg-success-soft text-success';
@@ -78,35 +127,36 @@ function signalSummary(): string {
 
 export default async function GermanResearchPage() {
   const result = await getResearchSignals();
-  const latestSignal = result.signals[0] ?? null;
+  const latestSignal = result.signals.reduce<typeof result.signals[number] | null>((latest, signal) => {
+    if (!latest) return signal;
+    return new Date(signal.published_at).getTime() > new Date(latest.published_at).getTime() ? signal : latest;
+  }, null);
   const positiveCount = result.signals.filter((signal) => signal.impact_direction === 'positive').length;
   const negativeCount = result.signals.filter((signal) => signal.impact_direction === 'negative').length;
   const neutralCount = result.signals.filter((signal) => signal.impact_direction === 'neutral').length;
-  const pipelineStatus = AI_RESEARCH_ENABLED
-    ? result.status === 'error'
-      ? 'Fehler'
-      : result.signals.length
-        ? 'Aktiv'
-        : 'Wartet'
-    : 'Deaktiviert';
-  const pipelineHint = AI_RESEARCH_ENABLED
-    ? 'Die Forschungs-API ist aktiviert; diese Seite zeigt persistierte Signale aus dem aktuellen Prüfzeitraum.'
-    : 'Forschungspipeline ist deaktiviert; die Seite bleibt prüfbar, ohne laufende AI-Analyse zu behaupten.';
-  const usageMode = AI_RESEARCH_ENABLED ? 'Evidenzebene' : 'Nur Grenze';
+  const state = getPipelineState(AI_RESEARCH_ENABLED, result.status, result.signals.length);
+  const resultMessage = result.status === 'error' ? result.message : null;
+  const asOf = state === 'ready' ? latestSignal?.published_at ?? null : null;
   const latestSignalValue = latestSignal ? formatTime(latestSignal.published_at) : 'Kein Signal';
   const latestSignalHint = latestSignal
     ? signalTitle(latestSignal, 0)
     : 'Für den aktuellen Prüfzeitraum ist kein persistiertes Forschungssignal verfügbar.';
 
   return (
-    <Shell
+    <PageTemplate
       locale="de"
       eyebrow="AI-Forschungspipeline"
       title="Forschungswerkstatt"
-      description="Artikelnahe Forschung in eine prüfbare Erklärungsebene für Entscheidungen überführen; bei deaktivierter Pipeline bleibt die Grenze sichtbar."
+      question="Repräsentieren die heutigen Forschungssignale ausreichend, warum sich der Markt bewegt?"
+      asOf={asOf}
     >
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Pipeline-Status" value={pipelineStatus} hint={pipelineHint} />
+      <SignalRow label="Forschungsergebnisse">
+        <MetricCard
+          label="Pipeline-Status"
+          value={pipelineStateLabel(state)}
+          valueClassName={pipelineValueTone(state)}
+          hint={pipelineStateDetail(state, resultMessage)}
+        />
         <MetricCard
           label="Signalanzahl"
           value={`${result.signals.length}`}
@@ -115,94 +165,106 @@ export default async function GermanResearchPage() {
         <MetricCard label="Neuestes Signal" value={latestSignalValue} hint={latestSignalHint} />
         <MetricCard
           label="Nutzungsgrenze"
-          value={usageMode}
+          value={AI_RESEARCH_ENABLED ? 'Evidenzebene' : 'Nur Grenze'}
           hint="Forschung erklärt mögliche Ursachen; sie ersetzt nie Markt-, Reserve-, Szenario- oder Quellenprüfung."
         />
-      </section>
+      </SignalRow>
 
-      {!AI_RESEARCH_ENABLED ? (
-        <section className="mt-8 rounded-2xl border border-dashed border-accent bg-accent-soft p-6">
-          <p className="text-sm font-semibold uppercase text-accent">Forschungspipeline aktivieren</p>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-muted">
-            Nach Deployment des Backend-Forschungsjobs <code>JETSCOPE_AI_RESEARCH_ENABLED=true</code> setzen. Bis dahin bleibt JetScope navigierbar und ehrlich über den deaktivierten Zustand.
-          </p>
-        </section>
-      ) : null}
+      <Panel
+        locale="de"
+        title="Forschungsstatus"
+        why="Konfiguration, Warten, fehlende Bereitstellung und Fehler müssen sichtbar getrennt bleiben, bevor ein Signal zitiert wird."
+      >
+        <div className={`rounded-xl border p-4 text-sm leading-7 ${pipelineStateTone(state)}`}>
+          <p className="font-semibold">{pipelineStateLabel(state)}</p>
+          <p className="mt-1">{pipelineStateDetail(state, resultMessage)}</p>
+        </div>
+      </Panel>
 
-      {result.status === 'error' ? (
-        <section className="mt-8 rounded-2xl border border-danger bg-danger-soft p-6 text-sm text-danger">
-          Forschungs-API ist aktuell nicht verfügbar. Forschungssignale erst nach Wiederherstellung für Berichtserklärungen nutzen.
-        </section>
-      ) : null}
+      <Panel
+        locale="de"
+        title="Entscheidungsnotiz"
+        why="Forschung ist erklärende Evidenz, keine autonome Empfehlung für Markt- oder Beschaffungsentscheidungen."
+      >
+        {state !== 'ready' ? (
+          <div className={`rounded-xl border p-4 text-sm leading-7 ${pipelineStateTone(state)}`}>
+            {pipelineStateDetail(state, resultMessage)}
+          </div>
+        ) : (
+          <div className="grid gap-3 text-sm md:grid-cols-4">
+            <p className="rounded-xl border border-accent bg-accent-soft p-3">Aktiv: <span className="tabular-nums">{result.signals.length}</span></p>
+            <p className="rounded-xl border border-success bg-success-soft p-3">Positiv: <span className="tabular-nums">{positiveCount}</span></p>
+            <p className="rounded-xl border border-danger bg-danger-soft p-3">Negativ: <span className="tabular-nums">{negativeCount}</span></p>
+            <p className="rounded-xl border border-line bg-surface p-3">Neutral: <span className="tabular-nums">{neutralCount}</span></p>
+          </div>
+        )}
+      </Panel>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.85fr]">
-        <InfoCard title="Entscheidungsnotiz" subtitle="Forschung ist erklärende Evidenz, keine autonome Empfehlung">
-          {result.status === 'error' ? (
-            <p className="text-sm leading-7 text-muted">
-              Die Forschungsebene ist eingeschränkt. Markt- und Reserve-Evidenz sichtbar halten, aber Forschungssignale erst nach Wiederherstellung zur Erklärung von Wahrscheinlichkeitsänderungen nutzen.
-            </p>
-          ) : result.signals.length === 0 ? (
-            <p className="text-sm leading-7 text-muted">
-              Kein aktives Forschungssignal verfügbar. Das ist erwartbar, solange die Pipeline deaktiviert ist oder der tägliche Ingestion-Job noch keine neue Evidenz persistiert hat.
-            </p>
-          ) : (
-            <div className="grid gap-3 text-sm md:grid-cols-4">
-              <p className="rounded-md border border-accent bg-accent-soft p-3">Aktiv: {result.signals.length}</p>
-              <p className="rounded-md border border-success bg-success-soft p-3">Positiv: {positiveCount}</p>
-              <p className="rounded-md border border-danger bg-danger-soft p-3">Negativ: {negativeCount}</p>
-              <p className="rounded-md border border-line bg-surface p-3">Neutral: {neutralCount}</p>
-            </div>
-          )}
-        </InfoCard>
+      <Panel locale="de" title="Evidenzaktionen" why="Jedes Forschungssignal muss zurück in die Entscheidungskette und zur prüfbaren Quelle führen.">
+        <div className="space-y-3">
+          {actionLinks.map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="block rounded-xl border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
+            >
+              <p className="font-semibold text-ink">{action.label}</p>
+              <p className="mt-1 text-sm leading-6 text-muted">{action.description}</p>
+            </Link>
+          ))}
+        </div>
+      </Panel>
 
-        <InfoCard title="Evidenzaktionen" subtitle="Jedes Forschungssignal muss zurück in die Entscheidungskette">
-          <div className="space-y-3">
-            {actionLinks.map((action) => (
-              <Link
-                key={action.href}
-                href={action.href}
-                className="block rounded-md border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
-              >
-                <p className="font-semibold text-ink">{action.label}</p>
-                <p className="mt-1 text-sm leading-6 text-muted">{action.description}</p>
-              </Link>
+      <Panel locale="de" title="Signalliste" why="Die einzelnen Signale zeigen Richtung, Quelle und Konfidenz statt nur eine aggregierte Aussage.">
+        {state !== 'ready' ? (
+          <div className={`rounded-xl border p-4 text-sm leading-7 ${pipelineStateTone(state)}`}>
+            {pipelineStateDetail(state, resultMessage)}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {result.signals.map((signal, index) => (
+              <article key={signal.id} className="rounded-xl border border-line bg-surface-muted p-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className={`rounded-xl border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${toneForImpact(signal.impact_direction)}`}>
+                    {impactLabel(signal.impact_direction)}
+                  </span>
+                  <span className="text-xs uppercase tracking-[0.18em] text-muted">{signal.signal_type}</span>
+                  <span className="text-xs tabular-nums text-muted">{formatTime(signal.published_at)}</span>
+                </div>
+                <h3 className="mt-4 text-lg font-semibold text-ink">{signalTitle(signal, index)}</h3>
+                <p className="mt-3 text-sm leading-7 text-muted">{signalSummary()}</p>
+                <p className="mt-4 text-xs uppercase tracking-[0.18em] text-muted">
+                  Konfidenz <span className="tabular-nums">{(signal.confidence * 100).toFixed(0)}%</span>
+                </p>
+              </article>
             ))}
           </div>
-        </InfoCard>
-      </section>
+        )}
+      </Panel>
 
-      <section className="mt-8">
-        <InfoCard title="Signalliste" subtitle="Aktuelles Read-Model-Ergebnis">
-          {result.status !== 'error' && result.signals.length === 0 ? (
-            <p className="text-sm leading-7 text-muted">
-              Für diesen Prüfzeitraum wurden keine Forschungssignale persistiert. Berichte sollen weiter auf Markt-, Reserve-, Szenario- und Quellen-Evidenz aufbauen.
-            </p>
-          ) : result.status === 'error' ? (
-            <p className="text-sm leading-7 text-muted">
-              Die Signalliste bleibt verborgen, bis die Forschungs-API wiederhergestellt ist.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {result.signals.map((signal, index) => (
-                <article key={signal.id} className="rounded-md border border-line bg-surface-muted p-4">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase ${toneForImpact(signal.impact_direction)}`}>
-                      {impactLabel(signal.impact_direction)}
-                    </span>
-                    <span className="text-xs uppercase text-muted">{signal.signal_type}</span>
-                    <span className="text-xs text-muted">{formatTime(signal.published_at)}</span>
-                  </div>
-                  <h3 className="mt-4 text-lg font-semibold text-ink">{signalTitle(signal, index)}</h3>
-                  <p className="mt-3 text-sm leading-7 text-muted">{signalSummary()}</p>
-                  <p className="mt-4 text-xs uppercase text-muted">
-                    Konfidenz {(signal.confidence * 100).toFixed(0)}%
-                  </p>
-                </article>
-              ))}
-            </div>
-          )}
-        </InfoCard>
-      </section>
-    </Shell>
+      <SourceFooter
+        locale="de"
+        sources={[
+          {
+            id: 'research-signals',
+            label: state === 'error' ? 'Forschungs-Signal-API aktuell nicht verfügbar' : 'Forschungs-Signal-Read-Model (Richtung, Konfidenz und Veröffentlichungszeit)',
+            asOf,
+            basis: 'derived'
+          },
+          {
+            id: 'research-pipeline-config',
+            label: 'Aktivierung und Bereitstellungsstatus der Forschungspipeline',
+            basis: 'assumption'
+          }
+        ]}
+        methodHref="/de/sources"
+        methodLabel="Quellen- und Methodenliste"
+        limitations={[
+          'Forschung erklärt mögliche Ursachen; sie ersetzt keine Markt-, Reserve-, Szenario- oder Quellenprüfung.',
+          'Deaktiviert, wartend, nicht bereitgestellt oder fehlerhaft bedeutet: kein gültiger Datenstand. Der Zeitstempel kommt nur vom neuesten Signal.',
+          'Ein leeres Ergebnis ist kein Beleg dafür, dass sich der Markt nicht bewegt hat.'
+        ]}
+      />
+    </PageTemplate>
   );
 }

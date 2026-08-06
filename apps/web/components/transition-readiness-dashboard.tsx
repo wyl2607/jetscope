@@ -183,15 +183,10 @@ export function TransitionReadinessDashboard({
   const reserveSeverity = getReserveSeverity(reserveWeeks);
 
   return (
-    <section className="min-w-0 space-y-6 rounded-[2rem] border border-line bg-surface/95 p-4 shadow-sm sm:p-6">
+    <div className="min-w-0 space-y-8">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.28em] text-accent">转型监测</p>
-          <h3 className="mt-3 text-2xl font-semibold text-ink">SAF 行业转型综合仪表盘</h3>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-muted">
-            这里把燃油价格、碳价、储备压力和政策目标放在同一个工作区，帮助团队判断哪些 SAF 路径已经接近可执行区间。
-          </p>
-          <p className="mt-3 text-xs text-muted">
+          <p className="text-xs leading-6 text-muted">
             {initialReserve
               ? `储备来源：${initialReserve.source_name} · 置信度 ${Math.round(initialReserve.confidence_score * 100)}%`
               : '实时储备数据不可用；3.0w 仅为可编辑情景假设，不代表实际储备。'}
@@ -319,7 +314,7 @@ export function TransitionReadinessDashboard({
       </div>
 
       <div className="grid min-w-0 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <Panel title="各国政策推进进度" subtitle="用统一国家目标口径对比当前采用率和 2030 目标">
+        <SubSection title="各国政策推进进度" why="用统一国家目标口径对比当前采用率和 2030 目标，判断政策推进是否跟得上转型压力。">
           <div className="mb-3 grid grid-cols-[112px_1fr_52px_74px] gap-2 border-b border-line pb-2 text-[11px] uppercase tracking-[0.12em] text-muted">
             <span>国家 / 地区</span>
             <span>当前 / 2030 目标</span>
@@ -358,9 +353,9 @@ export function TransitionReadinessDashboard({
               );
             })}
           </div>
-        </Panel>
+        </SubSection>
 
-        <Panel title="关键政策里程碑" subtitle="把政策时间线和已知 SAF 掺混目标放在同一视图">
+        <SubSection title="关键政策里程碑" why="把政策时间线和已知 SAF 掺混目标放在同一视图，避免把已生效规则误读成未来催化剂。">
           <div className="relative space-y-4 pl-5">
             <div className="absolute bottom-1 left-[5px] top-1 w-px bg-line" />
             {POLICY_MILESTONES.map((item) => {
@@ -393,11 +388,11 @@ export function TransitionReadinessDashboard({
               );
             })}
           </div>
-        </Panel>
+        </SubSection>
       </div>
 
       <div className="grid min-w-0 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <Panel title="主要航空公司 SAF 采用率" subtitle="对比当前采用率、2030 目标和估算状态">
+        <SubSection title="主要航空公司 SAF 采用率" why="对比当前采用率、2030 目标和估算状态，判断行业采用进度是否支撑当前情景。">
           <div className="mb-3 grid grid-cols-[126px_1fr_58px_58px] gap-2 border-b border-line pb-2 text-[11px] uppercase tracking-[0.12em] text-muted">
             <span>航空公司</span>
             <span>当前 / 目标</span>
@@ -434,9 +429,9 @@ export function TransitionReadinessDashboard({
               );
             })}
           </div>
-        </Panel>
+        </SubSection>
 
-        <Panel title="研究提醒" subtitle="把当前最需要复核的转型信号压缩成速览">
+        <SubSection title="研究提醒" why="把当前最需要复核的转型信号压缩成速览，帮助读者决定下一步先查哪条证据。">
           <div className="space-y-4">
             <InsightRow
               label="政策平均完成度"
@@ -467,14 +462,14 @@ export function TransitionReadinessDashboard({
               tone={loading ? 'purple' : 'teal'}
             />
           </div>
-        </Panel>
+        </SubSection>
       </div>
 
       <ScenarioCostStackChart
         tippingPoint={toTippingPointReadModel(tippingPoint)}
         selectedPathwayKey={selectedPathwayKey}
       />
-    </section>
+    </div>
   );
 }
 
@@ -546,13 +541,22 @@ function SelectCard({
   );
 }
 
-function Panel({
+/**
+ * A block *inside* a Panel. Deliberately not the shared Panel: this whole
+ * dashboard already sits in one, and a full-weight Panel nested in a Panel is
+ * the box-inside-an-identical-box that contract section 2 rule 3 exists to
+ * prevent. Subordinate title weight, no shadow, tighter padding.
+ *
+ * Named SubSection rather than Panel so it cannot shadow the shared import the
+ * way the previous local definition did.
+ */
+function SubSection({
   title,
-  subtitle,
+  why,
   children
 }: {
   title: string;
-  subtitle: string;
+  why: string;
   children: ReactNode;
 }) {
   return (
@@ -562,7 +566,7 @@ function Panel({
           <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">{title}</h4>
           <div className="h-px flex-1 bg-line" />
         </div>
-        <p className="mt-2 text-sm text-muted">{subtitle}</p>
+        <p className="mt-2 text-sm leading-6 text-muted">{why}</p>
       </div>
       {children}
     </section>

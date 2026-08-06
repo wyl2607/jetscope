@@ -1,5 +1,7 @@
-import { InfoCard, MetricCard } from '@/components/cards';
-import { Shell } from '@/components/shell';
+import { MetricCard } from '@/components/cards';
+import { PageTemplate, SignalRow } from '@/components/page-template';
+import { Panel } from '@/components/panel';
+import { SourceFooter } from '@/components/source-footer';
 import { getDashboardReadModel, type DashboardReadModel } from '@/lib/dashboard-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata, Route } from 'next';
@@ -75,7 +77,7 @@ function formatAsOf(value: string | null): string {
 
 function deliveryHint(readModel: DashboardReadModel): string {
   if (readModel.isFallback) {
-    return 'Lokaler API-Fallback ist aktiv; Entscheidungen vor Nutzung mit Quellenprüfung und Startbereitschaft abgleichen.';
+    return 'Lokaler API-Fallback ist aktiv; Annahmen vor Nutzung mit Quellenprüfung und Startbereitschaft abgleichen.';
   }
 
   return `Quellenstatus: ${sourceStatusLabel(readModel.market.source_status.overall)} | Aktualität ${readModel.freshnessSignal.minutes} Min.`;
@@ -89,7 +91,26 @@ function safeScenarioName(name: string, index: number): string {
 export default async function GermanScenariosPage() {
   const readModel = await getDashboardReadModel('de');
   const market = readModel.market.values;
+  const sourceStatus = readModel.market.source_status;
   const risk = readModel.topRiskSignal;
+  const needsReview =
+    readModel.isFallback ||
+    sourceStatus.overall !== 'ok' ||
+    risk == null ||
+    risk.level !== 'normal' ||
+    readModel.scenarioCount === 0;
+  const assumptionPosture = readModel.isFallback
+    ? 'Nicht belastbar'
+    : sourceStatus.overall === 'offline' || risk?.level === 'alert'
+      ? 'Neu bewerten'
+      : needsReview
+        ? 'Prüfen'
+        : 'Vertretbar';
+  const assumptionTone = readModel.isFallback || sourceStatus.overall === 'offline' || risk?.level === 'alert'
+    ? 'text-danger'
+    : needsReview
+      ? 'text-warning'
+      : 'text-success';
   const riskValue =
     risk == null
       ? 'Keine Anomalie'
@@ -98,15 +119,29 @@ export default async function GermanScenariosPage() {
     risk == null
       ? 'Das Marktfenster hat noch kein priorisiertes Warnsignal erzeugt.'
       : `${riskLevelLabel(risk.level)} | Stichproben ${risk.sampleCount} | Stand ${formatAsOf(risk.latestAsOf)}`;
+  const asOf = readModel.isFallback ? null : readModel.market.generated_at;
 
   return (
-    <Shell
+    <PageTemplate
       locale="de"
       eyebrow="Szenarioprüfung"
       title="Szenario-Workbench"
-      description="Gespeicherte SAF-Übergangsannahmen und Entscheidungskontext auf Deutsch prüfen, während geschützte Szenario-Schreibvorgänge in der primären Arbeitsfläche bleiben."
+      question="Repräsentieren die gespeicherten Annahmen noch den aktuellen Markt?"
+      asOf={asOf}
     >
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <SignalRow label="Szenarioentscheidung">
+        <MetricCard
+          label="Annahmenstatus"
+          value={assumptionPosture}
+          valueClassName={assumptionTone}
+          hint={
+            readModel.isFallback
+              ? 'Der Markt-Read-Model-Fallback macht die gespeicherten Annahmen nicht automatisch belastbar.'
+              : needsReview
+                ? 'Quellenlage, Risiko oder fehlende Szenarien verlangen eine Prüfung vor der Übernahme.'
+                : 'Aktuelle Quellenlage und Risikofenster geben keinen unmittelbaren Prüfhinweis.'
+          }
+        />
         <MetricCard
           label="Gespeicherte Szenarien"
           value={`${readModel.scenarioCount}`}
@@ -125,55 +160,83 @@ export default async function GermanScenariosPage() {
           label="Höchstes Risikosignal"
           value={riskValue}
           hint={riskHint}
-          valueClassName={risk?.level === 'alert' ? 'text-danger' : risk?.level === 'watch' ? 'text-warning' : 'text-success'}
+          valueClassName={risk?.level === 'alert' ? 'text-danger' : risk?.level === 'watch' ? 'text-warning' : risk == null ? 'text-warning' : 'text-success'}
         />
-        <MetricCard
-          label="Geschützte Schreibgrenze"
-          value="Primäre Arbeitsfläche"
-          hint="Erstellen, Aktualisieren und Löschen benötigen einen Admin-Token in der primären Szenario-Arbeitsfläche."
-        />
-      </section>
+      </SignalRow>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
-        <InfoCard title="Szenarioannahmen" subtitle="Gespeicherte Workspace-Datensätze">
-          {readModel.recentScenarioNames.length ? (
-            <ul className="space-y-3 text-sm leading-7 text-muted">
-              {readModel.recentScenarioNames.map((name, index) => (
-                <li key={`${name}-${index}`}>{safeScenarioName(name, index)}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm leading-7 text-muted">
-              Noch keine gespeicherten Annahmen verfügbar. Nutze den primären Szenario-Editor, um überprüfbare Fälle für Preis-, Reserve-, Routen- und Policy-Diskussionen anzulegen.
-            </p>
-          )}
-        </InfoCard>
-
-        <InfoCard title="Entscheidungskontext" subtitle="Szenarien mit aktueller Evidenz nutzen">
-          <div className="space-y-3 text-sm leading-7 text-muted">
-            <p>{deliveryHint(readModel)}</p>
-            <p>Szenarien sind Evidenzdatensätze für Review und Teamdiskussion; sie ersetzen keine Beschaffungsfreigabe, Quellenvalidierung oder geschützte Admin-Konfiguration.</p>
-            <p>Vor dem Vergleich von Annahmen prüfen, ob Quellenabdeckung und Startbereitschaft Fallbacks oder deaktivierte Systemteile sichtbar machen.</p>
-          </div>
-        </InfoCard>
-      </section>
-
-      <section className="mt-8">
-        <InfoCard title="Review-Ablauf" subtitle="Von Annahmen zu Evidenz">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {actionLinks.map((action) => (
-              <Link
-                key={action.href}
-                href={action.href}
-                className="block rounded-md border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
-              >
-                <p className="font-semibold text-ink">{action.label}</p>
-                <p className="mt-1 text-sm leading-6 text-muted">{action.description}</p>
-              </Link>
+      <Panel locale="de" title="Szenarioannahmen" why="Gespeicherte Workspace-Datensätze zeigen, welche Annahmen für Vergleich und Review verfügbar sind.">
+        {readModel.recentScenarioNames.length ? (
+          <ul className="space-y-3 text-sm leading-7 text-muted">
+            {readModel.recentScenarioNames.map((name, index) => (
+              <li key={`${name}-${index}`}>{safeScenarioName(name, index)}</li>
             ))}
-          </div>
-        </InfoCard>
-      </section>
-    </Shell>
+          </ul>
+        ) : (
+          <p className="rounded-xl border border-warning bg-warning-soft p-4 text-sm leading-7 text-warning">
+            Noch keine gespeicherten Annahmen verfügbar. Nutze den primären Szenario-Editor, um überprüfbare Fälle für Preis-, Reserve-, Routen- und Policy-Diskussionen anzulegen.
+          </p>
+        )}
+      </Panel>
+
+      <Panel locale="de" title="Entscheidungskontext" why="Szenarien werden erst mit aktueller Evidenz entscheidungsrelevant; Fallbacks und fehlende Signale müssen sichtbar bleiben.">
+        <div className="space-y-3 text-sm leading-7 text-muted">
+          <p>{deliveryHint(readModel)}</p>
+          <p>Szenarien sind Evidenzdatensätze für Review und Teamdiskussion; sie ersetzen keine Beschaffungsfreigabe, Quellenvalidierung oder geschützte Admin-Konfiguration.</p>
+          <p>Vor dem Vergleich von Annahmen prüfen, ob Quellenabdeckung und Startbereitschaft Fallbacks oder deaktivierte Systemteile sichtbar machen.</p>
+        </div>
+      </Panel>
+
+      <Panel
+        locale="de"
+        title="Review-Ablauf"
+        why="Die nächsten Schritte führen von gespeicherten Annahmen zurück zu Evidenz, Startbereitschaft und geschützten Schreibgrenzen."
+      >
+        <p className="mb-4 text-sm leading-7 text-muted"><span className="font-medium text-ink">Geschützte Schreibgrenze:</span> Erstellen, Aktualisieren und Löschen bleiben in der primären Szenario-Arbeitsfläche.</p>
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {actionLinks.map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="block rounded-xl border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
+            >
+              <p className="font-semibold text-ink">{action.label}</p>
+              <p className="mt-1 text-sm leading-6 text-muted">{action.description}</p>
+            </Link>
+          ))}
+        </div>
+      </Panel>
+
+      <SourceFooter
+        locale="de"
+        sources={[
+          {
+            id: 'dashboard-read-model',
+            label: readModel.isFallback
+              ? 'Markt-Snapshot-API nicht erreichbar; es werden interne Ersatzwerte verwendet'
+              : 'Markt-Snapshot-API (Quellenstatus, Konfidenz, Fallback-Rate und Aktualität)',
+            asOf,
+            basis: readModel.isFallback ? 'assumption' : 'observed'
+          },
+          {
+            id: 'scenario-store',
+            label: `Lokaler Szenariospeicher (${readModel.scenarioCount} gespeicherte Szenarien)`,
+            basis: 'assumption'
+          },
+          {
+            id: 'risk-signal',
+            label: 'Das Risikosignal wird aus der Bewegung im Markthistorienfenster abgeleitet, nicht vom Upstream geliefert',
+            basis: 'derived'
+          }
+        ]}
+        methodHref="/de/sources"
+        methodLabel="Quellen- und Methodenliste"
+        limitations={[
+          'Gespeicherte Szenarien sind lokale Annahmen für Prüfung und Diskussion; sie ersetzen keine Beschaffungsfreigabe.',
+          'Ein Fallback-Read-Model erhält die Seite sichtbar, liefert aber keinen gültigen Datenstand für die enthaltenen Ersatzwerte.',
+          'Kein Risikosignal bei dünner Stichprobe heißt nicht, dass kein Risiko besteht.',
+          'Die geschützte Schreibgrenze liegt in der primären Szenario-Arbeitsfläche.'
+        ]}
+      />
+    </PageTemplate>
   );
 }

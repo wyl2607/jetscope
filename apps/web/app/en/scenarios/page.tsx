@@ -1,5 +1,7 @@
-import { InfoCard, MetricCard } from '@/components/cards';
-import { Shell } from '@/components/shell';
+import { MetricCard } from '@/components/cards';
+import { PageTemplate, SignalRow } from '@/components/page-template';
+import { Panel } from '@/components/panel';
+import { SourceFooter } from '@/components/source-footer';
 import { getDashboardReadModel, type DashboardReadModel } from '@/lib/dashboard-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata, Route } from 'next';
@@ -64,7 +66,7 @@ function formatAsOf(value: string | null): string {
 
 function deliveryHint(readModel: DashboardReadModel): string {
   if (readModel.isFallback) {
-    return `Local API fallback is active: ${readModel.error ?? 'unknown cause'}.`;
+    return `Local API fallback is active: ${readModel.error ?? 'unknown cause'}. Review assumptions against source evidence before use.`;
   }
 
   return `Source status: ${readModel.market.source_status.overall} | freshness ${readModel.freshnessSignal.minutes} min.`;
@@ -78,7 +80,26 @@ function safeScenarioName(name: string, index: number): string {
 export default async function EnglishScenariosPage() {
   const readModel = await getDashboardReadModel('en');
   const market = readModel.market.values;
+  const sourceStatus = readModel.market.source_status;
   const risk = readModel.topRiskSignal;
+  const needsReview =
+    readModel.isFallback ||
+    sourceStatus.overall !== 'ok' ||
+    risk == null ||
+    risk.level !== 'normal' ||
+    readModel.scenarioCount === 0;
+  const assumptionPosture = readModel.isFallback
+    ? 'Not reliable'
+    : sourceStatus.overall === 'offline' || risk?.level === 'alert'
+      ? 'Reassess'
+      : needsReview
+        ? 'Review first'
+        : 'Usable';
+  const assumptionTone = readModel.isFallback || sourceStatus.overall === 'offline' || risk?.level === 'alert'
+    ? 'text-danger'
+    : needsReview
+      ? 'text-warning'
+      : 'text-success';
   const riskValue =
     risk == null
       ? 'No anomaly'
@@ -87,15 +108,29 @@ export default async function EnglishScenariosPage() {
     risk == null
       ? 'The market history window has not produced a ranked alert yet.'
       : `${riskLevelLabel(risk.level)} | samples ${risk.sampleCount} | as of ${formatAsOf(risk.latestAsOf)}`;
+  const asOf = readModel.isFallback ? null : readModel.market.generated_at;
 
   return (
-    <Shell
+    <PageTemplate
       locale="en"
       eyebrow="Scenario review"
       title="Scenario Workbench"
-      description="Review saved SAF transition assumptions and decision context in English while keeping protected scenario writes in the primary workspace."
+      question="Do the saved assumptions still represent the current market?"
+      asOf={asOf}
     >
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <SignalRow label="Scenario decision signals">
+        <MetricCard
+          label="Assumption posture"
+          value={assumptionPosture}
+          valueClassName={assumptionTone}
+          hint={
+            readModel.isFallback
+              ? 'The market read-model fallback does not make saved assumptions reliable by itself.'
+              : needsReview
+                ? 'Source posture, risk, or missing scenarios require review before carrying assumptions forward.'
+                : 'Current source posture and risk window show no immediate review trigger.'
+          }
+        />
         <MetricCard
           label="Saved scenarios"
           value={`${readModel.scenarioCount}`}
@@ -110,57 +145,79 @@ export default async function EnglishScenariosPage() {
           label="Highest risk signal"
           value={riskValue}
           hint={riskHint}
-          valueClassName={risk?.level === 'alert' ? 'text-danger' : risk?.level === 'watch' ? 'text-warning' : 'text-success'}
+          valueClassName={risk?.level === 'alert' ? 'text-danger' : risk?.level === 'watch' ? 'text-warning' : risk == null ? 'text-warning' : 'text-success'}
         />
-        <MetricCard
-          label="Protected write boundary"
-          value="Primary console"
-          hint="Create, update, and delete actions require an admin token in the primary scenario workspace."
-        />
-      </section>
+      </SignalRow>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
-        <InfoCard title="Scenario assumptions" subtitle="Saved workspace records">
-          {readModel.recentScenarioNames.length ? (
-            <ul className="space-y-3 text-sm leading-7 text-muted">
-              {readModel.recentScenarioNames.map((name, index) => (
-                <li key={`${name}-${index}`}>
-                  {safeScenarioName(name, index)}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm leading-7 text-muted">
-              No saved assumptions are available yet. Use the primary scenario editor to create reviewable cases for pricing, reserve, route, and policy discussions.
-            </p>
-          )}
-        </InfoCard>
-
-        <InfoCard title="Decision context" subtitle="Use scenarios with current evidence">
-          <div className="space-y-3 text-sm leading-7 text-muted">
-            <p>{deliveryHint(readModel)}</p>
-            <p>Scenarios are evidence records for review and team discussion; they do not replace procurement approval, source validation, or protected admin configuration.</p>
-            <p>Before comparing assumptions, confirm that source coverage and launch readiness are not hiding fallback or disabled-state boundaries.</p>
-          </div>
-        </InfoCard>
-      </section>
-
-      <section className="mt-8">
-        <InfoCard title="Review workflow" subtitle="Move from assumptions to evidence">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {actionLinks.map((action) => (
-              <Link
-                key={action.href}
-                href={action.href}
-                className="block rounded-lg border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
-              >
-                <p className="font-semibold text-ink">{action.label}</p>
-                <p className="mt-1 text-sm leading-6 text-muted">{action.description}</p>
-              </Link>
+      <Panel locale="en" title="Scenario assumptions" why="Saved workspace records show which assumptions are available for comparison and review.">
+        {readModel.recentScenarioNames.length ? (
+          <ul className="space-y-3 text-sm leading-7 text-muted">
+            {readModel.recentScenarioNames.map((name, index) => (
+              <li key={`${name}-${index}`}>{safeScenarioName(name, index)}</li>
             ))}
-          </div>
-        </InfoCard>
-      </section>
-    </Shell>
+          </ul>
+        ) : (
+          <p className="rounded-xl border border-warning bg-warning-soft p-4 text-sm leading-7 text-warning">
+            No saved assumptions are available yet. Use the primary scenario editor to create reviewable cases for pricing, reserve, route, and policy discussions.
+          </p>
+        )}
+      </Panel>
+
+      <Panel locale="en" title="Decision context" why="Scenarios become decision-relevant only alongside current evidence; fallback and missing-signal boundaries stay visible.">
+        <div className="space-y-3 text-sm leading-7 text-muted">
+          <p>{deliveryHint(readModel)}</p>
+          <p>Scenarios are evidence records for review and team discussion; they do not replace procurement approval, source validation, or protected admin configuration.</p>
+          <p>Before comparing assumptions, confirm that source coverage and launch readiness are not hiding fallback or disabled-state boundaries.</p>
+        </div>
+      </Panel>
+
+      <Panel locale="en" title="Review workflow" why="The next steps move from saved assumptions back to evidence, launch readiness, and protected write boundaries.">
+        <p className="mb-4 text-sm leading-7 text-muted"><span className="font-medium text-ink">Protected write boundary:</span> create, update, and delete actions remain in the primary scenario workspace.</p>
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {actionLinks.map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="block rounded-xl border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
+            >
+              <p className="font-semibold text-ink">{action.label}</p>
+              <p className="mt-1 text-sm leading-6 text-muted">{action.description}</p>
+            </Link>
+          ))}
+        </div>
+      </Panel>
+
+      <SourceFooter
+        locale="en"
+        sources={[
+          {
+            id: 'dashboard-read-model',
+            label: readModel.isFallback
+              ? 'Market snapshot API unavailable; internal fallback values are being used'
+              : 'Market snapshot API (source posture, confidence, fallback rate, and freshness)',
+            asOf,
+            basis: readModel.isFallback ? 'assumption' : 'observed'
+          },
+          {
+            id: 'scenario-store',
+            label: `Local scenario store (${readModel.scenarioCount} saved scenarios)`,
+            basis: 'assumption'
+          },
+          {
+            id: 'risk-signal',
+            label: 'Risk signal derived from movement in the market history window, not supplied directly by upstream',
+            basis: 'derived'
+          }
+        ]}
+        methodHref="/en/sources"
+        methodLabel="Sources and methods"
+        limitations={[
+          'Saved scenarios are local assumptions for review and discussion; they do not replace procurement approval.',
+          'A fallback read model keeps the page available but does not provide a valid data-as-of for its replacement values.',
+          'No risk signal with a thin sample does not mean there is no risk.',
+          'Protected writes remain in the primary scenario workspace.'
+        ]}
+      />
+    </PageTemplate>
   );
 }

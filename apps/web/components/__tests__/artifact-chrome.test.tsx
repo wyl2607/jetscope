@@ -11,6 +11,8 @@ import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-t
 import { SourceCoveragePanel } from '@/components/source-coverage-panel';
 import { TippingEventTimeline } from '@/components/tipping-event-timeline';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
+import { ScenarioRegistry } from '@/components/scenario-registry';
+import { TransitionReadinessDashboard } from '@/components/transition-readiness-dashboard';
 
 /**
  * Contract section 2 rule 3: a section is one Panel wrapping exactly one
@@ -239,6 +241,53 @@ describe('artifacts do not draw their own card', () => {
     );
 
     expect(rootClassName(container)).not.toMatch(/rounded-2xl/);
+  });
+
+  it('ScenarioRegistry renders bare without nested panel chrome', () => {
+    const { container } = render(<ScenarioRegistry />);
+
+    expect(rootClassName(container)).not.toMatch(/rounded-2xl|js-panel/);
+    expect(container.querySelectorAll('.js-panel')).toHaveLength(0);
+  });
+
+  it('TransitionReadinessDashboard renders bare', () => {
+    const { container } = render(
+      <TransitionReadinessDashboard
+        initialTippingPoint={{
+          generated_at: '2026-08-06T06:00:00Z',
+          signal: 'switch_window_opening',
+          inputs: {
+            fossil_jet_usd_per_l: 1.2,
+            carbon_price_eur_per_t: 80,
+            subsidy_usd_per_l: 0.2,
+            blend_rate_pct: 2
+          },
+          effective_fossil_jet_usd_per_l: 1.3,
+          pathways: []
+        }}
+        initialDecision={{
+          generated_at: '2026-08-06T06:00:00Z',
+          signal: 'incremental_adjustment',
+          inputs: {
+            fossil_jet_usd_per_l: 1.2,
+            reserve_weeks: 4,
+            carbon_price_eur_per_t: 80,
+            pathway_key: 'hefa'
+          },
+          probabilities: {
+            raise_fares: 0.2,
+            cut_capacity: 0.3,
+            buy_spot_saf: 0.1,
+            sign_long_term_offtake: 0.25,
+            ground_routes: 0.15
+          }
+        }}
+        initialReserve={null}
+        policyTargets={[]}
+      />
+    );
+
+    expect(rootClassName(container)).not.toMatch(/rounded-2xl|rounded-\[2rem\]/);
   });
 });
 

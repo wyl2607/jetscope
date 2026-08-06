@@ -35,7 +35,7 @@ export function MetricCard({
   valueHref?: string;
   cardHref?: string;
 }) {
-  const valueClass = `js-metric-value ${valueClassName ?? ''}`;
+  const valueClass = `js-metric-value tabular-nums ${valueClassName ?? ''}`;
   const canLinkValue = valueHref && !cardHref;
   const content = (
     <>

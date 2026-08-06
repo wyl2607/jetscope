@@ -1,7 +1,8 @@
-import { InfoCard, MetricCard } from '@/components/cards';
+import { MetricCard } from '@/components/cards';
+import { PageTemplate, SignalRow } from '@/components/page-template';
 import { Panel } from '@/components/panel';
 import { ResearchDecisionBriefCard } from '@/components/research-decision-brief';
-import { Shell } from '@/components/shell';
+import { SourceFooter } from '@/components/source-footer';
 import { AI_RESEARCH_ENABLED, buildResearchDecisionBrief, getResearchSignals } from '@/lib/research-signals-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata, Route } from 'next';
@@ -27,6 +28,53 @@ const actionLinks: Array<{ label: string; href: Route; description: string }> = 
     description: '先确认市场来源、代理和回退状态，再使用研究信号解释变化。'
   }
 ];
+
+type PipelineState = 'disabled' | 'waiting' | 'not_found' | 'error' | 'ready';
+
+function getPipelineState(enabled: boolean, status: string, signalCount: number): PipelineState {
+  if (!enabled) return 'disabled';
+  if (status === 'error') return 'error';
+  if (status === 'not_found') return 'not_found';
+  if (signalCount === 0) return 'waiting';
+  return 'ready';
+}
+
+function pipelineStateLabel(state: PipelineState): string {
+  if (state === 'disabled') return '未启用';
+  if (state === 'waiting') return '等待信号';
+  if (state === 'not_found') return '未部署';
+  if (state === 'error') return '错误';
+  return '运行中';
+}
+
+function pipelineStateTone(state: PipelineState): string {
+  if (state === 'disabled') return 'border-accent bg-accent-soft text-accent';
+  if (state === 'waiting') return 'border-warning bg-warning-soft text-warning';
+  if (state === 'not_found') return 'border-warning border-dashed bg-warning-soft text-warning';
+  if (state === 'error') return 'border-danger bg-danger-soft text-danger';
+  return 'border-success bg-success-soft text-success';
+}
+
+function pipelineValueTone(state: PipelineState): string {
+  if (state === 'disabled') return 'text-accent';
+  if (state === 'waiting' || state === 'not_found') return 'text-warning';
+  if (state === 'error') return 'text-danger';
+  return 'text-success';
+}
+
+function pipelineStateDetail(state: PipelineState, message: string | null): string {
+  if (state === 'disabled') {
+    return '开启研究流水线前，本页只提供产品工作台，不声称正在运行实时 AI 分析。';
+  }
+  if (state === 'waiting') {
+    return '研究 API 已启用，但当前没有持久化信号；等待每日研究任务产出可复核记录。';
+  }
+  if (state === 'not_found') {
+    return '研究服务尚未部署或当前环境找不到它；不要把空结果解释成没有市场变化。';
+  }
+  if (state === 'error') return `Research API 错误：${message ?? '未知原因'}。恢复前不要引用研究结论。`;
+  return '研究 API 已启用，页面展示最近 30 天内持久化的研究信号。';
+}
 
 function toneForImpact(impact: string): string {
   if (impact === 'positive') return 'border-success bg-success-soft text-success';
@@ -55,27 +103,33 @@ function formatTime(value: string): string {
 export default async function ResearchPage() {
   const result = await getResearchSignals();
   const brief = buildResearchDecisionBrief(result);
-  const latestSignal = result.signals[0] ?? null;
-  const pipelineStatus = AI_RESEARCH_ENABLED
-    ? result.status === 'error'
-      ? '错误'
-      : result.signals.length
-        ? '运行中'
-        : '等待信号'
-    : '未启用';
-  const pipelineHint = AI_RESEARCH_ENABLED
-    ? '研究 API 已启用；页面展示最近 30 天内持久化的信号。'
-    : '开启研究流水线前，本页只展示产品工作台，不声称正在运行实时 AI 分析。';
+  const latestSignal = result.signals.reduce<typeof result.signals[number] | null>((latest, signal) => {
+    if (!latest) return signal;
+    return new Date(signal.published_at).getTime() > new Date(latest.published_at).getTime() ? signal : latest;
+  }, null);
+  const state = getPipelineState(AI_RESEARCH_ENABLED, result.status, result.signals.length);
+  const resultMessage = result.status === 'error' ? result.message : null;
+  const asOf = state === 'ready' ? latestSignal?.published_at ?? null : null;
 
   return (
-    <Shell
+    <PageTemplate
       eyebrow="AI 研究流水线"
       title="研究工作台"
-      description="把文章级信号变成可复核的决策解释层；未启用时保持诚实空态。"
+      question="今天的研究信号，够不够解释市场为什么在动？"
+      asOf={asOf}
     >
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="流水线状态" value={pipelineStatus} hint={pipelineHint} />
-        <MetricCard label="信号总数" value={`${result.signals.length}`} hint={`正向 ${brief.positiveCount} · 负向 ${brief.negativeCount} · 中性 ${brief.neutralCount}`} />
+      <SignalRow label="研究结论信号">
+        <MetricCard
+          label="流水线状态"
+          value={pipelineStateLabel(state)}
+          valueClassName={pipelineValueTone(state)}
+          hint={pipelineStateDetail(state, resultMessage)}
+        />
+        <MetricCard
+          label="信号总数"
+          value={`${result.signals.length}`}
+          hint={`正向 ${brief.positiveCount} · 负向 ${brief.negativeCount} · 中性 ${brief.neutralCount}`}
+        />
         <MetricCard
           label="最新信号"
           value={latestSignal ? formatTime(latestSignal.published_at) : '暂无'}
@@ -86,79 +140,90 @@ export default async function ResearchPage() {
           value={AI_RESEARCH_ENABLED ? '可解释' : '只读空态'}
           hint="研究信号只解释变化原因，不替代市场、储备或来源复核。"
         />
-      </section>
+      </SignalRow>
 
-      {!AI_RESEARCH_ENABLED ? (
-        <section className="mt-8 rounded-2xl border border-dashed border-accent bg-accent-soft p-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">开启研究流水线</p>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-muted">
-            后端研究任务部署后设置 <code>JETSCOPE_AI_RESEARCH_ENABLED=true</code>。在此之前，
-            页面保持可构建、可导航、可解释边界，但不会冒充实时 Claude 分析结果。
-          </p>
-        </section>
-      ) : null}
+      <Panel
+        title="研究流水线状态"
+        why="先区分配置边界、等待、未部署和故障，再决定是否引用研究结论。"
+      >
+        <div className={`rounded-xl border p-4 text-sm leading-7 ${pipelineStateTone(state)}`}>
+          <p className="font-semibold">{pipelineStateLabel(state)}</p>
+          <p className="mt-1">{pipelineStateDetail(state, resultMessage)}</p>
+        </div>
+      </Panel>
 
-      {result.status === 'error' ? (
-        <section className="mt-8 rounded-2xl border border-danger bg-danger-soft p-6 text-sm text-danger">
-          Research API 错误：{result.message}
-        </section>
-      ) : null}
+      <Panel
+        title="研究决策层"
+        why="把下面这串信号压成一句可以拿去做决定的话，以及它现在有多可信。"
+      >
+        <ResearchDecisionBriefCard brief={brief} showLink={false} />
+      </Panel>
 
-      <div className="mt-8">
-        <Panel
-          title="研究决策层"
-          why="把下面这串信号压成一句可以拿去做决定的话，以及它现在有多可信。"
-        >
-          <ResearchDecisionBriefCard brief={brief} showLink={false} />
-        </Panel>
-      </div>
-
-      <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.85fr]">
-        <InfoCard title="信号列表" subtitle="按当前 read model 返回结果展示">
-          {result.status !== 'error' && result.signals.length === 0 ? (
-            <p className="text-sm leading-7 text-muted">
-              暂无研究信号。每日研究任务尚未持久化信号前，这是预期状态；报告仍应以市场、储备和来源状态为主。
-            </p>
-          ) : result.status === 'error' ? (
-            <p className="text-sm leading-7 text-muted">错误恢复前不展示信号列表，避免把不完整数据写进报告判断。</p>
-          ) : (
-            <div className="space-y-4">
-              {result.signals.map((signal) => (
-                <article key={signal.id} className="rounded-lg border border-line bg-surface-muted p-4">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${toneForImpact(signal.impact_direction)}`}>
-                      {impactLabel(signal.impact_direction)}
-                    </span>
-                    <span className="text-xs uppercase tracking-[0.14em] text-muted">{signal.signal_type}</span>
-                    <span className="text-xs text-muted">{formatTime(signal.published_at)}</span>
-                  </div>
-                  <h3 className="mt-4 text-lg font-semibold text-ink">{signal.title}</h3>
-                  <p className="mt-3 text-sm leading-7 text-muted">{signal.summary_cn}</p>
-                  <p className="mt-3 text-sm leading-7 text-muted">{signal.summary_en}</p>
-                  <p className="mt-4 text-xs uppercase tracking-[0.14em] text-muted">
-                    置信度 {(signal.confidence * 100).toFixed(0)}%
-                  </p>
-                </article>
-              ))}
-            </div>
-          )}
-        </InfoCard>
-
-        <InfoCard title="使用动作" subtitle="研究信号必须回到证据链">
-          <div className="space-y-3">
-            {actionLinks.map((action) => (
-              <Link
-                key={action.href}
-                href={action.href}
-                className="block rounded-lg border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
-              >
-                <p className="font-semibold text-ink">{action.label}</p>
-                <p className="mt-1 text-sm leading-6 text-muted">{action.description}</p>
-              </Link>
+      <Panel title="信号列表" why="逐条查看研究结论、影响方向和置信度，避免只引用汇总判断。">
+        {state !== 'ready' ? (
+          <div className={`rounded-xl border p-4 text-sm leading-7 ${pipelineStateTone(state)}`}>
+            {pipelineStateDetail(state, resultMessage)}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {result.signals.map((signal) => (
+              <article key={signal.id} className="rounded-xl border border-line bg-surface-muted p-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className={`rounded-xl border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${toneForImpact(signal.impact_direction)}`}>
+                    {impactLabel(signal.impact_direction)}
+                  </span>
+                  <span className="text-xs uppercase tracking-[0.18em] text-muted">{signal.signal_type}</span>
+                  <span className="text-xs tabular-nums text-muted">{formatTime(signal.published_at)}</span>
+                </div>
+                <h3 className="mt-4 text-lg font-semibold text-ink">{signal.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-muted">{signal.summary_cn}</p>
+                <p className="mt-3 text-sm leading-7 text-muted">{signal.summary_en}</p>
+                <p className="mt-4 text-xs uppercase tracking-[0.18em] text-muted">
+                  置信度 <span className="tabular-nums">{(signal.confidence * 100).toFixed(0)}%</span>
+                </p>
+              </article>
             ))}
           </div>
-        </InfoCard>
-      </section>
-    </Shell>
+        )}
+      </Panel>
+
+      <Panel title="使用动作" why="研究信号必须回到证据链，读者应能从这里进入报告和来源复核。">
+        <div className="space-y-3">
+          {actionLinks.map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="block rounded-xl border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
+            >
+              <p className="font-semibold text-ink">{action.label}</p>
+              <p className="mt-1 text-sm leading-6 text-muted">{action.description}</p>
+            </Link>
+          ))}
+        </div>
+      </Panel>
+
+      <SourceFooter
+        sources={[
+          {
+            id: 'research-signals',
+            label: state === 'error' ? '研究信号 API 当前不可用' : '研究信号 read model（文章级信号、影响方向、置信度）',
+            asOf,
+            basis: 'derived'
+          },
+          {
+            id: 'research-pipeline-config',
+            label: '研究流水线启用配置与部署状态',
+            basis: 'assumption'
+          }
+        ]}
+        methodHref="/sources"
+        methodLabel="口径与来源清单"
+        limitations={[
+          '研究信号解释可能的变化原因，不替代市场、储备、情景或来源复核。',
+          '未启用、等待、未部署和错误都不产生可引用的 as-of 时间；只有最新信号的 published_at 才作为页面时间。',
+          '研究 API 出错或没有信号时，空结果不等于市场没有变化。'
+        ]}
+      />
+    </PageTemplate>
   );
 }
