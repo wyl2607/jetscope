@@ -14,7 +14,10 @@ const CONVERTED_PAGES = [
   'apps/web/app/heat/page.tsx',
   'apps/web/app/reports/page.tsx',
   'apps/web/app/de/reports/page.tsx',
-  'apps/web/app/en/reports/page.tsx'
+  'apps/web/app/en/reports/page.tsx',
+  'apps/web/app/crisis/page.tsx',
+  'apps/web/app/de/crisis/page.tsx',
+  'apps/web/app/en/crisis/page.tsx'
 ];
 
 /** Pages that render a read model with an isFallback flag. */
@@ -23,6 +26,13 @@ const FALLBACK_AWARE_PAGES = [
   'apps/web/app/de/reports/page.tsx',
   'apps/web/app/en/reports/page.tsx'
 ];
+
+/**
+ * Pages on the crisis-brief contract. It reports a fallback through `error`
+ * rather than an `isFallback` flag, so the guard reads differently - but the
+ * property being held is identical: never stamp invented values as fresh.
+ */
+const CRISIS_BRIEF_PAGES = ['apps/web/app/de/crisis/page.tsx', 'apps/web/app/en/crisis/page.tsx'];
 
 async function read(path) {
   return readFile(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -75,5 +85,32 @@ test('a page on fallback data never stamps it with a fresh timestamp', async () 
       /basis:\s*readModel\.isFallback\s*\?\s*'assumption'\s*:\s*'observed'/,
       `${path} must label fallback data as an assumption, never as observed`
     );
+  }
+});
+
+test('a crisis-brief page on fallback data never stamps it with a fresh timestamp', async () => {
+  for (const path of CRISIS_BRIEF_PAGES) {
+    const source = await read(path);
+    assert.match(
+      source,
+      /readModel\.error\s*\?\s*null\s*:/,
+      `${path} must suppress the timestamp while the crisis brief is on fallback`
+    );
+    assert.match(
+      source,
+      /basis:\s*readModel\.error\s*\?\s*'assumption'\s*:\s*'observed'/,
+      `${path} must label fallback data as an assumption, never as observed`
+    );
+  }
+});
+
+test('a reserve reading is labelled by how it was produced, not assumed observed', async () => {
+  // A hand estimate presented with the same weight as an official filing is
+  // the failure this contract exists to prevent, so every crisis page has to
+  // route source_type through a basis mapping rather than hardcoding observed.
+  for (const path of ['apps/web/app/crisis/page.tsx', ...CRISIS_BRIEF_PAGES]) {
+    const source = await read(path);
+    assert.match(source, /function reserveBasis\(/, `${path} must map reserve source_type to a basis`);
+    assert.match(source, /return 'assumption'/, `${path} must fall back to assumption, not to observed`);
   }
 });

@@ -1,5 +1,7 @@
-import { InfoCard, MetricCard } from '@/components/cards';
-import { Shell } from '@/components/shell';
+import { MetricCard } from '@/components/cards';
+import { PageTemplate, SignalRow } from '@/components/page-template';
+import { Panel } from '@/components/panel';
+import { SourceFooter, type SourceRef } from '@/components/source-footer';
 import { getCrisisBriefReadModel, type CrisisBriefReadModel } from '@/lib/crisis-brief-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata, Route } from 'next';
@@ -63,6 +65,29 @@ function reserveStressLabel(level: string | undefined): string {
   return 'Prüfung';
 }
 
+// Abschnitt 1 Regel 5: Der Farbton benennt einen Sachverhalt. Ein unbekannter
+// Reservestand ist kein normaler Reservestand - beides grau zu zeigen würde die
+// Lücke verstecken, statt sie zu melden.
+function reserveStressTone(level: string | undefined): string {
+  if (level === 'critical') return 'text-danger';
+  if (level === 'normal') return 'text-success';
+  return 'text-warning';
+}
+
+function sourceStatusTone(status: string): string {
+  if (status === 'ok') return 'text-success';
+  if (status === 'offline') return 'text-danger';
+  return 'text-warning';
+}
+
+// Abschnitt 3: gemessen, abgeleitet und angenommen sind nicht dasselbe, und
+// eine manuelle Schätzung darf nicht wie eine amtliche Meldung aussehen.
+function reserveBasis(sourceType: string | undefined): SourceRef['basis'] {
+  if (sourceType === 'official') return 'observed';
+  if (sourceType === 'derived') return 'derived';
+  return 'assumption';
+}
+
 function researchPosture(status: string, count: number): string {
   if (status === 'disabled') return 'deaktivierte Grenze';
   if (status === 'empty') return 'wartet auf Signale';
@@ -88,22 +113,31 @@ export default async function GermanCrisisPage() {
   const reportRoute = actionHref(readModel, 'open_report', '/de/reports/tipping-point-analysis' as Route);
   const scenariosRoute = actionHref(readModel, 'review_scenarios', '/de/scenarios' as Route);
 
+  // Auf Fallback stempelt sich das Read Model mit der aktuellen Zeit. Diese als
+  // Datenstand zu zeigen würde erfundene Werte als frisch ausgeben.
+  const asOf = readModel.error ? null : (readModel.reserve?.generated_at ?? readModel.marketGeneratedAt);
+
   return (
-    <Shell
+    <PageTemplate
       locale="de"
       eyebrow="Krisenmonitor"
       title="Krisenbrief"
-      description="Quellengestützter Überblick über EU-Reservestress, Marktvertrauen, SAF-Kippereignisse und nötige Evidenzübergaben vor operativen Entscheidungen."
+      question="Ist der Reservestress hoch genug, um jetzt eine operative Entscheidung zu ändern?"
+      asOf={asOf}
     >
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <SignalRow label="Krisensignale">
+        {/* Abschnitt 2 Regel 2: Der Reservestand ist die Antwort, alles
+            Weitere erklärt, wie sehr man ihm trauen darf. */}
         <MetricCard
           label="Reservestress"
           value={reserveWeeks == null ? 'n/a' : `${formatNumber(reserveWeeks, 1)} Wochen`}
+          valueClassName={reserveStressTone(readModel.reserve?.stress_level)}
           hint={`EU-Reservehaltung: ${reserveStressLabel(readModel.reserve?.stress_level)} | ${reserveSourceName}`}
         />
         <MetricCard
           label="Quellenvertrauen"
           value={sourceConfidence}
+          valueClassName={sourceStatusTone(sourceStatus.overall)}
           hint={`Marktstatus ${sourceStatusLabel(sourceStatus.overall)} | Reservevertrauen ${formatPercent((reserveConfidence ?? 0) * 100)}`}
           cardHref={reviewSourcesRoute}
         />
@@ -117,11 +151,14 @@ export default async function GermanCrisisPage() {
           value={researchStatus}
           hint={readModel.research.signal_count ? `${readModel.research.signal_count} Forschungssignale verfügbar.` : 'Die Seite zeigt die Forschungsgrenze, statt Evidenz zu erfinden.'}
         />
-      </section>
+      </SignalRow>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <InfoCard title="Operative Lage" subtitle="Kraftstoffstress, Reserven und Quellenqualität zusammengeführt">
-          <div className="space-y-4 text-sm leading-7 text-slate-700">
+      <Panel
+        locale="de"
+        title="Operative Lage"
+        why="Was die Zahlen oben zusammen bedeuten, und woran man erkennt, ob sie aus Live-Evidenz oder aus einer Fallback-Lage stammen."
+      >
+        <div className="space-y-4 text-sm leading-7 text-muted">
             <p>
               Der aktuelle fossile Kostenanker liegt bei <strong>{formatPrice(fossilPrice)}</strong>. JetScope stellt
               diesen Wert neben EU-Reserveabdeckung und Quellenvertrauen, damit Prüfer Live-Evidenz von Fallback-Lagen
@@ -131,35 +168,45 @@ export default async function GermanCrisisPage() {
               Der Krisenbrief kommt aus dem FastAPI-Crisis-Brief-Vertrag. Die Seite zeigt dadurch eine kohärente
               operative Lage, ohne Reserve-, Quellen-, Kippereignis- und Forschungsaggregation in der Anzeige zu duplizieren.
             </p>
+        </div>
+      </Panel>
+
+      <Panel
+        locale="de"
+        title="Evidenzdisziplin"
+        why="Die vier Angaben, an denen sich entscheidet, ob dieser Brief als Entscheidungsgrundlage taugt oder erst durch die Quellenprüfung muss."
+      >
+        <dl className="space-y-3 text-sm text-muted">
+          <div className="flex items-center justify-between gap-4">
+            <dt>Marktfrische</dt>
+            <dd className="font-medium tabular-nums text-ink">
+              {typeof sourceStatus.freshness_minutes === 'number' ? `${sourceStatus.freshness_minutes} Min.` : 'Prüfung'}
+            </dd>
           </div>
-        </InfoCard>
+          <div className="flex items-center justify-between gap-4">
+            <dt>Fallback-Rate</dt>
+            <dd className="font-medium tabular-nums text-ink">{formatPercent(sourceStatus.fallback_rate)}</dd>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <dt>Reservezeitpunkt</dt>
+            <dd className="font-medium tabular-nums text-ink">{formatAsOf(readModel.reserve?.generated_at)}</dd>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <dt>Vertragsstatus</dt>
+            <dd className={`font-medium ${readModel.error ? 'text-warning' : 'text-success'}`}>
+              {readModel.error ? 'Fallback' : 'verbunden'}
+            </dd>
+          </div>
+        </dl>
+      </Panel>
 
-        <InfoCard title="Evidenzdisziplin" subtitle="Der Krisenbrief führt in prüfbare nächste Schritte">
-          <dl className="space-y-3 text-sm text-slate-700">
-            <div className="flex items-center justify-between gap-4">
-              <dt>Marktfrische</dt>
-              <dd className="font-semibold text-slate-950">
-                {typeof sourceStatus.freshness_minutes === 'number' ? `${sourceStatus.freshness_minutes} Min.` : 'Prüfung'}
-              </dd>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <dt>Fallback-Rate</dt>
-              <dd className="font-semibold text-slate-950">{formatPercent(sourceStatus.fallback_rate)}</dd>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <dt>Reservezeitpunkt</dt>
-              <dd className="font-semibold text-slate-950">{formatAsOf(readModel.reserve?.generated_at)}</dd>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <dt>Vertragsstatus</dt>
-              <dd className="font-semibold text-slate-950">{readModel.error ? 'Fallback' : 'verbunden'}</dd>
-            </div>
-          </dl>
-        </InfoCard>
-      </section>
-
-      <section className="mt-8 grid gap-6 lg:grid-cols-3">
-        {[
+      <Panel
+        locale="de"
+        title="Nächste Schritte"
+        why="Ein Krisenbrief, der nur Zahlen zeigt, ändert nichts. Jeder Einstieg führt zu etwas Nachprüfbarem."
+      >
+        <div className="grid gap-4 lg:grid-cols-3">
+          {[
           {
             title: 'Quellennachweise prüfen',
             description: 'Fallback-, Proxy-, eingeschränkte und volatile Zeilen prüfen, bevor das Krisensignal operativ genutzt wird.',
@@ -175,17 +222,55 @@ export default async function GermanCrisisPage() {
             description: 'Gespeicherte Annahmen gegen aktuellen Reservestress und Marktvertrauen halten, bevor sich der Plan ändert.',
             href: scenariosRoute
           }
-        ].map((action) => (
-          <Link
-            key={action.href}
-            href={action.href}
-            className="rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm shadow-slate-200/70 transition hover:border-sky-300 hover:bg-sky-50"
-          >
-            <p className="text-base font-semibold text-slate-950">{action.title}</p>
-            <p className="mt-2 text-sm leading-7 text-slate-700">{action.description}</p>
-          </Link>
-        ))}
-      </section>
-    </Shell>
+          ].map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="block rounded-xl border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
+            >
+              <p className="font-medium text-ink">{action.title}</p>
+              <p className="mt-1 text-sm leading-6 text-muted">{action.description}</p>
+            </Link>
+          ))}
+        </div>
+      </Panel>
+
+      <SourceFooter
+        locale="de"
+        sources={[
+          {
+            id: 'crisis-brief-api',
+            label: readModel.error
+              ? `Crisis-Brief-API nicht erreichbar; es werden interne Ersatzwerte verwendet (${readModel.error})`
+              : 'Crisis-Brief-API (Reserve, Quellenstatus, Kippereignisse, Forschungslage)',
+            asOf,
+            basis: readModel.error ? 'assumption' : 'observed'
+          },
+          {
+            id: 'reserve-source',
+            label: `EU-Reservehaltung über ${reserveSourceName}`,
+            asOf: readModel.reserve?.generated_at ?? null,
+            basis: reserveBasis(readModel.reserve?.source_type)
+          },
+          {
+            id: 'tipping-events',
+            label: `${readModel.tippingEvents.length} beobachtete SAF-Kippereignisse im Prüffenster`,
+            basis: 'observed'
+          },
+          {
+            id: 'fossil-anchor',
+            label: `Fossiler Kostenanker ${formatPrice(fossilPrice)}, aus dem Marktsnapshot abgeleitet`,
+            basis: 'derived'
+          }
+        ]}
+        methodHref="/de/sources"
+        methodLabel="Quellen- und Methodenliste"
+        limitations={[
+          'Der Brief zeigt Reservedruck, nicht die Beschaffungslage eines einzelnen Betreibers. Verträge und Vorräte einer Airline stehen hier nicht drin.',
+          'Kippereignisse werden im Prüffenster gezählt. Keine Ereignisse heißt nicht kein Risiko, sondern nur: in diesem Fenster wurde keine Überschreitung beobachtet.',
+          'Ist die Reservequelle eine manuelle Schätzung, trägt sie oben die Kennzeichnung „Szenarioannahme" und darf nicht wie eine amtliche Meldung gelesen werden.'
+        ]}
+      />
+    </PageTemplate>
   );
 }

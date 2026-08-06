@@ -4,6 +4,7 @@ import { FuelVsSafPriceChart } from '@/components/fuel-vs-saf-price-chart';
 import { HeatSensitivityMatrix } from '@/components/heat-sensitivity-matrix';
 import { ReservesCoverageStrip } from '@/components/reserves-coverage-strip';
 import { TippingEventTimeline } from '@/components/tipping-event-timeline';
+import { TippingPointSimulator } from '@/components/tipping-point-simulator';
 
 /**
  * Contract section 2 rule 3: a section is one Panel wrapping exactly one
@@ -70,6 +71,14 @@ describe('artifacts do not draw their own card', () => {
 
   it('TippingEventTimeline renders bare', () => {
     const { container } = render(<TippingEventTimeline events={[]} />);
+
+    expect(rootClassName(container)).not.toMatch(/rounded-2xl/);
+  });
+
+  it('TippingPointSimulator renders bare', () => {
+    const { container } = render(
+      <TippingPointSimulator tippingPoint={null} decision={null} reserveWeeks={3} />
+    );
 
     expect(rootClassName(container)).not.toMatch(/rounded-2xl/);
   });

@@ -51,16 +51,11 @@ export function TippingPointSimulator({ tippingPoint, decision, reserveWeeks }: 
   ] : [];
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white/90 p-6">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+    // Bare artifact: card, title and why-line come from the wrapping Panel.
+    <div>
+      <div className="mb-6 flex justify-end text-right">
         <div>
-          <h3 className="text-lg font-medium text-slate-950">拐点模拟器</h3>
-          <p className="mt-1 text-sm text-slate-600">
-            基于 API 的模型，综合燃油价格、碳价、储备压力和路径经济性。
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-slate-500 uppercase tracking-wider">储备</p>
+          <p className="text-xs uppercase tracking-wider text-slate-500">储备</p>
           <p className="text-sm font-semibold text-slate-800">{reserveWeeks.toFixed(1)}w</p>
         </div>
       </div>
@@ -100,6 +95,6 @@ export function TippingPointSimulator({ tippingPoint, decision, reserveWeeks }: 
           ))}
         </div>
       </div>
-    </article>
+    </div>
   );
 }

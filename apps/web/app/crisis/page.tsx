@@ -1,8 +1,10 @@
+import { MetricCard } from '@/components/cards';
 import { FuelVsSafPriceChart } from '@/components/fuel-vs-saf-price-chart';
+import { PageTemplate, SignalRow } from '@/components/page-template';
 import { Panel } from '@/components/panel';
 import { ResearchDecisionBriefCard } from '@/components/research-decision-brief';
 import { ReservesCoverageStrip } from '@/components/reserves-coverage-strip';
-import { Shell } from '@/components/shell';
+import { SourceFooter, type SourceRef } from '@/components/source-footer';
 import { TippingEventTimeline } from '@/components/tipping-event-timeline';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
 import {
@@ -34,7 +36,6 @@ type CrisisActionLink = {
   title: string;
   description: string;
   href: Route;
-  tone: string;
   eyebrow: string;
 };
 
@@ -64,21 +65,18 @@ function buildCrisisLinks(safWorkbenchHref: Route, reviewSourcesHref: Route): Cr
       title: '打开储备详情',
       description: '先检查覆盖周数、来源类型、置信度和供应缺口，再调整采购判断。',
       href: '/crisis/eu-jet-reserves' as Route,
-      tone: 'border-line bg-surface hover:border-accent hover:bg-accent-soft',
       eyebrow: '储备'
     },
     {
       title: '打开 SAF 工作台',
       description: '带入当前燃油、碳价和储备读数，直接测试 SAF 路径敏感性。',
       href: safWorkbenchHref,
-      tone: 'border-line bg-success-soft hover:border-success',
       eyebrow: '模拟'
     },
     {
       title: '复核数据来源',
       description: '查看需要复核的市场输入，确认实时、代理、回退和降级状态。',
       href: reviewSourcesHref,
-      tone: 'border-line bg-warning-soft hover:border-warning',
       eyebrow: '来源'
     }
   ];
@@ -92,33 +90,12 @@ function stressLabel(level?: string): string {
   return '回退模式';
 }
 
-function stressTone(level?: string): string {
-  if (level === 'critical') return 'border-danger bg-danger-soft text-danger';
-  if (level === 'elevated') return 'border-warning bg-warning-soft text-warning';
-  if (level === 'normal') return 'border-success bg-success-soft text-success';
-  return 'border-accent bg-accent-soft text-accent';
-}
-
 function sourceTypeLabel(sourceType?: string): string {
   if (sourceType === 'official') return '官方来源';
   if (sourceType === 'manual') return '人工估算';
   if (sourceType === 'derived') return '模型推导';
   if (!sourceType) return '情景基线';
   return sourceType;
-}
-
-function sourceTone(sourceType?: string): string {
-  if (sourceType === 'official') return 'border-success bg-success-soft text-success';
-  if (sourceType === 'manual') return 'border-warning bg-warning-soft text-warning';
-  if (sourceType === 'derived') return 'border-accent bg-accent-soft text-accent';
-  return 'border-danger bg-danger-soft text-danger';
-}
-
-function confidenceTone(value?: number): string {
-  if (value == null) return 'border-danger bg-danger-soft text-danger';
-  if (value >= 0.85) return 'border-success bg-success-soft text-success';
-  if (value >= 0.7) return 'border-accent bg-accent-soft text-accent';
-  return 'border-warning bg-warning-soft text-warning';
 }
 
 function confidenceLabel(value?: number): string {
@@ -135,23 +112,35 @@ function signalLabel(signal?: string): string {
   return '情景基线';
 }
 
-function signalTone(signal?: string): string {
-  if (signal === 'saf_cost_advantaged') return 'border-success bg-success-soft text-success';
-  if (signal === 'switch_window_opening') return 'border-warning bg-warning-soft text-warning';
-  if (signal === 'fossil_still_advantaged') return 'border-accent bg-accent-soft text-accent';
-  return 'border-danger bg-danger-soft text-danger';
+// Text-only variants for the signal row. Section 1 rule 5: the tint is a claim
+// about the data, so "情景基线" (no live signal) must not read like a result.
+function signalTextTone(signal?: string): string {
+  if (signal === 'saf_cost_advantaged') return 'text-success';
+  if (signal === 'switch_window_opening') return 'text-warning';
+  if (signal === 'fossil_still_advantaged') return 'text-accent';
+  return 'text-danger';
 }
 
-function formatAsOf(value?: string): string {
-  if (!value) return '暂不可用';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleString('zh-CN', {
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+function stressTextTone(level?: string): string {
+  if (level === 'critical') return 'text-danger';
+  if (level === 'elevated') return 'text-warning';
+  if (level === 'normal') return 'text-success';
+  return 'text-danger';
+}
+
+function confidenceTextTone(value?: number): string {
+  if (value == null) return 'text-danger';
+  if (value >= 0.85) return 'text-success';
+  if (value >= 0.7) return 'text-accent';
+  return 'text-warning';
+}
+
+// Section 3: an official filing, a model output and a hand estimate are three
+// different kinds of claim and the footer has to say which one this is.
+function reserveBasis(sourceType?: string): SourceRef['basis'] {
+  if (sourceType === 'official') return 'observed';
+  if (sourceType === 'derived') return 'derived';
+  return 'assumption';
 }
 
 export default async function CrisisPage() {
@@ -184,76 +173,63 @@ export default async function CrisisPage() {
   const reviewSourcesHref = REVIEW_SOURCES_ROUTE;
   const crisisLinks = buildCrisisLinks(safWorkbenchHref, reviewSourcesHref);
 
+  // 储备读数没连上时不盖时间戳：兜底值带着"刚刚"的时间会被当成实测。
+  const asOf = reserve?.generated_at ?? null;
+
   return (
-    <Shell
+    <PageTemplate
       eyebrow="危机简报"
       title="EU 航油风险简报"
-      description="先看储备压力和数据可信度，再进入储备详情或 SAF 工作台做深入判断。"
+      question="现在的储备压力和数据可信度，够不够支撑改变采购动作？"
+      asOf={asOf}
     >
-      <div className="space-y-6">
-        <section className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
-          <div className="rounded-2xl border border-line bg-surface p-6 shadow-sm">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-subtle">当前读数</p>
-                <h3 className="mt-2 text-2xl font-semibold text-ink">
-                  {reserveWeeks ? `EU 航油覆盖约 ${reserveWeeks.toFixed(2)} 周` : '储备覆盖需要重新连接'}
-                </h3>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
-                  {reserve
-                    ? '储备压力数据已返回。页面按来源类型和置信度标注可信层级，避免把人工估算当作官方实时报价。'
-                    : '本次会话未连上储备服务，页面会保留分析流程，并明确标注哪些读数来自情景基线。'}
-                </p>
-              </div>
-              <span className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${stressTone(reserve?.stress_level)}`}>
-                {stressLabel(reserve?.stress_level)}
-              </span>
-            </div>
+      <div className="space-y-8">
+        <SignalRow label="危机信号">
+          {/* 契约第 2 节规则 2：结论在最前。后面三张都是"这个结论能信几分"。 */}
+          <MetricCard
+            label="决策信号"
+            value={signalLabel(tippingPoint?.signal)}
+            valueClassName={signalTextTone(tippingPoint?.signal)}
+            hint={`${reserveStatus} · 化石航油基线 $${fallbackFossil.toFixed(2)}/L`}
+          />
+          <MetricCard
+            label="储备覆盖"
+            value={reserveWeeks ? `${reserveWeeks.toFixed(2)} 周` : '需重新连接'}
+            valueClassName={stressTextTone(reserve?.stress_level)}
+            hint={`压力等级：${stressLabel(reserve?.stress_level)} · ${reserve?.source_name ?? '未连接实时储备源'}`}
+          />
+          <MetricCard
+            label="储备数据置信度"
+            value={confidence}
+            valueClassName={confidenceTextTone(reserve?.confidence_score)}
+            hint={`${confidenceLabel(reserve?.confidence_score)} · 来源类型：${sourceTypeLabel(sourceType)}`}
+          />
+          <MetricCard
+            label="市场数据置信度"
+            value={marketConfidenceText}
+            hint="市场快照的整体可信度，决定下面的价格阶梯能不能直接引用"
+            cardHref={reviewSourcesHref}
+          />
+        </SignalRow>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-accent bg-accent-soft p-4">
-                <p className="text-xs uppercase tracking-[0.15em] text-accent">数据时间</p>
-                <p className="mt-2 text-sm font-semibold text-ink">{formatAsOf(reserve?.generated_at)}</p>
-                <p className="mt-1 text-xs text-accent">来自后端最新储备信号</p>
-              </div>
-              <div className={`rounded-xl border p-4 ${sourceTone(sourceType)}`}>
-                <p className="text-xs uppercase tracking-[0.15em] opacity-75">来源类型</p>
-                <p className="mt-2 text-sm font-semibold">{sourceTypeLabel(sourceType)}</p>
-                <p className="mt-1 text-xs opacity-80">{reserve?.source_name ?? '未连接实时储备源'}</p>
-              </div>
-              <div className={`rounded-xl border p-4 ${confidenceTone(reserve?.confidence_score)}`}>
-                <p className="text-xs uppercase tracking-[0.15em] opacity-75">置信度</p>
-                <p className="mt-2 text-sm font-semibold">{confidence}</p>
-                <p className="mt-1 text-xs opacity-80">{confidenceLabel(reserve?.confidence_score)}</p>
-              </div>
-            </div>
+        <Panel
+          title="下一步动作"
+          why="建议路径是先确认储备可信度，再测试 SAF 经济性——不要跳过第一步直接改采购。"
+        >
+          <div className="grid gap-4 md:grid-cols-3">
+            {crisisLinks.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="block rounded-xl border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
+              >
+                <p className="text-xs uppercase tracking-[0.18em] text-accent">{item.eyebrow}</p>
+                <p className="mt-2 font-medium text-ink">{item.title}</p>
+                <p className="mt-1 text-sm leading-6 text-muted">{item.description}</p>
+              </a>
+            ))}
           </div>
-
-          <div className={`rounded-2xl border p-6 shadow-sm ${signalTone(tippingPoint?.signal)}`}>
-            <p className="text-xs uppercase tracking-[0.18em] opacity-75">决策信号</p>
-            <h3 className="mt-2 text-xl font-semibold">{signalLabel(tippingPoint?.signal)}</h3>
-            <p className="mt-3 text-sm leading-6 opacity-85">
-              {reserveStatus}。化石航油基线为 ${fallbackFossil.toFixed(2)}/L，SAF 路径敏感性在下方继续展开。
-            </p>
-            <p className="mt-4 rounded-xl border border-surface/70 bg-surface/70 p-3 text-sm">
-              市场数据置信度：{marketConfidenceText}。建议路径：先确认储备可信度，再测试 SAF 经济性。
-            </p>
-          </div>
-        </section>
-
-        <section className="grid gap-4 md:grid-cols-3">
-          {crisisLinks.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className={`rounded-2xl border p-5 shadow-sm transition ${item.tone}`}
-            >
-              <p className="text-xs uppercase tracking-[0.16em] text-muted">{item.eyebrow}</p>
-              <h3 className="mt-2 text-xl font-semibold text-ink">{item.title}</h3>
-              <p className="mt-3 text-sm leading-6 text-muted">{item.description}</p>
-            </a>
-          ))}
-        </section>
+        </Panel>
 
         <Panel
           title="欧盟航煤储备覆盖"
@@ -287,12 +263,54 @@ export default async function CrisisPage() {
           />
         </Panel>
 
-        <TippingPointSimulator
-          tippingPoint={tippingPoint}
-          decision={decision}
-          reserveWeeks={reserveWeeks ?? 3}
+        <Panel
+          title="拐点模拟器"
+          why="综合燃油价格、碳价、储备压力与路径经济性的 API 模型；用来试探结论在什么条件下翻转。"
+        >
+          <TippingPointSimulator
+            tippingPoint={tippingPoint}
+            decision={decision}
+            reserveWeeks={reserveWeeks ?? 3}
+          />
+        </Panel>
+
+        <SourceFooter
+          sources={[
+            {
+              id: 'eu-reserve',
+              label: reserve
+                ? `EU 航油储备覆盖，来自${sourceTypeLabel(sourceType)}（${reserve.source_name}）`
+                : '储备服务未连接，覆盖读数使用情景基线',
+              asOf,
+              basis: reserve ? reserveBasis(sourceType) : 'assumption'
+            },
+            {
+              id: 'market-snapshot',
+              label: `市场快照（化石航油基线 $${fallbackFossil.toFixed(2)}/L、碳价代理 €${carbonPriceEurPerT.toFixed(2)}/t）`,
+              asOf: dashboardReadModel.market.generated_at,
+              basis: 'observed'
+            },
+            {
+              id: 'tipping-events',
+              label: `复核窗口内观察到的 ${events.length} 个 SAF 交叉事件`,
+              basis: 'observed'
+            },
+            {
+              id: 'tipping-model',
+              label: '决策信号与路径净成本由拐点模型推导，不是上游直接给出的读数',
+              basis: 'derived'
+            }
+          ]}
+          methodHref="/sources"
+          methodLabel="口径与来源清单"
+          limitations={[
+            '本页描述的是区域层面的储备压力，不是某一家航司的供应状况——航司自有合同和库存不在其中。',
+            '交叉事件只统计复核窗口内的观察值。没有事件不等于没有风险，只表示这个窗口内没观察到跨越。',
+            '储备来源若是人工估算，上方会标成"情景假设"，不能当作官方实时报价引用。',
+            '模拟器用于试探敏感性，它的输出是情景推演，不构成采购建议。'
+          ]}
         />
       </div>
-    </Shell>
+    </PageTemplate>
   );
 }
