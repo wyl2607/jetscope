@@ -13,6 +13,7 @@ import { TippingEventTimeline } from '@/components/tipping-event-timeline';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
 import { ScenarioRegistry } from '@/components/scenario-registry';
 import { TransitionReadinessDashboard } from '@/components/transition-readiness-dashboard';
+import { TransitionLadder } from '@/components/transition-ladder';
 
 /**
  * Contract section 2 rule 3: a section is one Panel wrapping exactly one
@@ -288,6 +289,36 @@ describe('artifacts do not draw their own card', () => {
     );
 
     expect(rootClassName(container)).not.toMatch(/rounded-2xl|rounded-\[2rem\]/);
+  });
+
+  it('TransitionLadder renders bare once it has data', () => {
+    const { container } = render(
+      <TransitionLadder
+        summary={{
+          generated_at: '2026-08-06T06:00:00Z',
+          domains: [
+            {
+              domain_key: 'aviation',
+              domain_name: 'Aviation',
+              carbon_driver: 'EU ETS',
+              reference_carbon_price_eur_per_t: 80,
+              techs: [
+                {
+                  tech_key: 'hefa',
+                  name: 'HEFA',
+                  breakeven_carbon_price_eur_per_t: 120,
+                  competitive_at_reference: false
+                }
+              ]
+            }
+          ],
+          disclaimer: 'Mock transition summary.'
+        }}
+      />
+    );
+
+    expect(rootClassName(container)).not.toMatch(/rounded-2xl|js-panel/);
+    expect(container.querySelector('h3')).toBeNull();
   });
 });
 

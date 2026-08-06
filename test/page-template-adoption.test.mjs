@@ -32,7 +32,13 @@ const CONVERTED_PAGES = [
   'apps/web/app/en/research/page.tsx',
   'apps/web/app/scenarios/page.tsx',
   'apps/web/app/de/scenarios/page.tsx',
-  'apps/web/app/en/scenarios/page.tsx'
+  'apps/web/app/en/scenarios/page.tsx',
+  'apps/web/app/page.tsx',
+  'apps/web/app/de/page.tsx',
+  'apps/web/app/en/page.tsx',
+  'apps/web/app/reports/tipping-point-analysis/page.tsx',
+  'apps/web/app/de/reports/tipping-point-analysis/page.tsx',
+  'apps/web/app/en/reports/tipping-point-analysis/page.tsx'
 ];
 
 /** Pages that render a read model with an isFallback flag. */
@@ -50,7 +56,22 @@ const FALLBACK_AWARE_PAGES = [
   'apps/web/app/de/prices/germany-jet-fuel/page.tsx',
   'apps/web/app/en/prices/germany-jet-fuel/page.tsx',
   'apps/web/app/de/scenarios/page.tsx',
-  'apps/web/app/en/scenarios/page.tsx'
+  'apps/web/app/en/scenarios/page.tsx',
+  'apps/web/app/reports/tipping-point-analysis/page.tsx',
+  'apps/web/app/de/reports/tipping-point-analysis/page.tsx',
+  'apps/web/app/en/reports/tipping-point-analysis/page.tsx'
+];
+
+const HOME_PAGES = [
+  'apps/web/app/page.tsx',
+  'apps/web/app/de/page.tsx',
+  'apps/web/app/en/page.tsx'
+];
+
+const TIPPING_POINT_REPORT_PAGES = [
+  'apps/web/app/reports/tipping-point-analysis/page.tsx',
+  'apps/web/app/de/reports/tipping-point-analysis/page.tsx',
+  'apps/web/app/en/reports/tipping-point-analysis/page.tsx'
 ];
 
 /**
@@ -103,12 +124,12 @@ test('a page on fallback data never stamps it with a fresh timestamp', async () 
     // would make a prettier run look like a contract violation.
     assert.match(
       source,
-      /readModel\.isFallback\s*\?\s*null\s*:\s*(?:readModel\.market\.generated_at|readModel\.generatedAt|observedAsOf)/,
+      /(?:dashboardReadModel|readModel)\.isFallback\s*\?\s*null\s*:\s*(?:(?:dashboardReadModel|readModel)\.market\.generated_at|readModel\.generatedAt|observedAsOf)/,
       `${path} must suppress the timestamp while on fallback data`
     );
     assert.match(
       source,
-      /basis:\s*readModel\.isFallback\s*\?\s*'assumption'\s*:\s*'observed'/,
+      /basis:\s*(?:dashboardReadModel|readModel)\.isFallback\s*\?\s*'assumption'\s*:/,
       `${path} must label fallback data as an assumption, never as observed`
     );
   }
@@ -162,5 +183,59 @@ test('a reserve reading is labelled by how it was produced, not assumed observed
     const source = await read(path);
     assert.match(source, /function reserveBasis\(/, `${path} must map reserve source_type to a basis`);
     assert.match(source, /return 'assumption'/, `${path} must fall back to assumption, not to observed`);
+  }
+});
+
+test('home-page event tone fallbacks remain semantic problem states', async () => {
+  function assertSemanticFallback(source, path) {
+    const mapping = source.match(/function eventTone\([^)]*\)[^{]*\{([\s\S]*?)\n\}/);
+    assert.ok(mapping, `${path} must keep eventTone as an explicit status mapping`);
+    const returns = [...mapping[1].matchAll(/return\s+'([^']+)'/g)].map((match) => match[1]);
+    const fallback = returns.at(-1);
+    assert.ok(fallback, `${path} eventTone must have a fallback branch`);
+    assert.doesNotMatch(
+      fallback,
+      /text-(?:muted|ink|subtle)/,
+      `${path} must not wash an unknown event type into a neutral tone`
+    );
+  }
+
+  for (const path of HOME_PAGES) {
+    const source = await read(path);
+    assertSemanticFallback(source, path);
+
+    // Mutation check: prove this guard fails for the historical regression,
+    // rather than merely matching the current implementation by accident.
+    const regressed = source.replace(/(function eventTone\([^)]*\)[^{]*\{[\s\S]*?)return 'text-warning';\n\}/, "$1return 'text-muted';\n}");
+    assert.throws(
+      () => assertSemanticFallback(regressed, `${path} (mutated)`),
+      /must not wash an unknown event type/
+    );
+  }
+});
+
+test('tipping-point reports never label an assumed fossil anchor as observed', async () => {
+  for (const path of TIPPING_POINT_REPORT_PAGES) {
+    const source = await read(path);
+    assert.match(source, /const fossilJetSource\s*=/, `${path} must retain the fossil-price fallback level`);
+    assert.match(
+      source,
+      /fossilJetSource === 'spot' \? 'observed' : fossilJetSource === 'assumed' \? 'assumption' : 'derived'/,
+      `${path} must label the built-in or missing fossil anchor as an assumption`
+    );
+    if (source.includes('0.657')) {
+      assert.match(source, /fossilJetSource === 'assumed'/, `${path} must expose the 0.657 fallback branch`);
+      assert.match(source, /内置假设 0\.657 USD\/L/, `${path} must disclose the 0.657 assumption on the page`);
+    }
+  }
+});
+
+test('home pages derive as-of from source timestamps, never the current clock', async () => {
+  for (const path of HOME_PAGES) {
+    const source = await read(path);
+    const assignment = source.match(/const asOf\s*=\s*([^;]+);/);
+    assert.ok(assignment, `${path} must derive a page-level asOf`);
+    assert.doesNotMatch(assignment[1], /new Date\s*\(/, `${path} must not stamp the home page with the current clock`);
+    assert.match(assignment[1], /latestTimestamp/, `${path} must select the freshest real source timestamp`);
   }
 });

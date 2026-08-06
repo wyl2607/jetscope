@@ -1,5 +1,7 @@
-import { InfoCard, MetricCard } from '@/components/cards';
-import { Shell } from '@/components/shell';
+import { MetricCard } from '@/components/cards';
+import { PageTemplate, SignalRow } from '@/components/page-template';
+import { Panel } from '@/components/panel';
+import { SourceFooter } from '@/components/source-footer';
 import { getDashboardReadModel } from '@/lib/dashboard-read-model';
 import { getEuReserveCoverage, getTippingPointEvents } from '@/lib/portfolio-read-model';
 import { AI_RESEARCH_ENABLED, getResearchSignals } from '@/lib/research-signals-read-model';
@@ -50,18 +52,24 @@ function sourceStatusLabel(status: string): string {
   return status;
 }
 
-function reserveStressLabel(level: string | undefined): string {
-  if (level === 'critical') return 'kritisch';
-  if (level === 'elevated') return 'erhöht';
-  if (level === 'normal') return 'normal';
-  return 'Prüfung';
-}
-
 function researchPosture(status: string, count: number): string {
   if (!AI_RESEARCH_ENABLED) return 'deaktivierte Grenze';
   if (status === 'error') return 'eingeschränkt';
   if (status === 'not_found') return 'nicht bereitgestellt';
   return count > 0 ? 'mit Signalen belegt' : 'wartet auf Signale';
+}
+
+function signalTone(signal?: string): string {
+  if (signal === 'saf_cost_advantaged') return 'text-success';
+  if (signal === 'switch_window_opening') return 'text-warning';
+  if (signal === 'fossil_still_advantaged') return 'text-danger';
+  return 'text-warning';
+}
+
+function probabilityTone(probability: number): string {
+  if (probability >= 67) return 'text-success';
+  if (probability >= 34) return 'text-warning';
+  return 'text-danger';
 }
 
 export default async function GermanTippingPointReportPage() {
@@ -74,13 +82,18 @@ export default async function GermanTippingPointReportPage() {
   const sourceStatus = readModel.market.source_status;
   const tippingPoint = readModel.tippingPoint;
   const decision = readModel.airlineDecision;
-  const reserveWeeks = reserve?.coverage_weeks ?? readModel.reserve?.coverage_weeks ?? null;
   const latestEvent = events[0] ?? null;
+  const fossilJetSource = tippingPoint?.effective_fossil_jet_usd_per_l != null
+    ? 'model'
+    : readModel.market.values.jet_eu_proxy_usd_per_l != null
+      ? 'proxy'
+      : readModel.market.values.jet_usd_per_l != null
+        ? 'spot'
+        : 'assumed';
   const fossilPrice =
     tippingPoint?.effective_fossil_jet_usd_per_l ??
     readModel.market.values.jet_eu_proxy_usd_per_l ??
     readModel.market.values.jet_usd_per_l;
-  const hefaPathway = tippingPoint?.pathways.find((pathway) => pathway.pathway_key === 'hefa') ?? tippingPoint?.pathways[0];
   const switchProbability = Math.round(
     Math.max(
       decision?.probabilities.buy_spot_saf ?? 0,
@@ -89,103 +102,163 @@ export default async function GermanTippingPointReportPage() {
   );
   const sourceConfidence = formatPercent((sourceStatus.confidence ?? 0) * 100);
   const researchStatus = researchPosture(research.status, research.signals.length);
+  const asOf = readModel.isFallback ? null : readModel.market.generated_at;
 
   return (
-    <Shell
+    <PageTemplate
       locale="de"
       eyebrow="Berichtsdetail"
       title="Kipppunktbericht"
-      description="Ein lokalisierter, quellengestützter Berichtsblick darauf, ob SAF vom Compliance-Kostenpunkt zur operativen Logik wird."
+      question="Trägt die wirtschaftliche These dieses Berichts noch?"
+      asOf={asOf}
     >
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <SignalRow label="Kipppunkt-Fazit">
         <MetricCard
-          label="Effektive fossile Kosten"
-          value={formatPrice(fossilPrice)}
-          hint={`Signal: ${tippingPoint?.signal ?? 'Prüfung'} | Beimischung ${formatPercent(tippingPoint?.inputs.blend_rate_pct)}`}
-        />
-        <MetricCard
-          label="SAF-Pfadabstand"
-          value={hefaPathway ? `${formatNumber(hefaPathway.spread_low_pct, 0)}-${formatNumber(hefaPathway.spread_high_pct, 0)}%` : 'n/a'}
-          hint={hefaPathway ? `${hefaPathway.display_name} Nettokosten ${formatPrice(hefaPathway.net_cost_low_usd_per_l)}-${formatPrice(hefaPathway.net_cost_high_usd_per_l)}` : 'Kein Pfadmodell von der API zurückgegeben.'}
-        />
-        <MetricCard
-          label="Reservestress"
-          value={reserveWeeks == null ? 'n/a' : `${formatNumber(reserveWeeks, 1)} Wochen`}
-          hint={`EU-Reservehaltung: ${reserveStressLabel(reserve?.stress_level ?? readModel.reserve?.stress_level)}`}
+          label="Kipppunkt-Signal"
+          value={tippingPoint?.signal ?? 'Prüfung'}
+          valueClassName={signalTone(tippingPoint?.signal)}
+          hint="Das Fazit zuerst; ein unbekanntes Signal bleibt prüfpflichtig."
         />
         <MetricCard
           label="Entscheidungswahrscheinlichkeit"
           value={`${switchProbability}%`}
+          valueClassName={probabilityTone(switchProbability)}
           hint="Höchster Wert aus Spot-SAF-Kauf und langfristiger Abnahme."
         />
-      </section>
+        <MetricCard
+          label="Quellenvertrauen"
+          value={sourceConfidence}
+          hint={`Marktstatus: ${sourceStatusLabel(sourceStatus.overall)}`}
+        />
+        <MetricCard
+          label="Geladene Ereignisse"
+          value={`${events.length}`}
+          valueClassName="text-ink"
+          hint={latestEvent ? `Zuletzt: ${latestEvent.event_type.toLowerCase()}` : 'Keine Ereignisse im aktuellen Prüffenster.'}
+        />
+      </SignalRow>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <InfoCard title="Kernthese" subtitle="Evidenzkette für die Prüfung">
-          <div className="space-y-4 text-sm leading-7 text-slate-700">
-            <p>
-              JetScope behandelt den Kipppunkt als Zusammenlaufen von fossilen Kraftstoffkosten, Kohlenstoffexponierung,
-              Reservestress und SAF-Pfadabstand. Diese Seite nutzt dieselben FastAPI-gestützten Read Models wie das
-              Cockpit und hält Quellenqualität sichtbar, bevor ein Bericht als Entscheidungsgrundlage genutzt wird.
-            </p>
-            <p>
-              Der aktuelle Quellenstatus ist <strong>{sourceStatusLabel(sourceStatus.overall)}</strong> mit
-              Quellenvertrauen von <strong>{sourceConfidence}</strong>. Bei Fallback- oder eingeschränkten Zeilen bleibt
-              der Bericht lesbar, muss aber vor Veröffentlichung durch die Quellenprüfung.
-            </p>
+      <Panel
+        locale="de"
+        title="Kernthese"
+        why="Die Evidenzkette zeigt, ob das Modell als Entscheidungsgrundlage taugt oder zuerst in die Quellenprüfung muss."
+      >
+        <div className="space-y-4 text-sm leading-7 text-muted">
+          <p>
+            JetScope behandelt den Kipppunkt als Zusammenlaufen von fossilen Kraftstoffkosten, Kohlenstoffexponierung,
+            Reservestress und SAF-Pfadabstand. Der aktuelle fossile Kostenanker liegt bei{' '}
+            <strong className="tabular-nums text-ink">{formatPrice(fossilPrice)}</strong>.
+          </p>
+          <p>
+            Der Quellenstatus ist <strong className="text-ink">{sourceStatusLabel(sourceStatus.overall)}</strong> mit{' '}
+            <strong className="tabular-nums text-ink">{sourceConfidence}</strong> Vertrauen. Bei Fallback-Zeilen bleibt der
+            Bericht lesbar, muss aber vor Veröffentlichung geprüft werden.
+          </p>
+        </div>
+      </Panel>
+
+      <Panel
+        locale="de"
+        title="Quellenvertrauen"
+        why="Diese vier Angaben erklären, wie belastbar das Fazit ist und welche Evidenz noch fehlt."
+      >
+        <dl className="space-y-3 text-sm text-muted">
+          <div className="flex items-center justify-between gap-4">
+            <dt>Marktstatus</dt>
+            <dd className="font-medium text-ink">{sourceStatusLabel(sourceStatus.overall)}</dd>
           </div>
-        </InfoCard>
+          <div className="flex items-center justify-between gap-4">
+            <dt>Fallback-Rate</dt>
+            <dd className="font-medium tabular-nums text-ink">{formatPercent(sourceStatus.fallback_rate)}</dd>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <dt>Letztes Ereignis</dt>
+            <dd className="font-medium text-ink">{latestEvent ? latestEvent.event_type.toLowerCase() : 'keins'}</dd>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <dt>Forschungsstatus</dt>
+            <dd className="font-medium text-ink">{researchStatus}</dd>
+          </div>
+        </dl>
+      </Panel>
 
-        <InfoCard title="Quellenvertrauen" subtitle="Startprüfung">
-          <dl className="space-y-3 text-sm text-slate-700">
-            <div className="flex items-center justify-between gap-4">
-              <dt>Marktstatus</dt>
-              <dd className="font-semibold text-slate-950">{sourceStatusLabel(sourceStatus.overall)}</dd>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <dt>Fallback-Rate</dt>
-              <dd className="font-semibold text-slate-950">{formatPercent(sourceStatus.fallback_rate)}</dd>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <dt>Letztes Ereignis</dt>
-              <dd className="font-semibold text-slate-950">{latestEvent ? latestEvent.event_type.toLowerCase() : 'keins'}</dd>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <dt>Forschungsstatus</dt>
-              <dd className="font-semibold text-slate-950">{researchStatus}</dd>
-            </div>
-          </dl>
-        </InfoCard>
-      </section>
+      <Panel
+        locale="de"
+        title="Nächste Prüfschritte"
+        why="Die Berichtsthese wird erst nutzbar, wenn Quellen, Szenarioannahmen und Veröffentlichungspfad erreichbar bleiben."
+      >
+        <div className="grid gap-6 lg:grid-cols-3">
+          {[
+            {
+              title: 'Quellen prüfen',
+              description: 'Live-, Proxy-, Fallback- und eingeschränkte Eingaben vor externer Nutzung prüfen.',
+              href: '/de/sources?filter=review' as Route
+            },
+            {
+              title: 'Szenarioannahmen vergleichen',
+              description: 'Gespeicherte Annahmen prüfen, bevor sich die Beschaffungshaltung ändert.',
+              href: '/de/scenarios' as Route
+            },
+            {
+              title: 'Zur Berichtswerkstatt',
+              description: 'Startposition und Berichtskatalog auf der Übersicht erneut prüfen.',
+              href: '/de/reports' as Route
+            }
+          ].map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="rounded-xl border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
+            >
+              <p className="font-medium text-ink">{action.title}</p>
+              <p className="mt-2 text-sm leading-7 text-muted">{action.description}</p>
+            </Link>
+          ))}
+        </div>
+      </Panel>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-3">
-        {[
+      <SourceFooter
+        locale="de"
+        sources={[
           {
-            title: 'Quellen prüfen',
-            description: 'Live-, Proxy-, Fallback- und eingeschränkte Eingaben prüfen, bevor der Bericht extern genutzt wird.',
-            href: '/de/sources?filter=review' as Route
+            id: 'dashboard-read-model',
+            label: 'Dashboard-Read-Model und Marktstatus',
+            asOf,
+            basis: readModel.isFallback ? 'assumption' : 'observed'
           },
           {
-            title: 'Szenarioannahmen vergleichen',
-            description: 'Gespeicherte Annahmen und geschützte Schreibgrenzen prüfen, bevor sich die Beschaffungshaltung ändert.',
-            href: '/de/scenarios' as Route
+            id: 'reserve-signal',
+            label: `EU-Reserveabdeckung über ${reserve?.source_name ?? 'nicht verfügbare Quelle'}`,
+            asOf: reserve?.generated_at ?? null,
+            basis: reserve?.source_type === 'official' ? 'observed' : reserve?.source_type === 'derived' ? 'derived' : 'assumption'
           },
           {
-            title: 'Zur Berichtswerkstatt zurückkehren',
-            description: 'Startposition und Berichtskatalog auf der Übersichtsseite erneut prüfen.',
-            href: '/de/reports' as Route
+            id: 'report-fossil-anchor',
+            label: fossilJetSource === 'assumed' ? 'Kein fossiler Kostenanker verfügbar' : 'Fossiler Jet-Fuel-Kostenanker',
+            asOf,
+            basis: readModel.isFallback ? 'assumption' : fossilJetSource === 'spot' ? 'observed' : fossilJetSource === 'assumed' ? 'assumption' : 'derived'
+          },
+          {
+            id: 'tipping-events',
+            label: `SAF-Kipppunktereignisse (${events.length})`,
+            asOf: latestEvent?.observed_at ?? null,
+            basis: 'observed'
+          },
+          {
+            id: 'research-signals',
+            label: `Abgeleitete Forschungssignale (${research.signals.length})`,
+            asOf: research.signals[0]?.published_at ?? null,
+            basis: 'derived'
           }
-        ].map((action) => (
-          <Link
-            key={action.href}
-            href={action.href}
-            className="rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm shadow-slate-200/70 transition hover:border-sky-300 hover:bg-sky-50"
-          >
-            <p className="text-base font-semibold text-slate-950">{action.title}</p>
-            <p className="mt-2 text-sm leading-7 text-slate-700">{action.description}</p>
-          </Link>
-        ))}
-      </section>
-    </Shell>
+        ]}
+        methodHref="/de/sources"
+        methodLabel="Quellen- und Methodenliste"
+        limitations={[
+          'Der Bericht beschreibt marktweite Schwellen, nicht Verträge, Vorräte oder Freigaben einer einzelnen Airline.',
+          'Entscheidungswahrscheinlichkeiten sind Modellergebnisse und keine beobachteten zukünftigen Handlungen.',
+          'Fehlende Ereignisse in einem dünnen Prüffenster bedeuten nicht, dass kein Risiko besteht.'
+        ]}
+      />
+    </PageTemplate>
   );
 }
