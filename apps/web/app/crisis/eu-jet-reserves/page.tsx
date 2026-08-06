@@ -1,35 +1,29 @@
-import { InfoCard } from '@/components/cards';
+import { MetricCard } from '@/components/cards';
+import { PageTemplate, SignalRow } from '@/components/page-template';
 import { Panel } from '@/components/panel';
-import { Shell } from '@/components/shell';
 import { PriceTrendsChart } from '@/components/price-trends-chart';
+import { SourceFooter } from '@/components/source-footer';
 import { getReserveSeverity } from '@/lib/market-signals';
 import { getDashboardReadModel } from '@/lib/product-read-model';
 import { getPriceTrendChartReadModel } from '@/lib/price-trend-chart-read-model';
+import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata, Route } from 'next';
 import Link from 'next/link';
-import { buildPageMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = buildPageMetadata({
   title: 'EU 航油储备危机监测',
-  description:
-    '实时跟踪欧洲航油储备、价格冲击与 SAF 竞争力拐点的危机看板。',
+  description: '实时跟踪欧洲航油储备、价格冲击与 SAF 竞争力拐点的危机看板。',
   path: '/crisis/eu-jet-reserves'
 });
 
-// ---------------------------------------------------------------------------
-// Reserve data — currently manually maintained (no public API for EU reserves).
-// Update weekly. Format: { weeks: number, updatedAt: ISO, source: string }
-// Override via SAFVSOIL_RESERVE_WEEKS env at build time if needed.
-// ---------------------------------------------------------------------------
 function getReserveData(): { weeks: number; updatedAt: string; source: string; nextUpdate: string } {
   const raw = process.env.SAFVSOIL_RESERVE_WEEKS;
   const weeks = Number.isFinite(Number(raw)) && Number(raw) > 0 ? Number(raw) : 3.0;
-  const updatedAt = '2026-04-23T06:00:00Z';
   return {
     weeks,
-    updatedAt,
+    updatedAt: '2026-04-23T06:00:00Z',
     source: 'IATA / EUROCONTROL estimates (manually curated)',
     nextUpdate: '2026-04-30T06:00:00Z'
   };
@@ -43,8 +37,8 @@ function formatNumber(value: number, digits = 2) {
 }
 
 function formatDate(iso: string) {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString();
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? iso : date.toLocaleDateString('zh-CN', { timeZone: 'UTC' });
 }
 
 const evidenceLayers = [
@@ -71,47 +65,22 @@ const evidenceLayers = [
 ];
 
 const researchReferences = [
-  {
-    title: 'NREL SAF',
-    href: 'https://www.nrel.gov/docs/fy24osti/87802.pdf',
-    note: '用于约束 HEFA、ATJ、FT、PtL 等 SAF 路径的技术经济边界。'
-  },
-  {
-    title: 'IATA Fuel',
-    href: 'https://www.iata.org/en/programs/ops-infra/fuel/',
-    note: '用于支撑燃油价格是航空公司最大、最波动成本项之一的运营逻辑。'
-  },
-  {
-    title: 'EU ETS aviation',
-    href: 'https://climate.ec.europa.eu/eu-action/transport/reducing-emissions-aviation_en',
-    note: '用于解释碳定价如何进入欧洲航空成本和 SAF 支持机制。'
-  },
-  {
-    title: 'IEA Aviation',
-    href: 'https://www.iea.org/reports/aviation',
-    note: '用于校验 SAF 需求、政策驱动和航空脱碳路径是否符合行业约束。'
-  }
+  { title: 'NREL SAF', href: 'https://www.nrel.gov/docs/fy24osti/87802.pdf', note: '约束 SAF 路径的技术经济边界。' },
+  { title: 'IATA Fuel', href: 'https://www.iata.org/en/programs/ops-infra/fuel/', note: '支撑航空燃油成本的运营逻辑。' },
+  { title: 'EU ETS aviation', href: 'https://climate.ec.europa.eu/eu-action/transport/reducing-emissions-aviation_en', note: '解释碳定价如何进入欧洲航空成本。' },
+  { title: 'IEA Aviation', href: 'https://www.iea.org/reports/aviation', note: '校验 SAF 需求与航空脱碳路径。' }
 ];
 
 function CurrentSafBreakpointRow() {
-  const jetA = (115 / 158.987) * 1.20;
-  const premiumLow = ((1.60 / jetA) - 1) * 100;
-  const premiumHigh = ((1.85 / jetA) - 1) * 100;
+  const jetA = (115 / 158.987) * 1.2;
 
   return (
-    <tr className="ring-2 ring-warning bg-warning-soft text-ink shadow-sm">
-      <td className="py-4 pr-4 font-semibold">
-        <span className="mr-2 rounded-full border border-warning bg-surface px-2 py-0.5 text-[11px] font-semibold text-warning">
-          当前拐点
-        </span>
-        $115/bbl（当前）
-      </td>
+    <tr className="ring-2 ring-warning bg-warning-soft text-ink">
+      <td className="py-4 pr-4 font-semibold">$115/bbl（当前拐点）</td>
       <td className="py-4 pr-4 font-semibold">~${formatNumber(jetA, 2)}/L</td>
       <td className="py-4 pr-4">$1.60–1.85/L</td>
-      <td className="py-4 pr-4 font-semibold text-warning">
-        +{formatNumber(premiumLow, 0)}–{formatNumber(premiumHigh, 0)}%
-      </td>
-      <td className="py-4 font-semibold text-warning">拐点区间</td>
+      <td className="py-4 pr-4 font-semibold text-warning">拐点距离</td>
+      <td className="py-4 font-semibold text-warning">需复核</td>
     </tr>
   );
 }
@@ -123,6 +92,7 @@ export default async function EuJetReserveCrisisPage() {
   ]);
 
   const fallbackReserve = getReserveData();
+  const reserveIsAssumed = !readModel.reserve;
   const reserve = readModel.reserve
     ? {
         weeks: readModel.reserve.coverage_weeks,
@@ -133,273 +103,199 @@ export default async function EuJetReserveCrisisPage() {
     : fallbackReserve;
   const level = getReserveSeverity(reserve.weeks);
   const market = readModel.market.values;
-
+  const brentIsAssumed = market.brent_usd_per_bbl == null;
+  const jetEuIsAssumed = market.jet_eu_proxy_usd_per_l == null && market.jet_usd_per_l == null;
+  const carbonIsAssumed = market.carbon_proxy_usd_per_t == null;
   const brent = market.brent_usd_per_bbl ?? 87.01;
   const jetEu = market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l ?? 0.657;
   const carbon = market.carbon_proxy_usd_per_t ?? 91.91;
-
-  // SAF competitiveness gap at current prices
-  const safHeffaLow = 1.60;
-  const safHeffaHigh = 1.85;
-  const safSpreadLow = ((safHeffaLow - jetEu) / jetEu) * 100;
-  const safSpreadHigh = ((safHeffaHigh - jetEu) / jetEu) * 100;
+  const anyInputIsAssumed = readModel.isFallback || reserveIsAssumed || brentIsAssumed || jetEuIsAssumed || carbonIsAssumed;
+  const asOf = anyInputIsAssumed ? null : readModel.market.generated_at;
+  const safSpreadLow = ((1.6 - jetEu) / jetEu) * 100;
+  const safSpreadHigh = ((1.85 - jetEu) / jetEu) * 100;
+  const inputAssumptionCopy = [
+    reserveIsAssumed ? `储备使用人工维护值 ${formatNumber(reserve.weeks, 1)} 周` : null,
+    brentIsAssumed ? 'Brent 使用内置假设 87.01 USD/bbl' : null,
+    jetEuIsAssumed ? 'EU 航油使用内置假设 0.657 USD/L' : null,
+    carbonIsAssumed ? '碳价使用内置假设 91.91 USD/tCO₂' : null
+  ].filter(Boolean).join('；');
 
   return (
-    <Shell
+    <PageTemplate
       eyebrow="危机监测"
       title="EU 航油储备危机"
-      description="欧洲正在面对结构性航空燃料挤压。本看板实时跟踪储备水平、价格冲击与 SAF 竞争力拐点。"
+      question="当前储备压力是否已经高到需要提前锁价或启动 SAF 承购谈判？"
+      asOf={asOf}
     >
-      {/* Top alert banner */}
-      <section className="mb-8 rounded-2xl border border-warning bg-warning-soft p-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className={`text-sm font-semibold uppercase tracking-wider ${level.color}`}>{level.label}</p>
-            <p className="mt-1 text-4xl font-bold text-ink">
-              {formatNumber(reserve.weeks, 1)} <span className="text-lg font-medium text-muted">周</span>
-            </p>
-            <p className="mt-1 text-xs text-muted">
-              更新于 {formatDate(reserve.updatedAt)} · 下次更新：{formatDate(reserve.nextUpdate)} · {reserve.source}
-            </p>
-          </div>
-          <div className="w-full md:w-1/2">
-            <div className="h-4 w-full overflow-hidden rounded-full bg-surface">
-              <div
-                className={`h-full ${level.barColor} transition-all duration-500`}
-                style={{ width: `${Math.min(100, Math.max(5, (reserve.weeks / 8) * 100))}%` }}
-              />
-            </div>
-            <div className="mt-2 flex justify-between text-xs text-muted">
-              <span>0w</span>
-              <span className="text-danger">2周（严重）</span>
-              <span className="text-warning">4周（偏高）</span>
-              <span className="text-success">8周+（正常）</span>
-            </div>
-          </div>
-        </div>
-      </section>
+      <SignalRow label="储备危机结论">
+        <MetricCard
+          label="当前储备压力"
+          value={`${formatNumber(reserve.weeks, 1)} 周`}
+          valueClassName={level.color}
+          hint={`${level.label} · ${reserveIsAssumed ? '人工估算，需复核' : reserve.source}`}
+        />
+        <MetricCard
+          label="SAF 当前溢价"
+          value={`${formatNumber(safSpreadLow, 0)}–${formatNumber(safSpreadHigh, 0)}%`}
+          valueClassName={jetEuIsAssumed ? 'text-warning' : 'text-ink'}
+          hint="由 EU 航油基准与 HEFA 成本区间推导，基准缺失时仅供情景讨论。"
+        />
+        <MetricCard
+          label="输入可信度"
+          value={anyInputIsAssumed ? '含内置假设' : '已连接'}
+          valueClassName={anyInputIsAssumed ? 'text-warning' : 'text-success'}
+          hint={inputAssumptionCopy || '储备与市场输入均来自已连接来源。'}
+          cardHref="/sources?filter=review"
+        />
+      </SignalRow>
 
-      {/* Market snapshot row */}
-      <section className="grid gap-4 md:grid-cols-3">
-        <InfoCard title="Brent 原油" subtitle="全球基准">
-          <p className="text-3xl font-semibold text-ink">${formatNumber(brent)}/bbl</p>
-          <p className="mt-2 text-xs text-muted">
-            每 $1/bbl 波动约对应 ${formatNumber(1 / 158.987, 4)} USD/L 航油影响
-          </p>
-        </InfoCard>
-
-        <InfoCard title="航油（EU 代理）" subtitle="ARA / Rotterdam basis">
-          <p className="text-3xl font-semibold text-ink">${formatNumber(jetEu, 3)}/L</p>
-          <p className="mt-2 text-xs text-muted">
-            与储备稀缺直接相关。价格越高，有效储备压力越大。
-          </p>
-        </InfoCard>
-
-        <InfoCard title="碳价代理" subtitle="CBAM + EU ETS 压力">
-          <p className="text-3xl font-semibold text-ink">${formatNumber(carbon)}/tCO₂</p>
-          <p className="mt-2 text-xs text-muted">
-            当碳价达到 €150/tCO₂（2030 目标）时，SAF 盈亏平衡会明显前移。
-          </p>
-        </InfoCard>
-      </section>
-
-      {/* Narrative chain */}
-      <section className="mt-8 rounded-2xl border border-line bg-surface p-8">
-        <h2 className="text-xl font-semibold text-ink">危机链条：储备 → 价格 → SAF 拐点</h2>
-        <div className="mt-6 grid gap-6 md:grid-cols-4">
-          <div className="rounded-lg border border-danger bg-danger-soft p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-danger">步骤 1</p>
-            <p className="mt-2 text-sm font-semibold text-ink">储备消耗</p>
-            <p className="mt-1 text-xs text-muted">
-              EU 航油库存降至约 {formatNumber(reserve.weeks, 1)} 周。地缘扰动与炼化瓶颈共同推高压力。
-            </p>
-          </div>
-          <div className="rounded-lg border border-warning bg-warning-soft p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-warning">步骤 2</p>
-            <p className="mt-2 text-sm font-semibold text-ink">价格跳升</p>
-            <p className="mt-1 text-xs text-muted">
-              Jet-A 现货随稀缺性上行。当前 EU 代理价 ${formatNumber(jetEu, 3)}/L，高于 2024 年约 $0.75/L 的水平。
-            </p>
-          </div>
-          <div className="rounded-lg border border-line bg-surface-muted p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted">步骤 3</p>
-            <p className="mt-2 text-sm font-semibold text-ink">航线经济性承压</p>
-            <p className="mt-1 text-xs text-muted">
-              短途航线利润率被压缩（燃油约占成本 30%）。Lufthansa 已削减 20,000 个航班。
-            </p>
-          </div>
-          <div className="rounded-lg border border-success bg-success-soft p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-success">步骤 4</p>
-            <p className="mt-2 text-sm font-semibold text-ink">SAF 采购变得理性</p>
-            <p className="mt-1 text-xs text-muted">
-              HEFA SAF 当前较 Jet-A 高 {formatNumber(safSpreadLow, 0)}–{formatNumber(safSpreadHigh, 0)}%。当油价达到 $130/bbl，SAF 具备胜出条件。
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="mt-8 rounded-2xl border border-accent bg-accent-soft/60 p-8">
-        <div className="grid gap-6 lg:grid-cols-[1fr_0.42fr]">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">first principles</p>
-            <h2 className="mt-2 text-xl font-semibold text-ink">第一性原理证据链</h2>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-muted">
-              这个页面的底层逻辑不是“危机叙事”，而是把燃料市场拆成事实、机制、置信和行动四层。
-              每一层都需要能回到数据来源、模型假设或机构研究；不能回溯的判断，只能作为待复核信号。
-            </p>
-            <div className="mt-6 grid gap-3 md:grid-cols-2">
-              {evidenceLayers.map((item) => (
-                <div key={item.label} className="rounded-lg border border-accent bg-surface p-4">
-                  <p className="text-xs font-semibold text-accent">{item.label}</p>
-                  <p className="mt-2 text-sm font-semibold text-ink">{item.title}</p>
-                  <p className="mt-2 text-xs leading-6 text-muted">{item.body}</p>
+      <Panel
+        title="储备与市场输入"
+        why={inputAssumptionCopy || '把储备、原油、区域航油和碳价放在一起，判断压力来自供给收紧还是成本传导。'}
+      >
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-line bg-warning-soft p-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${level.color}`}>{level.label}</p>
+                <p className="mt-1 text-3xl font-bold tabular-nums text-ink">
+                  {formatNumber(reserve.weeks, 1)} <span className="text-lg font-medium text-muted">周</span>
+                </p>
+                <p className="mt-1 text-xs tabular-nums text-muted">
+                  更新于 {formatDate(reserve.updatedAt)} · 下次更新 {formatDate(reserve.nextUpdate)} · {reserve.source}
+                </p>
+              </div>
+              <div className="w-full md:w-1/2">
+                <div className="h-4 w-full overflow-hidden rounded-xl bg-surface">
+                  <div className={`h-full ${level.barColor}`} style={{ width: `${Math.min(100, Math.max(5, (reserve.weeks / 8) * 100))}%` }} />
                 </div>
-              ))}
+                <div className="mt-2 flex justify-between text-xs tabular-nums text-muted">
+                  <span>0w</span><span className="text-danger">2 周·严重</span><span className="text-warning">4 周·偏高</span><span className="text-success">8 周+·正常</span>
+                </div>
+              </div>
             </div>
           </div>
-          <aside className="rounded-lg border border-line bg-surface p-5">
-            <p className="text-sm font-semibold text-ink">机构 / 论文依据</p>
-            <div className="mt-4 space-y-3">
-              {researchReferences.map((item) => (
-                <a
-                  key={item.title}
-                  href={item.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block rounded-lg border border-line bg-surface p-3 text-sm transition hover:border-accent hover:bg-accent-soft"
-                >
-                  <span className="font-semibold text-accent">{item.title}</span>
-                  <span className="mt-1 block text-xs leading-5 text-muted">{item.note}</span>
-                </a>
-              ))}
+          <div className="grid gap-6 md:grid-cols-3">
+            {[
+              { label: 'Brent 原油', value: `$${formatNumber(brent)}/bbl`, note: brentIsAssumed ? '内置假设 87.01 USD/bbl' : '全球基准观测' },
+              { label: '航油（EU 代理）', value: `$${formatNumber(jetEu, 3)}/L`, note: jetEuIsAssumed ? '内置假设 0.657 USD/L' : 'ARA / Rotterdam basis' },
+              { label: '碳价代理', value: `$${formatNumber(carbon)}/tCO₂`, note: carbonIsAssumed ? '内置假设 91.91 USD/tCO₂' : 'CBAM + EU ETS 压力' }
+            ].map((item) => (
+              <div key={item.label} className="rounded-2xl border border-line bg-surface-muted p-6">
+                <p className="text-sm font-medium text-muted">{item.label}</p>
+                <p className="mt-2 text-3xl font-semibold tabular-nums text-ink">{item.value}</p>
+                <p className={`mt-2 text-xs ${item.note.includes('假设') ? 'text-warning' : 'text-muted'}`}>{item.note}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Panel>
+
+      <Panel title="危机链条" why="把储备变化连接到价格、航线经济性与 SAF 采购窗口，避免用单个价格信号直接下结论。">
+        <div className="grid gap-6 md:grid-cols-4">
+          {[
+            ['步骤 1', '储备消耗', `EU 航油库存约 ${formatNumber(reserve.weeks, 1)} 周，地缘扰动与炼化瓶颈共同推高压力。`, 'border-danger bg-danger-soft text-danger'],
+            ['步骤 2', '价格跳升', `当前 EU 代理价 $${formatNumber(jetEu, 3)}/L，储备稀缺可能放大区域 basis。`, 'border-warning bg-warning-soft text-warning'],
+            ['步骤 3', '航线承压', '燃油约占短途运营成本 30%，薄利航线会更早失去缓冲。', 'border-line bg-surface-muted text-muted'],
+            ['步骤 4', 'SAF 窗口', `HEFA SAF 当前溢价约 ${formatNumber(safSpreadLow, 0)}–${formatNumber(safSpreadHigh, 0)}%。`, 'border-success bg-success-soft text-success']
+          ].map(([step, title, body, tone]) => (
+            <div key={step} className={`rounded-2xl border p-6 ${tone}`}>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em]">{step}</p>
+              <p className="mt-2 text-sm font-semibold text-ink">{title}</p>
+              <p className="mt-1 text-xs leading-6 text-muted">{body}</p>
             </div>
-            <div className="mt-5 rounded-lg border border-warning bg-warning-soft p-3 text-xs leading-5 text-warning">
+          ))}
+        </div>
+      </Panel>
+
+      <Panel title="第一性原理证据链" why="将事实、机制、置信和行动分开，确保每一步都能回到数据、假设或机构研究。">
+        <div className="grid gap-6 lg:grid-cols-[1fr_0.42fr]">
+          <div className="grid gap-6 md:grid-cols-2">
+            {evidenceLayers.map((item) => (
+              <div key={item.label} className="rounded-2xl border border-line bg-surface-muted p-6">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">{item.label}</p>
+                <p className="mt-2 text-sm font-semibold text-ink">{item.title}</p>
+                <p className="mt-2 text-xs leading-6 text-muted">{item.body}</p>
+              </div>
+            ))}
+          </div>
+          <aside className="space-y-4">
+            {researchReferences.map((item) => (
+              <a key={item.title} href={item.href} target="_blank" rel="noreferrer" className="block rounded-xl border border-line bg-surface p-4 text-sm transition hover:border-accent hover:bg-accent-soft">
+                <span className="font-semibold text-ink">{item.title}</span>
+                <span className="mt-1 block text-xs leading-5 text-muted">{item.note}</span>
+              </a>
+            ))}
+            <div className="rounded-xl border border-warning bg-warning-soft p-4 text-xs leading-6 text-warning">
               <p className="font-semibold">模型边界</p>
-              <p className="mt-1">
-                当前表格用于运营复核，不是价格预测。EU 航油、德国溢价和部分碳价历史为代理曲线；
-                储备信号仍需要官方库存或航司采购数据进一步校准。
-              </p>
+              <p className="mt-1">当前比较用于运营复核，不是价格预测；区域代理曲线和人工储备估算仍需官方库存或航司采购数据校准。</p>
             </div>
           </aside>
         </div>
-      </section>
+      </Panel>
 
-      {/* SAF competitiveness table */}
-      <section className="mt-8 rounded-2xl border border-line bg-surface p-8">
-        <div className="grid gap-6 lg:grid-cols-[1fr_0.38fr]">
-          <div>
-            <h2 className="text-xl font-semibold text-ink">当前与压力情景下的 SAF 竞争力</h2>
-            <div className="mt-6 overflow-x-auto">
-              <table className="mx-auto w-full max-w-4xl border-separate border-spacing-y-2 text-sm text-muted">
-                <thead>
-                  <tr className="text-left text-subtle">
-                    <th className="py-3 pr-4">油价情景</th>
-                    <th className="py-3 pr-4">Jet-A 成本</th>
-                    <th className="py-3 pr-4">HEFA SAF 成本</th>
-                    <th className="py-3 pr-4">SAF 溢价</th>
-                    <th className="py-3">信号</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="bg-surface-muted">
-                    <td className="py-3 pr-4">$80/bbl（2024 基准）</td>
-                    <td className="py-3 pr-4">~$0.95/L</td>
-                    <td className="py-3 pr-4">$1.60–1.85/L</td>
-                    <td className="py-3 pr-4 text-danger">+70–95%</td>
-                    <td className="py-3 text-danger">SAF 经济性不足</td>
-                  </tr>
-                  <CurrentSafBreakpointRow />
-                  <tr className="bg-surface-muted">
-                    <td className="py-3 pr-4">$130/bbl（压力）</td>
-                    <td className="py-3 pr-4">~${formatNumber((130 / 158.987) * 1.20, 2)}/L</td>
-                    <td className="py-3 pr-4">$1.60–1.85/L</td>
-                    <td className="py-3 pr-4 text-accent">+{formatNumber(((1.60 / ((130 / 158.987) * 1.20)) - 1) * 100, 0)}–{formatNumber(((1.85 / ((130 / 158.987) * 1.20)) - 1) * 100, 0)}%</td>
-                    <td className="py-3 text-accent">边际切换</td>
-                  </tr>
-                  <tr className="bg-surface-muted">
-                    <td className="py-3 pr-4">$150/bbl（2030 预测）</td>
-                    <td className="py-3 pr-4">~${formatNumber((150 / 158.987) * 1.20, 2)}/L</td>
-                    <td className="py-3 pr-4">$1.20–1.40/L (scaled)</td>
-                    <td className="py-3 pr-4 text-success">−10 to +15%</td>
-                    <td className="py-3 text-success">SAF 占优</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <aside className="rounded-xl border border-warning bg-warning-soft p-5 text-sm text-warning">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-warning">阅读方式</p>
-            <p className="mt-3 leading-6">
-              拐点行不是预测结论，而是把当前油价换算成 Jet-A 每升成本后，与 HEFA SAF 成本区间做距离比较。
-            </p>
-            <p className="mt-3 leading-6">
-              如果 SAF 溢价继续收窄，运营方应优先复核碳价、欧盟航油代理价和储备周数，再进入 SAF 工作台做情景测试。
+      <Panel title="当前与压力情景下的 SAF 竞争力" why="比较不同油价情景下 Jet-A 与 HEFA 成本距离，判断采购窗口需要哪些输入先被复核。">
+        <div className="overflow-x-auto">
+          <table className="w-full border-separate border-spacing-y-2 text-sm tabular-nums text-muted">
+            <thead><tr className="text-left text-subtle"><th className="py-3 pr-4">油价情景</th><th className="py-3 pr-4">Jet-A 成本</th><th className="py-3 pr-4">HEFA SAF 成本</th><th className="py-3 pr-4">SAF 溢价</th><th className="py-3">信号</th></tr></thead>
+            <tbody>
+              <tr className="bg-surface-muted"><td className="py-3 pr-4">$80/bbl</td><td className="py-3 pr-4">~$0.95/L</td><td className="py-3 pr-4">$1.60–1.85/L</td><td className="py-3 pr-4 text-danger">+70–95%</td><td className="py-3 text-danger">SAF 经济性不足</td></tr>
+              <CurrentSafBreakpointRow />
+              <tr className="bg-surface-muted"><td className="py-3 pr-4">$130/bbl</td><td className="py-3 pr-4">~${formatNumber((130 / 158.987) * 1.2, 2)}/L</td><td className="py-3 pr-4">$1.60–1.85/L</td><td className="py-3 pr-4 text-warning">收窄</td><td className="py-3 text-warning">边际切换</td></tr>
+              <tr className="bg-surface-muted"><td className="py-3 pr-4">$150/bbl</td><td className="py-3 pr-4">~${formatNumber((150 / 158.987) * 1.2, 2)}/L</td><td className="py-3 pr-4">$1.20–1.40/L</td><td className="py-3 pr-4 text-success">−10 至 +15%</td><td className="py-3 text-success">SAF 占优</td></tr>
+            </tbody>
+          </table>
+          <aside className="mt-6 rounded-xl border border-warning bg-warning-soft p-4 text-sm text-warning">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em]">阅读方式</p>
+            <p className="mt-2 leading-6">
+              拐点行不是预测结论；先复核碳价、EU 航油代理价和储备周数，再进入模拟器测试切换条件。
             </p>
           </aside>
         </div>
-      </section>
+      </Panel>
 
-      {/* Lufthansa context */}
-      <section className="mt-8 rounded-2xl border border-line bg-surface p-8">
-        <h2 className="text-xl font-semibold text-ink">Lufthansa 削减航班：领先指标</h2>
-        <p className="mt-3 text-sm leading-7 text-muted">
-          2026 年 4 月，Lufthansa 宣布取消 <strong>20,000 个短途航班</strong>。
-          表层原因是降本；更深层逻辑是航空能源经济性已经到达拐点。
-          燃油目前约占短途运营成本的 30%。在当前航油价格下，
-          利润率仅 2–3% 的航线会转为亏损。
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Link
-            href={"/de/lufthansa-saf-2026" as Route}
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-surface hover:bg-ink"
-          >
-            德语分析 →
-          </Link>
-          <Link
-            href="/analysis/lufthansa-flight-cuts-2026-04"
-            className="rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-muted hover:border-line-strong hover:bg-accent-soft hover:text-ink"
-          >
-            中文完整分析 →
-          </Link>
+      <Panel
+        title="航线经济性领先指标"
+        why="航班削减能验证燃油压力是否已经穿透到运营动作，但单一航司事件不能代表整个市场。"
+        action={<Link href="/analysis/lufthansa-flight-cuts-2026-04" className="rounded-xl border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition hover:border-accent hover:bg-accent-soft">中文完整分析 →</Link>}
+      >
+        <div className="space-y-4 text-sm leading-7 text-muted">
+          <p>2026 年 4 月，Lufthansa 宣布取消 <strong className="tabular-nums text-ink">20,000 个短途航班</strong>。燃油约占短途运营成本的 <strong className="tabular-nums text-ink">30%</strong>，利润率仅 <strong className="tabular-nums text-ink">2–3%</strong> 的航线会更早转为亏损。</p>
+          <Link href={'/de/lufthansa-saf-2026' as Route} className="inline-block rounded-xl bg-accent px-4 py-2 text-sm font-medium text-surface transition hover:bg-ink">德语分析 →</Link>
         </div>
-      </section>
+      </Panel>
 
-      {/* Price trends */}
-      <section className="mt-8">
-        <Panel
-          title="历史价格趋势"
-          why="1d / 7d / 30d，与驾驶舱同一份本地 market_snapshots 历史库——储备判断要和价格走势对得上。"
-        >
-          <PriceTrendsChart
-            metrics={priceChartData.metrics}
-            isLoading={false}
-            error={priceChartData.error}
-          />
-        </Panel>
-      </section>
+      <Panel title="历史价格趋势" why="用同一份本地 market_snapshots 历史库核对储备判断与 1 日、7 日和 30 日价格走势是否一致。">
+        <PriceTrendsChart metrics={priceChartData.metrics} isLoading={false} error={priceChartData.error} />
+      </Panel>
 
-      {/* Action checklist */}
-      <section className="mt-8 rounded-2xl border border-line bg-surface p-8">
-        <h2 className="text-xl font-semibold text-ink">运营方决策清单</h2>
-        <ul className="mt-4 space-y-3 text-sm leading-7 text-muted">
-          <li className="flex gap-3">
-            <span className="text-danger">✗</span>
-            <span><strong>观望</strong> — 这样的低储备水平在历史上通常先于配给或价格跳升出现。继续等待会增加敞口。</span>
-          </li>
-          <li className="flex gap-3">
-            <span className="text-warning">△</span>
-            <span><strong>远期套保</strong> — 若交易对手仍提供固定价格航油合约，应尽快锁定。窗口正在收窄。</span>
-          </li>
-          <li className="flex gap-3">
-            <span className="text-success">✓</span>
-            <span><strong>锁定 SAF offtake</strong> — 在 2025–2026 年需求上行前，立即谈判长期 SAF 采购协议（LOI）。</span>
-          </li>
-          <li className="flex gap-3">
-            <span className="text-success">✓</span>
-            <span><strong>持续监测本看板</strong> — 储备估算每周更新，市场数据每 10 分钟更新。建议用于每日检查。</span>
-          </li>
+      <Panel title="运营方决策清单" why="把危机信号转为可复核动作顺序，避免把本页误读成自动采购建议。">
+        <ul className="space-y-4 text-sm leading-7 text-muted">
+          <li><span className="mr-2 text-danger">✗</span><strong>观望：</strong>低储备通常先于配给或价格跳升出现。</li>
+          <li><span className="mr-2 text-warning">△</span><strong>远期套保：</strong>先确认交易对手与固定价格窗口。</li>
+          <li><span className="mr-2 text-success">✓</span><strong>锁定 SAF offtake：</strong>复核输入后再谈判长期协议。</li>
+          <li><span className="mr-2 text-success">✓</span><strong>持续监测：</strong>储备估算按周更新，市场数据按其来源节奏更新。</li>
         </ul>
-      </section>
-    </Shell>
+      </Panel>
+
+      <SourceFooter
+        sources={[
+          { id: 'eu-reserve-estimate', label: `EU 航油储备覆盖（${reserve.source}）`, asOf: reserveIsAssumed ? null : reserve.updatedAt, basis: reserveIsAssumed ? 'assumption' : readModel.reserve?.source_type === 'official' ? 'observed' : readModel.reserve?.source_type === 'derived' ? 'derived' : 'assumption' },
+          { id: 'eu-crisis-brent', label: brentIsAssumed ? 'Brent 内置假设 87.01 USD/bbl' : 'Brent 市场快照', asOf: brentIsAssumed ? null : asOf, basis: readModel.isFallback || brentIsAssumed ? 'assumption' : 'observed' },
+          { id: 'eu-crisis-jet', label: jetEuIsAssumed ? 'EU 航油内置假设 0.657 USD/L' : market.jet_eu_proxy_usd_per_l != null ? 'EU 航油代理曲线' : '全球航油市场快照', asOf: jetEuIsAssumed ? null : asOf, basis: readModel.isFallback || jetEuIsAssumed ? 'assumption' : market.jet_eu_proxy_usd_per_l != null ? 'derived' : 'observed' },
+          { id: 'eu-crisis-carbon', label: carbonIsAssumed ? '碳价内置假设 91.91 USD/tCO₂' : 'EU 碳价代理', asOf: carbonIsAssumed ? null : asOf, basis: readModel.isFallback || carbonIsAssumed ? 'assumption' : 'derived' },
+          { id: 'market-price-history', label: 'market_snapshots 历史价格序列（上游未暴露 source_type）', basis: 'assumption' }
+        ]}
+        methodHref="/sources"
+        methodLabel="口径与来源清单"
+        limitations={[
+          '本页描述区域层面的储备与价格压力，不代表单一航司的合同、库存或采购审批。',
+          '任一市场输入或储备覆盖落到内置值时，页面不显示 as-of 戳，相关结论只能用于情景讨论。',
+          'EU 航油与碳价可能来自代理曲线；代理值是推导依据，不是直接市场观测。',
+          '历史价格接口未暴露逐点 source_type，因此来源脚注保守标为情景假设。',
+          'SAF 成本比较是敏感性分析，不是价格预测或采购建议。'
+        ]}
+      />
+    </PageTemplate>
   );
 }

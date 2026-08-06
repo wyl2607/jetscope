@@ -1,6 +1,14 @@
-import { Shell } from '@/components/shell';
+import { MetricCard } from '@/components/cards';
+import { EuEtsPressurePanel } from '@/components/eu-ets-pressure-panel';
+import { PageTemplate, SignalRow } from '@/components/page-template';
 import { Panel } from '@/components/panel';
+import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
+import { SourceFooter } from '@/components/source-footer';
+import { TippingPointWorkbench } from '@/components/tipping-point-workbench';
+import { loadEuEtsPressure } from '@/lib/eu-ets-pressure-read-model';
+import { loadPathwayComparison } from '@/lib/pathways-read-model';
 import { getDashboardReadModel, toDecisionReadModel, toTippingPointReadModel } from '@/lib/product-read-model';
+import { buildPageMetadata } from '@/lib/seo';
 import {
   formatSourceCoverageLag,
   getSourceCoverageTrustState,
@@ -9,19 +17,12 @@ import {
 } from '@/lib/source-coverage-contract';
 import type { Metadata, Route } from 'next';
 import Link from 'next/link';
-import { buildPageMetadata } from '@/lib/seo';
-import { TippingPointWorkbench } from '@/components/tipping-point-workbench';
-import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
-import { loadPathwayComparison } from '@/lib/pathways-read-model';
-import { EuEtsPressurePanel } from '@/components/eu-ets-pressure-panel';
-import { loadEuEtsPressure } from '@/lib/eu-ets-pressure-read-model';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = buildPageMetadata({
   title: 'SAF 临界点分析',
-  description:
-    '交互式分析传统航油价格在何种条件下会让可持续航空燃料（SAF）对欧洲航司具备经济竞争力。',
+  description: '交互式分析传统航油价格在何种条件下会让可持续航空燃料（SAF）对欧洲航司具备经济竞争力。',
   path: '/crisis/saf-tipping-point'
 });
 
@@ -42,11 +43,14 @@ function sourceTrustLabel(state: SourceCoverageTrustState): string {
   return '降级';
 }
 
+// SourceCoverageTrustState has exactly four business states. Proxy is a
+// warning because it is not a direct observation; the other three each retain
+// their own explicit meaning instead of falling through to a neutral color.
 function sourceTrustTone(state: SourceCoverageTrustState): string {
-  if (state === 'live') return 'border-success bg-success-soft text-success';
-  if (state === 'proxy') return 'border-accent bg-accent-soft text-accent';
-  if (state === 'fallback') return 'border-warning bg-warning-soft text-warning';
-  return 'border-danger bg-danger-soft text-danger';
+  if (state === 'live') return 'border-line bg-success-soft text-success';
+  if (state === 'proxy') return 'border-line bg-warning-soft text-warning';
+  if (state === 'fallback') return 'border-line bg-warning-soft text-warning';
+  return 'border-line bg-danger-soft text-danger';
 }
 
 function sourceMetricLabel(metricKey: string): string {
@@ -61,26 +65,44 @@ function sourceMetricLabel(metricKey: string): string {
 function sourceStatusCopy(metric: SourceCoverageMetric): string {
   if (metric.fallback_used) return '用于计算前请复核回退路径';
   if (metric.status !== 'ok') return '来源暂不可用或已降级';
-  if (metric.source_type.includes('proxy') || metric.source_type === 'derived') return '代理来源，适合情景分析';
+  if (metric.source_type.includes('proxy') || metric.source_type === 'derived') return '代理来源，只适合情景分析';
   return '主来源可用';
+}
+
+function tippingSignalTone(signal?: string): string {
+  if (signal === 'saf_cost_advantaged') return 'text-success';
+  if (signal === 'switch_window_opening') return 'text-warning';
+  if (signal === 'fossil_still_advantaged') return 'text-danger';
+  return 'text-warning';
 }
 
 export default async function SafTippingPointPage() {
   const readModel = await getDashboardReadModel();
   const tippingPoint = toTippingPointReadModel(readModel.tippingPoint);
   const airlineDecision = toDecisionReadModel(readModel.airlineDecision);
+  const fuelSource = readModel.market.values?.jet_eu_proxy_usd_per_l != null
+    ? 'proxy'
+    : readModel.market.values?.jet_usd_per_l != null
+      ? 'spot'
+      : 'assumed';
   const liveFuel = readModel.market.values?.jet_eu_proxy_usd_per_l ?? readModel.market.values?.jet_usd_per_l ?? 1.3;
+  const carbonIsAssumed = readModel.market.values?.carbon_proxy_usd_per_t == null;
   const liveCarbonUsd = readModel.market.values?.carbon_proxy_usd_per_t ?? 102.6;
+  const reserveIsAssumed = readModel.reserve == null;
+  const anyInputIsAssumed = readModel.isFallback || fuelSource === 'assumed' || carbonIsAssumed || reserveIsAssumed;
+  const asOf = anyInputIsAssumed ? null : readModel.market.generated_at;
   const sourceCoverageItems = (readModel.sourceCoverage?.metrics ?? [])
     .filter((metric) => SAF_SOURCE_METRICS.includes(metric.metric_key as (typeof SAF_SOURCE_METRICS)[number]))
-    .map((metric) => ({
-      metric,
-      trustState: getSourceCoverageTrustState(metric)
-    }));
+    .map((metric) => ({ metric, trustState: getSourceCoverageTrustState(metric) }));
   const degradedSourceCount = sourceCoverageItems.filter(({ trustState }) => trustState !== 'live').length;
   const sourceCoverageSummary = readModel.sourceCoverage
     ? `${degradedSourceCount} / ${sourceCoverageItems.length} 个计算输入需要复核`
     : '来源覆盖暂不可用，当前计算应视为情景基线';
+  const assumedInputCopy = [
+    fuelSource === 'assumed' ? '化石航油使用内置假设 1.3 USD/L' : null,
+    carbonIsAssumed ? '碳价使用内置假设 102.6 USD/t' : null,
+    reserveIsAssumed ? '储备覆盖使用内置假设 3.0 周' : null
+  ].filter(Boolean).join('；');
 
   let pathwayComparison: Awaited<ReturnType<typeof loadPathwayComparison>> | null = null;
   try {
@@ -108,103 +130,94 @@ export default async function SafTippingPointPage() {
   }
 
   return (
-    <Shell
+    <PageTemplate
       eyebrow="危机分析"
       title="SAF 临界点"
-      description="定位可持续航空燃料（SAF）成为欧洲航空运营方理性选择的关键价格区间。"
+      question="当前燃油、碳价与储备条件是否已经足以启动 SAF 采购切换？"
+      asOf={asOf}
     >
-      {/* Top navigation */}
-      <div className="mb-6 flex flex-wrap gap-3">
-        <Link
-          href="/crisis/eu-jet-reserves"
-          className="rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-muted hover:border-line-strong hover:bg-accent-soft hover:text-ink"
-        >
-          ← 储备监测
-        </Link>
-        <Link
-          href="/de/lufthansa-saf-2026"
-          className="rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-muted hover:border-line-strong hover:bg-accent-soft hover:text-ink"
-        >
-          Lufthansa 分析 →
-        </Link>
-      </div>
+      <SignalRow label="SAF 临界点结论">
+        <MetricCard
+          label="当前临界点信号"
+          value={tippingPoint?.signal ?? '未识别'}
+          valueClassName={tippingSignalTone(tippingPoint?.signal)}
+          hint="结论优先；未知信号仍是需复核的问题态。"
+        />
+        <MetricCard
+          label="输入可信度"
+          value={anyInputIsAssumed ? '仅供情景讨论' : sourceCoverageSummary}
+          valueClassName={anyInputIsAssumed || degradedSourceCount > 0 ? 'text-warning' : 'text-success'}
+          hint={assumedInputCopy || sourceCoverageSummary}
+          cardHref={REVIEW_SOURCES_ROUTE}
+        />
+        <MetricCard
+          label="储备覆盖"
+          value={`${(readModel.reserve?.coverage_weeks ?? 3.0).toFixed(1)} 周`}
+          valueClassName={reserveIsAssumed ? 'text-warning' : 'text-ink'}
+          hint={reserveIsAssumed ? '内置假设 3.0 周，模拟结论不能当作当前市场结论。' : '已连接储备来源。'}
+        />
+      </SignalRow>
 
-      {/* Introduction */}
-      <section className="mb-8 rounded-2xl border border-line bg-surface p-8">
-        <h2 className="text-xl font-bold text-ink">核心问题</h2>
-        <p className="mt-3 text-muted leading-relaxed">
-          在什么燃油价格、碳价与供应约束下，SAF 会从
-          <strong className="text-ink">合规成本</strong>转为
-          <strong className="text-success">理性采购选择</strong>？
-        </p>
-        <p className="mt-4 text-sm text-muted">
-          本页提供交互工具，用于评估航空燃料转型经济性。
-          市场输入优先使用实时来源；当来源降级时，计算会明确标出代理或回退路径。
-        </p>
-      </section>
-
-      <section className="mb-8 rounded-2xl border border-line bg-surface p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-subtle">计算输入</p>
-            <h2 className="mt-2 text-xl font-bold text-ink">本次计算可信度</h2>
-            <p className="mt-2 text-sm leading-6 text-muted">{sourceCoverageSummary}</p>
-          </div>
-          <Link
-            href={REVIEW_SOURCES_ROUTE}
-            className="rounded-lg border border-accent bg-accent-soft px-3 py-2 text-xs font-semibold text-accent hover:bg-accent-hover"
-          >
-            查看需复核来源
-          </Link>
+      <Panel
+        title="相关决策入口"
+        why="在修改模拟假设前，先对照储备危机页与航司事件分析，确认问题来自市场输入还是运营约束。"
+      >
+        <div className="flex flex-wrap gap-4">
+          <Link href="/crisis/eu-jet-reserves" className="rounded-xl border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition hover:border-accent hover:bg-accent-soft">← 储备监测</Link>
+          <Link href="/de/lufthansa-saf-2026" className="rounded-xl border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition hover:border-accent hover:bg-accent-soft">Lufthansa 分析 →</Link>
         </div>
+      </Panel>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          {sourceCoverageItems.length ? (
-            sourceCoverageItems.map(({ metric, trustState }) => (
-              <article key={metric.metric_key} className={`rounded-xl border p-4 ${sourceTrustTone(trustState)}`}>
-                <p className="text-xs uppercase tracking-[0.14em] opacity-75">{sourceTrustLabel(trustState)}</p>
-                <h3 className="mt-2 text-sm font-semibold">{sourceMetricLabel(metric.metric_key)}</h3>
-                <p className="mt-2 text-xs opacity-80">{metric.source_name}</p>
-                <p className="mt-2 text-xs opacity-80">
-                  置信度 {Math.round(metric.confidence_score * 100)}% · 滞后 {formatSourceCoverageLag(metric.lag_minutes)}
-                </p>
-                <p className="mt-2 text-xs opacity-80">{sourceStatusCopy(metric)}</p>
+      <Panel
+        title="本次计算可信度"
+        why={assumedInputCopy || '逐项核对直接观测、代理、回退和降级输入；代理来源不能被读成正常实测。'}
+        action={<Link href={REVIEW_SOURCES_ROUTE} className="rounded-xl border border-line bg-surface px-4 py-2 text-xs font-semibold text-ink transition hover:border-accent hover:bg-accent-soft">查看需复核来源</Link>}
+      >
+        {sourceCoverageItems.length ? (
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
+            {sourceCoverageItems.map(({ metric, trustState }) => (
+              <article key={metric.metric_key} className={`rounded-2xl border p-4 ${sourceTrustTone(trustState)}`}>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em]">{sourceTrustLabel(trustState)}</p>
+                <h3 className="mt-2 text-sm font-semibold text-ink">{sourceMetricLabel(metric.metric_key)}</h3>
+                <p className="mt-2 text-xs text-muted">{metric.source_name}</p>
+                <p className="mt-2 text-xs tabular-nums text-muted">置信度 {Math.round(metric.confidence_score * 100)}% · 滞后 {formatSourceCoverageLag(metric.lag_minutes)}</p>
+                <p className="mt-2 text-xs text-muted">{sourceStatusCopy(metric)}</p>
               </article>
-            ))
-          ) : (
-            <p className="rounded-xl border border-danger bg-danger-soft p-4 text-sm text-danger">
-              未能读取来源覆盖合约。请先检查 API readiness 和来源页。
-            </p>
-          )}
-        </div>
-      </section>
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-xl border border-danger bg-danger-soft p-4 text-sm text-danger" role="alert">未能读取来源覆盖合约。请先检查 API readiness 和来源页。</p>
+        )}
+      </Panel>
 
-      <TippingPointWorkbench
-        initialTippingPoint={tippingPoint}
-        initialDecision={airlineDecision}
-        initialReserveWeeks={readModel.reserve?.coverage_weeks ?? 3.0}
-        reserveIsScenarioDefault={!readModel.reserve}
-        liveDefaults={{
-          fossilJetUsdPerL: liveFuel,
-          carbonPriceEurPerT: Number((liveCarbonUsd / 1.08).toFixed(2)),
-          subsidyUsdPerL: 0,
-          blendRatePct: 6,
-          reserveWeeks: readModel.reserve?.coverage_weeks ?? 3.0,
-          pathwayKey: 'hefa'
-        }}
-      />
+      <Panel
+        title="交互式拐点工作台"
+        why={reserveIsAssumed ? '储备覆盖未取到实时值，使用内置假设 3.0 周；模拟结果仅供情景讨论。' : '调整燃油、碳价、补贴、掺混率与储备假设，观察切换结论在什么条件下翻转。'}
+      >
+        <TippingPointWorkbench
+          initialTippingPoint={tippingPoint}
+          initialDecision={airlineDecision}
+          initialReserveWeeks={readModel.reserve?.coverage_weeks ?? 3.0}
+          reserveIsScenarioDefault={!readModel.reserve}
+          liveDefaults={{
+            fossilJetUsdPerL: liveFuel,
+            carbonPriceEurPerT: Number((liveCarbonUsd / 1.08).toFixed(2)),
+            subsidyUsdPerL: 0,
+            blendRatePct: 6,
+            reserveWeeks: readModel.reserve?.coverage_weeks ?? 3.0,
+            pathwayKey: 'hefa'
+          }}
+        />
+      </Panel>
 
-      {pathwayComparison ? (
-        <div className="mb-8">
-        <Panel
-          title="SAF 路径净成本与来源可信度"
-          why="以当前市场输入算出各路径的净成本区间与价差，并标注每条路径的来源类型与置信度——便宜但来源不可信的路径不该赢。"
-          action={
-            <span className="rounded-lg border border-line px-3 py-2 text-xs font-semibold text-muted">
-              对比信号：{pathwayComparison.signalLabel}
-            </span>
-          }
-        >
+      <Panel
+        title="SAF 路径净成本与来源可信度"
+        why="以当前市场输入算出各路径的净成本区间与价差，并标注来源类型与置信度；便宜但来源不可信的路径不该赢。"
+        state={pathwayComparison ? 'ready' : 'error'}
+        stateDetail="路径比较服务当前不可用，不能用空白结果替代路径判断。"
+        action={pathwayComparison ? <span className="rounded-xl border border-line bg-surface px-3 py-2 text-xs font-semibold text-muted">对比信号：{pathwayComparison.signalLabel}</span> : null}
+      >
+        {pathwayComparison ? (
           <SafPathwayComparisonTable
             selectedPathwayKey="hefa"
             pathways={pathwayComparison.rows.map((row) => ({
@@ -218,55 +231,59 @@ export default async function SafTippingPointPage() {
             }))}
             sources={pathwayComparison.sourceByKey}
           />
-        </Panel>
-        </div>
-      ) : null}
+        ) : null}
+      </Panel>
 
-      {euEtsPressure ? (
-        <div className="mb-8">
-          <Panel
-            title="碳价对化石航油的成本压力"
-            why="EU ETS 价格是这页所有结论背后的同一个驱动量；这里逐档看它把化石航油推高多少。"
-          >
-            <EuEtsPressurePanel model={euEtsPressure} />
-          </Panel>
-        </div>
-      ) : null}
+      <Panel
+        title="碳价对化石航油的成本压力"
+        why="EU ETS 是所有临界点结论背后的共同驱动量；逐档查看它把化石航油有效成本推高多少。"
+        state={euEtsPressure ? 'ready' : 'error'}
+        stateDetail="EU ETS 压力模型当前不可用，无法核对碳价传导。"
+      >
+        {euEtsPressure ? <EuEtsPressurePanel model={euEtsPressure} /> : null}
+      </Panel>
 
-      {/* Model Boundaries */}
-      <section className="rounded-2xl border border-line bg-surface p-8">
-        <h2 className="text-xl font-bold text-ink mb-4">模型边界与使用建议</h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted mb-2">输入解释</h3>
-            <p className="text-sm text-muted">
-              计算面板优先采用实时市场来源；当实时来源不可用时，会显示代理、回退或降级状态。
-              进入来源页可复核每个输入的来源、滞后与置信度。
-            </p>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted mb-2">SAF 路径</h3>
-            <p className="text-sm text-muted">
-              成本曲线基于 2026 年研究（Energy Solutions、RMI、EASA）。
-              路径成熟度分级：commercial、scaling、limited、future。
-            </p>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted mb-2">储备信号</h3>
-            <p className="text-sm text-muted">
-              EU 航油储备估算由 IATA 与 EUROCONTROL 评估人工维护。
-              每周更新。人工信号置信度为 0.62。
-            </p>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted mb-2">分析模型</h3>
-            <p className="text-sm text-muted">
-              临界点与航司决策引擎作为共享 Python 服务运行。
-              模型与 API 合约由后端分析服务维护。
-            </p>
-          </div>
+      <Panel title="模型边界与使用建议" why="明确哪些输入是市场观测、哪些是代理或人工假设，避免把模拟输出当成采购指令。">
+        <div className="grid gap-6 md:grid-cols-2">
+          <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">输入解释</p><p className="mt-2 text-sm leading-6 text-muted">实时来源不可用时会显示代理、回退或降级状态；进入来源页复核滞后与置信度。</p></div>
+          <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">SAF 路径</p><p className="mt-2 text-sm leading-6 text-muted">成本曲线基于研究边界，路径成熟度与价格区间仍需项目级核验。</p></div>
+          <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">储备信号</p><p className="mt-2 text-sm leading-6 text-muted">人工维护的储备估算是情景假设，不是官方实时库存。</p></div>
+          <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">分析模型</p><p className="mt-2 text-sm leading-6 text-muted">临界点与航司决策引擎用于敏感性分析，不构成采购建议。</p></div>
         </div>
-      </section>
-    </Shell>
+      </Panel>
+
+      <SourceFooter
+        sources={[
+          {
+            id: 'saf-tipping-fuel',
+            label: fuelSource === 'assumed' ? '化石航油内置假设 1.3 USD/L' : fuelSource === 'proxy' ? 'EU 航油代理输入' : '全球航油市场输入',
+            asOf: fuelSource === 'assumed' ? null : asOf,
+            basis: readModel.isFallback || fuelSource === 'assumed' ? 'assumption' : fuelSource === 'spot' ? 'observed' : 'derived'
+          },
+          {
+            id: 'saf-tipping-carbon',
+            label: carbonIsAssumed ? '碳价内置假设 102.6 USD/t' : '碳价代理输入',
+            asOf: carbonIsAssumed ? null : asOf,
+            basis: readModel.isFallback || carbonIsAssumed ? 'assumption' : 'derived'
+          },
+          {
+            id: 'saf-tipping-reserve',
+            label: reserveIsAssumed ? '储备覆盖内置假设 3.0 周' : `储备覆盖（${readModel.reserve?.source_name ?? '来源不可用'}）`,
+            asOf: reserveIsAssumed ? null : readModel.reserve?.generated_at,
+            basis: reserveIsAssumed ? 'assumption' : readModel.reserve?.source_type === 'official' ? 'observed' : readModel.reserve?.source_type === 'derived' ? 'derived' : 'assumption'
+          },
+          { id: 'source-coverage-contract', label: '计算输入来源覆盖、滞后与置信度合约', asOf: readModel.sourceCoverage?.generated_at ?? null, basis: 'derived' },
+          { id: 'saf-tipping-model', label: 'SAF 临界点、路径比较与 EU ETS 压力模型', basis: 'derived' }
+        ]}
+        methodHref="/sources"
+        methodLabel="口径与来源清单"
+        limitations={[
+          '储备覆盖未取到实时值时，模拟器使用 3.0 周内置假设，模拟结果仅供情景讨论。',
+          '化石航油或碳价落到内置值时，页面不显示 as-of 戳，相关结论不能当作当前市场观测。',
+          '滑块和输入框中的燃油、碳价、补贴、掺混率与储备值是读者设定的假设。',
+          '模型输出不替代航司合同、库存、供应商报价或采购审批。'
+        ]}
+      />
+    </PageTemplate>
   );
 }
