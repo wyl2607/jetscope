@@ -10,8 +10,9 @@
     "typegen": "next typegen",
     "typecheck": "npm run typegen && tsc --noEmit --ignoreDeprecations 6.0",
     "lint": "npm run typecheck",
-    "gate": "npm run build && npm run typecheck && npm run lint:design",
-    "lint:design": "node ../../scripts/design-system-lint.mjs"
+    "gate": "npm run build && npm run typecheck && npm run test && npm run lint:design",
+    "lint:design": "node ../../scripts/design-system-lint.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "next": "16.2.11",
