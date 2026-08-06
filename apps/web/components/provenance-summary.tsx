@@ -1,4 +1,3 @@
-import { InfoCard } from '@/components/cards';
 import type { SourcesReadModel } from '@/lib/sources-read-model';
 import type { Route } from 'next';
 import Link from 'next/link';
@@ -23,8 +22,9 @@ function trustTone(summary: SourcesReadModel['summary']): string {
 }
 
 export function ProvenanceSummary({ summary, completeness, generatedAt, href }: Props) {
+  // Bare artifact: card, title and why-line come from the wrapping Panel.
   const content = (
-    <InfoCard title="来源溯源" subtitle="当前市场快照的可信状态">
+    <>
       <div className="grid gap-3 text-sm md:grid-cols-4">
         <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-slate-700">
           <span className="block text-xs uppercase tracking-[0.14em] text-slate-500">实时</span>
@@ -51,15 +51,18 @@ export function ProvenanceSummary({ summary, completeness, generatedAt, href }: 
           完整度 {Math.round(completeness * 100)}% · {summary.freshnessLabel} · 生成于 {formatGeneratedAt(generatedAt)}
         </p>
       </div>
-    </InfoCard>
+    </>
   );
 
   if (!href) return content;
 
   return (
-    <div className="relative">
+    <div>
       {content}
-      <Link href={href} className="absolute right-5 top-5 text-xs font-semibold text-sky-700 underline decoration-sky-500/40 hover:text-sky-800">
+      <Link
+        href={href}
+        className="mt-4 inline-block text-xs font-semibold text-accent underline decoration-accent/40 hover:decoration-accent"
+      >
         查看来源
       </Link>
     </div>

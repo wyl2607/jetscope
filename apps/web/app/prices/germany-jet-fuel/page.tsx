@@ -1,4 +1,5 @@
 import { InfoCard } from '@/components/cards';
+import { Panel } from '@/components/panel';
 import { Shell } from '@/components/shell';
 import { PriceTrendsChart } from '@/components/price-trends-chart';
 import { getGermanyJetFuelReadModel } from '@/lib/germany-jet-fuel-read-model';
@@ -118,11 +119,16 @@ export default async function GermanyJetFuelPricePage() {
       </section>
 
       <section className="mt-8">
-        <PriceTrendsChart
-          metrics={priceChartData.metrics}
-          isLoading={false}
-          error={priceChartData.error}
-        />
+        <Panel
+          title="价格趋势"
+          why="上面的当前价只是一个点；要判断它是不是异常，得看它在 1d / 7d / 30d 窗口里的位置。"
+        >
+          <PriceTrendsChart
+            metrics={priceChartData.metrics}
+            isLoading={false}
+            error={priceChartData.error}
+          />
+        </Panel>
       </section>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-2">

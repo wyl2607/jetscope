@@ -37,16 +37,8 @@ function formatRange(low: number, high: number): string {
 export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, sources }: Props) {
   const showSources = Boolean(sources);
   return (
-    <section className="min-w-0 rounded-2xl border border-slate-200 bg-white/90 p-4 sm:p-5">
-      <div className="mb-4">
-        <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
-          SAF 路径对比
-        </h4>
-        <p className="mt-2 text-sm text-slate-500">
-          标准路径目录，叠加拐点合约返回的实时净成本区间。
-        </p>
-      </div>
-
+    // Bare artifact: card, title and why-line come from the wrapping Panel.
+    <div className="min-w-0">
       <div className="overflow-x-auto">
         <table className="min-w-full text-left text-sm text-slate-700">
           <thead>
@@ -116,6 +108,6 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, source
           </tbody>
         </table>
       </div>
-    </section>
+    </div>
   );
 }

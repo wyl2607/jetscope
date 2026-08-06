@@ -188,13 +188,13 @@ export function PolicyTimeline({ currentTimestamp = Date.now(), className = '', 
   };
 
   return (
+    // Bare artifact: the title comes from the wrapping Panel. The reference
+    // date stays: it says which "now" the timeline is drawn against, which is a
+    // value, not a heading.
     <div className={`policy-timeline ${className}`}>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-ink">{copy.heading}</h2>
-        <p className="text-sm text-muted mt-1">
-          {copy.subheadingPrefix} {new Date(currentTimestamp).toLocaleDateString(copy.dateLocale)} {copy.subheadingSuffix}
-        </p>
-      </div>
+      <p className="mb-6 text-sm text-muted">
+        {copy.subheadingPrefix} {new Date(currentTimestamp).toLocaleDateString(copy.dateLocale)} {copy.subheadingSuffix}
+      </p>
 
       <div className="relative space-y-6 pl-8">
         {/* Vertical timeline line */}

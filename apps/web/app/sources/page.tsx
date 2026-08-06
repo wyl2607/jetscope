@@ -1,4 +1,5 @@
 import { InfoCard } from '@/components/cards';
+import { Panel } from '@/components/panel';
 import { ProvenanceSummary } from '@/components/provenance-summary';
 import { SourceCoveragePanel } from '@/components/source-coverage-panel';
 import { Shell } from '@/components/shell';
@@ -189,11 +190,16 @@ export default async function SourcesPage({
     >
       <FocusScroll focusMetricKey={focusMetricKey} />
       <div className="mb-6">
-        <ProvenanceSummary
-          summary={readModel.summary}
-          completeness={readModel.completeness}
-          generatedAt={readModel.generatedAt}
-        />
+        <Panel
+          title="来源溯源"
+          why="当前市场快照里有多少是实测、多少是代理、多少是回退——这决定下面每一行能不能直接引用。"
+        >
+          <ProvenanceSummary
+            summary={readModel.summary}
+            completeness={readModel.completeness}
+            generatedAt={readModel.generatedAt}
+          />
+        </Panel>
       </div>
       <div className="mb-6">
         <SourceCoveragePanel
