@@ -34,21 +34,18 @@ function pathwayLabel(pathway: string): string {
 
 export function TippingEventTimeline({ events }: Props) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-slate-500">拐点事件</p>
-          <h3 className="mt-2 text-xl font-semibold text-slate-950">SAF 交叉时间线</h3>
-        </div>
+    // Bare artifact: card, title and why-line come from the wrapping Panel.
+    <div>
+      <div className="flex justify-end">
         <p className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600">{events.length} 个事件</p>
       </div>
 
       {events.length === 0 ? (
-        <p className="mt-6 rounded-xl border border-dashed border-sky-200 bg-sky-50 p-5 text-sm text-sky-800">
+        <p className="mt-4 rounded-xl border border-dashed border-sky-200 bg-sky-50 p-5 text-sm text-sky-800">
           最近窗口内没有返回新的 SAF 成本交叉事件。若 API 未连接，这里会保持空状态，避免把情景基线误读成真实事件。
         </p>
       ) : (
-        <div className="mt-6 space-y-3">
+        <div className="mt-4 space-y-3">
           {events.map((event) => {
             const badgeClass = EVENT_COLOR[event.event_type] ?? 'border-slate-200 bg-slate-50 text-slate-700';
             return (
@@ -71,6 +68,6 @@ export function TippingEventTimeline({ events }: Props) {
           })}
         </div>
       )}
-    </section>
+    </div>
   );
 }

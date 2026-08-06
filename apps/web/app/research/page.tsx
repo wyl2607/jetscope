@@ -1,4 +1,5 @@
 import { InfoCard, MetricCard } from '@/components/cards';
+import { Panel } from '@/components/panel';
 import { ResearchDecisionBriefCard } from '@/components/research-decision-brief';
 import { Shell } from '@/components/shell';
 import { AI_RESEARCH_ENABLED, buildResearchDecisionBrief, getResearchSignals } from '@/lib/research-signals-read-model';
@@ -103,9 +104,14 @@ export default async function ResearchPage() {
         </section>
       ) : null}
 
-      <section className="mt-8">
-        <ResearchDecisionBriefCard brief={brief} showLink={false} />
-      </section>
+      <div className="mt-8">
+        <Panel
+          title="研究决策层"
+          why="把下面这串信号压成一句可以拿去做决定的话，以及它现在有多可信。"
+        >
+          <ResearchDecisionBriefCard brief={brief} showLink={false} />
+        </Panel>
+      </div>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.85fr]">
         <InfoCard title="信号列表" subtitle="按当前 read model 返回结果展示">

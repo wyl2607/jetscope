@@ -1,4 +1,5 @@
 import { FuelVsSafPriceChart } from '@/components/fuel-vs-saf-price-chart';
+import { Panel } from '@/components/panel';
 import { ResearchDecisionBriefCard } from '@/components/research-decision-brief';
 import { ReservesCoverageStrip } from '@/components/reserves-coverage-strip';
 import { Shell } from '@/components/shell';
@@ -254,17 +255,37 @@ export default async function CrisisPage() {
           ))}
         </section>
 
-        <ReservesCoverageStrip reserve={reserve} />
+        <Panel
+          title="欧盟航煤储备覆盖"
+          why="储备周数是危机叙事的底座。跌破警戒线时，价格反应和政策反应会同时加速。"
+        >
+          <ReservesCoverageStrip reserve={reserve} />
+        </Panel>
 
-        <TippingEventTimeline events={events} />
+        <Panel
+          title="SAF 交叉时间线"
+          why="记录 SAF 有效成本真的越过化石航油的时刻，而不是模型预测它会越过。"
+        >
+          <TippingEventTimeline events={events} />
+        </Panel>
 
-        <ResearchDecisionBriefCard brief={researchBrief} compact />
+        <Panel
+          title="研究决策层"
+          why="解释上面这些数字为什么在动。信号本身不是结论，是结论的理由。"
+        >
+          <ResearchDecisionBriefCard brief={researchBrief} compact />
+        </Panel>
 
-        <FuelVsSafPriceChart
-          fossilJetUsdPerL={tippingPoint?.inputs.fossilJetUsdPerL ?? fallbackFossil}
-          effectiveFossilJetUsdPerL={tippingPoint?.effectiveFossilJetUsdPerL ?? fallbackFossil}
-          pathways={tippingPoint?.pathways ?? []}
-        />
+        <Panel
+          title="航油与 SAF 价格阶梯"
+          why="化石航油基准、碳调整后的有效成本，以及各路径的净成本区间——要看的是差距，不是绝对值。"
+        >
+          <FuelVsSafPriceChart
+            fossilJetUsdPerL={tippingPoint?.inputs.fossilJetUsdPerL ?? fallbackFossil}
+            effectiveFossilJetUsdPerL={tippingPoint?.effectiveFossilJetUsdPerL ?? fallbackFossil}
+            pathways={tippingPoint?.pathways ?? []}
+          />
+        </Panel>
 
         <TippingPointSimulator
           tippingPoint={tippingPoint}

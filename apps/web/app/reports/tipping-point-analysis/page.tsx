@@ -1,4 +1,5 @@
 import { FuelVsSafPriceChart } from '@/components/fuel-vs-saf-price-chart';
+import { Panel } from '@/components/panel';
 import { ResearchDecisionBriefCard } from '@/components/research-decision-brief';
 import { ReservesCoverageStrip } from '@/components/reserves-coverage-strip';
 import { Shell } from '@/components/shell';
@@ -73,7 +74,12 @@ export default async function TippingPointReportPage() {
           </p>
         </section>
 
-        <ReservesCoverageStrip reserve={reserve} />
+        <Panel
+          title="欧盟航煤储备覆盖"
+          why="储备周数决定这份报告的紧迫度：覆盖越薄，价格与政策的反应窗口越短。"
+        >
+          <ReservesCoverageStrip reserve={reserve} />
+        </Panel>
 
         <section className="grid gap-4 md:grid-cols-3">
           <div className="rounded-2xl border border-line bg-surface p-5">
@@ -92,11 +98,16 @@ export default async function TippingPointReportPage() {
           </div>
         </section>
 
-        <FuelVsSafPriceChart
-          fossilJetUsdPerL={fossilJetUsdPerL}
-          effectiveFossilJetUsdPerL={effectiveFossilJetUsdPerL}
-          pathways={tippingPoint?.pathways ?? []}
-        />
+        <Panel
+          title="航油与 SAF 价格阶梯"
+          why="化石航油基准、碳调整后的有效成本，以及各路径的净成本区间——报告的经济学论点全部落在这张图的差距上。"
+        >
+          <FuelVsSafPriceChart
+            fossilJetUsdPerL={fossilJetUsdPerL}
+            effectiveFossilJetUsdPerL={effectiveFossilJetUsdPerL}
+            pathways={tippingPoint?.pathways ?? []}
+          />
+        </Panel>
 
         <section className="rounded-2xl border border-line bg-surface p-6">
           <p className="text-xs uppercase tracking-[0.16em] text-accent">航司决策含义</p>
@@ -106,9 +117,19 @@ export default async function TippingPointReportPage() {
           </p>
         </section>
 
-        <ResearchDecisionBriefCard brief={researchBrief} />
+        <Panel
+          title="研究决策层"
+          why="解释这份报告的论点为什么在变。信号本身不是结论，是结论的理由。"
+        >
+          <ResearchDecisionBriefCard brief={researchBrief} />
+        </Panel>
 
-        <TippingEventTimeline events={events} />
+        <Panel
+          title="SAF 交叉时间线"
+          why="记录 SAF 有效成本真的越过化石航油的时刻，而不是模型预测它会越过。"
+        >
+          <TippingEventTimeline events={events} />
+        </Panel>
       </article>
     </Shell>
   );
