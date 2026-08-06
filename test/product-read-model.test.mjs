@@ -561,7 +561,7 @@ test('crisis page uses light semantic data cards instead of gray dark boxes', as
 
   const crisisSource = await readFile(new URL('../apps/web/app/crisis/page.tsx', import.meta.url), 'utf8');
   assert.match(crisisSource, /sourceTypeLabel/);
-  assert.match(crisisSource, /confidenceTone/);
+  assert.match(crisisSource, /confidenceTextTone/);
   assert.match(crisisSource, /marketConfidence/);
   assert.match(crisisSource, /buildSafWorkbenchHref/);
   assert.match(crisisSource, /reviewSourcesHref/);
@@ -570,28 +570,61 @@ test('crisis page uses light semantic data cards instead of gray dark boxes', as
   assert.match(crisisSource, /reserve: reserveWeeks\?\.toFixed\(2\)/);
   // Asserted through the design tokens rather than palette literals, which any
   // migration necessarily breaks. See docs/UI_CONTRACT.md section 1.
-  assert.match(crisisSource, /bg-success-soft/);
-  assert.match(crisisSource, /bg-warning-soft/);
-  assert.match(crisisSource, /bg-accent-soft/);
-  assert.match(crisisSource, /bg-danger-soft/);
+  //
+  // The tints used to sit on chip backgrounds. On the template they sit on the
+  // signal-row values instead, and the navigation cards went neutral on
+  // purpose: a link to the sources page tinted warning was decoration, and
+  // section 1 rule 5 says a semantic colour has to mean something.
+  assert.match(crisisSource, /text-success/);
+  assert.match(crisisSource, /text-warning/);
+  assert.match(crisisSource, /text-accent/);
+  assert.match(crisisSource, /text-danger/);
 
   // A style migration must not quietly downgrade what the page communicates:
   // unknown provenance, missing confidence, and an unrecognised signal all stay
   // problem-coloured rather than fading to neutral grey.
   assert.match(
     crisisSource,
-    /if \(value == null\) return 'border-danger/,
+    /if \(value == null\) return 'text-danger/,
     'missing confidence must stay a problem tone, not neutral grey'
   );
-  for (const helper of ['sourceTone', 'signalTone']) {
-    const body = crisisSource.slice(crisisSource.indexOf(`function ${helper}(`));
-    const lastReturn = body.slice(0, body.indexOf('}' + String.fromCharCode(10)));
+  // The tone helpers were renamed to *TextTone when the page moved to the
+  // template: the signal row tints the value, it no longer paints a whole tinted
+  // chip. The guarantee is unchanged and is what is asserted here - an
+  // unrecognised value must not fall through to a calm colour.
+  //
+  // The body slice matches an optional CR so the assertion still inspects the
+  // helper if a file ever lands with CRLF endings. Without it the terminator is
+  // not found, the slice runs to end of file, and the check quietly starts
+  // reading the JSX instead - passing while verifying nothing.
+  const helperBody = (name) => {
+    const start = crisisSource.indexOf(`function ${name}(`);
+    assert.ok(start >= 0, `${name} must exist in the crisis page`);
+    const rest = crisisSource.slice(start);
+    const end = rest.search(/\r?\n\}/);
+    assert.ok(end > 0, `${name} body must terminate`);
+    return rest.slice(0, end);
+  };
+
+  for (const helper of ['signalTextTone', 'stressTextTone', 'confidenceTextTone']) {
+    const body = helperBody(helper);
     assert.match(
-      lastReturn.slice(lastReturn.lastIndexOf('return')),
-      /danger/,
+      body.slice(body.lastIndexOf('return')),
+      /danger|warning/,
       `${helper} fallthrough must stay a problem tone, not neutral grey`
     );
   }
+
+  // Provenance used to be a tinted chip on the page. It now rides in the source
+  // footer, where an unrecognised source_type must land on 'assumption' - the
+  // basis the footer renders in warning - rather than being passed off as
+  // observed.
+  const basisBody = helperBody('reserveBasis');
+  assert.match(
+    basisBody.slice(basisBody.lastIndexOf('return')),
+    /assumption/,
+    'an unrecognised reserve source must default to assumption, never to observed'
+  );
 });
 
 test('localized crisis pages are source-backed and stay in their locale', async () => {
