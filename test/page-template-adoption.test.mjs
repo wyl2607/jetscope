@@ -48,7 +48,18 @@ const CONVERTED_PAGES = [
   'apps/web/app/analysis/page.tsx',
   'apps/web/app/reports/tipping-point-analysis/page.tsx',
   'apps/web/app/de/reports/tipping-point-analysis/page.tsx',
-  'apps/web/app/en/reports/tipping-point-analysis/page.tsx'
+  'apps/web/app/en/reports/tipping-point-analysis/page.tsx',
+  'apps/web/app/analysis/lufthansa-flight-cuts-2026-04/page.tsx',
+  'apps/web/app/analysis/lufthansa-2026-de/page.tsx',
+  'apps/web/app/de/lufthansa-saf-2026/page.tsx',
+  'apps/web/app/en/lufthansa-saf-2026/page.tsx'
+];
+
+const STATIC_LUFTHANSA_ANALYSIS_PAGES = [
+  'apps/web/app/analysis/lufthansa-flight-cuts-2026-04/page.tsx',
+  'apps/web/app/analysis/lufthansa-2026-de/page.tsx',
+  'apps/web/app/de/lufthansa-saf-2026/page.tsx',
+  'apps/web/app/en/lufthansa-saf-2026/page.tsx'
 ];
 
 /** Pages that render a read model with an isFallback flag. */
@@ -132,6 +143,14 @@ test('static FAQ pages never invent a data timestamp', async () => {
     const source = await read(path);
     assert.match(source, /asOf=\{null\}/, `${path} must explicitly state that it has no data timestamp`);
     assert.doesNotMatch(source, /new Date\(/, `${path} must not turn render or build time into an as-of stamp`);
+  }
+});
+
+test('static Lufthansa analysis pages never invent a data timestamp', async () => {
+  for (const path of STATIC_LUFTHANSA_ANALYSIS_PAGES) {
+    const source = await read(path);
+    assert.match(source, /asOf=\{null\}/, `${path} must explicitly state that it has no page-level data timestamp`);
+    assert.doesNotMatch(source, /new Date\(/, `${path} must not turn publication or render time into an as-of stamp`);
   }
 });
 

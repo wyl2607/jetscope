@@ -1,5 +1,7 @@
-import { InfoCard } from '@/components/cards';
-import { Shell } from '@/components/shell';
+import { MetricCard } from '@/components/cards';
+import { PageTemplate, SignalRow } from '@/components/page-template';
+import { Panel } from '@/components/panel';
+import { SourceFooter } from '@/components/source-footer';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { buildPageMetadata } from '@/lib/seo';
@@ -11,6 +13,9 @@ import {
   OUTLOOK_SCENARIOS, REFUEL_EU_ROADMAP, SAF_INFLECTION_MATH,
   type RichParagraph
 } from './data';
+
+const LUFTHANSA_NEWSROOM =
+  'https://newsroom.lufthansagroup.com/en/lufthansa-group-optimises-flight-offering-in-summer-across-all-six-hubs/';
 
 function RichP({ p, className }: { p: RichParagraph; className?: string }) {
   return (
@@ -31,40 +36,49 @@ export const metadata: Metadata = buildPageMetadata({
 
 export default function LufthansaFuelShockAnalysisPage() {
   return (
-    <Shell
+    <PageTemplate
       eyebrow="深度分析"
       title="汉莎削减2万航班背后：可持续航油成本拐点到来"
-      description="从事件背后的能源经济学看可持续航油的未来"
+      question="这次运力削减，改变了 SAF 的采购时机吗？"
+      asOf={null}
     >
-      {/* 文章导航 */}
-      <nav className="mb-8 rounded-lg border border-line bg-surface p-4">
-        <p className="mb-3 text-xs font-semibold uppercase text-muted">内容导航</p>
-        <ul className="grid gap-2 text-sm text-muted">
-          {NAV_ITEMS.map((item) => (
-            <li key={item.href}>• <a href={item.href} className="text-accent underline">{item.label}</a></li>
-          ))}
-        </ul>
-      </nav>
+      <SignalRow label="采购时机判断">
+        <MetricCard
+          label="采购姿态"
+          value="进入复核窗口"
+          valueClassName="text-warning"
+          hint="削减运力说明成本压力已进入运营决策，但静态分析不足以直接下单。"
+        />
+        <MetricCard label="计划削减" value="20,000 班" hint="Lufthansa 公告所述、截至 2026 年 10 月的短途航班调整。" />
+        <MetricCard label="参考拐点" value="$115/桶" hint="作者情景推算：此处 SAF 成本溢价开始进入可复核区间。" />
+        <MetricCard label="德国航油溢价" value="5–10%" hint="文章采用的物流、税费与基础设施情景假设。" />
+      </SignalRow>
 
-      <section className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-        <InfoCard title="事件事实 (source-backed)" subtitle="Lufthansa newsroom · 2026-04-21">
-          <ul className="space-y-3 text-sm leading-7 text-muted">{FACTS.map((fact) => <li key={fact}>• {fact}</li>)}</ul>
-          <p className="mt-4 text-xs text-muted">
-            Source:{' '}
-            <a className="text-accent underline" href="https://newsroom.lufthansagroup.com/en/lufthansa-group-optimises-flight-offering-in-summer-across-all-six-hubs/" target="_blank" rel="noreferrer">Lufthansa Group newsroom</a>
-          </p>
-        </InfoCard>
+      <Panel title="内容导航" why="按证据、成本、政策和行动顺序复核这篇静态事件分析。">
+        <nav>
+          <ul className="grid gap-2 text-sm text-muted">
+            {NAV_ITEMS.map((item) => (
+              <li key={item.href}>• <a href={item.href} className="text-accent underline">{item.label}</a></li>
+            ))}
+          </ul>
+        </nav>
+      </Panel>
 
-        <InfoCard title="对 JetScope 的直接影响" subtitle="Parameter delta">
+      <Panel title="事件事实与参数冲击" why="先区分 Lufthansa 的公告事实与 JetScope 的情景参数，避免把推算当成实测。">
+        <div className="grid gap-6 tabular-nums lg:grid-cols-[1.15fr_0.85fr]">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Lufthansa newsroom · 2026-04-21</p>
+            <ul className="mt-3 space-y-3 text-sm leading-7 text-muted">
+              {FACTS.map((fact) => <li key={fact}>• {fact}</li>)}
+            </ul>
+            <p className="mt-4 text-xs text-muted">
+              Source:{' '}
+              <a className="text-accent underline" href={LUFTHANSA_NEWSROOM} target="_blank" rel="noreferrer">Lufthansa Group newsroom</a>
+            </p>
+          </div>
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm text-muted">
-              <thead>
-                <tr className="border-b border-line text-muted">
-                  <th className="py-2 pr-4">参数</th>
-                  <th className="py-2 pr-4">2026基准</th>
-                  <th className="py-2 pr-4">汉莎冲击</th>
-                </tr>
-              </thead>
+              <thead><tr className="border-b border-line"><th className="py-2 pr-4">参数</th><th className="py-2 pr-4">2026基准</th><th className="py-2 pr-4">汉莎冲击</th></tr></thead>
               <tbody>
                 {[
                   ['原油 ($/桶)', BASELINE.crudeUsdPerBarrel, LUFTHANSA_SHOCK_2026Q2.crudeUsdPerBarrel],
@@ -75,224 +89,141 @@ export default function LufthansaFuelShockAnalysisPage() {
                 ))}
               </tbody>
             </table>
+            <p className="mt-4 text-sm leading-7 text-muted">这个冲击场景的含义：航司优先削减低利润短途运力，同时对 SAF 成本竞争力更敏感。</p>
           </div>
-          <p className="mt-4 text-sm leading-7 text-muted">这个冲击场景的含义：航司优先削减低利润短途运力，同时对SAF成本竞争力更敏感。</p>
-        </InfoCard>
-      </section>
+        </div>
+      </Panel>
 
-      {/* 事件概述与深层逻辑 */}
-      <section id="event-overview" className="mt-8 scroll-mt-16">
-        <h2 className="mb-4 text-2xl font-bold text-ink">事件概述与深层逻辑</h2>
-        <div className="rounded-lg border border-line bg-surface p-6">
+      <Panel title="事件概述与深层逻辑" why="把公告放进能源成本与合规压力的因果链，判断它是不是采购时机信号。">
+        <div id="event-overview" className="scroll-mt-16 text-sm leading-7 tabular-nums">
           {EVENT_OVERVIEW.map((p, i) => (
             <RichP key={i} p={p} className={i < EVENT_OVERVIEW.length - 1 ? 'mb-4 text-muted' : 'text-muted'} />
           ))}
         </div>
-      </section>
+      </Panel>
 
-      {/* 航油成本分解 */}
-      <section id="fuel-cost-breakdown" className="mt-8 scroll-mt-16">
-        <h2 className="mb-4 text-2xl font-bold text-ink">航空燃油成本分解与德国溢价</h2>
-
-        <div className="mb-6 rounded-lg border border-line bg-surface p-6">
-          <h3 className="mb-4 text-xl font-semibold text-accent">Jet-A-1成本结构</h3>
-          <p className="mb-4 text-muted">当前（2026年4月），全球标准喷气燃料Jet-A-1的成本约为：</p>
-          <div className="mb-6 space-y-3 rounded bg-surface p-4">
-            {JET_A1_COSTS.map((row) => (
-              <div key={row.label} className="flex justify-between text-sm"><span className="text-muted">{row.label}</span><span className="text-muted">{row.value}</span></div>
-            ))}
-            <div className="border-t border-line pt-3 mt-3"><div className="flex justify-between font-semibold"><span className="text-muted">现货价格（欧洲）</span><span className="text-accent">$1.20/升</span></div></div>
+      <Panel title="航空燃油成本分解与德国溢价" why="成本构成决定油价冲击有多少会真正传导到 Lufthansa 的短途航线。">
+        <div id="fuel-cost-breakdown" className="grid scroll-mt-16 gap-6 tabular-nums lg:grid-cols-2">
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Jet-A-1 成本结构</h3>
+            <p className="mt-3 text-sm text-muted">当前（2026 年 4 月），全球标准喷气燃料 Jet-A-1 的文章基准约为：</p>
+            <div className="mt-4 space-y-3 rounded-xl bg-surface-muted p-4">
+              {JET_A1_COSTS.map((row) => <div key={row.label} className="flex justify-between text-sm text-muted"><span>{row.label}</span><span>{row.value}</span></div>)}
+              <div className="mt-3 border-t border-line pt-3"><div className="flex justify-between font-semibold"><span className="text-muted">现货价格（欧洲）</span><span className="text-accent">$1.20/升</span></div></div>
+            </div>
+            <p className="mt-4 text-sm leading-7 text-muted"><strong>德国机场溢价：</strong>文章假设德国机场航油比欧洲平均价高 5–10%，即 $1.26–1.32/升。</p>
           </div>
-          <p className="mb-4 text-muted"><strong>德国机场溢价：</strong> 由于德国远离海运枢纽（主要依赖管道或陆运），且税收与基础设施成本较高，德国机场的航油价格通常比欧洲平均价高5-10%，即 $1.26-1.32/升。</p>
-        </div>
-
-        <div className="rounded-lg border border-line bg-surface p-6">
-          <h3 className="mb-4 text-xl font-semibold text-accent">为什么德国航司承压最大</h3>
-          <ul className="space-y-3 text-muted">
-            {GERMAN_PRESSURES.map((row) => <li key={row.bold}><strong>• {row.bold}</strong> {row.text}</li>)}
-          </ul>
-        </div>
-      </section>
-
-      {/* SAF成本转折点 */}
-      <section id="saf-inflection" className="mt-8 scroll-mt-16">
-        <h2 className="mb-4 text-2xl font-bold text-ink">SAF成本转折点：$115/桶的关键意义</h2>
-
-        <div className="mb-6 rounded-lg border border-line bg-surface p-6">
-          <h3 className="mb-4 text-xl font-semibold text-accent">糖基ATJ（Alcohol-to-Jet）成本分析</h3>
-          <p className="mb-4 text-muted">糖基ATJ是最接近商业化的SAF路线。其成本包括：</p>
-          <div className="space-y-3 rounded bg-surface p-4 mb-6">
-            {ATJ_COSTS.map((row) => (
-              <div key={row.label} className="flex justify-between text-sm"><span className="text-muted">{row.label}</span><span className="text-muted">{row.value}</span></div>
-            ))}
-            <div className="border-t border-line pt-3 mt-3"><div className="flex justify-between font-semibold"><span className="text-muted">总成本（非可再生电力）</span><span className="text-accent">$1.60-1.85/升</span></div></div>
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">为什么德国航司承压最大</h3>
+            <ul className="mt-3 space-y-3 text-sm leading-7 text-muted">
+              {GERMAN_PRESSURES.map((row) => <li key={row.bold}><strong>• {row.bold}</strong> {row.text}</li>)}
+            </ul>
           </div>
-          <p className="mb-4 text-muted"><strong>关键发现：能源成本是SAF成本的最大驱动因素。</strong> 当使用可再生电力（德国风电成本$50-80/MWh）时，能源成本可从$0.60降至$0.25-0.35，使总成本下降至 $1.30-1.50/升。</p>
-          <p className="text-muted">
-            <strong>转折点数学：</strong><br />
-            {SAF_INFLECTION_MATH.map((line) => <span key={line}>• {line}<br /></span>)}
-            <br />
-            $115/桶正好是这个转折点的触发价位。结合欧盟碳价上升（目标2030年$150+/吨CO2，等效增加油价$0.40-0.50）和ReFuelEU政策约束，2028年左右SAF与传统油的成本差异可能完全消失。
-          </p>
         </div>
+      </Panel>
 
-        <div className="rounded-lg border border-line bg-surface p-6">
-          <h3 className="mb-4 text-xl font-semibold text-accent">德国绿电优势的关键作用</h3>
-          <p className="text-muted">德国风电成本全球最低（$50-80/MWh），这为本土SAF生产创造了成本竞争力：</p>
-          <ul className="mt-4 space-y-2 text-sm text-muted">
-            {GREEN_ELECTRICITY_BENEFITS.map((item) => <li key={item}>• {item}</li>)}
-          </ul>
-        </div>
-      </section>
-
-      {/* 市场驱动因素 */}
-      <section id="market-drivers" className="mt-8 scroll-mt-16">
-        <h2 className="mb-4 text-2xl font-bold text-ink">市场驱动因素：ReFuelEU与碳价</h2>
-
-        <div className="mb-6 rounded-lg border border-line bg-surface p-6">
-          <h3 className="mb-4 text-xl font-semibold text-accent">ReFuelEU 2025-2030政策路线图</h3>
-          <div className="space-y-3 rounded bg-surface p-4 mb-6 text-sm">
-            {REFUEL_EU_ROADMAP.map((row) => (
-              <div key={row.year}><p className="font-semibold text-muted">{row.year}</p><p className="text-muted">{row.detail}</p></div>
-            ))}
+      <Panel title="SAF 成本转折点：$115/桶" why="采购团队要知道成本差在什么假设下收窄，以及结论对能源成本有多敏感。">
+        <div id="saf-inflection" className="grid scroll-mt-16 gap-6 tabular-nums lg:grid-cols-2">
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">糖基 ATJ 成本分析</h3>
+            <div className="mt-4 space-y-3 rounded-xl bg-surface-muted p-4">
+              {ATJ_COSTS.map((row) => <div key={row.label} className="flex justify-between text-sm text-muted"><span>{row.label}</span><span>{row.value}</span></div>)}
+              <div className="mt-3 border-t border-line pt-3"><div className="flex justify-between font-semibold"><span className="text-muted">总成本（非可再生电力）</span><span className="text-accent">$1.60–1.85/升</span></div></div>
+            </div>
+            <p className="mt-4 text-sm leading-7 text-muted"><strong>关键发现：</strong>使用文章假设的德国风电成本 $50–80/MWh 时，总成本可降至 $1.30–1.50/升。</p>
           </div>
-          <p className="text-muted">这个强制性的政策约束意味着：到2030年，欧洲需要投资200-300亿欧元建设新的SAF产能。对比之下，汉莎削减2万航班（年省4万吨油）的决定，只是这个能源转变的一个微观缩影。</p>
-        </div>
-
-        <div className="rounded-lg border border-line bg-surface p-6">
-          <h3 className="mb-4 text-xl font-semibold text-accent">EU ETS碳价上升对SAF竞争力的助推</h3>
-          <ul className="space-y-3 text-muted">
-            {ETS_DRIVERS.map((row) => <li key={row.bold}><strong>• {row.bold}</strong> {row.text}</li>)}
-          </ul>
-        </div>
-      </section>
-
-      {/* 德国制造优势 */}
-      <section id="germany-advantage" className="mt-8 scroll-mt-16">
-        <h2 className="mb-4 text-2xl font-bold text-ink">德国制造优势与产业机遇</h2>
-
-        <div className="rounded-lg border border-line bg-surface p-6">
-          <h3 className="mb-4 text-xl font-semibold text-accent">为什么SAF产业选择德国</h3>
-          <ul className="space-y-4 text-muted">
-            {GERMANY_ADVANTAGES.map((row) => <li key={row.bold}><strong>• {row.bold}</strong> {row.text}</li>)}
-          </ul>
-        </div>
-
-        <div className="mt-6 rounded-lg border border-line bg-surface p-6">
-          <h3 className="mb-4 text-xl font-semibold text-accent">汉莎集团的战略位置</h3>
-          <p className="mb-4 text-muted">汉莎作为德国最大航空企业，有独特的战略机遇：</p>
-          <ul className="space-y-3 text-muted">
-            {LUFTHANSA_STRATEGIC.map((row) => <li key={row.bold}><strong>• {row.bold}</strong> {row.text}</li>)}
-          </ul>
-        </div>
-      </section>
-
-      {/* 未来展望 */}
-      <section id="outlook" className="mt-8 scroll-mt-16">
-        <h2 className="mb-4 text-2xl font-bold text-ink">未来情景展望（2026-2030）</h2>
-
-        <div className="space-y-4">
-          {OUTLOOK_SCENARIOS.map((sc) => (
-            <div key={sc.title} className="rounded-lg border border-line bg-surface p-6"><h3 className="text-lg font-semibold text-accent mb-3">{sc.title}</h3><p className="text-muted text-sm leading-relaxed">{sc.body}</p></div>
-          ))}
-        </div>
-
-        <div className="mt-6 rounded-lg border border-line bg-surface p-6">
-          <h3 className="mb-4 text-xl font-semibold text-accent">关键启示</h3>
-          {KEY_INSIGHTS.map((text, i) => (
-            <p key={i} className={i === 0 ? 'text-muted' : 'mt-4 text-muted'}>{text}</p>
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-8 grid gap-5 lg:grid-cols-2">
-        <InfoCard title="建议执行动作" subtitle="针对产品与研究流程">
-          <ul className="space-y-3 text-sm leading-7 text-muted">{ACTION_ITEMS.map((item) => <li key={item}>• {item}</li>)}</ul>
-          <p className="mt-4 text-sm text-muted">快速入口：<Link className="text-accent underline" href="/scenarios">Scenarios</Link> · <Link className="text-accent underline" href="/sources">Sources</Link></p>
-        </InfoCard>
-
-        <InfoCard title="免责声明" subtitle="Data and interpretation scope">
-          <div className="space-y-3 text-sm leading-7 text-muted">
-            {DISCLAIMER_PARAGRAPHS.map((text) => (<p key={text}>{text}</p>))}
+          <div className="text-sm leading-7 text-muted">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">转折点数学</h3>
+            <p className="mt-3">{SAF_INFLECTION_MATH.map((line) => <span key={line}>• {line}<br /></span>)}</p>
+            <p className="mt-4">$115/桶是作者模型的触发价位；结合碳价与 ReFuelEU 假设，文章判断 2028 年左右成本差可能消失。</p>
+            <h3 className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-accent">德国绿电作用</h3>
+            <ul className="mt-3 space-y-2">{GREEN_ELECTRICITY_BENEFITS.map((item) => <li key={item}>• {item}</li>)}</ul>
           </div>
-        </InfoCard>
-      </section>
+        </div>
+      </Panel>
 
-      <section className="mt-8 rounded-lg border border-line p-6">
-        <p className="text-muted text-sm mb-3">Deutsche Vollversion (German Full Analysis)：</p>
-        <Link href="/analysis/lufthansa-2026-de" className="text-accent underline">Lufthansa kürzt 20.000 Flüge: Wendepunkt für nachhaltige Flugkraftstoffe? →</Link>
-      </section>
-    </Shell>
+      <Panel title="市场驱动因素：ReFuelEU 与碳价" why="强制掺混与碳成本决定采购窗口是否会在油价回落后仍然存在。">
+        <div id="market-drivers" className="grid scroll-mt-16 gap-6 tabular-nums lg:grid-cols-2">
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-warning">ReFuelEU 路线图 · 情景假设</h3>
+            <div className="mt-4 space-y-3 text-sm">{REFUEL_EU_ROADMAP.map((row) => <div key={row.year}><p className="font-semibold text-muted">{row.year}</p><p className="text-muted">{row.detail}</p></div>)}</div>
+          </div>
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">EU ETS 驱动</h3>
+            <ul className="mt-4 space-y-3 text-sm leading-7 text-muted">{ETS_DRIVERS.map((row) => <li key={row.bold}><strong>• {row.bold}</strong> {row.text}</li>)}</ul>
+          </div>
+        </div>
+      </Panel>
+
+      <Panel title="德国制造优势与产业机遇" why="本地供应链只有在能持续降低 SAF 成本和交付风险时，才会改变 Lufthansa 的采购选择。">
+        <div id="germany-advantage" className="grid scroll-mt-16 gap-6 tabular-nums lg:grid-cols-2">
+          <div><h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">德国生产条件</h3><ul className="mt-4 space-y-4 text-sm leading-7 text-muted">{GERMANY_ADVANTAGES.map((row) => <li key={row.bold}><strong>• {row.bold}</strong> {row.text}</li>)}</ul></div>
+          <div><h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Lufthansa 战略位置</h3><ul className="mt-4 space-y-3 text-sm leading-7 text-muted">{LUFTHANSA_STRATEGIC.map((row) => <li key={row.bold}><strong>• {row.bold}</strong> {row.text}</li>)}</ul></div>
+        </div>
+      </Panel>
+
+      <Panel title="未来情景展望（2026–2030）" why="多情景比较能暴露结论对油价、政策和产能扩张假设的依赖。">
+        <div id="outlook" className="scroll-mt-16 space-y-6 tabular-nums">
+          <div className="grid gap-6 lg:grid-cols-3">{OUTLOOK_SCENARIOS.map((sc) => <div key={sc.title} className="rounded-xl border border-line bg-surface-muted p-4"><h3 className="text-lg font-semibold text-accent">{sc.title}</h3><p className="mt-3 text-sm leading-7 text-muted">{sc.body}</p></div>)}</div>
+          <div>{KEY_INSIGHTS.map((text, i) => <p key={i} className={i === 0 ? 'text-sm leading-7 text-muted' : 'mt-4 text-sm leading-7 text-muted'}>{text}</p>)}</div>
+        </div>
+      </Panel>
+
+      <Panel
+        title="建议执行动作"
+        why="把静态结论转成来源复核与情景测试，而不是直接当成采购指令。"
+        action={<Link href="/analysis/lufthansa-2026-de" className="text-sm text-accent underline">Deutsche Vollversion →</Link>}
+      >
+        <div className="grid gap-6 tabular-nums lg:grid-cols-2">
+          <div><ul className="space-y-3 text-sm leading-7 text-muted">{ACTION_ITEMS.map((item) => <li key={item}>• {item}</li>)}</ul><p className="mt-4 text-sm text-muted">快速入口：<Link className="text-accent underline" href="/scenarios">Scenarios</Link> · <Link className="text-accent underline" href="/sources">Sources</Link></p></div>
+          <div className="space-y-3 text-sm leading-7 text-muted">{DISCLAIMER_PARAGRAPHS.map((text) => <p key={text}>{text}</p>)}</div>
+        </div>
+      </Panel>
+
+      <SourceFooter
+        sources={[
+          { id: 'lufthansa-newsroom', label: 'Lufthansa Group newsroom：2026 年夏季航班计划调整公告', href: LUFTHANSA_NEWSROOM, basis: 'observed' },
+          { id: 'author-cost-model', label: 'JetScope 作者成本拆解、拐点数学与 2026–2030 情景推算', basis: 'derived' },
+          { id: 'refueleu-targets', label: '文章引用的 ReFuelEU 掺混比例与政策目标', basis: 'assumption' }
+        ]}
+        methodHref="/sources"
+        methodLabel="来源口径与方法清单"
+        limitations={[
+          '本页是基于 2026 年 4 月事件的署名静态分析，不随市场价格或航班计划自动更新。',
+          '除 Lufthansa 公告外，成本、溢价、投资需求和未来情景均为作者推算或政策假设，不是供应商报价。',
+          '实际采购还需复核实时市场输入、供应商报价、合同条款、套保头寸与航线盈利能力。'
+        ]}
+      />
+    </PageTemplate>
   );
 }
 
-// German version export - can be imported or used for alternative routing
+// Shared article body for the legacy German analysis route. The route owns the
+// PageTemplate so both entry files satisfy the adoption contract without
+// nesting one full page shell inside another.
 export function LufthansaAnalysisDE() {
   return (
-    <Shell
-      eyebrow="Tiefenanalyse · Deutsch"
-      title="Lufthansa kürzt 20.000 Flüge: Wendepunkt für nachhaltige Flugkraftstoffe?"
-      description="Energiemarktkrise & strategische Transformation der Luftfahrtindustrie"
-    >
-      <div className="space-y-8">
-
-        <section className="rounded-lg border border-line bg-surface p-6">
-          <p className="text-lg text-muted leading-relaxed mb-4"><strong>21. April 2026:</strong> Lufthansa Group kündigt an, bis Oktober 2026 etwa <strong>20.000 Kurzstreckenflüge</strong> zu streichen. Oberflächlich: eine Kostenmaßnahme. Tiefere Bedeutung: ein Signal, dass die Energiewirtschaft des Flugverkehrs einen <strong>strategischen Wendepunkt</strong> erreicht hat.</p>
-          <p className="text-muted">Treibstoff macht 20-30% der Lufthansa-Betriebskosten aus. Springt der Ölpreis von $80 auf $115/Fass (+43%), steigen Unitkosten um 30-35%. Bei Kurzstrecken mit 2-3% Gewinnmarge ist dies unbezahlbar.</p>
-        </section>
-
-        <section className="grid gap-4 lg:grid-cols-2 mb-8">
-          <InfoCard title="Lufthansa-Ankündigung" subtitle="April 2026">
-            <ul className="space-y-1 text-sm text-muted">
-              {DE_LH_ANNOUNCEMENT.map((item) => <li key={item}>• {item}</li>)}
-            </ul>
-          </InfoCard>
-
-          <InfoCard title="Strategische Tiefe" subtitle="SAF-Wendepunkt">
-            <p className="text-sm text-muted">Bei $110-130/Fass nähert sich SAF Kostenparität. Vorbereitung auf SAF-Dominanz nach 2028.</p>
-          </InfoCard>
-        </section>
-
-        <section>
-          <h2 className="text-2xl font-bold text-ink mb-6">Kerosin-Kostenstruktur 2026</h2>
-
-          <div className="rounded-lg border border-line bg-surface p-6 mb-6">
-            <h3 className="text-accent font-semibold mb-4">Jet-A-1 Kostenaufschlüsselung</h3>
-            <div className="space-y-2 text-sm">
-              {DE_KEROSENE_BREAKDOWN.map((row) => (
-                <div key={row.label} className="flex justify-between text-muted"><span>{row.label}</span><span className="font-mono">{row.value}</span></div>
-              ))}
-              <div className="flex justify-between font-semibold text-accent border-t border-line pt-3 mt-3"><span>Durchschnitt Europa</span><span className="font-mono">$1,15/L</span></div>
-            </div>
-          </div>
-        </section>
-
-        <section>
-          <h2 className="text-2xl font-bold text-ink mb-6">Deutschland als SAF-Fabrik</h2>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-lg border border-accent bg-surface p-6">
-              <h3 className="text-accent font-semibold mb-3">Warum Deutschland führt</h3>
-              <ul className="space-y-2 text-sm text-muted">
-                {DE_ADVANTAGES.map((item) => <li key={item}>{item}</li>)}
-              </ul>
-            </div>
-            <div className="rounded-lg border border-success bg-surface p-6">
-              <h3 className="text-success font-semibold mb-3">Kostenvorteil</h3>
-              <p className="text-sm text-muted">Deutsches Windstrom-SAF: 15-20% günstiger</p>
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-lg border border-accent bg-surface p-8">
-          <h2 className="mb-4 text-2xl font-bold text-accent">Fazit</h2>
-          <p className="text-muted">Lufthansas Flugkürzungen sind nicht Branchenverfall, sondern strategische Transformation. Deutschland hat ein Gold-Fenster bis 2030.</p>
-        </section>
-
-        <section className="mt-8 rounded-lg border border-line p-6">
-          <p className="text-muted text-sm mb-3">中文版本（Chinese Full Analysis）：</p>
-          <Link href="/analysis/lufthansa-flight-cuts-2026-04" className="text-accent underline">汉莎削减2万航班背后：可持续航油成本拐点到来 →</Link>
-        </section>
-      </div>
-    </Shell>
+    <>
+      <SignalRow label="Beschaffungszeitpunkt">
+        <MetricCard label="Beschaffungshaltung" value="Prüffenster geöffnet" valueClassName="text-warning" hint="Der Kostendruck rechtfertigt eine Prüfung, aber noch keine Bestellung." />
+        <MetricCard label="Geplante Kürzung" value="20.000 Flüge" hint="Angekündigte Kurzstreckenanpassung bis Oktober 2026." />
+        <MetricCard label="Referenz-Kipppunkt" value="$115/Fass" hint="Abgeleitete Schwelle des statischen Kostenmodells." />
+      </SignalRow>
+      <Panel title="Ereignis und strategische Tiefe" why="Die Ankündigung zeigt, ob Treibstoffdruck bereits operative Kapazitätsentscheidungen verändert.">
+        <div className="grid gap-6 text-sm leading-7 text-muted tabular-nums lg:grid-cols-2">
+          <div><p><strong>21. April 2026:</strong> Lufthansa Group kündigt an, bis Oktober 2026 etwa <strong>20.000 Kurzstreckenflüge</strong> zu streichen.</p><p className="mt-4">Treibstoff macht laut Artikel 20–30% der Betriebskosten aus; der Sprung von $80 auf $115/Fass wird als Belastung für margenschwache Strecken modelliert.</p></div>
+          <div><h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Lufthansa-Ankündigung</h3><ul className="mt-3 space-y-2">{DE_LH_ANNOUNCEMENT.map((item) => <li key={item}>• {item}</li>)}</ul></div>
+        </div>
+      </Panel>
+      <Panel title="Kerosin-Kostenstruktur 2026" why="Die Kostenblöcke zeigen, wie weit der fossile Referenzpreis vom modellierten SAF-Bereich entfernt ist.">
+        <div className="space-y-2 text-sm tabular-nums">{DE_KEROSENE_BREAKDOWN.map((row) => <div key={row.label} className="flex justify-between text-muted"><span>{row.label}</span><span>{row.value}</span></div>)}<div className="mt-3 flex justify-between border-t border-line pt-3 font-semibold text-accent"><span>Durchschnitt Europa</span><span>$1,15/L</span></div></div>
+      </Panel>
+      <Panel title="Deutschland als SAF-Fabrik" why="Lokale Kosten- und Lieferkettenvorteile bestimmen, ob Lufthansa früher langfristige Abnahmeverträge prüfen sollte.">
+        <div className="grid gap-6 tabular-nums lg:grid-cols-2"><div><h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Warum Deutschland führt</h3><ul className="mt-3 space-y-2 text-sm text-muted">{DE_ADVANTAGES.map((item) => <li key={item}>{item}</li>)}</ul></div><div className="rounded-xl border border-success bg-success-soft p-4"><h3 className="font-semibold text-success">Kostenvorteil</h3><p className="mt-3 text-sm text-muted">Deutsches Windstrom-SAF: im Artikel 15–20% günstiger modelliert.</p></div></div>
+      </Panel>
+      <Panel title="Fazit" why="Die Schlussfolgerung übersetzt das Ereignis in eine begrenzte, überprüfbare Beschaffungshaltung.">
+        <div className="text-sm leading-7 text-muted tabular-nums"><p>Lufthansas Flugkürzungen werden hier als strategische Transformation gelesen, nicht als Beleg für Branchenverfall.</p><p className="mt-4">Das angenommene deutsche Zeitfenster bis 2030 bleibt von Energiepreisen, Kapazitätsaufbau und belastbaren Abnahmeangeboten abhängig.</p><p className="mt-4"><Link href="/analysis/lufthansa-flight-cuts-2026-04" className="text-accent underline">中文版本 →</Link></p></div>
+      </Panel>
+    </>
   );
 }

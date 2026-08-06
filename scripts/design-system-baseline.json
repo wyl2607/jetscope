@@ -1,7 +1,6 @@
 {
   "$comment": "Files still violating docs/UI_CONTRACT.md section 1. Counts may only decrease. Regenerate with: node scripts/design-system-lint.mjs --update",
   "files": {
-    "apps/web/app/en/lufthansa-saf-2026/page.tsx": 29,
     "apps/web/components/airline-decision-matrix.tsx": 24,
     "apps/web/components/eu-ets-pressure-panel.tsx": 22,
     "apps/web/components/fuel-vs-saf-price-chart.tsx": 35,
