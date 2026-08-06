@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { FuelVsSafPriceChart } from '@/components/fuel-vs-saf-price-chart';
@@ -13,6 +14,7 @@ import { TippingEventTimeline } from '@/components/tipping-event-timeline';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
 import { ScenarioRegistry } from '@/components/scenario-registry';
 import { TransitionReadinessDashboard } from '@/components/transition-readiness-dashboard';
+import { AdminDataOps } from '@/components/admin-data-ops';
 
 /**
  * Contract section 2 rule 3: a section is one Panel wrapping exactly one
@@ -289,6 +291,13 @@ describe('artifacts do not draw their own card', () => {
 
     expect(rootClassName(container)).not.toMatch(/rounded-2xl|rounded-\[2rem\]/);
   });
+
+  it('AdminDataOps renders its populated workspace without top-level panel chrome', () => {
+    const { container } = render(<AdminDataOps />);
+
+    expect(rootClassName(container)).not.toMatch(/rounded-2xl|js-panel/);
+    expect(container.querySelectorAll('.js-panel')).toHaveLength(0);
+  });
 });
 
 describe('an artifact whose container carries state keeps it', () => {
@@ -301,4 +310,35 @@ describe('an artifact whose container carries state keeps it', () => {
     expect(alert).not.toBeNull();
     expect(alert?.className).toMatch(/rose/);
   });
+});
+
+const ADMIN_PAGES = [
+  '../../app/admin/page.tsx',
+  '../../app/de/admin/page.tsx',
+  '../../app/en/admin/page.tsx'
+] as const;
+
+function helperBody(source: string, name: string): string {
+  const start = source.indexOf(`function ${name}(`);
+  expect(start, `${name} must exist`).toBeGreaterThanOrEqual(0);
+  const rest = source.slice(start);
+  const end = rest.search(/\r?\n\}/);
+  expect(end, `${name} body must terminate`).toBeGreaterThan(0);
+  return rest.slice(0, end);
+}
+
+describe('admin readiness tones fail safely', () => {
+  for (const path of ADMIN_PAGES) {
+    it(`${path} keeps unrecognized check states out of success`, async () => {
+      const source = await readFile(new URL(path, import.meta.url), 'utf8');
+      const readinessTone = helperBody(source, 'readinessToneClass');
+      const launchImpact = helperBody(source, 'launchImpactClass');
+
+      expect(readinessTone).toMatch(/tone === 'ok' && check\.status === 'ok'.*border-success/);
+      expect(readinessTone.slice(readinessTone.lastIndexOf('return'))).toMatch(/warning/);
+      expect(readinessTone.slice(readinessTone.lastIndexOf('return'))).not.toMatch(/success/);
+      expect(launchImpact.slice(launchImpact.lastIndexOf('return'))).toMatch(/warning/);
+      expect(launchImpact.slice(launchImpact.lastIndexOf('return'))).not.toMatch(/success/);
+    });
+  }
 });

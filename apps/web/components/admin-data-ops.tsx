@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { InfoCard } from '@/components/cards';
 import { validatePathwaysPayload, validatePoliciesPayload } from '@/lib/admin-validation';
 
 const PATHWAYS_PLACEHOLDER = `[
@@ -330,14 +329,18 @@ export function AdminDataOps() {
   }
 
   return (
-    <section className="mt-8 grid gap-5 lg:grid-cols-[1fr_1fr]">
-      <InfoCard title="路径管理" subtitle="数据库支撑的 /v1/pathways">
+    <div className="space-y-8 tabular-nums">
+      <section>
+        <div className="mb-4">
+          <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-ink">路径管理</h3>
+          <p className="mt-1 text-xs text-muted">数据库支撑的 /v1/pathways</p>
+        </div>
         <div className="space-y-3">
           <div className="grid gap-3 rounded-xl border border-line p-3 md:grid-cols-2">
             <label className="text-xs text-muted">
               pathway_id
               <input
-                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+                className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink hover:border-accent hover:bg-accent-soft"
                 value={draftPathwayId}
                 onChange={(event) => setDraftPathwayId(event.target.value)}
               />
@@ -345,7 +348,7 @@ export function AdminDataOps() {
             <label className="text-xs text-muted">
               name
               <input
-                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+                className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink hover:border-accent hover:bg-accent-soft"
                 value={draftPathwayName}
                 onChange={(event) => setDraftPathwayName(event.target.value)}
               />
@@ -353,7 +356,7 @@ export function AdminDataOps() {
             <label className="text-xs text-muted">
               base_cost_usd_per_l
               <input
-                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+                className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink hover:border-accent hover:bg-accent-soft"
                 type="number"
                 step="0.01"
                 value={draftPathwayCost}
@@ -363,7 +366,7 @@ export function AdminDataOps() {
             <label className="text-xs text-muted">
               co2_savings_kg_per_l
               <input
-                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+                className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink hover:border-accent hover:bg-accent-soft"
                 type="number"
                 step="0.01"
                 value={draftPathwaySavings}
@@ -372,7 +375,7 @@ export function AdminDataOps() {
             </label>
             <button
               type="button"
-              className="rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent md:col-span-2"
+              className="rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent-hover md:col-span-2"
               onClick={appendDraftPathway}
               disabled={loading || saving}
             >
@@ -380,7 +383,7 @@ export function AdminDataOps() {
             </button>
           </div>
           <textarea
-            className="h-72 w-full rounded-xl border border-line bg-surface px-3 py-2 font-mono text-xs text-ink"
+            className="h-72 w-full rounded-xl border border-line bg-surface px-3 py-2 font-mono text-xs text-ink hover:border-accent hover:bg-accent-soft"
             value={pathwaysJson}
             onChange={(event) => setPathwaysJson(event.target.value)}
           />
@@ -390,7 +393,7 @@ export function AdminDataOps() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-muted"
+              className="rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-muted hover:border-accent hover:bg-accent-soft"
               onClick={formatAndValidatePathways}
               disabled={loading || saving}
             >
@@ -398,7 +401,7 @@ export function AdminDataOps() {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-line bg-success-soft px-3 py-1.5 text-xs font-semibold text-success transition hover:border-success disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
               onClick={savePathways}
               disabled={loading || saving || writeLocked}
             >
@@ -406,14 +409,18 @@ export function AdminDataOps() {
             </button>
           </div>
         </div>
-      </InfoCard>
+      </section>
 
-      <InfoCard title="政策管理" subtitle="数据库支撑的 /v1/policies/refuel-eu">
+      <section className="border-t border-line pt-6">
+        <div className="mb-4">
+          <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-ink">政策管理</h3>
+          <p className="mt-1 text-xs text-muted">数据库支撑的 /v1/policies/refuel-eu</p>
+        </div>
         <div className="space-y-3">
-          <label className="block text-xs uppercase tracking-[0.14em] text-muted">
+          <label className="block text-xs uppercase tracking-[0.18em] text-muted">
             管理令牌（写操作必需）
             <input
-              className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+              className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink hover:border-accent hover:bg-accent-soft"
               type="password"
               autoComplete="off"
               spellCheck={false}
@@ -422,7 +429,7 @@ export function AdminDataOps() {
               placeholder="x-admin-token"
             />
           </label>
-          <p className="rounded-lg border border-line bg-surface px-3 py-2 text-xs leading-5 text-muted">
+          <p className={`rounded-xl border px-3 py-2 text-xs leading-5 ${writeLocked ? 'border-line bg-warning-soft text-warning' : 'border-line bg-success-soft text-success'}`}>
             {writeLocked
               ? '未输入管理令牌：可以加载、编辑草案和校验 JSON；保存与市场刷新会保持锁定。'
               : '管理令牌已填写：保存或刷新时会发送 x-admin-token 到本地 API。'}
@@ -431,7 +438,7 @@ export function AdminDataOps() {
             <label className="text-xs text-muted">
               year
               <input
-                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+                className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink hover:border-accent hover:bg-accent-soft"
                 type="number"
                 value={draftPolicyYear}
                 onChange={(event) => setDraftPolicyYear(event.target.value)}
@@ -440,7 +447,7 @@ export function AdminDataOps() {
             <label className="text-xs text-muted">
               label
               <input
-                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+                className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink hover:border-accent hover:bg-accent-soft"
                 value={draftPolicyLabel}
                 onChange={(event) => setDraftPolicyLabel(event.target.value)}
               />
@@ -448,7 +455,7 @@ export function AdminDataOps() {
             <label className="text-xs text-muted">
               saf_share_pct
               <input
-                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+                className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink hover:border-accent hover:bg-accent-soft"
                 type="number"
                 step="0.1"
                 value={draftPolicySaf}
@@ -458,7 +465,7 @@ export function AdminDataOps() {
             <label className="text-xs text-muted">
               synthetic_share_pct
               <input
-                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
+                className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink hover:border-accent hover:bg-accent-soft"
                 type="number"
                 step="0.1"
                 value={draftPolicySynthetic}
@@ -467,7 +474,7 @@ export function AdminDataOps() {
             </label>
             <button
               type="button"
-              className="rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent md:col-span-2"
+              className="rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent-hover md:col-span-2"
               onClick={appendDraftPolicy}
               disabled={loading || saving}
             >
@@ -475,7 +482,7 @@ export function AdminDataOps() {
             </button>
           </div>
           <textarea
-            className="h-72 w-full rounded-xl border border-line bg-surface px-3 py-2 font-mono text-xs text-ink"
+            className="h-72 w-full rounded-xl border border-line bg-surface px-3 py-2 font-mono text-xs text-ink hover:border-accent hover:bg-accent-soft"
             value={policiesJson}
             onChange={(event) => setPoliciesJson(event.target.value)}
           />
@@ -485,7 +492,7 @@ export function AdminDataOps() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-muted"
+              className="rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-muted hover:border-accent hover:bg-accent-soft"
               onClick={formatAndValidatePolicies}
               disabled={loading || saving}
             >
@@ -493,7 +500,7 @@ export function AdminDataOps() {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-line bg-warning-soft px-3 py-1.5 text-xs font-semibold text-warning transition hover:border-warning disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
               onClick={savePolicies}
               disabled={loading || saving || writeLocked}
             >
@@ -501,7 +508,7 @@ export function AdminDataOps() {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
               onClick={triggerMarketRefresh}
               disabled={loading || saving || writeLocked}
             >
@@ -509,7 +516,7 @@ export function AdminDataOps() {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-line bg-success-soft px-3 py-1.5 text-xs font-semibold text-success transition hover:border-success disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
               onClick={triggerResearchRefresh}
               disabled={loading || saving || writeLocked}
             >
@@ -517,7 +524,7 @@ export function AdminDataOps() {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-muted"
+              className="rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-muted hover:border-accent hover:bg-accent-soft"
               onClick={loadAll}
               disabled={loading || saving}
             >
@@ -593,12 +600,12 @@ export function AdminDataOps() {
             )}
           </div>
           {error ? (
-            <p className="rounded-lg border border-danger bg-danger-soft px-3 py-2 text-xs text-danger">
+            <p className="rounded-xl border border-danger bg-danger-soft px-3 py-2 text-xs text-danger">
               {error}
             </p>
           ) : null}
         </div>
-      </InfoCard>
-    </section>
+      </section>
+    </div>
   );
 }

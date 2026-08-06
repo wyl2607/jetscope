@@ -1,5 +1,6 @@
-import { InfoCard } from '@/components/cards';
-import { Shell } from '@/components/shell';
+import { PageTemplate } from '@/components/page-template';
+import { Panel } from '@/components/panel';
+import { SourceFooter } from '@/components/source-footer';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata, Route } from 'next';
 import Link from 'next/link';
@@ -19,6 +20,7 @@ export const metadata: Metadata = buildPageMetadata({
 const questions = [
   {
     title: 'What can JetScope review today?',
+    why: 'The stated review scope shows which decisions the product can support without overstating its reach.',
     body:
       'JetScope combines jet-fuel prices, SAF breakeven pressure, EU reserve stress, source quality, saved scenario assumptions, and research signals into one review workflow.',
     href: '/en/dashboard' as Route,
@@ -26,6 +28,7 @@ const questions = [
   },
   {
     title: 'Why can launch readiness be not ready?',
+    why: 'Separating configuration gaps from product failures makes the correct recovery action clear.',
     body:
       'Launch readiness reports the actual environment. Missing management configuration, disabled AI research, database issues, or degraded source coverage are disclosed as blockers or review items instead of being hidden.',
     href: '/en/admin' as Route,
@@ -33,6 +36,7 @@ const questions = [
   },
   {
     title: 'How should I read degraded or fallback sources?',
+    why: 'A degraded source changes where its figures are safe to use and therefore needs review before citation.',
     body:
       'Source review separates live, proxy, fallback, unavailable, and error states. A degraded source can still be useful, but it should be reviewed before procurement or reporting use.',
     href: '/en/sources' as Route,
@@ -40,6 +44,7 @@ const questions = [
   },
   {
     title: 'Why might the research workbench be disabled?',
+    why: 'Disabled research is not evidence that the market produced no new signal.',
     body:
       'The Research workbench does not pretend that AI analysis is live when the pipeline is disabled or credentials are incomplete. It shows the boundary and the next review actions.',
     href: '/en/research' as Route,
@@ -47,6 +52,7 @@ const questions = [
   },
   {
     title: 'Can I save scenarios or refresh market data here?',
+    why: 'Protected writes need explicit authorization before a read-only state can be treated as a malfunction.',
     body:
       'Scenario writes and refresh operations are protected. Without the configured management token, localized FAQ pages and review surfaces stay read-only and link back to the primary workspaces.',
     href: '/en/scenarios' as Route,
@@ -56,24 +62,47 @@ const questions = [
 
 export default function EnglishFaqPage() {
   return (
-    <Shell
+    <PageTemplate
       locale="en"
       eyebrow="Help · Launch Boundary"
       title="Frequently Asked Questions"
-      description="A practical guide to JetScope launch readiness, source confidence, AI research boundaries, and protected write operations."
+      question="Is this state a product failure, or is the capability intentionally not enabled?"
+      asOf={null}
     >
-      <section className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2">
         {questions.map((item) => (
-          <InfoCard key={item.title} title={item.title} subtitle={item.action}>
+          <Panel key={item.title} locale="en" title={item.title} why={item.why}>
             <p className="text-sm leading-7 text-muted">{item.body}</p>
             <p className="mt-4 text-sm">
               <Link className="font-semibold text-accent underline" href={item.href}>
                 {item.action}
               </Link>
             </p>
-          </InfoCard>
+          </Panel>
         ))}
-      </section>
-    </Shell>
+      </div>
+
+      <SourceFooter
+        locale="en"
+        sources={[
+          {
+            id: 'ui-contract',
+            label: 'docs/UI_CONTRACT.md (page-state and interaction contract)',
+            basis: 'assumption'
+          },
+          {
+            id: 'launch-readiness-contract',
+            label: 'Current launch-readiness and source-review conventions',
+            basis: 'assumption'
+          }
+        ]}
+        methodHref="/en/sources"
+        methodLabel="Open source states and conventions"
+        limitations={[
+          'These answers describe the current deployment design intent and do not change with live data; use the Admin page for the environment’s actual readiness.',
+          'The FAQ does not replace the current states and limitations on the Sources, Research, or Scenarios pages.'
+        ]}
+      />
+    </PageTemplate>
   );
 }

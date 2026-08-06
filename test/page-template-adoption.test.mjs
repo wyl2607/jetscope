@@ -32,7 +32,13 @@ const CONVERTED_PAGES = [
   'apps/web/app/en/research/page.tsx',
   'apps/web/app/scenarios/page.tsx',
   'apps/web/app/de/scenarios/page.tsx',
-  'apps/web/app/en/scenarios/page.tsx'
+  'apps/web/app/en/scenarios/page.tsx',
+  'apps/web/app/faq/page.tsx',
+  'apps/web/app/de/faq/page.tsx',
+  'apps/web/app/en/faq/page.tsx',
+  'apps/web/app/admin/page.tsx',
+  'apps/web/app/de/admin/page.tsx',
+  'apps/web/app/en/admin/page.tsx'
 ];
 
 /** Pages that render a read model with an isFallback flag. */
@@ -89,6 +95,18 @@ test('every converted page ends with its sources', async () => {
     const source = await read(path);
     assert.match(source, /<SourceFooter/, `${path} must close with SourceFooter (contract section 2 rule 4)`);
     assert.match(source, /limitations=\{/, `${path} must state its limitations, not imply completeness`);
+  }
+});
+
+test('static FAQ pages never invent a data timestamp', async () => {
+  for (const path of [
+    'apps/web/app/faq/page.tsx',
+    'apps/web/app/de/faq/page.tsx',
+    'apps/web/app/en/faq/page.tsx'
+  ]) {
+    const source = await read(path);
+    assert.match(source, /asOf=\{null\}/, `${path} must explicitly state that it has no data timestamp`);
+    assert.doesNotMatch(source, /new Date\(/, `${path} must not turn render or build time into an as-of stamp`);
   }
 });
 

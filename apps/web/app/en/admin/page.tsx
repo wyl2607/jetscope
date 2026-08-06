@@ -1,5 +1,7 @@
-import { InfoCard } from '@/components/cards';
-import { Shell } from '@/components/shell';
+import { MetricCard } from '@/components/cards';
+import { PageTemplate, SignalRow } from '@/components/page-template';
+import { Panel } from '@/components/panel';
+import { SourceFooter } from '@/components/source-footer';
 import { getLaunchReadinessReadModel, type LaunchReadinessCheck } from '@/lib/readiness-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata, Route } from 'next';
@@ -36,7 +38,7 @@ function readinessStatusLabel(status: string): string {
   if (status === 'ready') return 'Launch candidate';
   if (status === 'degraded') return 'Runnable, needs review';
   if (status === 'not_ready') return 'Not ready';
-  return status;
+  return `Unrecognized status: ${status}`;
 }
 
 function checkStatusLabel(status: string): string {
@@ -48,25 +50,34 @@ function checkStatusLabel(status: string): string {
   if (status === 'mock') return 'Mock mode';
   if (status === 'seed') return 'Seed data';
   if (status === 'error') return 'Error';
-  return status;
+  return `Unrecognized: ${status}`;
 }
 
-function readinessToneClass(tone: LaunchReadinessCheck['tone']): string {
-  if (tone === 'critical') return 'border-danger bg-danger-soft text-danger';
-  if (tone === 'review') return 'border-warning bg-warning-soft text-warning';
-  return 'border-success bg-success-soft text-success';
+function readinessToneClass(check: LaunchReadinessCheck): string {
+  if (check.tone === 'critical') return 'border-danger bg-danger-soft text-danger';
+  if (check.tone === 'review') return 'border-warning bg-warning-soft text-warning';
+  if (check.tone === 'ok' && check.status === 'ok') return 'border-success bg-success-soft text-success';
+  if (check.tone === 'ok') return 'border-warning bg-warning-soft text-warning';
+  return 'border-warning bg-warning-soft text-warning';
 }
 
 function launchImpactLabel(check: LaunchReadinessCheck): string {
   if (check.blocking) return 'Blocks launch';
   if (check.severity === 'review') return 'Review needed';
-  return 'Ready for launch';
+  if (check.severity === 'ok') return 'Ready for launch';
+  return 'Unrecognized status';
 }
 
 function launchImpactClass(check: LaunchReadinessCheck): string {
   if (check.blocking) return 'border-danger bg-danger-soft text-danger';
-  if (check.severity === 'review') return 'border-warning bg-warning-soft text-warning';
-  return 'border-success bg-success-soft text-success';
+  if (check.severity === 'ok') return 'border-success bg-success-soft text-success';
+  return 'border-warning bg-warning-soft text-warning';
+}
+
+function readinessValueTone(readiness: Awaited<ReturnType<typeof getLaunchReadinessReadModel>>): string {
+  if (readiness.error || !readiness.ready) return 'text-danger';
+  if (readiness.status === 'ready' && !readiness.degraded) return 'text-success';
+  return 'text-warning';
 }
 
 function actionFor(check: LaunchReadinessCheck): { label: string; href: Route } {
@@ -94,92 +105,143 @@ function safeDetail(detail: string): string {
 
 export default async function EnglishAdminPage() {
   const readiness = await getLaunchReadinessReadModel();
+  const asOf = readiness.error ? null : readiness.generatedAt;
+  const blockingCount = readiness.checks.filter((check) => check.blocking).length;
+  const reviewCount = readiness.checks.filter((check) => check.severity === 'review').length;
 
   return (
-    <Shell
+    <PageTemplate
       locale="en"
       eyebrow="Launch operations"
       title="Launch Readiness"
-      description="A read-only English view of JetScope prerequisites before launch, publication, or protected refresh operations."
+      question="Can this backend safely write data and go live now?"
+      asOf={asOf}
     >
-      <section className="grid gap-5 lg:grid-cols-[1fr_1fr]">
-        <InfoCard title="Protected operations" subtitle="Readiness first, writes only in the primary console">
+      <SignalRow label="Launch-decision signals">
+        <MetricCard
+          label="Launch decision"
+          value={readinessStatusLabel(readiness.status)}
+          valueClassName={readinessValueTone(readiness)}
+          hint={readiness.error ? `Readiness API unavailable: ${readiness.error}` : readiness.ready ? 'No prerequisite currently blocks launch.' : 'Resolve blockers before writes or launch.'}
+        />
+        <MetricCard
+          label="Blocking checks"
+          value={`${blockingCount}`}
+          valueClassName={blockingCount > 0 ? 'text-danger' : 'text-success'}
+          hint="Any blocker prevents a safe launch."
+        />
+        <MetricCard
+          label="Review checks"
+          value={`${reviewCount}`}
+          valueClassName={reviewCount > 0 ? 'text-warning' : 'text-success'}
+          hint="Not necessarily blocking, but must be confirmed before launch."
+        />
+        <MetricCard
+          label="Environment context"
+          value={`${readiness.environment} · ${readiness.apiPrefix}`}
+          hint={`Schema ${readiness.schemaBootstrapMode}; this conclusion applies only to this environment.`}
+        />
+      </SignalRow>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Panel locale="en" title="Protected operations" why="These boundaries distinguish read-only checks from actions that must remain in the primary console.">
           <ul className="space-y-3 text-sm leading-7 text-muted">
             {protectedOperations.map((task) => (
               <li key={task}>{task}</li>
             ))}
           </ul>
-        </InfoCard>
+        </Panel>
 
-        <InfoCard title="Backend contract" subtitle="FastAPI readiness without exposing secrets">
+        <Panel locale="en" title="Backend contract" why="The readiness contract defines which prerequisites are checked without exposing secret values.">
           <div className="space-y-3 text-sm leading-7 text-muted">
             <p>Database bootstrap, market snapshots, source coverage, admin token configuration, and AI research readiness are reported by the API readiness contract.</p>
             <p>Secret values are never returned by readiness and are not requested by this English page.</p>
             <p>Protected parameter editing, manual refresh, and token entry stay in the primary admin console.</p>
           </div>
-        </InfoCard>
-      </section>
+        </Panel>
+      </div>
 
-      <section className="mt-5">
-        <InfoCard title="Launch readiness checks" subtitle={`API readiness: ${readinessStatusLabel(readiness.status)}`}>
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className={`rounded-md border px-3 py-1.5 font-semibold ${readiness.ready ? 'border-success bg-success-soft text-success' : 'border-danger bg-danger-soft text-danger'}`}>
-              {readiness.ready ? 'Ready' : 'Not ready'}
+      <Panel locale="en" title="Launch readiness checks" why="Each check identifies the prerequisite that blocks launch or still needs confirmation.">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className={`rounded-xl border px-3 py-1.5 font-semibold ${readiness.error || !readiness.ready ? 'border-danger bg-danger-soft text-danger' : readiness.status === 'ready' && !readiness.degraded ? 'border-success bg-success-soft text-success' : 'border-warning bg-warning-soft text-warning'}`}>
+            {readiness.ready ? 'Ready' : 'Not ready'}
+          </span>
+          {readiness.degraded ? (
+            <span className="rounded-xl border border-warning bg-warning-soft px-3 py-1.5 font-semibold text-warning">
+              Degraded
             </span>
-            {readiness.degraded ? (
-              <span className="rounded-md border border-warning bg-warning-soft px-3 py-1.5 font-semibold text-warning">
-                Degraded
-              </span>
-            ) : null}
-            <span className="rounded-md border border-line bg-surface-muted px-3 py-1.5 font-semibold text-muted">
-              {readiness.environment} | {readiness.apiPrefix} | schema {readiness.schemaBootstrapMode}
-            </span>
-          </div>
-          {readiness.error ? (
-            <p className="mt-4 border-y border-danger py-3 text-sm leading-6 text-danger">
-              Readiness API is unavailable: {readiness.error}
-            </p>
-          ) : (
-            <div className="mt-4 divide-y divide-line border-y border-line">
-              {readiness.checks.map((check) => {
-                const action = actionFor(check);
-                return (
-                  <div key={check.key} className="grid gap-3 py-3 text-sm md:grid-cols-[minmax(9rem,12rem)_minmax(11rem,13rem)_1fr_auto] md:items-start">
-                    <p className="font-semibold text-ink">{checkLabels[check.key] ?? check.key}</p>
-                    <div className="flex flex-col items-start gap-1.5">
-                      <span className={`inline-flex w-fit rounded-md border px-2.5 py-1 text-xs font-semibold ${readinessToneClass(check.tone)}`}>
-                        {checkStatusLabel(check.status)}
-                      </span>
-                      <span className={`inline-flex w-fit rounded-md border px-2.5 py-1 text-xs font-semibold ${launchImpactClass(check)}`}>
-                        {launchImpactLabel(check)}
-                      </span>
-                    </div>
-                    <div className="space-y-2 leading-6 text-muted">
-                      <p>{safeDetail(check.detail)}</p>
-                      {check.configKeys.length > 0 ? (
-                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted">
-                          <span className="font-semibold text-muted">Related config:</span>
-                          {check.configKeys.map((configKey) => (
-                            <code key={configKey} className="rounded border border-line bg-surface-muted px-1.5 py-0.5 font-mono text-[0.72rem] text-muted">
-                              {configKey}
-                            </code>
-                          ))}
-                        </div>
-                      ) : null}
-                    </div>
-                    <Link
-                      href={action.href}
-                      className="rounded-md border border-line bg-surface px-3 py-1.5 text-center text-xs font-semibold text-accent hover:border-accent hover:bg-accent-soft"
-                    >
-                      {action.label}
-                    </Link>
+          ) : null}
+          <span className="rounded-xl border border-line bg-surface-muted px-3 py-1.5 font-semibold text-muted">
+            {readiness.environment} | {readiness.apiPrefix} | schema {readiness.schemaBootstrapMode}
+          </span>
+        </div>
+        {readiness.error ? (
+          <p className="mt-4 rounded-xl border border-danger bg-danger-soft p-3 text-sm leading-6 text-danger">
+            Readiness API is unavailable: {readiness.error}
+          </p>
+        ) : (
+          <div className="mt-4 divide-y divide-line border-y border-line">
+            {readiness.checks.map((check) => {
+              const action = actionFor(check);
+              return (
+                <div key={check.key} className="grid gap-3 py-3 text-sm md:grid-cols-[minmax(9rem,12rem)_minmax(11rem,13rem)_1fr_auto] md:items-start">
+                  <p className="font-semibold text-ink">{checkLabels[check.key] ?? check.key}</p>
+                  <div className="flex flex-col items-start gap-1.5">
+                    <span className={`inline-flex w-fit rounded-xl border px-2.5 py-1 text-xs font-semibold ${readinessToneClass(check)}`}>
+                      {checkStatusLabel(check.status)}
+                    </span>
+                    <span className={`inline-flex w-fit rounded-xl border px-2.5 py-1 text-xs font-semibold ${launchImpactClass(check)}`}>
+                      {launchImpactLabel(check)}
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </InfoCard>
-      </section>
-    </Shell>
+                  <div className="space-y-2 leading-6 text-muted">
+                    <p>{safeDetail(check.detail)}</p>
+                    {check.configKeys.length > 0 ? (
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted">
+                        <span className="font-semibold text-muted">Related config:</span>
+                        {check.configKeys.map((configKey) => (
+                          <code key={configKey} className="rounded-xl border border-line bg-surface-muted px-1.5 py-0.5 font-mono text-[0.72rem] text-muted">
+                            {configKey}
+                          </code>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                  <Link
+                    href={action.href}
+                    className="rounded-xl border border-line bg-surface px-3 py-1.5 text-center text-xs font-semibold text-accent hover:border-accent hover:bg-accent-soft"
+                  >
+                    {action.label}
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Panel>
+
+      <SourceFooter
+        locale="en"
+        sources={[
+          {
+            id: 'launch-readiness-api',
+            label: readiness.error ? 'Readiness API currently unavailable' : 'Server-derived Readiness API checks',
+            asOf,
+            basis: readiness.error ? 'assumption' : 'derived'
+          },
+          {
+            id: 'backend-data-contract',
+            label: 'Backend data contract: route_catalog / policy_parameters / market_snapshots / scenarios',
+            basis: 'assumption'
+          }
+        ]}
+        methodHref="/en/sources"
+        methodLabel="Open source and data conventions"
+        limitations={[
+          'This page reports the readiness of the current deployment environment, not the upper limit of the product’s capabilities.',
+          'Checks are derived server-side from configuration and data contracts; protected writes still require valid admin authorization.'
+        ]}
+      />
+    </PageTemplate>
   );
 }
