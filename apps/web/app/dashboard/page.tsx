@@ -302,7 +302,7 @@ export default async function DashboardPage() {
         <ProvenanceSummary
           summary={sourcesReadModel.summary}
           completeness={sourcesReadModel.completeness}
-          generatedAt={sourcesReadModel.isFallback ? '' : sourcesReadModel.generatedAt}
+          generatedAt={sourcesReadModel.isFallback ? null : sourcesReadModel.generatedAt}
           href="/sources"
         />
       </Panel>

@@ -20,7 +20,13 @@ const CONVERTED_PAGES = [
   'apps/web/app/en/crisis/page.tsx',
   'apps/web/app/dashboard/page.tsx',
   'apps/web/app/de/dashboard/page.tsx',
-  'apps/web/app/en/dashboard/page.tsx'
+  'apps/web/app/en/dashboard/page.tsx',
+  'apps/web/app/sources/page.tsx',
+  'apps/web/app/de/sources/page.tsx',
+  'apps/web/app/en/sources/page.tsx',
+  'apps/web/app/prices/germany-jet-fuel/page.tsx',
+  'apps/web/app/de/prices/germany-jet-fuel/page.tsx',
+  'apps/web/app/en/prices/germany-jet-fuel/page.tsx'
 ];
 
 /** Pages that render a read model with an isFallback flag. */
@@ -30,7 +36,13 @@ const FALLBACK_AWARE_PAGES = [
   'apps/web/app/en/reports/page.tsx',
   'apps/web/app/dashboard/page.tsx',
   'apps/web/app/de/dashboard/page.tsx',
-  'apps/web/app/en/dashboard/page.tsx'
+  'apps/web/app/en/dashboard/page.tsx',
+  'apps/web/app/sources/page.tsx',
+  'apps/web/app/de/sources/page.tsx',
+  'apps/web/app/en/sources/page.tsx',
+  'apps/web/app/prices/germany-jet-fuel/page.tsx',
+  'apps/web/app/de/prices/germany-jet-fuel/page.tsx',
+  'apps/web/app/en/prices/germany-jet-fuel/page.tsx'
 ];
 
 /**
@@ -83,7 +95,7 @@ test('a page on fallback data never stamps it with a fresh timestamp', async () 
     // would make a prettier run look like a contract violation.
     assert.match(
       source,
-      /readModel\.isFallback\s*\?\s*null\s*:\s*readModel\.market\.generated_at/,
+      /readModel\.isFallback\s*\?\s*null\s*:\s*(?:readModel\.market\.generated_at|readModel\.generatedAt|observedAsOf)/,
       `${path} must suppress the timestamp while on fallback data`
     );
     assert.match(

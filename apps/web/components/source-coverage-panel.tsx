@@ -1,5 +1,3 @@
-import { InfoCard } from '@/components/cards';
-
 import {
   formatSourceCoverageLag,
   getSourceCoverageTrustState,
@@ -10,16 +8,12 @@ type Props = {
   metrics: SourceCoverageMetric[];
   completeness?: number;
   degraded?: boolean;
-  title?: string;
-  subtitle?: string;
 };
 
 export function SourceCoveragePanel({
   metrics,
   completeness = 1.0,
-  degraded = false,
-  title = '来源覆盖',
-  subtitle = '实时指标溯源与来源可信度'
+  degraded = false
 }: Props) {
   const liveCount = metrics.filter((m) => getSourceCoverageTrustState(m) === 'live').length;
   const seedCount = metrics.filter((m) => m.status === 'seed').length;
@@ -28,7 +22,7 @@ export function SourceCoveragePanel({
   const degradedCount = metrics.filter((m) => getSourceCoverageTrustState(m) === 'degraded').length;
 
   return (
-    <InfoCard title={title} subtitle={subtitle}>
+    <div>
       <div className="flex flex-wrap items-center gap-3 text-xs">
         <span
           className={`rounded-full border px-3 py-1 font-medium ${
@@ -83,6 +77,6 @@ export function SourceCoveragePanel({
           ))}
         </div>
       ) : null}
-    </InfoCard>
+    </div>
   );
 }

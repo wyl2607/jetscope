@@ -1,5 +1,7 @@
-import { InfoCard } from '@/components/cards';
-import { Shell } from '@/components/shell';
+import { MetricCard } from '@/components/cards';
+import { PageTemplate, SignalRow } from '@/components/page-template';
+import { Panel } from '@/components/panel';
+import { SourceFooter } from '@/components/source-footer';
 import { getSourcesReadModel, type SourcesReadModel } from '@/lib/sources-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata, Route } from 'next';
@@ -208,50 +210,80 @@ export default async function EnglishSourcesPage({
   const visibleRows = readModel.rows.filter((row) => rowMatchesSourceFilter(row, activeFilter));
   const reviewRows = readModel.rows.filter((row) => rowMatchesSourceFilter(row, 'review'));
   const actionRows = reviewRows.filter((row) => row.reviewAction.priority !== 'normal').slice(0, 4);
+  const asOf = readModel.isFallback ? null : readModel.generatedAt;
+  const needsReview = reviewRows.length;
+  const reviewTone = needsReview > 0
+    ? readModel.isFallback || readModel.summary.fallbackCount > 0 || readModel.summary.degradedCount > 0
+      ? 'text-danger'
+      : 'text-warning'
+    : 'text-success';
+  const trustTone = readModel.isFallback || readModel.summary.fallbackCount > 0 || readModel.summary.degradedCount > 0
+    ? 'text-danger'
+    : readModel.summary.proxyCount > 0
+      ? 'text-warning'
+      : 'text-success';
+  const trustPosture = readModel.isFallback || readModel.summary.fallbackCount > 0 || readModel.summary.degradedCount > 0
+    ? 'Review degradation'
+    : readModel.summary.proxyCount > 0
+      ? 'Proxy sources present'
+      : 'Live sources ready';
 
   return (
-    <Shell
+    <PageTemplate
       locale="en"
       eyebrow="Source review"
       title="Source Review"
-      description="Check whether each market input is live, proxy-backed, or fallback before using JetScope outputs in a decision."
+      question="Which market inputs are not ready to use directly in a decision right now?"
+      asOf={asOf}
     >
-      <section className="grid gap-4 md:grid-cols-4">
-        <InfoCard title="Live" subtitle="Primary or official">
-          <p className="text-3xl font-semibold text-success">{readModel.summary.liveCount}</p>
-        </InfoCard>
-        <InfoCard title="Proxy" subtitle="Derived assumptions">
-          <p className="text-3xl font-semibold text-accent">{readModel.summary.proxyCount}</p>
-        </InfoCard>
-        <InfoCard title="Fallback" subtitle="Needs recovery">
-          <p className="text-3xl font-semibold text-warning">{readModel.summary.fallbackCount}</p>
-        </InfoCard>
-        <InfoCard title="Confidence" subtitle="Average source confidence">
-          <p className="text-3xl font-semibold text-ink">{Math.round(readModel.summary.averageConfidence * 100)}%</p>
-        </InfoCard>
-      </section>
+      <SignalRow label="Source trust signals">
+        <MetricCard
+          label="Needs review"
+          value={`${needsReview}`}
+          valueClassName={`${reviewTone} tabular-nums`}
+          hint={needsReview > 0 ? `${readModel.summary.fallbackCount} fallback, ${readModel.summary.degradedCount} degraded, proxy, or volatility-marked rows.` : 'No source row currently needs additional review.'}
+        />
+        <MetricCard
+          label="Trust posture"
+          value={trustPosture}
+          valueClassName={trustTone}
+          hint={readModel.summary.trustLabel}
+        />
+        <MetricCard
+          label="Average confidence"
+          value={`${Math.round(readModel.summary.averageConfidence * 100)}%`}
+          valueClassName={`${trustTone} tabular-nums`}
+          hint={`Coverage ${Math.round(readModel.completeness * 100)}% · ${readModel.summary.freshnessLabel}`}
+        />
+        <MetricCard
+          label="Input mix"
+          value={`${readModel.summary.liveCount} live`}
+          valueClassName="tabular-nums"
+          hint={`Proxy ${readModel.summary.proxyCount} · fallback ${readModel.summary.fallbackCount} · degraded ${readModel.summary.degradedCount}`}
+        />
+      </SignalRow>
 
-      <section className="mt-6">
-        <InfoCard
-          title="Recovery actions"
-          subtitle={actionRows.length ? 'Turn degraded rows into an operator checklist' : 'No critical source recovery is required'}
-        >
+      <Panel
+        locale="en"
+        title="Recovery actions"
+        why="Turning degraded rows into an operator checklist keeps a data-quality problem from ending as a passive status label."
+      >
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="rounded-md border border-line bg-surface-muted px-3 py-1.5 font-semibold text-muted">
+            <span className="rounded-xl border border-line bg-surface-muted px-3 py-1.5 font-semibold text-muted">
               Needs review {reviewRows.length}
             </span>
-            <span className="rounded-md border border-line bg-surface-muted px-3 py-1.5 font-semibold text-muted">
+            <span className="rounded-xl border border-line bg-surface-muted px-3 py-1.5 font-semibold text-muted">
               Priority rows {actionRows.length}
             </span>
             <Link
               href={'/admin' as Route}
-              className="rounded-md border border-accent bg-accent-soft px-3 py-1.5 font-semibold text-accent hover:bg-accent-hover"
+              className="rounded-xl border border-accent bg-accent-soft px-3 py-1.5 font-semibold text-accent hover:bg-accent-hover"
             >
               Open Admin refresh
             </Link>
             <Link
               href={'/en/sources?filter=review' as Route}
-              className="rounded-md border border-line bg-surface px-3 py-1.5 font-semibold text-muted hover:border-accent hover:bg-accent-soft"
+              className="rounded-xl border border-line bg-surface px-3 py-1.5 font-semibold text-muted hover:border-accent hover:bg-accent-soft"
             >
               Show review rows
             </Link>
@@ -269,14 +301,14 @@ export default async function EnglishSourcesPage({
                       </p>
                     </div>
                     <div>
-                      <span className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-semibold ${actionToneClass(row.reviewAction.priority)}`}>
+                      <span className={`inline-flex rounded-xl border px-2.5 py-1 text-xs font-semibold ${actionToneClass(row.reviewAction.priority)}`}>
                         {action.label}
                       </span>
                       <p className="mt-2 leading-6 text-muted">{action.detail}</p>
                     </div>
                     <Link
                       href={action.href}
-                      className="rounded-md border border-line bg-surface px-3 py-1.5 text-center text-xs font-semibold text-accent hover:border-accent hover:bg-accent-soft"
+                      className="rounded-xl border border-line bg-surface px-3 py-1.5 text-center text-xs font-semibold text-accent hover:border-accent hover:bg-accent-soft"
                     >
                       Open action
                     </Link>
@@ -289,13 +321,15 @@ export default async function EnglishSourcesPage({
               No fallback or degraded row is currently critical. Proxy rows still deserve manual review before major pricing, purchasing, or disclosure decisions.
             </p>
           )}
-        </InfoCard>
-      </section>
+      </Panel>
 
-      <section className="mt-6">
-        <InfoCard title="Market input matrix" subtitle={`Overall status: ${readModel.overallStatus}`}>
+      <Panel
+        locale="en"
+        title="Market input matrix"
+        why="Each row connects source, time, lag, value, and action so market inputs remain reviewable before use."
+      >
           <p className="mb-3 text-xs text-muted">
-            Generated at {new Date(readModel.generatedAt).toLocaleString('en-US')}
+             {asOf ? `Generated at ${new Date(asOf).toLocaleString('en-US')}` : 'Generation time is not a data timestamp'}
             {readModel.isFallback ? ' | showing fallback estimates because live coverage is unavailable' : ''}
           </p>
           <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -306,7 +340,7 @@ export default async function EnglishSourcesPage({
                 <Link
                   key={filter.key}
                   href={sourceFilterHref(filter.key, focusMetricKey)}
-                  className={`rounded-md border px-3 py-2 text-xs font-semibold transition ${
+                  className={`rounded-xl border px-3 py-2 text-xs font-semibold transition ${
                     isActive
                       ? 'border-accent bg-accent-soft text-accent'
                       : 'border-line bg-surface text-muted hover:border-line-strong hover:bg-surface-muted'
@@ -330,7 +364,7 @@ export default async function EnglishSourcesPage({
             </p>
           ) : null}
           <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm text-muted">
+             <table className="min-w-full text-left text-sm tabular-nums text-muted">
               <thead>
                 <tr className="border-b border-line text-muted">
                   <th className="py-3 pr-4">Metric</th>
@@ -371,7 +405,7 @@ export default async function EnglishSourcesPage({
                       <td className="py-3 pr-4 font-medium text-ink">{surfaceLabel(row.metricKey)}</td>
                       <td className="py-3 pr-4">{sourceLabel(row.source)}</td>
                       <td className="py-3 pr-4">
-                        <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] ${trustClass(row.trustState)}`}>
+                        <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.18em] ${trustClass(row.trustState)}`}>
                           {trustLabel(row.trustState)}
                         </span>
                         <span className="mt-1 block text-xs text-subtle">{sourceTypeLabel(row)}</span>
@@ -403,13 +437,13 @@ export default async function EnglishSourcesPage({
                         <div className="flex min-w-24 flex-col gap-2">
                           <Link
                             href={sourceFocusHref(row.metricKey, activeFilter)}
-                            className="rounded-md border border-line bg-surface px-2.5 py-1 text-center text-xs font-semibold text-accent hover:border-accent hover:bg-accent-soft"
+                            className="rounded-xl border border-line bg-surface px-2.5 py-1 text-center text-xs font-semibold text-accent hover:border-accent hover:bg-accent-soft"
                           >
                             Focus
                           </Link>
                           <Link
                             href={action.href}
-                            className="rounded-md border border-line bg-surface px-2.5 py-1 text-center text-xs font-semibold text-muted hover:border-accent hover:bg-accent-soft"
+                            className="rounded-xl border border-line bg-surface px-2.5 py-1 text-center text-xs font-semibold text-muted hover:border-accent hover:bg-accent-soft"
                           >
                             {row.reviewAction.priority === 'normal' ? 'Record' : 'Handle'}
                           </Link>
@@ -433,8 +467,28 @@ export default async function EnglishSourcesPage({
               </tbody>
             </table>
           </div>
-        </InfoCard>
-      </section>
-    </Shell>
+      </Panel>
+
+      <SourceFooter
+        locale="en"
+        sources={[
+          {
+            id: 'sources-read-model',
+            label: readModel.isFallback
+              ? `Source read model unavailable; fallback estimates are in use (${readModel.error ?? 'unknown reason'})`
+              : 'Source read model (coverage, confidence, lag, fallback, and review state)',
+            asOf,
+            basis: readModel.isFallback ? 'assumption' : 'observed'
+          }
+        ]}
+        methodHref="/en/sources"
+        methodLabel="Source coverage and review method"
+        limitations={[
+          'Source status describes input quality; it does not prove that each value applies to every airport, contract, or trade.',
+          'Proxy, derived, fallback, and degraded rows require human review before material pricing, purchasing, or disclosure decisions.',
+          'A fallback generation time is not an observation time, so it is not shown as the data timestamp.'
+        ]}
+      />
+    </PageTemplate>
   );
 }

@@ -8,6 +8,7 @@ import { PriceTrendsChart } from '@/components/price-trends-chart';
 import { ProvenanceSummary } from '@/components/provenance-summary';
 import { ReservesCoverageStrip } from '@/components/reserves-coverage-strip';
 import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
+import { SourceCoveragePanel } from '@/components/source-coverage-panel';
 import { TippingEventTimeline } from '@/components/tipping-event-timeline';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
 
@@ -103,6 +104,28 @@ describe('artifacts do not draw their own card', () => {
         }}
         completeness={0.9}
         generatedAt="2026-08-06T06:00:00Z"
+      />
+    );
+
+    expect(rootClassName(container)).not.toMatch(/rounded-2xl|js-panel/);
+  });
+
+  it('SourceCoveragePanel renders bare with data', () => {
+    const { container } = render(
+      <SourceCoveragePanel
+        metrics={[
+          {
+            metric_key: 'jet_usd_per_l',
+            source_type: 'live_feed',
+            source_name: 'mock',
+            confidence_score: 0.9,
+            lag_minutes: 15,
+            fallback_used: false,
+            status: 'ok',
+            region: 'eu',
+            market_scope: 'jet_fuel'
+          }
+        ]}
       />
     );
 

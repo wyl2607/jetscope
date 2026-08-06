@@ -1,9 +1,9 @@
-import { InfoCard } from '@/components/cards';
-import { Shell } from '@/components/shell';
+import { MetricCard } from '@/components/cards';
+import { PageTemplate, SignalRow } from '@/components/page-template';
+import { SourceFooter, type SourceRef } from '@/components/source-footer';
 import { getGermanyJetFuelReadModel } from '@/lib/germany-jet-fuel-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata, Route } from 'next';
-import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,26 +35,11 @@ function formatChange(value: number | null): string {
 }
 
 function changeClass(value: number | null): string {
-  if (!Number.isFinite(value ?? NaN)) return 'text-muted';
+  if (!Number.isFinite(value ?? NaN)) return 'text-warning';
   const magnitude = Math.abs(Number(value));
   if (magnitude >= 20) return 'text-danger';
   if (magnitude >= 10) return 'text-warning';
   return 'text-success';
-}
-
-function formatAsOf(value: string | null): string {
-  if (!value) return 'not yet verified';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'not yet verified';
-  return date.toLocaleString('en-US');
-}
-
-function sourceStatusLabel(status: string): string {
-  if (status === 'ok') return 'healthy';
-  if (status === 'degraded') return 'degraded';
-  if (status === 'offline') return 'offline';
-  if (status === 'unknown') return 'unknown';
-  return status;
 }
 
 const sourceLinks = [
@@ -68,69 +53,98 @@ const sourceLinks = [
   { href: '/en/sources?focus=carbon_proxy_usd_per_t', label: 'Carbon proxy source status', key: 'carbon_proxy_usd_per_t' }
 ] as const satisfies readonly { href: Route; label: string; key: string }[];
 
+function decisionLabel(change: number | null, isFallback: boolean): string {
+  if (isFallback || !Number.isFinite(change ?? NaN)) return 'Review source first';
+  const magnitude = Math.abs(Number(change));
+  if (magnitude >= 20) return 'Revisit contract/hedge';
+  if (magnitude >= 10) return 'Review needed';
+  return 'No trigger yet';
+}
+
+function decisionTone(change: number | null, isFallback: boolean): string {
+  if (isFallback || !Number.isFinite(change ?? NaN)) return 'text-danger';
+  const magnitude = Math.abs(Number(change));
+  if (magnitude >= 20) return 'text-danger';
+  if (magnitude >= 10) return 'text-warning';
+  return 'text-success';
+}
+
+function sourceBasis(sourceKey: string, isFallback: boolean): SourceRef['basis'] {
+  if (isFallback) return 'assumption';
+  // The price read model does not expose source_type. Proxy keys are explicit;
+  // every other unmapped source follows the contract's assumption default.
+  return sourceKey.includes('proxy') ? 'derived' : 'assumption';
+}
+
 export default async function EnglishGermanyJetFuelPricePage() {
   const readModel = await getGermanyJetFuelReadModel('en');
+  const euJetMetric = readModel.metrics.find((metric) => metric.metricKey === 'jet_eu_proxy_usd_per_l') ?? readModel.metrics[0];
+  const signalMetrics = readModel.metrics.filter((metric) => metric.metricKey !== euJetMetric?.metricKey).slice(0, 3);
+  const observedAsOf = readModel.metrics
+    .map((metric) => metric.latestAsOf)
+    .filter((value): value is string => value !== null && !Number.isNaN(new Date(value).getTime()))
+    .sort((left, right) => new Date(left).getTime() - new Date(right).getTime())
+    .pop() ?? readModel.generatedAt;
+  const asOf = readModel.isFallback ? null : observedAsOf;
 
   return (
-    <Shell
+    <PageTemplate
       locale="en"
       eyebrow="Prices · Germany"
       title="Germany Jet-Fuel Price Monitor"
-      description="A source-aware market view for Germany: Brent, global jet fuel, EU jet proxy, and carbon proxy with short-window market movement."
+      question="Has Germany's current jet-fuel price moved far enough to revisit the contract or hedging decision?"
+      asOf={asOf}
     >
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {readModel.metrics.map((metric) => (
-          <InfoCard
+      <SignalRow label="Germany jet-fuel decision signals">
+        <MetricCard
+          label="Decision pressure"
+          value={decisionLabel(euJetMetric?.changePct30d ?? null, readModel.isFallback)}
+          valueClassName={decisionTone(euJetMetric?.changePct30d ?? null, readModel.isFallback)}
+          hint={euJetMetric
+            ? `EU jet proxy ${formatMetricValue(euJetMetric.value, euJetMetric.digits, euJetMetric.unit)} · 30d ${formatChange(euJetMetric.changePct30d)} · Status ${readModel.overallStatus}`
+            : 'The EU jet proxy has no current value.'}
+        />
+        {signalMetrics.map((metric) => (
+          <MetricCard
             key={metric.metricKey}
-            title={metric.label}
-            subtitle={`As of ${formatAsOf(metric.latestAsOf)} | Source status: ${sourceStatusLabel(readModel.overallStatus)}`}
-          >
-            <p className="text-3xl font-semibold text-ink">{formatMetricValue(metric.value, metric.digits, metric.unit)}</p>
-            <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
-              <div>
-                <p className="text-muted">1d</p>
-                <p className={changeClass(metric.changePct1d)}>{formatChange(metric.changePct1d)}</p>
-              </div>
-              <div>
-                <p className="text-muted">7d</p>
-                <p className={changeClass(metric.changePct7d)}>{formatChange(metric.changePct7d)}</p>
-              </div>
-              <div>
-                <p className="text-muted">30d</p>
-                <p className={changeClass(metric.changePct30d)}>{formatChange(metric.changePct30d)}</p>
-              </div>
-            </div>
-            {metric.note ? <p className="mt-3 text-xs text-warning">{metric.note}</p> : null}
-          </InfoCard>
+            label={metric.label}
+            value={formatMetricValue(metric.value, metric.digits, metric.unit)}
+            valueClassName={readModel.isFallback ? 'text-warning' : changeClass(metric.changePct30d)}
+            hint={`1d ${formatChange(metric.changePct1d)} · 7d ${formatChange(metric.changePct7d)} · 30d ${formatChange(metric.changePct30d)}${metric.note ? ` · ${metric.note}` : ''}`}
+          />
         ))}
-      </section>
+      </SignalRow>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-2">
-        <InfoCard title="Risk Note" subtitle="Decision support, not a trading feed">
-          <ul className="space-y-2 text-sm leading-7 text-muted">
-            <li>Jet-fuel prices are proxies and may differ from airport-specific or contract-settled prices in Germany.</li>
-            <li>The EU jet proxy can temporarily fall back to the global jet-fuel series when regional data is unavailable.</li>
-            <li>The carbon proxy reflects policy-cost pressure and should be read with route and blend assumptions.</li>
-            <li>For procurement action, compare this surface with supplier quotes and internal contract terms.</li>
-          </ul>
-        </InfoCard>
-
-        <InfoCard title="Source Review" subtitle="Every metric links to source provenance">
-          <ul className="space-y-3 text-sm text-muted">
-            {sourceLinks.map((source) => (
-              <li key={source.key}>
-                <Link className="font-semibold text-accent underline decoration-accent/40 hover:decoration-accent" href={source.href}>
-                  {source.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4 text-xs text-muted">
-            Generated at {new Date(readModel.generatedAt).toLocaleString('en-US')}
-            {readModel.isFallback && readModel.error ? ` | Fallback because: ${readModel.error}` : ''}
-          </p>
-        </InfoCard>
-      </section>
-    </Shell>
+      <SourceFooter
+        locale="en"
+        sources={[
+          {
+            id: 'germany-jet-fuel-read-model',
+            label: readModel.isFallback
+              ? `Germany jet-fuel read model unavailable; fallback estimates are in use (${readModel.error ?? 'unknown reason'})`
+              : 'Source Review: Germany jet-fuel read model (Brent, global jet fuel, EU jet proxy, and carbon proxy)',
+            asOf,
+            basis: readModel.isFallback ? 'assumption' : 'observed'
+          },
+          ...sourceLinks.map((source) => ({
+            id: source.key,
+            label: source.label,
+            href: source.href,
+            asOf: readModel.isFallback
+              ? null
+              : readModel.metrics.find((metric) => metric.metricKey === source.key)?.latestAsOf ?? null,
+            basis: sourceBasis(source.key, readModel.isFallback)
+          }))
+        ]}
+        methodHref="/en/sources"
+        methodLabel="Source and price-movement method"
+        limitations={[
+          'Jet-fuel prices are proxies and may differ from airport-specific or contract-settled prices in Germany.',
+          'The EU jet proxy can temporarily fall back to the global jet-fuel series when regional data is unavailable; a fallback is not a measurement.',
+          'The carbon proxy reflects policy-cost pressure and should be read with route and blend assumptions.',
+          'Decision support, not a trading feed. Compare procurement action with supplier quotes and internal contract terms.'
+        ]}
+      />
+    </PageTemplate>
   );
 }

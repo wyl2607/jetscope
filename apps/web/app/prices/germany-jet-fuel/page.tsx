@@ -1,7 +1,8 @@
-import { InfoCard } from '@/components/cards';
+import { MetricCard } from '@/components/cards';
+import { PageTemplate, SignalRow } from '@/components/page-template';
 import { Panel } from '@/components/panel';
-import { Shell } from '@/components/shell';
 import { PriceTrendsChart } from '@/components/price-trends-chart';
+import { SourceFooter, type SourceRef } from '@/components/source-footer';
 import { getGermanyJetFuelReadModel } from '@/lib/germany-jet-fuel-read-model';
 import { getPriceTrendChartReadModel } from '@/lib/price-trend-chart-read-model';
 import type { Metadata } from 'next';
@@ -32,18 +33,11 @@ function formatChange(value: number | null): string {
 }
 
 function changeClass(value: number | null): string {
-  if (!Number.isFinite(value ?? NaN)) return 'text-muted';
+  if (!Number.isFinite(value ?? NaN)) return 'text-warning';
   const magnitude = Math.abs(Number(value));
   if (magnitude >= 20) return 'text-danger';
   if (magnitude >= 10) return 'text-warning';
   return 'text-success';
-}
-
-function formatAsOf(value: string | null): string {
-  if (!value) return '暂无最新校验时间';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '暂无最新校验时间';
-  return `更新于 ${date.toLocaleString()}`;
 }
 
 function statusLabel(status: string): string {
@@ -79,84 +73,121 @@ const sourceLinks = [
   { href: '/sources?focus=carbon_proxy_usd_per_t', label: '碳价代理来源状态', key: 'carbon_proxy_usd_per_t' }
 ] as const;
 
+function decisionLabel(change: number | null, isFallback: boolean): string {
+  if (isFallback || !Number.isFinite(change ?? NaN)) return '先复核来源';
+  const magnitude = Math.abs(Number(change));
+  if (magnitude >= 20) return '重看合同/套保';
+  if (magnitude >= 10) return '需要复核';
+  return '暂不需要重看';
+}
+
+function decisionTone(change: number | null, isFallback: boolean): string {
+  if (isFallback || !Number.isFinite(change ?? NaN)) return 'text-danger';
+  const magnitude = Math.abs(Number(change));
+  if (magnitude >= 20) return 'text-danger';
+  if (magnitude >= 10) return 'text-warning';
+  return 'text-success';
+}
+
+function sourceBasis(sourceKey: string, isFallback: boolean): SourceRef['basis'] {
+  if (isFallback) return 'assumption';
+  // The price read model does not expose source_type. Proxy keys are explicit;
+  // every other unmapped source follows the contract's assumption default.
+  return sourceKey.includes('proxy') ? 'derived' : 'assumption';
+}
+
 export default async function GermanyJetFuelPricePage() {
   const [readModel, priceChartData] = await Promise.all([
     getGermanyJetFuelReadModel(),
     getPriceTrendChartReadModel()
   ]);
+  const euJetMetric = readModel.metrics.find((metric) => metric.metricKey === 'jet_eu_proxy_usd_per_l') ?? readModel.metrics[0];
+  // Verdict + 3 keeps the signal row within the 2-4 the contract allows. The
+  // metric config is exactly four, so nothing is dropped today - a fifth one
+  // would need a home rather than silently falling off the end.
+  const signalMetrics = readModel.metrics.filter((metric) => metric.metricKey !== euJetMetric?.metricKey).slice(0, 3);
+  const observedAsOf = readModel.metrics
+    .map((metric) => metric.latestAsOf)
+    .filter((value): value is string => value !== null && !Number.isNaN(new Date(value).getTime()))
+    .sort((left, right) => new Date(left).getTime() - new Date(right).getTime())
+    .pop() ?? readModel.generatedAt;
+  const asOf = readModel.isFallback ? null : observedAsOf;
 
   return (
-    <Shell
+    <PageTemplate
       eyebrow="价格 · 德国"
       title="德国航油价格监测"
-      description="面向德国市场的 Brent、全球航油、EU 航油代理价与碳价压力视图，附带短周期变化窗口。"
+      question="德国航油当前价，是不是已经偏离到需要重新看合同或套保的程度？"
+      asOf={asOf}
     >
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {readModel.metrics.map((metric) => (
-          <InfoCard
+      <SignalRow label="德国航油决策信号">
+        <MetricCard
+          label="德国航油决策压力"
+          value={decisionLabel(euJetMetric?.changePct30d ?? null, readModel.isFallback)}
+          valueClassName={decisionTone(euJetMetric?.changePct30d ?? null, readModel.isFallback)}
+          hint={euJetMetric
+            ? `EU 航油代理 ${formatMetricValue(euJetMetric.value, euJetMetric.digits, euJetMetric.unit)} · 30d ${formatChange(euJetMetric.changePct30d)} · ${statusLabel(readModel.overallStatus)}`
+            : 'EU 航油代理当前没有可用读数。'}
+        />
+        {signalMetrics.map((metric) => (
+          <MetricCard
             key={metric.metricKey}
-            title={metricDisplayLabel(metric.label)}
-            subtitle={`${formatAsOf(metric.latestAsOf)} · ${statusLabel(readModel.overallStatus)}`}
-          >
-            <p className="text-3xl font-semibold text-ink">{formatMetricValue(metric.value, metric.digits, metric.unit)}</p>
-            <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
-              <div>
-                <p className="text-muted">1d</p>
-                <p className={changeClass(metric.changePct1d)}>{formatChange(metric.changePct1d)}</p>
-              </div>
-              <div>
-                <p className="text-muted">7d</p>
-                <p className={changeClass(metric.changePct7d)}>{formatChange(metric.changePct7d)}</p>
-              </div>
-              <div>
-                <p className="text-muted">30d</p>
-                <p className={changeClass(metric.changePct30d)}>{formatChange(metric.changePct30d)}</p>
-              </div>
-            </div>
-            {metric.note ? <p className="mt-3 text-xs text-warning">{metricNoteLabel(metric.note)}</p> : null}
-          </InfoCard>
-        ))}
-      </section>
-
-      <section className="mt-8">
-        <Panel
-          title="价格趋势"
-          why="上面的当前价只是一个点；要判断它是不是异常，得看它在 1d / 7d / 30d 窗口里的位置。"
-        >
-          <PriceTrendsChart
-            metrics={priceChartData.metrics}
-            isLoading={false}
-            error={priceChartData.error}
+            label={metricDisplayLabel(metric.label)}
+            value={formatMetricValue(metric.value, metric.digits, metric.unit)}
+            valueClassName={readModel.isFallback ? 'text-warning' : changeClass(metric.changePct30d)}
+            hint={`1d ${formatChange(metric.changePct1d)} · 7d ${formatChange(metric.changePct7d)} · 30d ${formatChange(metric.changePct30d)}${metric.note ? ` · ${metricNoteLabel(metric.note)}` : ''}`}
           />
-        </Panel>
-      </section>
+        ))}
+      </SignalRow>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-2">
-        <InfoCard title="风险说明" subtitle="用于决策支持，不用于交易执行">
-          <ul className="space-y-2 text-sm leading-7 text-muted">
-            <li>• 航油价格为代理指标，可能与德国具体机场的合约结算价存在差异。</li>
-            <li>• 区域数据源不可用时，EU 航油代理价可能临时回退到全球航油序列。</li>
-            <li>• 碳价代理跟踪政策成本压力，应结合航线与掺混假设解读。</li>
-            <li>• 用于采购决策时，请与合约供应商报价交叉核验。</li>
-          </ul>
-        </InfoCard>
+      <Panel
+        title="价格趋势"
+        why="当前价只是一个点；只有把它放进 1d、7d、30d 窗口，才能判断偏离是否足以触发合同或套保复核。"
+      >
+        <PriceTrendsChart
+          metrics={priceChartData.metrics}
+          isLoading={false}
+          error={priceChartData.error}
+        />
+      </Panel>
 
-        <InfoCard title="来源" subtitle="追踪每个指标的溯源详情">
-          <ul className="space-y-3 text-sm text-muted">
-            {sourceLinks.map((source) => (
-              <li key={source.key}>
-                <a className="text-accent underline decoration-accent/40 hover:decoration-accent" href={source.href}>
-                  {source.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4 text-xs text-muted">
-            生成于 {new Date(readModel.generatedAt).toLocaleString()}
-            {readModel.isFallback ? ' · 实时市场历史不可用时显示回退估算' : ''}
-          </p>
-        </InfoCard>
-      </section>
-    </Shell>
+      <SourceFooter
+        sources={[
+          {
+            id: 'germany-jet-fuel-read-model',
+            label: readModel.isFallback
+              ? `德国航油价格读模型不可用，当前为回退估算（${readModel.error ?? '未知原因'}）`
+              : '德国航油价格读模型（Brent、全球航油、EU 航油代理与碳价代理）',
+            asOf,
+            basis: readModel.isFallback ? 'assumption' : 'observed'
+          },
+          ...sourceLinks.map((source) => ({
+            id: source.key,
+            label: source.label,
+            href: source.href,
+            asOf: readModel.isFallback
+              ? null
+              : readModel.metrics.find((metric) => metric.metricKey === source.key)?.latestAsOf ?? null,
+            basis: sourceBasis(source.key, readModel.isFallback)
+          })),
+          {
+            id: 'price-trend-read-model',
+            label: priceChartData.isFallback
+              ? `价格趋势历史不可用（${priceChartData.error ?? '未知原因'}）`
+              : '价格趋势历史读模型（1d、7d、30d 窗口）',
+            asOf: priceChartData.isFallback ? null : priceChartData.generatedAt,
+            basis: priceChartData.isFallback ? 'assumption' : 'observed'
+          }
+        ]}
+        methodHref="/sources"
+        methodLabel="来源与价格趋势方法"
+        limitations={[
+          '航油价格是代理指标，可能与德国具体机场的合约结算价存在差异。',
+          '区域数据源不可用时，EU 航油代理价可能临时回退到全球航油序列；回退值不能当作实测。',
+          '碳价代理跟踪政策成本压力，应结合航线与掺混假设解读。',
+          '本页用于决策支持，不用于交易执行；采购决策仍需与合约供应商报价交叉核验。'
+        ]}
+      />
+    </PageTemplate>
   );
 }
