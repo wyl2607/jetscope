@@ -33,13 +33,13 @@ export function HeatSensitivityMatrix({ initial }: Props) {
   const span = maxBreakeven - minBreakeven;
 
   return (
-    <article className="rounded-2xl border border-line bg-surface p-6">
-      <div className="mb-4">
-        <h3 className="text-lg font-medium text-ink">供暖敏感性</h3>
-        <p className="mt-1 text-sm text-muted">
-          交叉点碳价 = 热泵击败燃气锅炉所需的最低 EU ETS2 碳价（燃气基线 €{initial.gas_price_eur_per_mwh_th.toFixed(0)}/MWh）。
-        </p>
-      </div>
+    // Bare artifact: card, title and why-line come from the wrapping Panel.
+    // The gas baseline stays here because it is a value, not a label.
+    <div>
+      <p className="mb-4 text-sm text-muted">
+        交叉点碳价 = 热泵击败燃气锅炉所需的最低 EU ETS2 碳价（燃气基线 €
+        {initial.gas_price_eur_per_mwh_th.toFixed(0)}/MWh）。
+      </p>
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-muted">
           <thead>
@@ -99,6 +99,6 @@ export function HeatSensitivityMatrix({ initial }: Props) {
         <span>高</span>
       </div>
       <p className="mt-2 text-xs text-subtle">{initial.disclaimer}</p>
-    </article>
+    </div>
   );
 }

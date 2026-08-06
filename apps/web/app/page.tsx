@@ -1,4 +1,5 @@
 import { Shell } from '@/components/shell';
+import { Panel } from '@/components/panel';
 import { ResearchDecisionBriefCard } from '@/components/research-decision-brief';
 import { TransitionLadder } from '@/components/transition-ladder';
 import { type TransitionSummaryResponse, loadTransitionSummary } from '@/lib/transition-read-model';
@@ -200,9 +201,14 @@ export default async function HomePage() {
         </article>
       </section>
 
-      <section className="mt-8">
-        <ResearchDecisionBriefCard brief={researchBrief} compact />
-      </section>
+      <div className="mt-8">
+        <Panel
+          title="研究决策层"
+          why="今天的信号为什么值得看一眼：它解释上面的市场数字在往哪个方向动。"
+        >
+          <ResearchDecisionBriefCard brief={researchBrief} compact />
+        </Panel>
+      </div>
 
       <section className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         {CTA_CARDS.map((card) => (

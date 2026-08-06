@@ -51,31 +51,29 @@ function coverageWidth(coverageWeeks: number): number {
 export function ReservesCoverageStrip({ reserve }: Props) {
   if (!reserve) {
     return (
-      <section className="rounded-2xl border border-rose-200 bg-rose-50 p-6">
-        <p className="text-xs uppercase tracking-[0.18em] text-rose-700">储备信号</p>
-        <h3 className="mt-2 text-xl font-semibold text-slate-950">欧盟储备数据暂不可用</h3>
-        <p className="mt-2 text-sm text-rose-800">
+      // Keeps a container of its own: the tint is the message. Same reason
+      // Panel's own error placeholder is coloured rather than bare.
+      <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+        <p className="font-medium text-slate-950">欧盟储备数据暂不可用</p>
+        <p className="mt-1 text-sm leading-6 text-rose-800">
           当前会话未连上实时储备服务。危机流程仍可浏览，但储备判断会标记为情景基线。
         </p>
-      </section>
+      </div>
     );
   }
 
   const style = STRESS_STYLE[reserve.stress_level] ?? STRESS_STYLE.guarded;
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-slate-500">储备信号</p>
-          <h3 className="mt-2 text-xl font-semibold text-slate-950">欧盟航煤储备覆盖</h3>
-        </div>
+    // Bare artifact: card, title and why-line come from the wrapping Panel.
+    <div>
+      <div className="flex justify-end">
         <div className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.15em] ${style.badge}`}>
           {style.label}
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
+      <div className="mt-4 grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
           <p className="text-xs uppercase tracking-[0.15em] text-sky-700">覆盖</p>
           <p className={`mt-2 text-3xl font-semibold ${style.text}`}>{reserve.coverage_weeks.toFixed(2)}w</p>
@@ -110,6 +108,6 @@ export function ReservesCoverageStrip({ reserve }: Props) {
         </div>
         <p className="mt-3 text-xs text-slate-500">更新于 {formatUpdatedAt(reserve.generated_at)} · 置信度 {(reserve.confidence_score * 100).toFixed(0)}%</p>
       </div>
-    </section>
+    </div>
   );
 }

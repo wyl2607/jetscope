@@ -30,11 +30,14 @@ function impactLabel(value: ResearchDecisionBrief['topSignals'][number]['impact_
 
 export function ResearchDecisionBriefCard({ brief, compact = false, showLink = true }: Props) {
   return (
-    <section className={`rounded-2xl border p-6 ${statusTone(brief.status)}`}>
+    // The one artifact that keeps a container of its own: the tint IS the
+    // research posture (error / not deployed / empty / live). Stripping it to
+    // sit bare inside the Panel would erase the status, which is the whole
+    // point of the block. Sized as an inner block, not a peer card.
+    <section className={`rounded-xl border p-4 ${statusTone(brief.status)}`}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] opacity-75">研究决策层</p>
-          <h3 className="mt-2 text-xl font-semibold text-slate-950">{brief.headline}</h3>
+          <h3 className="text-lg font-medium text-slate-950">{brief.headline}</h3>
         </div>
         {showLink ? (
           <Link href={RESEARCH_ROUTE} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-800">

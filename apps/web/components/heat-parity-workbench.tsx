@@ -75,14 +75,11 @@ export function HeatParityWorkbench({ initial }: Props) {
   }));
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white/90 p-6">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h3 className="text-lg font-medium text-slate-950">供暖平价模拟器</h3>
-          <p className="mt-1 text-sm text-slate-600">
-            拖动 ETS2 碳价，观察热泵相对燃气冷凝锅炉的有用热成本交叉点。
-          </p>
-        </div>
+    <div>
+      {/* Bare artifact: the card, the title and the why-line belong to the
+          Panel that wraps this. The badge stays because it tracks client state
+          the server-rendered Panel cannot see. */}
+      <div className="mb-6 flex justify-end">
         <div
           className={`rounded-full border px-3 py-1 text-sm font-semibold ${heatStatusTone(signalStatus)}`}
         >
@@ -198,6 +195,6 @@ export function HeatParityWorkbench({ initial }: Props) {
           ))}
         </div>
       </div>
-    </article>
+    </div>
   );
 }

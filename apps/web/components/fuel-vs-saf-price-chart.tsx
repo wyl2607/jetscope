@@ -40,14 +40,8 @@ export function FuelVsSafPriceChart({
   );
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white/90 p-6">
-      <div className="mb-6">
-        <h3 className="text-lg font-medium text-slate-950">航油与 SAF 价格阶梯</h3>
-        <p className="mt-1 text-sm text-slate-600">
-          化石航油基准、碳调整后有效成本与各路径净成本区间。
-        </p>
-      </div>
-
+    // Bare artifact: card, title and why-line come from the wrapping Panel.
+    <div>
       <div className="space-y-4">
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
           <div className="flex items-center justify-between gap-4">
@@ -121,6 +115,6 @@ export function FuelVsSafPriceChart({
           })}
         </div>
       </div>
-    </article>
+    </div>
   );
 }
