@@ -148,21 +148,35 @@ Shell
 Every number on screen must answer four questions on screen or one click away:
 *what is it · when is it from · where did it come from · how was it derived.*
 
-Read models return:
+Read models return `Figure`, defined once in `apps/web/lib/figure.ts`:
 
 ```ts
 type Figure = {
-  value: number | null;
-  unit: string;
-  asOf: string;                                    // ISO 8601, source time, not fetch time
-  sourceId: string;                                // resolvable in the sources registry
+  value: number | null;                            // null means unknown, never 0
+  unit: string;                                    // canonical: 'USD/L', '%', 'weeks'
+  unitLabel?: string;                              // reader-facing override
+  asOf: string | null;                             // ISO 8601, source time, not fetch time
+  sourceId: string;                                // resolves against SourceFooter's SourceRef.id
   basis: 'observed' | 'derived' | 'assumption';
   method?: string;                                 // required when basis !== 'observed'
+  methodHref?: string;                             // anchor or route for the method section
+  reason?: string;                                 // required when value is null
+  precision?: number;                              // decimal places, default 2
+  maxAgeHours?: number;                            // cadence this source promises
 };
 ```
 
+Build figures with the constructors — `observed()`, `derived()`, `assumed()`,
+`missing()` — not with object literals. They are what make the rules below
+unforgeable: `assumed()` does not accept an `asOf` at all, `derived()` does not
+accept a missing `method`, `missing()` does not accept a missing `reason`.
+`FigureValue` (`apps/web/components/figure-value.tsx`) is the only sanctioned way
+one reaches the screen, and it re-checks the invariants at the render boundary.
+
 1. Display components accept `Figure`, not bare `number`. A bare number in a
-   metric or table cell is a contract violation.
+   metric or table cell is a contract violation. Where a numeric prop genuinely
+   is not a measurement — a column count, a slider step — annotate it:
+   `// figure-contract-lint-ignore: <reason>`. The reason is mandatory.
 2. `basis: 'assumption'` renders a visible `warning` marker reading
    "情景假设 / scenario assumption". Assumptions are never styled to look like
    observations. This is the rule the EU reserve-days fallback broke; it does not
@@ -170,8 +184,14 @@ type Figure = {
 3. `value: null` renders "—" plus the reason. Never `0`, never a silent fallback
    to a stale figure.
 4. A `derived` figure links to its method section. No `method`, no merge.
-5. Timestamps render in the reader's locale with an explicit timezone. Data older
-   than its source's expected cadence renders in `warning`.
+5. Timestamps render in the reader's locale with an explicit timezone, pinned to
+   UTC so three locales quote one instant. Data older than its source's expected
+   cadence (`maxAgeHours`) renders in `warning`.
+6. **A fallback never stamps itself.** `generated_at: new Date().toISOString()`
+   inside a default or fallback presents invented values as freshly observed.
+   The page-level as-of comes from `freshestAsOf()`, which ignores assumptions;
+   the footer basis comes from `weakestBasis()`, so a page cannot claim
+   "observed" while a chart above it draws a built-in constant.
 
 ---
 
@@ -217,12 +237,14 @@ A rule that isn't checked will drift. `npm run web:gate` runs, in order:
    outside the deprecated layer, missing `@theme` block, nav arrays outside
    `navigation.ts`
 4. `node scripts/figure-contract-lint.mjs` — display components typed with bare
-   `number` (arrives in P3)
+   `number`; fallbacks that stamp themselves with the current time; a locally
+   redeclared `Figure` type; an assumption carrying an observation time
 
 **The lint is a ratchet, not a big bang.** `scripts/design-system-baseline.json`
-records how many violations each legacy file is currently allowed. A file not in
-the baseline must be clean; a baselined file may never get worse; a file that
-improves must have its baseline lowered (`--update`) so the gain is locked in.
+and `scripts/figure-contract-baseline.json` record how many violations each
+legacy file is currently allowed. A file not in the baseline must be clean; a
+baselined file may never get worse; a file that improves must have its baseline
+lowered (`--update`) so the gain is locked in.
 That is how a 2,303-violation codebase gets a working gate on day one instead of
 after a 2,000-line unreviewable diff.
 
@@ -235,7 +257,7 @@ after a 2,000-line unreviewable diff.
 | **P0** | Tailwind ↔ token wiring · migrate 11 dark-class files · delete the legacy override block · `design-token-lint` in the gate | writing a raw color turns CI red |
 | **P1** | `PageTemplate` / `SignalRow` / `Panel` / `DataTable` / `SourceNote`; convert all pages | every page shares one skeleton |
 | **P2** | `navigation.ts`; collapse `/`, `/de`, `/en` into `/[locale]`; copy from locale files | three locales, one IA |
-| **P3** | `Figure` contract through the read-model layer; `figure-contract-lint` | no bare numbers on screen |
+| **P3** | `Figure` contract through the read-model layer; `figure-contract-lint` | `figure-contract-baseline.json` reaches zero |
 | **P4** | Web production container + nginx on the VPS | frontend reachable in public |
 
 Phases run **strictly in order**, one branch at a time. Two contributors never
