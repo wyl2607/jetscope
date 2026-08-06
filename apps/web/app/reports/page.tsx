@@ -1,5 +1,7 @@
-import { InfoCard, MetricCard } from '@/components/cards';
-import { Shell } from '@/components/shell';
+import { MetricCard } from '@/components/cards';
+import { PageTemplate, SignalRow } from '@/components/page-template';
+import { Panel } from '@/components/panel';
+import { SourceFooter } from '@/components/source-footer';
 import { getDashboardReadModel } from '@/lib/dashboard-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata, Route } from 'next';
@@ -53,6 +55,15 @@ function sourceStatusLabel(status: string): string {
   return status;
 }
 
+// Section 1 rule 5: the tint states a fact about the data. A page that says
+// "需复核" in the same colour as everything else has reported the problem
+// without encoding it.
+function sourceStatusTone(status: string): string {
+  if (status === 'ok') return 'text-success';
+  if (status === 'offline') return 'text-danger';
+  return 'text-warning';
+}
+
 function freshnessLabel(level: string): string {
   if (level === 'fresh') return '新鲜';
   if (level === 'stale') return '偏旧';
@@ -67,29 +78,40 @@ export default async function ReportsPage() {
   const latestScenarioNames = readModel.recentScenarioNames.length
     ? readModel.recentScenarioNames.join(' / ')
     : '暂无已保存情景';
-  const readiness = readModel.isFallback || sourceStatus.overall !== 'ok' ? '需复核' : '可发布候选';
+  const needsReview = readModel.isFallback || sourceStatus.overall !== 'ok';
+  const readiness = needsReview ? '需复核' : '可发布候选';
   const readinessHint = readModel.isFallback
     ? `报告可渲染，但当前使用 fallback：${readModel.error ?? '未知原因'}`
     : sourceStatus.overall !== 'ok'
       ? `来源状态为${sourceStatusLabel(sourceStatus.overall)}，发布前先复核数据来源`
       : '所有报告入口可从当前 read model 复核';
 
+  // The fallback read model stamps itself with the current time, so rendering
+  // that as a data timestamp would present fabricated values as fresh. No stamp
+  // is the honest answer here; the footer says why.
+  const asOf = readModel.isFallback ? null : readModel.market.generated_at;
+
   return (
-    <Shell
+    <PageTemplate
       eyebrow="组合报告"
       title="报告工作台"
-      description="把驾驶舱数据、来源健康度和报告入口放在同一张上线评审清单里。"
+      question="这份报告现在能不能作为决策依据发出去？"
+      asOf={asOf}
     >
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <SignalRow label="发布就绪信号">
+        {/* Section 2 rule 2: the verdict leads. A reader who stops after the
+            first card still leaves with the answer to the question above. */}
+        <MetricCard
+          label="上线姿态"
+          value={readiness}
+          valueClassName={needsReview ? 'text-warning' : 'text-success'}
+          hint={readinessHint}
+        />
         <MetricCard
           label="来源状态"
           value={sourceStatusLabel(sourceStatus.overall)}
+          valueClassName={sourceStatusTone(sourceStatus.overall)}
           hint={`置信度 ${formatPercent((sourceStatus.confidence ?? 0) * 100)} · 回退率 ${formatPercent(sourceStatus.fallback_rate)} · ${freshnessLabel(readModel.freshnessSignal.level)} ${readModel.freshnessSignal.minutes} 分钟`}
-        />
-        <MetricCard
-          label="情景数量"
-          value={`${readModel.scenarioCount}`}
-          hint={latestScenarioNames}
         />
         <MetricCard
           label="风险信号"
@@ -99,47 +121,73 @@ export default async function ReportsPage() {
               ? `${topRiskSignal.level} · ${topRiskSignal.changePct > 0 ? '+' : ''}${topRiskSignal.changePct.toFixed(2)}%`
               : '市场历史窗口尚未形成可排序警报'
           }
-          valueHref={topRiskSignal ? (`/sources?focus=${encodeURIComponent(topRiskSignal.metricKey)}` as Route) : undefined}
+          valueHref={
+            topRiskSignal ? (`/sources?focus=${encodeURIComponent(topRiskSignal.metricKey)}` as Route) : undefined
+          }
         />
-        <MetricCard
-          label="上线姿态"
-          value={readiness}
-          hint={readinessHint}
-        />
-      </section>
+        <MetricCard label="情景数量" value={`${readModel.scenarioCount}`} hint={latestScenarioNames} />
+      </SignalRow>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <InfoCard title="报告目录" subtitle="可复核、可点击、可继续扩展">
-          <div className="space-y-4">
-            {reports.map((report) => (
-              <Link
-                key={report.href}
-                href={report.href}
-                className="block rounded-lg border border-slate-200 bg-slate-50 p-4 transition hover:border-sky-300 hover:bg-sky-50"
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">{report.status}</p>
-                <h3 className="mt-2 text-xl font-semibold text-slate-950">{report.title}</h3>
-                <p className="mt-2 text-sm leading-7 text-slate-700">{report.description}</p>
-              </Link>
-            ))}
-          </div>
-        </InfoCard>
+      <Panel title="报告目录" why="每份报告的入口，以及它当前接的是实时数据还是静态叙事。">
+        <div className="space-y-4">
+          {reports.map((report) => (
+            <Link
+              key={report.href}
+              href={report.href}
+              className="block rounded-xl border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">{report.status}</p>
+              <h3 className="mt-2 text-lg font-medium text-ink">{report.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-muted">{report.description}</p>
+            </Link>
+          ))}
+        </div>
+      </Panel>
 
-        <InfoCard title="发布前动作" subtitle="报告页的下一步不是猜测，而是复核">
-          <div className="space-y-3">
-            {actions.map((action) => (
-              <Link
-                key={action.href}
-                href={action.href}
-                className="block rounded-lg border border-slate-200 bg-white p-4 transition hover:border-sky-300 hover:bg-sky-50"
-              >
-                <p className="font-semibold text-slate-950">{action.label}</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">{action.description}</p>
-              </Link>
-            ))}
-          </div>
-        </InfoCard>
-      </section>
-    </Shell>
+      <Panel title="发布前动作" why="报告页的下一步不是猜测，而是复核——每个入口都指向可验证的证据。">
+        <div className="space-y-3">
+          {actions.map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="block rounded-xl border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
+            >
+              <p className="font-medium text-ink">{action.label}</p>
+              <p className="mt-1 text-sm leading-6 text-muted">{action.description}</p>
+            </Link>
+          ))}
+        </div>
+      </Panel>
+
+      <SourceFooter
+        sources={[
+          {
+            id: 'dashboard-read-model',
+            label: readModel.isFallback
+              ? `市场快照接口无响应，当前为内置兜底值（${readModel.error ?? '未知原因'}）`
+              : '市场快照接口（来源状态、置信度、回退率、新鲜度）',
+            asOf,
+            basis: readModel.isFallback ? 'assumption' : 'observed'
+          },
+          {
+            id: 'scenario-store',
+            label: `本地情景库（当前 ${readModel.scenarioCount} 个已保存情景）`,
+            basis: 'observed'
+          },
+          {
+            id: 'risk-signal',
+            label: '风险信号由市场历史窗口的变动幅度推导，非上游直接给出',
+            basis: 'derived'
+          }
+        ]}
+        methodHref="/sources"
+        methodLabel="口径与来源清单"
+        limitations={[
+          '“可发布候选”只表示数据链路可复核，不代表结论已被人工审阅。',
+          '风险信号依赖历史窗口样本量，样本不足时不会产生警报，不等于没有风险。',
+          '情景库是本地保存的假设，用于复盘和讨论，不替代真实采购审批。'
+        ]}
+      />
+    </PageTemplate>
   );
 }

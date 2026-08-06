@@ -1,5 +1,7 @@
-import { InfoCard, MetricCard } from '@/components/cards';
-import { Shell } from '@/components/shell';
+import { MetricCard } from '@/components/cards';
+import { PageTemplate, SignalRow } from '@/components/page-template';
+import { Panel } from '@/components/panel';
+import { SourceFooter } from '@/components/source-footer';
 import { getDashboardReadModel } from '@/lib/dashboard-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata, Route } from 'next';
@@ -61,6 +63,15 @@ function sourceStatusLabel(status: string): string {
   return status;
 }
 
+// Abschnitt 1 Regel 5: Der Farbton ist eine Aussage über die Daten. Eine Seite,
+// die "Prüfung nötig" in derselben Farbe wie alles andere zeigt, hat das Problem
+// genannt, aber nicht sichtbar gemacht.
+function sourceStatusTone(status: string): string {
+  if (status === 'ok') return 'text-success';
+  if (status === 'offline') return 'text-danger';
+  return 'text-warning';
+}
+
 function freshnessLabel(level: string): string {
   if (level === 'fresh') return 'aktuell';
   if (level === 'stale') return 'veraltet';
@@ -88,7 +99,8 @@ export default async function GermanReportsPage() {
   const sourceStatus = readModel.market.source_status;
   const topRiskSignal = readModel.topRiskSignal;
   const latestScenarioNames = safeScenarioSummary(readModel.recentScenarioNames);
-  const readiness = readModel.isFallback || sourceStatus.overall !== 'ok' ? 'Prüfung nötig' : 'Veröffentlichungskandidat';
+  const needsReview = readModel.isFallback || sourceStatus.overall !== 'ok';
+  const readiness = needsReview ? 'Prüfung nötig' : 'Veröffentlichungskandidat';
   const readinessHint = readModel.isFallback
     ? 'Die Berichtswerkstatt kann rendern, aber der lokale API-Fallback ist aktiv; Quellen und Startbereitschaft vor Nutzung prüfen.'
     : sourceStatus.overall !== 'ok'
@@ -98,17 +110,32 @@ export default async function GermanReportsPage() {
     ? (`/de/sources?focus=${encodeURIComponent(topRiskSignal.metricKey)}` as Route)
     : undefined;
 
+  // Das Fallback-Read-Model stempelt sich mit der aktuellen Zeit. Diese als
+  // Datenstand zu zeigen würde erfundene Werte als frisch ausgeben - deshalb
+  // hier kein Stempel; die Fußzeile nennt den Grund.
+  const asOf = readModel.isFallback ? null : readModel.market.generated_at;
+
   return (
-    <Shell
+    <PageTemplate
       locale="de"
       eyebrow="Berichtsbereitschaft"
       title="Berichtswerkstatt"
-      description="Cockpit-Daten, Quellenzustand, gespeicherte Szenarien und Berichtseinstiege in einer deutschen Startprüfungs-Checkliste bündeln."
+      question="Ist dieser Bericht belastbar genug, um jetzt als Entscheidungsgrundlage veröffentlicht zu werden?"
+      asOf={asOf}
     >
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <SignalRow label="Startbereitschaftssignale">
+        {/* Abschnitt 2 Regel 2: Das Urteil steht vorn. Wer nach der ersten
+            Karte aufhört, hat die Antwort auf die Frage oben trotzdem. */}
+        <MetricCard
+          label="Startposition"
+          value={readiness}
+          valueClassName={needsReview ? 'text-warning' : 'text-success'}
+          hint={readinessHint}
+        />
         <MetricCard
           label="Quellenstatus"
           value={sourceStatusLabel(sourceStatus.overall)}
+          valueClassName={sourceStatusTone(sourceStatus.overall)}
           hint={`Konfidenz ${formatPercent((sourceStatus.confidence ?? 0) * 100)} | Fallback-Rate ${formatPercent(sourceStatus.fallback_rate)} | ${freshnessLabel(readModel.freshnessSignal.level)} ${readModel.freshnessSignal.minutes} Min.`}
         />
         <MetricCard
@@ -126,45 +153,77 @@ export default async function GermanReportsPage() {
           }
           valueHref={riskHref}
         />
-        <MetricCard
-          label="Startposition"
-          value={readiness}
-          hint={readinessHint}
-        />
-      </section>
+      </SignalRow>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <InfoCard title="Berichtskatalog" subtitle="Prüfbar, anklickbar und erweiterbar">
+      <Panel
+        locale="de"
+        title="Berichtskatalog"
+        why="Jeder Berichtseinstieg und ob er an Live-Daten oder an eine statische Darstellung angebunden ist."
+      >
           <div className="space-y-4">
             {reports.map((report) => (
               <Link
                 key={report.href}
                 href={report.href}
-                className="block rounded-md border border-slate-200 bg-slate-50 p-4 transition hover:border-sky-300 hover:bg-sky-50"
+                className="block rounded-xl border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
               >
-                <p className="text-xs font-semibold uppercase text-sky-700">{report.status}</p>
-                <h3 className="mt-2 text-xl font-semibold text-slate-950">{report.title}</h3>
-                <p className="mt-2 text-sm leading-7 text-slate-700">{report.description}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">{report.status}</p>
+                <h3 className="mt-2 text-lg font-medium text-ink">{report.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted">{report.description}</p>
               </Link>
             ))}
           </div>
-        </InfoCard>
+      </Panel>
 
-        <InfoCard title="Vor dem Start" subtitle="Der nächste Schritt ist Evidenzprüfung">
+      <Panel
+        locale="de"
+        title="Vor dem Start"
+        why="Der nächste Schritt ist Evidenzprüfung, nicht Vermutung - jeder Einstieg führt zu etwas Nachprüfbarem."
+      >
           <div className="space-y-3">
             {actions.map((action) => (
               <Link
                 key={action.href}
                 href={action.href}
-                className="block rounded-md border border-slate-200 bg-white p-4 transition hover:border-sky-300 hover:bg-sky-50"
+                className="block rounded-xl border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
               >
-                <p className="font-semibold text-slate-950">{action.label}</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">{action.description}</p>
+                <p className="font-medium text-ink">{action.label}</p>
+                <p className="mt-1 text-sm leading-6 text-muted">{action.description}</p>
               </Link>
             ))}
           </div>
-        </InfoCard>
-      </section>
-    </Shell>
+      </Panel>
+
+      <SourceFooter
+        locale="de"
+        sources={[
+          {
+            id: 'dashboard-read-model',
+            label: readModel.isFallback
+              ? 'Markt-Snapshot-API nicht erreichbar; es werden interne Ersatzwerte verwendet'
+              : 'Markt-Snapshot-API (Quellenstatus, Konfidenz, Fallback-Rate, Aktualität)',
+            asOf,
+            basis: readModel.isFallback ? 'assumption' : 'observed'
+          },
+          {
+            id: 'scenario-store',
+            label: `Lokaler Szenariospeicher (${readModel.scenarioCount} gespeicherte Szenarien)`,
+            basis: 'observed'
+          },
+          {
+            id: 'risk-signal',
+            label: 'Das Risikosignal wird aus der Bewegung im Markthistorienfenster abgeleitet, nicht vom Upstream geliefert',
+            basis: 'derived'
+          }
+        ]}
+        methodHref="/de/sources"
+        methodLabel="Quellen- und Methodenliste"
+        limitations={[
+          '„Veröffentlichungskandidat“ heißt, dass der Datenpfad prüfbar ist - nicht, dass die Aussage fachlich geprüft wurde.',
+          'Das Risikosignal hängt von der Stichprobengröße im Historienfenster ab. Kein Alarm bei dünner Stichprobe heißt nicht kein Risiko.',
+          'Gespeicherte Szenarien sind lokale Annahmen für Prüfung und Diskussion; sie ersetzen keine Beschaffungsfreigabe.'
+        ]}
+      />
+    </PageTemplate>
   );
 }
