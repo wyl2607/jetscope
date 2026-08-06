@@ -55,6 +55,15 @@ function sourceStatusLabel(status: string): string {
   return status;
 }
 
+// Section 1 rule 5: the tint states a fact about the data. A page that says
+// "需复核" in the same colour as everything else has reported the problem
+// without encoding it.
+function sourceStatusTone(status: string): string {
+  if (status === 'ok') return 'text-success';
+  if (status === 'offline') return 'text-danger';
+  return 'text-warning';
+}
+
 function freshnessLabel(level: string): string {
   if (level === 'fresh') return '新鲜';
   if (level === 'stale') return '偏旧';
@@ -69,7 +78,8 @@ export default async function ReportsPage() {
   const latestScenarioNames = readModel.recentScenarioNames.length
     ? readModel.recentScenarioNames.join(' / ')
     : '暂无已保存情景';
-  const readiness = readModel.isFallback || sourceStatus.overall !== 'ok' ? '需复核' : '可发布候选';
+  const needsReview = readModel.isFallback || sourceStatus.overall !== 'ok';
+  const readiness = needsReview ? '需复核' : '可发布候选';
   const readinessHint = readModel.isFallback
     ? `报告可渲染，但当前使用 fallback：${readModel.error ?? '未知原因'}`
     : sourceStatus.overall !== 'ok'
@@ -89,12 +99,20 @@ export default async function ReportsPage() {
       asOf={asOf}
     >
       <SignalRow label="发布就绪信号">
+        {/* Section 2 rule 2: the verdict leads. A reader who stops after the
+            first card still leaves with the answer to the question above. */}
+        <MetricCard
+          label="上线姿态"
+          value={readiness}
+          valueClassName={needsReview ? 'text-warning' : 'text-success'}
+          hint={readinessHint}
+        />
         <MetricCard
           label="来源状态"
           value={sourceStatusLabel(sourceStatus.overall)}
+          valueClassName={sourceStatusTone(sourceStatus.overall)}
           hint={`置信度 ${formatPercent((sourceStatus.confidence ?? 0) * 100)} · 回退率 ${formatPercent(sourceStatus.fallback_rate)} · ${freshnessLabel(readModel.freshnessSignal.level)} ${readModel.freshnessSignal.minutes} 分钟`}
         />
-        <MetricCard label="情景数量" value={`${readModel.scenarioCount}`} hint={latestScenarioNames} />
         <MetricCard
           label="风险信号"
           value={topRiskSignal ? `${topRiskSignal.metric} ${topRiskSignal.window}` : '暂无异常'}
@@ -107,7 +125,7 @@ export default async function ReportsPage() {
             topRiskSignal ? (`/sources?focus=${encodeURIComponent(topRiskSignal.metricKey)}` as Route) : undefined
           }
         />
-        <MetricCard label="上线姿态" value={readiness} hint={readinessHint} />
+        <MetricCard label="情景数量" value={`${readModel.scenarioCount}`} hint={latestScenarioNames} />
       </SignalRow>
 
       <Panel title="报告目录" why="每份报告的入口，以及它当前接的是实时数据还是静态叙事。">
@@ -116,9 +134,9 @@ export default async function ReportsPage() {
             <Link
               key={report.href}
               href={report.href}
-              className="block rounded-xl border border-line bg-surface-muted p-4 transition hover:border-accent hover:bg-accent-soft"
+              className="block rounded-xl border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
             >
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">{report.status}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">{report.status}</p>
               <h3 className="mt-2 text-lg font-medium text-ink">{report.title}</h3>
               <p className="mt-2 text-sm leading-6 text-muted">{report.description}</p>
             </Link>

@@ -61,6 +61,15 @@ function sourceStatusLabel(status: string): string {
   return status;
 }
 
+// Section 1 rule 5: the tint states a fact about the data. A page that renders
+// "Review needed" in the same colour as everything else has reported the
+// problem without encoding it.
+function sourceStatusTone(status: string): string {
+  if (status === 'ok') return 'text-success';
+  if (status === 'offline') return 'text-danger';
+  return 'text-warning';
+}
+
 function freshnessLabel(level: string): string {
   if (level === 'fresh') return 'fresh';
   if (level === 'stale') return 'stale';
@@ -82,7 +91,8 @@ export default async function EnglishReportsPage() {
   const latestScenarioNames = readModel.recentScenarioNames.length
     ? readModel.recentScenarioNames.join(' / ')
     : 'No saved scenario yet.';
-  const readiness = readModel.isFallback || sourceStatus.overall !== 'ok' ? 'Review needed' : 'Publish candidate';
+  const needsReview = readModel.isFallback || sourceStatus.overall !== 'ok';
+  const readiness = needsReview ? 'Review needed' : 'Publish candidate';
   const readinessHint = readModel.isFallback
     ? `The report surface can render, but the local API fallback is active: ${readModel.error ?? 'unknown cause'}.`
     : sourceStatus.overall !== 'ok'
@@ -106,9 +116,18 @@ export default async function EnglishReportsPage() {
       asOf={asOf}
     >
       <SignalRow label="Launch readiness signals">
+        {/* Section 2 rule 2: the verdict leads. A reader who stops after the
+            first card still leaves with the answer to the question above. */}
+        <MetricCard
+          label="Launch posture"
+          value={readiness}
+          valueClassName={needsReview ? 'text-warning' : 'text-success'}
+          hint={readinessHint}
+        />
         <MetricCard
           label="Source status"
           value={sourceStatusLabel(sourceStatus.overall)}
+          valueClassName={sourceStatusTone(sourceStatus.overall)}
           hint={`Confidence ${formatPercent((sourceStatus.confidence ?? 0) * 100)} | fallback rate ${formatPercent(sourceStatus.fallback_rate)} | ${freshnessLabel(readModel.freshnessSignal.level)} ${readModel.freshnessSignal.minutes} min.`}
         />
         <MetricCard
@@ -126,11 +145,6 @@ export default async function EnglishReportsPage() {
           }
           valueHref={riskHref}
         />
-        <MetricCard
-          label="Launch posture"
-          value={readiness}
-          hint={readinessHint}
-        />
       </SignalRow>
 
       <Panel
@@ -143,9 +157,9 @@ export default async function EnglishReportsPage() {
               <Link
                 key={report.href}
                 href={report.href}
-                className="block rounded-xl border border-line bg-surface-muted p-4 transition hover:border-accent hover:bg-accent-soft"
+                className="block rounded-xl border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
               >
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">{report.status}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">{report.status}</p>
                 <h3 className="mt-2 text-lg font-medium text-ink">{report.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-muted">{report.description}</p>
               </Link>

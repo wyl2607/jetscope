@@ -63,6 +63,15 @@ function sourceStatusLabel(status: string): string {
   return status;
 }
 
+// Abschnitt 1 Regel 5: Der Farbton ist eine Aussage über die Daten. Eine Seite,
+// die "Prüfung nötig" in derselben Farbe wie alles andere zeigt, hat das Problem
+// genannt, aber nicht sichtbar gemacht.
+function sourceStatusTone(status: string): string {
+  if (status === 'ok') return 'text-success';
+  if (status === 'offline') return 'text-danger';
+  return 'text-warning';
+}
+
 function freshnessLabel(level: string): string {
   if (level === 'fresh') return 'aktuell';
   if (level === 'stale') return 'veraltet';
@@ -90,7 +99,8 @@ export default async function GermanReportsPage() {
   const sourceStatus = readModel.market.source_status;
   const topRiskSignal = readModel.topRiskSignal;
   const latestScenarioNames = safeScenarioSummary(readModel.recentScenarioNames);
-  const readiness = readModel.isFallback || sourceStatus.overall !== 'ok' ? 'Prüfung nötig' : 'Veröffentlichungskandidat';
+  const needsReview = readModel.isFallback || sourceStatus.overall !== 'ok';
+  const readiness = needsReview ? 'Prüfung nötig' : 'Veröffentlichungskandidat';
   const readinessHint = readModel.isFallback
     ? 'Die Berichtswerkstatt kann rendern, aber der lokale API-Fallback ist aktiv; Quellen und Startbereitschaft vor Nutzung prüfen.'
     : sourceStatus.overall !== 'ok'
@@ -114,9 +124,18 @@ export default async function GermanReportsPage() {
       asOf={asOf}
     >
       <SignalRow label="Startbereitschaftssignale">
+        {/* Abschnitt 2 Regel 2: Das Urteil steht vorn. Wer nach der ersten
+            Karte aufhört, hat die Antwort auf die Frage oben trotzdem. */}
+        <MetricCard
+          label="Startposition"
+          value={readiness}
+          valueClassName={needsReview ? 'text-warning' : 'text-success'}
+          hint={readinessHint}
+        />
         <MetricCard
           label="Quellenstatus"
           value={sourceStatusLabel(sourceStatus.overall)}
+          valueClassName={sourceStatusTone(sourceStatus.overall)}
           hint={`Konfidenz ${formatPercent((sourceStatus.confidence ?? 0) * 100)} | Fallback-Rate ${formatPercent(sourceStatus.fallback_rate)} | ${freshnessLabel(readModel.freshnessSignal.level)} ${readModel.freshnessSignal.minutes} Min.`}
         />
         <MetricCard
@@ -134,11 +153,6 @@ export default async function GermanReportsPage() {
           }
           valueHref={riskHref}
         />
-        <MetricCard
-          label="Startposition"
-          value={readiness}
-          hint={readinessHint}
-        />
       </SignalRow>
 
       <Panel
@@ -151,9 +165,9 @@ export default async function GermanReportsPage() {
               <Link
                 key={report.href}
                 href={report.href}
-                className="block rounded-xl border border-line bg-surface-muted p-4 transition hover:border-accent hover:bg-accent-soft"
+                className="block rounded-xl border border-line bg-surface p-4 transition hover:border-accent hover:bg-accent-soft"
               >
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">{report.status}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">{report.status}</p>
                 <h3 className="mt-2 text-lg font-medium text-ink">{report.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-muted">{report.description}</p>
               </Link>

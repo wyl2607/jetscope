@@ -62,14 +62,17 @@ test('a page on fallback data never stamps it with a fresh timestamp', async () 
   // observed, which is the failure this contract exists to prevent.
   for (const path of FALLBACK_AWARE_PAGES) {
     const source = await read(path);
+    // Matched loosely on purpose: the guarantee is "the stamp is gated on
+    // isFallback", not one particular spelling of it. Pinning the exact line
+    // would make a prettier run look like a contract violation.
     assert.match(
       source,
-      /const asOf = readModel\.isFallback \? null : readModel\.market\.generated_at;/,
+      /readModel\.isFallback\s*\?\s*null\s*:\s*readModel\.market\.generated_at/,
       `${path} must suppress the timestamp while on fallback data`
     );
     assert.match(
       source,
-      /basis: readModel\.isFallback \? 'assumption' : 'observed'/,
+      /basis:\s*readModel\.isFallback\s*\?\s*'assumption'\s*:\s*'observed'/,
       `${path} must label fallback data as an assumption, never as observed`
     );
   }
