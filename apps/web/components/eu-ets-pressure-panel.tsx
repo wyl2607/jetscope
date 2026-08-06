@@ -18,15 +18,12 @@ function formatUsd(value: number): string {
 export function EuEtsPressurePanel({ model }: Props) {
   const tone = signalTone[model.signal] ?? 'border-slate-300 bg-slate-50 text-slate-700';
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6">
+    // Bare artifact: card, title and why-line come from the wrapping Panel.
+    <div>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-slate-500">EU ETS 碳压力</p>
-          <h2 className="mt-2 text-xl font-bold text-slate-950">碳价对化石航油的成本压力</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            按给定 EU ETS 价格区间投影：每个价位下加到化石航油的碳成本、有效成本与压力百分比。价格路径为输入项，非内置假设。
-          </p>
-        </div>
+        <p className="max-w-2xl text-sm leading-6 text-slate-600">
+          价格路径是输入项，不是内置假设：下表按给定的 EU ETS 区间逐档投影碳成本、有效成本与压力百分比。
+        </p>
         <span className={`rounded-lg border px-3 py-2 text-xs font-semibold ${tone}`}>
           压力信号：{model.signalLabel}
           {model.peakPressurePct !== null ? `（峰值 ${model.peakPressurePct.toFixed(1)}%）` : ''}
@@ -59,6 +56,6 @@ export function EuEtsPressurePanel({ model }: Props) {
       <p className="mt-4 text-xs text-slate-500">
         来源：{model.source.source_type} · 置信度 {Math.round(model.source.confidence_score * 100)}% · {model.source.updated_at} · {model.source.cadence}
       </p>
-    </section>
+    </div>
   );
 }

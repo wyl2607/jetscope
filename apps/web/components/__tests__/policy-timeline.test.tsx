@@ -13,9 +13,13 @@ describe('PolicyTimeline', () => {
       <PolicyTimeline locale="de" currentTimestamp={new Date('2026-06-03T12:00:00Z').getTime()} />
     );
 
-    expect(getByText('Policy-Meilenstein-Zeitlinie')).toBeTruthy();
+    // The heading moved to the wrapping Panel when this became a bare artifact,
+    // so the locale is asserted through the copy the component still owns: the
+    // reference-date line, the milestones and the current-year marker.
+    expect(getByText(/Regulatorische Ziele auf Basis der Marktdaten vom/)).toBeTruthy();
     expect(getByText('EU SAF-Mandat tritt in Kraft')).toBeTruthy();
     expect(getByText('Aktuelles Jahr')).toBeTruthy();
     expect(queryByText('政策里程碑时间线')).toBeNull();
+    expect(queryByText('Policy-Meilenstein-Zeitlinie')).toBeNull();
   });
 });

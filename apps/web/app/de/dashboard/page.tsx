@@ -1,4 +1,5 @@
 import { InfoCard, MetricCard } from '@/components/cards';
+import { Panel } from '@/components/panel';
 import { Shell } from '@/components/shell';
 import { PolicyTimelineWithMarketTime } from '@/components/policy-timeline-with-market-time';
 import { getDashboardReadModel } from '@/lib/dashboard-read-model';
@@ -159,7 +160,13 @@ export default async function GermanDashboardPage() {
       </section>
 
       <section className="mt-12">
-        <PolicyTimelineWithMarketTime locale="de" />
+        <Panel
+          locale="de"
+          title="Politik-Zeitlinie"
+          why="Wann welche Regel greift, gemessen am Marktzeitpunkt oben - eine Frist, die schon vorbei ist, liest sich sonst wie eine künftige."
+        >
+          <PolicyTimelineWithMarketTime locale="de" />
+        </Panel>
       </section>
     </Shell>
   );

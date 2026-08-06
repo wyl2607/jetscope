@@ -2,7 +2,12 @@ import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { FuelVsSafPriceChart } from '@/components/fuel-vs-saf-price-chart';
 import { HeatSensitivityMatrix } from '@/components/heat-sensitivity-matrix';
+import { EuEtsPressurePanel } from '@/components/eu-ets-pressure-panel';
+import { PolicyTimeline } from '@/components/policy-timeline';
+import { PriceTrendsChart } from '@/components/price-trends-chart';
+import { ProvenanceSummary } from '@/components/provenance-summary';
 import { ReservesCoverageStrip } from '@/components/reserves-coverage-strip';
+import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
 import { TippingEventTimeline } from '@/components/tipping-event-timeline';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
 
@@ -78,6 +83,112 @@ describe('artifacts do not draw their own card', () => {
   it('TippingPointSimulator renders bare', () => {
     const { container } = render(
       <TippingPointSimulator tippingPoint={null} decision={null} reserveWeeks={3} />
+    );
+
+    expect(rootClassName(container)).not.toMatch(/rounded-2xl/);
+  });
+
+  it('ProvenanceSummary renders bare', () => {
+    const { container } = render(
+      <ProvenanceSummary
+        summary={{
+          liveCount: 3,
+          proxyCount: 1,
+          fallbackCount: 0,
+          degradedCount: 0,
+          averageConfidence: 0.9,
+          freshnessLabel: 'fresh',
+          trustLabel: 'live',
+          degradedReason: 'none'
+        }}
+        completeness={0.9}
+        generatedAt="2026-08-06T06:00:00Z"
+      />
+    );
+
+    expect(rootClassName(container)).not.toMatch(/rounded-2xl|js-panel/);
+  });
+
+  it('SafPathwayComparisonTable renders bare', () => {
+    const { container } = render(
+      <SafPathwayComparisonTable
+        selectedPathwayKey="hefa"
+        pathways={[
+          {
+            pathway_key: 'hefa',
+            display_name: 'HEFA',
+            net_cost_low_usd_per_l: 1.8,
+            net_cost_high_usd_per_l: 2.2,
+            spread_low_pct: 10,
+            spread_high_pct: 20,
+            status: 'inflection'
+          }
+        ]}
+      />
+    );
+
+    expect(rootClassName(container)).not.toMatch(/rounded-2xl/);
+  });
+
+  it('EuEtsPressurePanel renders bare', () => {
+    const { container } = render(
+      <EuEtsPressurePanel
+        model={{
+          generatedAt: '2026-08-06T06:00:00Z',
+          signal: 'moderate',
+          signalLabel: '中等压力',
+          peakPressurePct: 12.5,
+          points: [
+            {
+              eu_ets_eur_per_t: 100,
+              carbon_cost_usd_per_l: 0.08,
+              effective_fossil_jet_usd_per_l: 0.74,
+              pressure_pct: 12.5
+            }
+          ],
+          source: {
+            source_type: 'derived',
+            confidence_score: 0.8,
+            cadence: 'daily',
+            updated_at: '2026-08-06T06:00:00Z',
+            fallback_used: false
+          }
+        }}
+      />
+    );
+
+    expect(rootClassName(container)).not.toMatch(/rounded-2xl/);
+  });
+
+  it('PriceTrendsChart renders bare once it has data', () => {
+    // Deliberately the ready state. The empty and error branches return tinted
+    // blocks on purpose - those containers carry the state and are allowed to.
+    const { container } = render(
+      <PriceTrendsChart
+        metrics={{
+          brent_usd_per_bbl: {
+            metric_key: 'brent_usd_per_bbl',
+            unit: 'USD/bbl',
+            latest_value: 87,
+            latest_as_of: '2026-08-06T06:00:00Z',
+            change_pct_1d: 0.5,
+            change_pct_7d: 1.2,
+            change_pct_30d: -2,
+            points: [
+              { as_of: '2026-08-01T06:00:00Z', value: 85 },
+              { as_of: '2026-08-06T06:00:00Z', value: 87 }
+            ]
+          }
+        }}
+      />
+    );
+
+    expect(rootClassName(container)).not.toMatch(/rounded-2xl/);
+  });
+
+  it('PolicyTimeline renders bare', () => {
+    const { container } = render(
+      <PolicyTimeline currentTimestamp={new Date('2026-08-06T06:00:00Z').getTime()} />
     );
 
     expect(rootClassName(container)).not.toMatch(/rounded-2xl/);

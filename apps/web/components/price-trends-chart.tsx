@@ -406,14 +406,14 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
   };
 
   return (
-    <article className="rounded-2xl border border-accent bg-accent-soft/70 p-6">
+    // Bare artifact: card, title and why-line come from the wrapping Panel.
+    // The current-metric explainer stays: it changes with the selected series,
+    // so it is data, not a heading.
+    <div>
       <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_0.75fr]">
-        <div>
-          <h3 className="text-lg font-medium text-ink">价格趋势</h3>
-          <p className="mt-1 text-sm text-muted">
-            像交易网站一样切换指标和时间窗口。左轴显示当前指标单位，横轴显示本地历史库日期。
-          </p>
-        </div>
+        <p className="text-sm leading-6 text-muted">
+          切换指标和时间窗口：左轴是当前指标的单位，横轴是本地历史库的日期。
+        </p>
         <div className="rounded-xl border border-accent bg-surface p-4 text-sm text-muted">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">当前指标</p>
           <p className="mt-2 font-semibold text-ink">{selectedMeta.label}</p>
@@ -510,6 +510,6 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
           <p className={`mt-2 text-xl font-semibold ${getChangeClass(data.change_pct_30d)}`}>{formatChange(data.change_pct_30d)}</p>
         </div>
       </div>
-    </article>
+    </div>
   );
 }

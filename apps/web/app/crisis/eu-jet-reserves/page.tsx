@@ -1,4 +1,5 @@
 import { InfoCard } from '@/components/cards';
+import { Panel } from '@/components/panel';
 import { Shell } from '@/components/shell';
 import { PriceTrendsChart } from '@/components/price-trends-chart';
 import { getReserveSeverity } from '@/lib/market-signals';
@@ -365,13 +366,16 @@ export default async function EuJetReserveCrisisPage() {
 
       {/* Price trends */}
       <section className="mt-8">
-        <InfoCard title="历史价格趋势" subtitle="1d / 7d / 30d — 与驾驶舱使用同一数据，来自本地 market_snapshots 历史库">
+        <Panel
+          title="历史价格趋势"
+          why="1d / 7d / 30d，与驾驶舱同一份本地 market_snapshots 历史库——储备判断要和价格走势对得上。"
+        >
           <PriceTrendsChart
             metrics={priceChartData.metrics}
             isLoading={false}
             error={priceChartData.error}
           />
-        </InfoCard>
+        </Panel>
       </section>
 
       {/* Action checklist */}

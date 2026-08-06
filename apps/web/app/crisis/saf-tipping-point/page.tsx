@@ -1,4 +1,5 @@
 import { Shell } from '@/components/shell';
+import { Panel } from '@/components/panel';
 import { getDashboardReadModel, toDecisionReadModel, toTippingPointReadModel } from '@/lib/product-read-model';
 import {
   formatSourceCoverageLag,
@@ -194,19 +195,16 @@ export default async function SafTippingPointPage() {
       />
 
       {pathwayComparison ? (
-        <section className="mb-8 rounded-2xl border border-line bg-surface p-6">
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-subtle">路径对比</p>
-              <h2 className="mt-2 text-xl font-bold text-ink">SAF 路径净成本与来源可信度</h2>
-              <p className="mt-2 text-sm leading-6 text-muted">
-                以当前市场输入计算各路径的净成本区间与价差，并标注每条路径的来源类型与置信度。
-              </p>
-            </div>
+        <div className="mb-8">
+        <Panel
+          title="SAF 路径净成本与来源可信度"
+          why="以当前市场输入算出各路径的净成本区间与价差，并标注每条路径的来源类型与置信度——便宜但来源不可信的路径不该赢。"
+          action={
             <span className="rounded-lg border border-line px-3 py-2 text-xs font-semibold text-muted">
               对比信号：{pathwayComparison.signalLabel}
             </span>
-          </div>
+          }
+        >
           <SafPathwayComparisonTable
             selectedPathwayKey="hefa"
             pathways={pathwayComparison.rows.map((row) => ({
@@ -220,12 +218,18 @@ export default async function SafTippingPointPage() {
             }))}
             sources={pathwayComparison.sourceByKey}
           />
-        </section>
+        </Panel>
+        </div>
       ) : null}
 
       {euEtsPressure ? (
         <div className="mb-8">
-          <EuEtsPressurePanel model={euEtsPressure} />
+          <Panel
+            title="碳价对化石航油的成本压力"
+            why="EU ETS 价格是这页所有结论背后的同一个驱动量；这里逐档看它把化石航油推高多少。"
+          >
+            <EuEtsPressurePanel model={euEtsPressure} />
+          </Panel>
         </div>
       ) : null}
 
