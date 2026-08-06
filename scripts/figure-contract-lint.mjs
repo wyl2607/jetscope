@@ -62,9 +62,15 @@ const PROVENANCE_DIRS = [
 const BARE_NUMBER_PROP =
   /(?:^|[{;,(])\s*(?:readonly\s+)?[A-Za-z_$][\w$]*\??\s*:\s*(?:readonly\s+)?number(?:\s*\[\])?(?:\s*\|\s*(?:null|undefined))*\s*(?=[;,})]|$)/g;
 
-/** `generated_at: new Date().toISOString()` and every spelling of it. */
+/**
+ * `generated_at: new Date().toISOString()` and every spelling of it, including
+ * the one that hides at the end of a fallback chain:
+ * `published_at: String(raw.published_at ?? ... ?? new Date().toISOString())`.
+ * Reading a timestamp - `new Date(signal.published_at)` - is not a match: the
+ * clock has to be landing *in* the field, not being fed by it.
+ */
 const SELF_STAMPED =
-  /\b(?:as_?of|asOf|generated_?at|generatedAt|last_?updated|lastUpdated|timestamp)\b\s*[:=]\s*(?:new\s+Date\s*\(|Date\.now\s*\()/i;
+  /\b(?:as_?of|asOf|generated_?at|generatedAt|published_?at|publishedAt|last_?updated|lastUpdated|timestamp)\b\s*[:=][^;\n]*?(?:new\s+Date\s*\(\s*\)|Date\.now\s*\(\s*\))/i;
 
 const IGNORE = /figure-contract-lint-ignore:\s*\S+/;
 
