@@ -17,14 +17,20 @@ const CONVERTED_PAGES = [
   'apps/web/app/en/reports/page.tsx',
   'apps/web/app/crisis/page.tsx',
   'apps/web/app/de/crisis/page.tsx',
-  'apps/web/app/en/crisis/page.tsx'
+  'apps/web/app/en/crisis/page.tsx',
+  'apps/web/app/dashboard/page.tsx',
+  'apps/web/app/de/dashboard/page.tsx',
+  'apps/web/app/en/dashboard/page.tsx'
 ];
 
 /** Pages that render a read model with an isFallback flag. */
 const FALLBACK_AWARE_PAGES = [
   'apps/web/app/reports/page.tsx',
   'apps/web/app/de/reports/page.tsx',
-  'apps/web/app/en/reports/page.tsx'
+  'apps/web/app/en/reports/page.tsx',
+  'apps/web/app/dashboard/page.tsx',
+  'apps/web/app/de/dashboard/page.tsx',
+  'apps/web/app/en/dashboard/page.tsx'
 ];
 
 /**
