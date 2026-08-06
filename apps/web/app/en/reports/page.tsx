@@ -199,8 +199,10 @@ export default async function EnglishReportsPage() {
           },
           {
             id: 'scenario-store',
+            // A scenario is a set of assumptions. That it is saved is observed, but the
+            // numbers inside it are what gets quoted, so the source carries 'assumption'.
             label: `Local scenario store (${readModel.scenarioCount} saved scenarios)`,
-            basis: 'observed'
+            basis: 'assumption'
           },
           {
             id: 'risk-signal',

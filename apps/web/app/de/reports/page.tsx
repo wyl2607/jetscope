@@ -207,8 +207,10 @@ export default async function GermanReportsPage() {
           },
           {
             id: 'scenario-store',
+            // Ein Szenario ist eine Annahme. Dass es gespeichert ist, ist gemessen -
+            // aber gelesen werden die Zahlen darin, also traegt die Quelle 'assumption'.
             label: `Lokaler Szenariospeicher (${readModel.scenarioCount} gespeicherte Szenarien)`,
-            basis: 'observed'
+            basis: 'assumption'
           },
           {
             id: 'risk-signal',

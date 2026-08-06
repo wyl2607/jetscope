@@ -171,8 +171,10 @@ export default async function ReportsPage() {
           },
           {
             id: 'scenario-store',
+            // 情景本身就是一组假设。库里"有几个"是实测，但读者会拿情景里的数字去引用，
+            // 标 observed 等于邀请他们把假设当测量值。两个页面必须给同一个来源同一个标签。
             label: `本地情景库（当前 ${readModel.scenarioCount} 个已保存情景）`,
-            basis: 'observed'
+            basis: 'assumption'
           },
           {
             id: 'risk-signal',
