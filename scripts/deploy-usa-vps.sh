@@ -14,7 +14,7 @@ REMOTE_DIR="${JETSCOPE_REMOTE_DIR:-/opt/jetscope}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REBUILD=0
 
-if ! DEPLOY_COMMIT="$(git -C "$ROOT" rev-parse --verify HEAD^{commit}")"; then
+if ! DEPLOY_COMMIT="$(git -C "$ROOT" rev-parse --verify "HEAD^{commit}")"; then
   echo "ERROR: deploy source is not a Git checkout" >&2
   exit 1
 fi
@@ -74,32 +74,40 @@ chmod 0644 "$REMOTE_DIR/.deploy-commit"
 REMOTE
 
 if [[ "$REBUILD" -eq 1 ]]; then
-  echo "==> Rebuild + restart API container on $HOST"
+  echo "==> Rebuild + restart api / web / nginx containers on $HOST"
   ssh "$HOST" bash -s <<REMOTE
 set -euo pipefail
 cd "$REMOTE_DIR"
 test -f docker-compose.prod.yml
 test -f .env || { echo "ERROR: missing $REMOTE_DIR/.env"; exit 1; }
+test -f infra/nginx.prod.conf || { echo "ERROR: missing $REMOTE_DIR/infra/nginx.prod.conf"; exit 1; }
+# The nginx service bind-mounts this directory read-only. Docker would create it
+# root-owned if absent, which works but leaves a directory nobody put there.
+mkdir -p infra/tls
 if command -v docker >/dev/null 2>&1; then
   if docker compose version >/dev/null 2>&1; then
-    docker compose -f docker-compose.prod.yml up -d --build api
+    docker compose -f docker-compose.prod.yml up -d --build api web nginx
   else
     docker-compose -f docker-compose.prod.yml down || true
-    while IFS= read -r container_id; do
-      [ -n "$container_id" ] || continue
-      docker rm -f "$container_id" || true
-    done < <(docker ps -aq --filter label=com.docker.compose.service=api)
-    docker rm -f jetscope-api || true
-    docker-compose -f docker-compose.prod.yml up -d --build api
+    for svc in api web nginx; do
+      while IFS= read -r container_id; do
+        [ -n "\$container_id" ] || continue
+        docker rm -f "\$container_id" || true
+      done < <(docker ps -aq --filter label=com.docker.compose.service=\$svc)
+    done
+    # A stale container that outlives its service label still holds the name and
+    # keeps serving the previous build.
+    docker rm -f jetscope-api jetscope-web jetscope-nginx || true
+    docker-compose -f docker-compose.prod.yml up -d --build api web nginx
   fi
-  docker ps --filter name=jetscope-api --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+  docker ps --filter name=jetscope- --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 else
   echo "ERROR: docker not installed on remote"
   exit 1
 fi
 REMOTE
 else
-  echo "==> Skip container rebuild (pass --rebuild to rebuild jetscope-api)"
+  echo "==> Skip container rebuild (pass --rebuild to rebuild api/web/nginx)"
 fi
 
 echo "==> Remote smoke"
@@ -120,6 +128,49 @@ if curl -fsS --max-time 8 http://127.0.0.1:8000/v1/health >/dev/null 2>&1; then
   echo
 else
   echo "API not healthy on :8000 — start/rebuild with: bash scripts/deploy-usa-vps.sh --rebuild"
+  exit 1
+fi
+
+# --- Web -------------------------------------------------------------------
+# A status code proves nothing here. Every page is force-dynamic and fetches on
+# the server; if the web container starts without JETSCOPE_API_BASE_URL, every
+# server-side fetch fails, every read model returns its fallback, and the site
+# serves a cheerful 200 full of invented constants.
+#
+# /sources renders \`asOf={readModel.isFallback ? null : readModel.generatedAt}\`,
+# and PageHeader emits data-testid="page-as-of" only when that is non-null. So
+# the presence of that stamp is proof the server-side fetch reached the API.
+# This is the check that actually matters.
+if curl -fsS --max-time 20 http://127.0.0.1:3000/ >/dev/null 2>&1; then
+  echo "WEB responding on :3000"
+else
+  echo "WEB not responding on :3000 — check: docker logs jetscope-web"
+  exit 1
+fi
+
+for probe in "http://127.0.0.1:3000/sources|direct" "http://127.0.0.1/sources|via nginx"; do
+  url="\${probe%%|*}"
+  label="\${probe##*|}"
+  body="\$(curl -fsS --max-time 25 "\$url" 2>/dev/null || true)"
+  if [ -z "\$body" ]; then
+    echo "FAIL /sources \$label — no response"
+    exit 1
+  fi
+  if printf '%s' "\$body" | grep -q 'data-testid="page-as-of"'; then
+    echo "OK /sources \$label — renders a real as-of stamp, server-side API reachable"
+  else
+    echo "FAIL /sources \$label — served HTML but no as-of stamp."
+    echo "     The page is on its fallback: the web container reached no API."
+    echo "     Check JETSCOPE_API_BASE_URL in docker-compose.prod.yml (must be http://api:8000)."
+    exit 1
+  fi
+done
+
+# nginx must not let the catch-all swallow the API prefix.
+if curl -fsS --max-time 10 http://127.0.0.1/v1/health >/dev/null 2>&1; then
+  echo "OK /v1/health via nginx"
+else
+  echo "FAIL /v1/health via nginx — check the location order in infra/nginx.prod.conf"
   exit 1
 fi
 REMOTE

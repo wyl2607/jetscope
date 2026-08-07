@@ -1,0 +1,41 @@
+# The web image builds from the repository root, because npm workspaces put the
+# lockfile and the hoisted node_modules there. Without this file the build
+# context is the entire working tree - node_modules, the SQLite database, the
+# Python virtualenv - and the upload alone takes longer than the build.
+
+.git
+.github
+
+node_modules
+**/node_modules
+
+# Build output. The image builds its own; copying a host build in would ship
+# whatever was last compiled on someone's laptop.
+.next
+**/.next
+apps/web/dist
+**/*.tsbuildinfo
+
+# Python side. The API image builds from apps/api with its own context.
+apps/api/.venv
+**/__pycache__
+**/*.pyc
+
+# Runtime state. `data/` is a host volume mount in docker-compose.prod.yml; it
+# must never be baked into an image.
+data
+*.db
+*.sqlite
+*.sqlite3
+
+# Local secrets and operator state, in case one is sitting in the tree.
+.env
+.env.*
+!.env.example
+.deploy-commit
+
+# Editor and OS noise
+.DS_Store
+._*
+.vscode
+.idea

@@ -35,14 +35,38 @@ code.
 
 ## What is missing
 
-| Item | Current state |
+Everything in this table has landed. The sections below are kept as the
+reference for why each piece is shaped the way it is.
+
+| Item | State |
 | --- | --- |
-| `apps/web/Dockerfile` | does not exist |
-| `output: 'standalone'` in `apps/web/next.config.mjs` | not set |
-| `web` service in `docker-compose.prod.yml` | not present, only `api` |
-| `nginx` service in `docker-compose.prod.yml` | not present |
-| production nginx config | `infra/nginx.conf` and `infra/app.conf` target the dev compose |
-| `scripts/deploy-usa-vps.sh` | hardcodes `up -d --build api` in both the compose v2 and legacy branches |
+| `apps/web/Dockerfile` | landed — three stages, build context is the repo root |
+| `output: 'standalone'` in `apps/web/next.config.mjs` | set |
+| `.dockerignore` | landed at the repo root |
+| `web` service in `docker-compose.prod.yml` | landed, with `JETSCOPE_API_BASE_URL=http://api:8000` |
+| `nginx` service in `docker-compose.prod.yml` | landed |
+| production nginx config | `infra/nginx.prod.conf`, TLS blocks left to the operator in `infra/tls/` |
+| `scripts/deploy-usa-vps.sh` | brings up `api web nginx`, and verifies the rendered page |
+
+**The one thing left is running it against the host**, from an environment that
+has `rsync`:
+
+```bash
+bash scripts/deploy-usa-vps.sh --rebuild
+```
+
+Two defects were found in the existing deploy script while wiring this up, both
+of which would have shown up at the worst moment:
+
+- The script could not parse at all. `rev-parse --verify HEAD^{commit}"` had a
+  quote on the wrong side of the revision, which opens a string that swallows
+  the rest of the `if`. `bash -n scripts/deploy-usa-vps.sh` rejected the whole
+  file. `test/shell-script-syntax.test.mjs` now parses every tracked `*.sh` so
+  this class cannot come back.
+- In the legacy `docker-compose` branch, the stale-container cleanup loop read
+  `"$container_id"` inside an **unquoted** heredoc, so the variable expanded on
+  the deploying machine to an empty string before the script ever reached the
+  host. The loop had never removed a container. The references are escaped now.
 
 ## 1. Next config
 

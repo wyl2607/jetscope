@@ -29,7 +29,7 @@ and P3 at the number level.
 | **P1.5** | page template on every page | **done — 42 of 42** |
 | **P2** | collapse `/`, `/de`, `/en` into `/[locale]` | about 10 percent, only `navigation.ts` |
 | **P3** | `Figure` contract through the read models | contract and gate landed; 104 violations across 31 files to clear |
-| **P4** | web container and nginx on the VPS | not started — see `docs/DEPLOY_WEB_VPS.md` |
+| **P4** | web container and nginx on the VPS | built, not yet deployed — see below |
 
 Both ratchets only turn one way and both run in `npm run web:gate`:
 
@@ -42,8 +42,26 @@ is locked in.
 
 ## What to do next, in order
 
-1. **P4, the deployment.** `docs/DEPLOY_WEB_VPS.md` has the whole plan. This is
-   the difference between a repository and a product: the contract's own
+1. **P4, the deployment.** Everything the repository can contribute is now in:
+   `apps/web/Dockerfile`, `output: 'standalone'`, `web` and `nginx` services in
+   `docker-compose.prod.yml`, `infra/nginx.prod.conf`, and a deploy script that
+   brings up all three. `docs/DEPLOY_WEB_VPS.md` remains the reference.
+
+   **What is left is one command, and it has to run from an environment with
+   `rsync` — WSL, not Git Bash:**
+
+   ```bash
+   bash scripts/deploy-usa-vps.sh --rebuild
+   ```
+
+   The post-deploy check asserts on rendered content rather than on a status
+   code, because this deployment's characteristic failure is a site that serves
+   200 on every route with every read model on its fallback. `/sources` renders
+   `data-testid="page-as-of"` only when the server-side fetch actually reached
+   the API, so that stamp is the proof. It is checked directly on :3000 and
+   again through nginx.
+
+   Until that command has run against the host, P4 is not done: the contract's
    definition of shipped is a frontend reachable on the public internet.
 2. **P3 cleanup, 104 violations.** Mechanical and delegable. It converts read
    models and display components to carry `Figure` instead of bare `number`,
