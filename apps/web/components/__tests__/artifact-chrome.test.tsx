@@ -3,6 +3,8 @@ import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { FuelVsSafPriceChart } from '@/components/fuel-vs-saf-price-chart';
 import { HeatSensitivityMatrix } from '@/components/heat-sensitivity-matrix';
+import { GridParityWorkbench } from '@/components/grid-parity-workbench';
+import { LcoeSensitivityMatrix } from '@/components/lcoe-sensitivity-matrix';
 import { EuEtsPressurePanel } from '@/components/eu-ets-pressure-panel';
 import { PolicyTimeline } from '@/components/policy-timeline';
 import { PriceTrendsChart } from '@/components/price-trends-chart';
@@ -12,6 +14,7 @@ import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-t
 import { SourceCoveragePanel } from '@/components/source-coverage-panel';
 import { TippingEventTimeline } from '@/components/tipping-event-timeline';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
+import { TippingPointWorkbench } from '@/components/tipping-point-workbench';
 import { ScenarioRegistry } from '@/components/scenario-registry';
 import { TransitionReadinessDashboard } from '@/components/transition-readiness-dashboard';
 import { AdminDataOps } from '@/components/admin-data-ops';
@@ -38,6 +41,91 @@ function rootClassName(container: HTMLElement): string {
 }
 
 describe('artifacts do not draw their own card', () => {
+  it('GridParityWorkbench renders bare with data', () => {
+    const { container } = render(
+      <GridParityWorkbench
+        initial={{
+          generated_at: '2026-08-06T06:00:00Z',
+          inputs: {
+            carbon_price_eur_per_t: 80,
+            gas_fuel_eur_per_mwh_th: 30,
+            coal_fuel_eur_per_mwh_th: 12,
+            fossil_reference_key: 'gas_ccgt'
+          },
+          fossil_reference: {
+            plant_key: 'gas_ccgt',
+            name: 'Gas CCGT',
+            efficiency: 0.55,
+            fuel_cost_eur_per_mwh_th: 30,
+            var_o_m_eur_per_mwh: 4,
+            emission_intensity_t_per_mwh: 0.35,
+            marginal_cost_eur_per_mwh: 86
+          },
+          rows: [{
+            tech_key: 'solar_pv',
+            name: 'Solar PV',
+            lcoe_mid_eur_per_mwh: 55,
+            maturity_level: 'commercial',
+            gap_vs_fossil_eur_per_mwh: -31,
+            spread_pct: -36,
+            status: 'dominant'
+          }],
+          carbon_sweep: [],
+          signal: 'clear_leader'
+        }}
+      />
+    );
+
+    expect(rootClassName(container)).not.toMatch(/rounded-2xl/);
+    expect(container.querySelector('h3')).toBeNull();
+  });
+
+  it('LcoeSensitivityMatrix renders bare with data', () => {
+    const { container } = render(
+      <LcoeSensitivityMatrix
+        initial={{
+          generated_at: '2026-08-06T06:00:00Z',
+          tech_key: 'solar_pv',
+          tech_name: 'Solar PV',
+          fossil_reference_key: 'gas_ccgt',
+          discount_rates: [0.05],
+          full_load_hours: [1000],
+          cells: [{
+            discount_rate: 0.05,
+            full_load_hours: 1000,
+            lcoe_eur_per_mwh: 58,
+            breakeven_carbon_price_eur_per_t: 72
+          }],
+          disclaimer: 'Illustrative.'
+        }}
+      />
+    );
+
+    expect(rootClassName(container)).not.toMatch(/rounded-2xl/);
+    expect(container.querySelector('h3')).toBeNull();
+  });
+
+  it('TippingPointWorkbench renders its populated workspace without top-level card chrome', () => {
+    const { container } = render(
+      <TippingPointWorkbench
+        initialTippingPoint={null}
+        initialDecision={null}
+        initialReserveWeeks={3}
+        liveDefaults={{
+          fossilJetUsdPerL: 1.2,
+          carbonPriceEurPerT: 80,
+          subsidyUsdPerL: 0.2,
+          blendRatePct: 2,
+          reserveWeeks: 3,
+          pathwayKey: 'hefa'
+        }}
+      />
+    );
+
+    expect(rootClassName(container)).not.toMatch(/rounded-2xl|js-panel/);
+    expect(container.querySelector('h2')).toBeNull();
+  });
+
   it('ReservesCoverageStrip renders bare', () => {
     const { container } = render(
       <ReservesCoverageStrip

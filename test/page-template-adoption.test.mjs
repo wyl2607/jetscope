@@ -42,9 +42,24 @@ const CONVERTED_PAGES = [
   'apps/web/app/page.tsx',
   'apps/web/app/de/page.tsx',
   'apps/web/app/en/page.tsx',
+  'apps/web/app/crisis/eu-jet-reserves/page.tsx',
+  'apps/web/app/crisis/saf-tipping-point/page.tsx',
+  'apps/web/app/grid/page.tsx',
+  'apps/web/app/analysis/page.tsx',
   'apps/web/app/reports/tipping-point-analysis/page.tsx',
   'apps/web/app/de/reports/tipping-point-analysis/page.tsx',
-  'apps/web/app/en/reports/tipping-point-analysis/page.tsx'
+  'apps/web/app/en/reports/tipping-point-analysis/page.tsx',
+  'apps/web/app/analysis/lufthansa-flight-cuts-2026-04/page.tsx',
+  'apps/web/app/analysis/lufthansa-2026-de/page.tsx',
+  'apps/web/app/de/lufthansa-saf-2026/page.tsx',
+  'apps/web/app/en/lufthansa-saf-2026/page.tsx'
+];
+
+const STATIC_LUFTHANSA_ANALYSIS_PAGES = [
+  'apps/web/app/analysis/lufthansa-flight-cuts-2026-04/page.tsx',
+  'apps/web/app/analysis/lufthansa-2026-de/page.tsx',
+  'apps/web/app/de/lufthansa-saf-2026/page.tsx',
+  'apps/web/app/en/lufthansa-saf-2026/page.tsx'
 ];
 
 /** Pages that render a read model with an isFallback flag. */
@@ -128,6 +143,58 @@ test('static FAQ pages never invent a data timestamp', async () => {
     const source = await read(path);
     assert.match(source, /asOf=\{null\}/, `${path} must explicitly state that it has no data timestamp`);
     assert.doesNotMatch(source, /new Date\(/, `${path} must not turn render or build time into an as-of stamp`);
+  }
+});
+
+test('static Lufthansa analysis pages never invent a data timestamp', async () => {
+  for (const path of STATIC_LUFTHANSA_ANALYSIS_PAGES) {
+    const source = await read(path);
+    assert.match(source, /asOf=\{null\}/, `${path} must explicitly state that it has no page-level data timestamp`);
+    assert.doesNotMatch(source, /new Date\(/, `${path} must not turn publication or render time into an as-of stamp`);
+  }
+});
+
+test('the static analysis index never invents a data timestamp', async () => {
+  const path = 'apps/web/app/analysis/page.tsx';
+  const source = await read(path);
+  assert.match(source, /asOf=\{null\}/, `${path} must explicitly state that it has no data timestamp`);
+  assert.doesNotMatch(source, /new Date\(/, `${path} must not turn render or build time into an as-of stamp`);
+});
+
+function assertCrisisFallbackBasis(source, path) {
+  const expected = path.includes('eu-jet-reserves')
+    ? [
+        /basis: reserveIsAssumed \? 'assumption'/,
+        /basis: readModel\.isFallback \|\| brentIsAssumed \? 'assumption'/,
+        /basis: readModel\.isFallback \|\| jetEuIsAssumed \? 'assumption'/,
+        /basis: readModel\.isFallback \|\| carbonIsAssumed \? 'assumption'/
+      ]
+    : [
+        /basis: readModel\.isFallback \|\| fuelSource === 'assumed' \? 'assumption'/,
+        /basis: readModel\.isFallback \|\| carbonIsAssumed \? 'assumption'/,
+        /basis: reserveIsAssumed \? 'assumption'/
+      ];
+
+  for (const pattern of expected) {
+    assert.match(source, pattern, `${path} must label every built-in crisis input as an assumption`);
+  }
+}
+
+test('crisis subpages never label built-in numeric fallbacks as observed', async () => {
+  for (const path of [
+    'apps/web/app/crisis/eu-jet-reserves/page.tsx',
+    'apps/web/app/crisis/saf-tipping-point/page.tsx'
+  ]) {
+    const source = await read(path);
+    assertCrisisFallbackBasis(source, path);
+
+    // Mutation check: prove the guard catches the historical failure mode in
+    // which an inline fallback keeps its value but is relabelled as observed.
+    const regressed = source.replace(/\? 'assumption'/g, "? 'observed'");
+    assert.throws(
+      () => assertCrisisFallbackBasis(regressed, `${path} (mutated)`),
+      /must label every built-in crisis input as an assumption/
+    );
   }
 });
 

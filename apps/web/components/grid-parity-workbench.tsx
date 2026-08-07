@@ -52,16 +52,10 @@ export function GridParityWorkbench({ initial }: Props) {
   const fossil = data.fossil_reference;
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white/90 p-6">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h3 className="text-lg font-medium text-slate-950">电网平价模拟器</h3>
-          <p className="mt-1 text-sm text-slate-600">
-            拖动碳价，实时观察可再生电力相对化石发电（含 EU ETS 碳成本）的成本交叉点。
-          </p>
-        </div>
+    <div className="tabular-nums">
+      <div className="mb-6 flex justify-end">
         <div
-          className={`rounded-full border px-3 py-1 text-sm font-semibold ${gridStatusTone(
+          className={`rounded-xl border px-3 py-1 text-sm font-semibold ${gridStatusTone(
             data.rows[0]?.status ?? 'inflection'
           )}`}
         >
@@ -70,12 +64,12 @@ export function GridParityWorkbench({ initial }: Props) {
       </div>
 
       <div className="mb-6">
-        <div className="flex items-center justify-between text-sm text-slate-700">
+        <div className="flex items-center justify-between text-sm text-muted">
           <label htmlFor="carbon-price" className="font-medium uppercase tracking-wider">
             EU ETS 碳价
           </label>
-          <span className="font-mono text-base font-semibold text-slate-950">
-            €{carbonPrice}/t {pending && <span className="text-xs text-slate-400">…</span>}
+          <span className="text-base font-semibold text-ink">
+            €{carbonPrice}/t {pending && <span className="text-xs text-subtle">…</span>}
           </span>
         </div>
         <input
@@ -86,31 +80,31 @@ export function GridParityWorkbench({ initial }: Props) {
           step={1}
           value={carbonPrice}
           onChange={(event) => setCarbonPrice(Number(event.target.value))}
-          className="mt-2 w-full accent-emerald-600"
+          className="mt-2 w-full accent-accent"
         />
-        <div className="mt-1 flex justify-between text-xs text-slate-400">
+        <div className="mt-1 flex justify-between text-xs text-subtle">
           <span>€0</span>
           <span>€150/t</span>
         </div>
       </div>
 
-      <div className="mb-4 rounded-lg border border-slate-300 bg-slate-50 p-3 text-sm text-slate-700">
+      <div className="mb-4 rounded-xl border border-line-strong bg-surface-muted p-3 text-sm text-muted">
         化石参照（{fossil.name}）边际成本：
-        <span className="ml-1 font-mono font-semibold text-slate-950">
+        <span className="ml-1 font-semibold text-ink">
           €{fossil.marginal_cost_eur_per_mwh.toFixed(1)}/MWh
         </span>
-        <span className="ml-1 text-xs text-slate-500">
+        <span className="ml-1 text-xs text-muted">
           （燃料 €{fossil.fuel_cost_eur_per_mwh_th.toFixed(0)}/MWhₜₕ ÷ 效率 {fossil.efficiency} + 碳 €
           {(carbonPrice * fossil.emission_intensity_t_per_mwh).toFixed(1)}/MWh）
         </span>
       </div>
 
-      {error && <p className="mb-3 text-xs text-amber-700">{error}</p>}
+      {error && <p className="mb-3 rounded-xl border border-warning bg-warning-soft p-3 text-xs text-warning">{error}</p>}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm text-slate-700">
+        <table className="w-full text-sm text-muted">
           <thead>
-            <tr className="border-b border-slate-300 text-left">
+            <tr className="border-b border-line-strong text-left">
               <th className="py-2 pr-4">可再生技术</th>
               <th className="py-2 pr-4 text-right">LCOE</th>
               <th className="py-2 pr-4 text-right">vs 化石</th>
@@ -120,19 +114,19 @@ export function GridParityWorkbench({ initial }: Props) {
           </thead>
           <tbody>
             {data.rows.map((row) => (
-              <tr key={row.tech_key} className="border-b border-slate-200">
+              <tr key={row.tech_key} className="border-b border-line">
                 <td className="py-2 pr-4">{row.name}</td>
-                <td className="py-2 pr-4 text-right font-mono">
+                <td className="py-2 pr-4 text-right">
                   €{row.lcoe_mid_eur_per_mwh.toFixed(0)}
                 </td>
-                <td className="py-2 pr-4 text-right font-mono">
+                <td className="py-2 pr-4 text-right">
                   {row.gap_vs_fossil_eur_per_mwh >= 0 ? '+' : ''}
                   €{row.gap_vs_fossil_eur_per_mwh.toFixed(1)}
                 </td>
-                <td className="py-2 pr-4 text-right font-mono">{row.spread_pct.toFixed(1)}%</td>
+                <td className="py-2 pr-4 text-right">{row.spread_pct.toFixed(1)}%</td>
                 <td className="py-2 pr-4">
                   <span
-                    className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${gridStatusTone(
+                    className={`inline-block rounded-xl border px-2 py-0.5 text-xs font-medium ${gridStatusTone(
                       row.status
                     )}`}
                   >
@@ -144,6 +138,6 @@ export function GridParityWorkbench({ initial }: Props) {
           </tbody>
         </table>
       </div>
-    </article>
+    </div>
   );
 }

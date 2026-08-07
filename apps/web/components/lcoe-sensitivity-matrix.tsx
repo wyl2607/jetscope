@@ -92,18 +92,15 @@ export function LcoeSensitivityMatrix({ initial }: Props) {
   }, [data.cells]);
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white/90 p-6" aria-busy={pending}>
+    <div className="tabular-nums" aria-busy={pending}>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h3 className="text-lg font-medium text-slate-950">LCOE 敏感性</h3>
-          <p className="mt-1 text-sm text-slate-600">
-            交叉点碳价 = {data.tech_name} 击败燃气发电所需的最低 EU ETS 碳价。
-          </p>
-        </div>
-        <label className="min-w-48 text-xs uppercase tracking-[0.14em] text-slate-600">
+        <p className="max-w-2xl text-sm leading-6 text-muted">
+          交叉点碳价 = {data.tech_name} 击败燃气发电所需的最低 EU ETS 碳价。
+        </p>
+        <label className="min-w-48 text-xs uppercase tracking-[0.18em] text-muted">
           发电技术
           <select
-            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950"
+            className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink transition hover:border-line-strong hover:bg-surface-muted"
             value={techKey}
             onChange={(event) => setTechKey(event.target.value as TechnologyKey)}
           >
@@ -116,13 +113,13 @@ export function LcoeSensitivityMatrix({ initial }: Props) {
         </label>
       </div>
 
-      {pending && <p className="mb-3 text-xs text-emerald-700">正在更新敏感性矩阵...</p>}
-      {error && <p className="mb-3 text-xs text-amber-700">{error}</p>}
+      {pending && <p className="mb-3 text-xs text-accent">正在更新敏感性矩阵...</p>}
+      {error && <p className="mb-3 rounded-xl border border-warning bg-warning-soft p-3 text-xs text-warning">{error}</p>}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm text-slate-700">
+        <table className="w-full text-sm text-muted">
           <thead>
-            <tr className="border-b border-slate-300 text-left">
+            <tr className="border-b border-line-strong text-left">
               <th className="py-2 pr-4">满负荷小时</th>
               {data.discount_rates.map((rate) => (
                 <th key={rate} className="py-2 pr-4 text-right">
@@ -133,13 +130,13 @@ export function LcoeSensitivityMatrix({ initial }: Props) {
           </thead>
           <tbody>
             {data.full_load_hours.map((hours) => (
-              <tr key={hours} className="border-b border-slate-200">
-                <td className="py-2 pr-4 font-mono">{hours.toLocaleString('zh-CN')}</td>
+              <tr key={hours} className="border-b border-line">
+                <td className="py-2 pr-4">{hours.toLocaleString('zh-CN')}</td>
                 {data.discount_rates.map((rate) => {
                   const cell = cellByKey.get(`${hours}:${rate}`);
                   if (!cell) {
                     return (
-                      <td key={`${hours}:${rate}`} className="px-1 py-1 text-right font-mono text-slate-400">
+                      <td key={`${hours}:${rate}`} className="px-1 py-1 text-right text-subtle">
                         —
                       </td>
                     );
@@ -150,7 +147,7 @@ export function LcoeSensitivityMatrix({ initial }: Props) {
                   return (
                     <td key={`${hours}:${rate}`} className="px-1 py-1">
                       <div
-                        className="rounded-md px-2 py-1.5 text-right font-mono text-slate-900"
+                        className="rounded-xl px-2 py-1.5 text-right text-ink"
                         style={{ backgroundColor: heatColor(t) }}
                         title={label}
                         aria-label={label}
@@ -165,7 +162,7 @@ export function LcoeSensitivityMatrix({ initial }: Props) {
           </tbody>
         </table>
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted">
         <span>交叉点碳价</span>
         <span>低（清洁更早胜）</span>
         <span
@@ -178,10 +175,10 @@ export function LcoeSensitivityMatrix({ initial }: Props) {
         />
         <span>高</span>
       </div>
-      <p className="mt-2 text-xs text-slate-500">
+      <p className="mt-2 text-xs text-muted">
         当前技术：{data.tech_name}；格内数值为交叉点碳价（€/t）。
       </p>
-      <p className="mt-2 text-xs text-slate-400">{data.disclaimer}</p>
-    </article>
+      <p className="mt-2 text-xs text-subtle">{data.disclaimer}</p>
+    </div>
   );
 }
