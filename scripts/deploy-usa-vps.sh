@@ -138,14 +138,34 @@ systemctl list-unit-files jetscope-web.service >/dev/null 2>&1 || {
   exit 1
 }
 
+# NOT --omit=dev. tailwindcss, @tailwindcss/postcss, postcss and typescript are
+# all devDependencies and \`next build\` needs every one of them. --omit=dev
+# installs cleanly and exits 0, so a \`|| npm ci\` fallback never fires and the
+# failure lands on the build instead, where it reads like a source problem.
+#
 # npm ci, not npm install: the lockfile is the deployed contract, and a host
 # that silently resolves a different tree is a host serving something nobody
 # reviewed.
-npm ci --omit=dev --ignore-scripts=false || npm ci
+#
+# But npm ci removes node_modules before reinstalling, and the LIVE server needs
+# it - \`next start\` loads route chunks on demand. So it runs only when the
+# lockfile actually changed since the last deploy, which keeps the usual
+# source-only deploy from taking the site down for the length of an install.
+LOCK_HASH="\$(sha256sum package-lock.json | cut -d' ' -f1)"
+PREV_LOCK_HASH="\$(cat .deploy-lock-hash 2>/dev/null || echo none)"
+if [ ! -d node_modules ] || [ "\$LOCK_HASH" != "\$PREV_LOCK_HASH" ]; then
+  echo "--> dependencies changed (or absent); running npm ci"
+  echo "    the site is degraded until the rebuild finishes"
+  npm ci
+  printf '%s\n' "\$LOCK_HASH" > .deploy-lock-hash
+else
+  echo "--> lockfile unchanged since last deploy; skipping npm ci"
+fi
 
-# The build is the memory-hungry step on a small VPS. Cap it the same way the
-# unit caps the server, so an OOM kills the build with a clear error instead of
-# taking the running site down with it.
+# The build is the memory-hungry step on a 1.9 GiB host. Cap it the same way the
+# unit caps the server, so an OOM kills the build with a clear error. Note the
+# ordering: the restart below only happens if this succeeds, so a failed build
+# leaves the previous version running.
 NODE_OPTIONS=--max-old-space-size=768 npm run web:build
 
 systemctl restart jetscope-web.service
