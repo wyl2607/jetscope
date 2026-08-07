@@ -22,7 +22,7 @@ type TippingPointPathway = {
 };
 
 type TippingPointResponse = {
-  generated_at: string;
+  generated_at: string | null;
   inputs: {
     fossil_jet_usd_per_l: number;
     carbon_price_eur_per_t: number;
@@ -131,7 +131,16 @@ const FRESHNESS_THRESHOLDS = (() => {
   return { freshMaxMinutes, staleMaxMinutes };
 })();
 
-function computeFreshnessSignal(generatedAt: string): DashboardReadModel['freshnessSignal'] {
+function computeFreshnessSignal(generatedAt: string | null): DashboardReadModel['freshnessSignal'] {
+  if (generatedAt == null) {
+    return {
+      minutes: FRESHNESS_THRESHOLDS.staleMaxMinutes + 1,
+      level: 'critical',
+      freshMaxMinutes: FRESHNESS_THRESHOLDS.freshMaxMinutes,
+      staleMaxMinutes: FRESHNESS_THRESHOLDS.staleMaxMinutes
+    };
+  }
+
   const generatedAtMs = new Date(generatedAt).getTime();
   if (Number.isNaN(generatedAtMs)) {
     return {
@@ -160,7 +169,7 @@ function computeFreshnessSignal(generatedAt: string): DashboardReadModel['freshn
 function fallbackReadModel(error: unknown): DashboardReadModel {
   return {
     market: {
-      generated_at: new Date().toISOString(),
+      generated_at: null,
       source_status: { overall: 'degraded', confidence: 0, freshness_minutes: null, fallback_rate: 100, is_fallback: true },
       values: { ...FALLBACK_VALUES }
     },

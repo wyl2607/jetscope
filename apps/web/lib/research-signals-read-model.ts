@@ -10,7 +10,7 @@ export type ResearchSignal = {
   confidence: number;
   summary_cn: string;
   summary_en: string;
-  published_at: string;
+  published_at: string | null;
 };
 
 export type ResearchSignalsResult =
@@ -73,6 +73,12 @@ function clampConfidence(value: unknown): number {
   return Math.max(0, Math.min(1, numeric));
 }
 
+function publishedAtTime(value: string | null): number {
+  if (value == null) return Number.NEGATIVE_INFINITY;
+  const timestamp = Date.parse(value);
+  return Number.isNaN(timestamp) ? Number.NEGATIVE_INFINITY : timestamp;
+}
+
 function normalizeSignal(raw: Record<string, unknown>, index: number): ResearchSignal {
   const signalType = String(raw.signal_type ?? raw.type ?? 'uncategorized');
   const title = String(raw.title ?? raw.raw_title ?? raw.headline ?? `${signalType} 信号 ${index + 1}`);
@@ -85,7 +91,9 @@ function normalizeSignal(raw: Record<string, unknown>, index: number): ResearchS
     confidence: clampConfidence(raw.confidence ?? raw.confidence_score),
     summary_cn: String(raw.summary_cn ?? raw.summary_zh ?? raw.summary ?? '暂无中文摘要。'),
     summary_en: String(raw.summary_en ?? raw.summary ?? '暂无英文摘要。'),
-    published_at: String(raw.published_at ?? raw.created_at ?? raw.generated_at ?? new Date().toISOString())
+    published_at: raw.published_at ?? raw.created_at ?? raw.generated_at
+      ? String(raw.published_at ?? raw.created_at ?? raw.generated_at)
+      : null
   };
 }
 
@@ -219,7 +227,7 @@ export function buildResearchDecisionBrief(result: ResearchSignalsResult): Resea
   }
 
   const topSignals = [...result.signals]
-    .sort((left, right) => right.confidence - left.confidence || Date.parse(right.published_at) - Date.parse(left.published_at))
+    .sort((left, right) => right.confidence - left.confidence || publishedAtTime(right.published_at) - publishedAtTime(left.published_at))
     .slice(0, 3);
   const positiveCount = result.signals.filter((signal) => signal.impact_direction === 'positive').length;
   const negativeCount = result.signals.filter((signal) => signal.impact_direction === 'negative').length;

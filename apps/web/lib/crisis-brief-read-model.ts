@@ -56,8 +56,8 @@ export type CrisisBriefResponse = {
 };
 
 export type CrisisBriefReadModel = {
-  generatedAt: string;
-  marketGeneratedAt: string;
+  generatedAt: string | null;
+  marketGeneratedAt: string | null;
   fossilJetUsdPerL: number;
   sourceStatus: CrisisBriefResponse['source_status'];
   reserve: CrisisBriefReserve | null;
@@ -93,8 +93,8 @@ function localizeHref(href: string, locale: CrisisBriefLocale): string {
 
 function fallbackReadModel(error: unknown): CrisisBriefReadModel {
   return {
-    generatedAt: new Date().toISOString(),
-    marketGeneratedAt: new Date().toISOString(),
+    generatedAt: null,
+    marketGeneratedAt: null,
     fossilJetUsdPerL: 0.657,
     sourceStatus: {
       overall: 'degraded',

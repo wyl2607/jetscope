@@ -1,5 +1,5 @@
 import { MetricCard } from '@/components/cards';
-import { PageTemplate, SignalRow } from '@/components/page-template';
+import { localeCopy, PageTemplate, SignalRow } from '@/components/page-template';
 import { Panel } from '@/components/panel';
 import { SourceFooter } from '@/components/source-footer';
 import { AI_RESEARCH_ENABLED, getResearchSignals, type ResearchSignal } from '@/lib/research-signals-read-model';
@@ -99,7 +99,8 @@ function impactLabel(impact: ResearchSignal['impact_direction']): string {
   return 'Unknown';
 }
 
-function formatTime(value: string): string {
+function formatTime(value: string | null): string {
+  if (value == null) return localeCopy('en').noData;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString('en-US', {
@@ -128,7 +129,9 @@ export default async function EnglishResearchPage() {
   const result = await getResearchSignals();
   const latestSignal = result.signals.reduce<typeof result.signals[number] | null>((latest, signal) => {
     if (!latest) return signal;
-    return new Date(signal.published_at).getTime() > new Date(latest.published_at).getTime() ? signal : latest;
+    const signalTime = signal.published_at == null ? Number.NEGATIVE_INFINITY : new Date(signal.published_at).getTime();
+    const latestTime = latest.published_at == null ? Number.NEGATIVE_INFINITY : new Date(latest.published_at).getTime();
+    return signalTime > latestTime ? signal : latest;
   }, null);
   const positiveCount = result.signals.filter((signal) => signal.impact_direction === 'positive').length;
   const negativeCount = result.signals.filter((signal) => signal.impact_direction === 'negative').length;
