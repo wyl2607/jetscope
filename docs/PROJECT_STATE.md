@@ -4,7 +4,7 @@ Where the UI refactor stands, how the work is delegated, and what comes next.
 Written to be readable by a person or an AI agent arriving with no prior
 context. `docs/UI_CONTRACT.md` is the rules; this file is the position.
 
-Last updated against `main` at the merge of PR #297.
+Last updated against `main` at the merge of PR #301.
 
 ## What the program is for
 
@@ -26,7 +26,7 @@ and P3 at the number level.
 | --- | --- | --- |
 | **P0** | tokens, ratchet gate, single navigation source | done |
 | **P1** | palette migration | 318 violations across 12 files remain, ratcheted |
-| **P1.5** | page template on every page | 38 of 42 on `main`; the last 4 are in PR #300 |
+| **P1.5** | page template on every page | **done — 42 of 42** |
 | **P2** | collapse `/`, `/de`, `/en` into `/[locale]` | about 10 percent, only `navigation.ts` |
 | **P3** | `Figure` contract through the read models | contract and gate landed; 104 violations across 31 files to clear |
 | **P4** | web container and nginx on the VPS | not started — see `docs/DEPLOY_WEB_VPS.md` |
@@ -42,17 +42,16 @@ is locked in.
 
 ## What to do next, in order
 
-1. **Merge PR #300.** It brings page conversion to 42 of 42 and closes P1.5.
-2. **P4, the deployment.** `docs/DEPLOY_WEB_VPS.md` has the whole plan. This is
+1. **P4, the deployment.** `docs/DEPLOY_WEB_VPS.md` has the whole plan. This is
    the difference between a repository and a product: the contract's own
    definition of shipped is a frontend reachable on the public internet.
-3. **P3 cleanup, 104 violations.** Mechanical and delegable. It converts read
+2. **P3 cleanup, 104 violations.** Mechanical and delegable. It converts read
    models and display components to carry `Figure` instead of bare `number`,
    which is what makes requirement 3 above true at the level of individual
    numbers rather than whole pages. Runs in parallel with P4 — they touch
    disjoint files, and the contract forbids two contributors editing one file
    set at the same time.
-4. **P2, the route merge.** Internal tidiness. It changes nothing a reader sees,
+3. **P2, the route merge.** Internal tidiness. It changes nothing a reader sees,
    which is why it ranks below P4.
 
 ### Known debts, none urgent
