@@ -72,6 +72,14 @@ test('portfolio read model normalizes research signal response variants', async 
                 confidence_score: 1.4,
                 summary: 'SAF mandate support increased.',
                 generated_at: '2026-04-23T12:00:00Z'
+              },
+              {
+                signal_id: 'sig-undated',
+                type: 'market',
+                raw_title: 'Undated market signal',
+                impact_direction: 'neutral',
+                confidence_score: 0.5,
+                summary: 'No upstream publication time.'
               }
             ]
           })
@@ -88,11 +96,13 @@ test('portfolio read model normalizes research signal response variants', async 
   const result = await getResearchSignals();
 
   assert.equal(result.status, 'ok');
-  assert.equal(result.signals.length, 1);
+  assert.equal(result.signals.length, 2);
   assert.equal(result.signals[0].id, 'sig-1');
   assert.equal(result.signals[0].signal_type, 'policy');
   assert.equal(result.signals[0].impact_direction, 'positive');
   assert.equal(result.signals[0].confidence, 1);
+  assert.equal(result.signals[1].id, 'sig-undated');
+  assert.equal(result.signals[1].published_at, null);
 });
 
 test('portfolio read model surfaces missing research API as not_found', async (t) => {

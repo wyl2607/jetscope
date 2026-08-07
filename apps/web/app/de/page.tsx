@@ -73,7 +73,9 @@ export default async function GermanIndexPage() {
   const latestEvent = events[0] ?? null;
   const latestResearchSignal = signalsResult.signals.reduce<typeof signalsResult.signals[number] | null>((latest, signal) => {
     if (!latest) return signal;
-    return Date.parse(signal.published_at) > Date.parse(latest.published_at) ? signal : latest;
+    const signalTime = signal.published_at == null ? Number.NEGATIVE_INFINITY : Date.parse(signal.published_at);
+    const latestTime = latest.published_at == null ? Number.NEGATIVE_INFINITY : Date.parse(latest.published_at);
+    return signalTime > latestTime ? signal : latest;
   }, null);
   const asOf = latestTimestamp([reserve?.generated_at, latestEvent?.observed_at, latestResearchSignal?.published_at]);
 

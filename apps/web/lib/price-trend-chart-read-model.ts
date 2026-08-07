@@ -8,7 +8,7 @@ export type PriceTrendChartData = {
   metric_key: string;
   unit: string;
   latest_value: number;
-  latest_as_of: string;
+  latest_as_of: string | null;
   change_pct_1d: number | null;
   change_pct_7d: number | null;
   change_pct_30d: number | null;
@@ -17,7 +17,7 @@ export type PriceTrendChartData = {
 
 export type PriceTrendChartReadModel = {
   metrics: Record<string, PriceTrendChartData>;
-  generatedAt: string;
+  generatedAt: string | null;
   isFallback: boolean;
   error: string | null;
 };
@@ -37,7 +37,7 @@ export async function getPriceTrendChartReadModel(): Promise<PriceTrendChartRead
         metric_key: key,
         unit: metric.unit,
         latest_value: metric.latest_value ?? 0,
-        latest_as_of: metric.latest_as_of ?? new Date().toISOString(),
+        latest_as_of: metric.latest_as_of ?? null,
         change_pct_1d: finiteChangeOrNull(metric.change_pct_1d),
         change_pct_7d: finiteChangeOrNull(metric.change_pct_7d),
         change_pct_30d: finiteChangeOrNull(metric.change_pct_30d),
@@ -45,16 +45,23 @@ export async function getPriceTrendChartReadModel(): Promise<PriceTrendChartRead
       };
     }
 
+    const generatedAt = Object.values(metrics).reduce<{ at: number; iso: string } | null>((latest, metric) => {
+      if (!metric.latest_as_of) return latest;
+      const at = new Date(metric.latest_as_of).getTime();
+      if (Number.isNaN(at)) return latest;
+      return latest == null || at > latest.at ? { at, iso: metric.latest_as_of } : latest;
+    }, null)?.iso ?? null;
+
     return {
       metrics,
-      generatedAt: new Date().toISOString(),
+      generatedAt,
       isFallback: false,
       error: null
     };
   } catch (error) {
     return {
       metrics: {},
-      generatedAt: new Date().toISOString(),
+      generatedAt: null,
       isFallback: true,
       error: error instanceof Error ? error.message : 'Failed to load price trends'
     };

@@ -17,7 +17,7 @@ type PriceTrendData = {
   metric_key: string;
   unit: string;
   latest_value: number;
-  latest_as_of: string;
+  latest_as_of: string | null;
   change_pct_1d: number | null;
   change_pct_7d: number | null;
   change_pct_30d: number | null;
@@ -492,7 +492,7 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
           <p className="mt-2 text-2xl font-semibold text-ink">
             {data.latest_value?.toFixed(2) ?? '无数据'} {data.unit}
           </p>
-          <p className="mt-1 text-xs text-muted">截至 {new Date(data.latest_as_of).toLocaleString('zh-CN')}</p>
+          <p className="mt-1 text-xs text-muted">截至 {data.latest_as_of ? new Date(data.latest_as_of).toLocaleString('zh-CN') : '暂无数据'}</p>
         </div>
 
         <div className="rounded-lg border border-line bg-surface p-4">

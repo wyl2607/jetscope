@@ -35,7 +35,7 @@ export type GermanyJetFuelMetric = {
 };
 
 export type GermanyJetFuelReadModel = {
-  generatedAt: string;
+  generatedAt: string | null;
   overallStatus: string;
   metrics: GermanyJetFuelMetric[];
   isFallback: boolean;
@@ -118,7 +118,7 @@ function buildGermanyMetric(
 
 function fallbackGermanyJetFuelReadModel(error: unknown, locale: DisplayLocale): GermanyJetFuelReadModel {
   return {
-    generatedAt: new Date().toISOString(),
+    generatedAt: null,
     overallStatus: 'degraded',
     metrics: GERMANY_METRIC_CONFIGS.map((config) => ({
       metricKey: config.metricKey,

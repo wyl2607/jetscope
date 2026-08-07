@@ -40,7 +40,7 @@ type PolicyTarget = {
 
 function defaultTippingPointResponse(): TippingPointResponse {
   return {
-    generated_at: new Date().toISOString(),
+    generated_at: null,
     effective_fossil_jet_usd_per_l: 1.3,
     signal: 'fossil_still_advantaged',
     inputs: {
@@ -65,7 +65,7 @@ function defaultTippingPointResponse(): TippingPointResponse {
 
 function defaultAirlineDecisionResponse(): AirlineDecisionResponse {
   return {
-    generated_at: new Date().toISOString(),
+    generated_at: null,
     inputs: {
       fossil_jet_usd_per_l: 1.3,
       reserve_weeks: 3,
