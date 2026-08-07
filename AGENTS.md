@@ -3,6 +3,22 @@
 Treat this file as the public, repository-local AI entrypoint for JetScope
 product work.
 
+## Start here for frontend work
+
+| Question | File |
+| --- | --- |
+| What are the rules? | `docs/UI_CONTRACT.md` — the single source of frontend style, structure and data honesty |
+| Where does the work stand, and what is next? | `docs/PROJECT_STATE.md` |
+| How is bounded work delegated, and what has gone wrong before? | `docs/task-packets/` |
+| How does the frontend reach production? | `docs/DEPLOY_WEB_VPS.md` |
+
+Two rules from the contract that govern every frontend change:
+
+- The contract is read-only inside a feature PR. Changing it is its own PR.
+- Consistency is held by gates, not by intent. `npm run web:gate` runs two
+  ratchets — `design-system-lint` and `figure-contract-lint`. Both only turn one
+  way. Do not raise a baseline.
+
 ## Canonical Flow
 
 - Read this file before editing.
