@@ -1,11 +1,53 @@
 # Deploying the web frontend to the VPS (P4)
 
-`docs/DEPLOY_USA_VPS.md` covers the API container, which is what currently runs
-in production. This document covers the missing half: the Next.js frontend, a
-production nginx in front of both, and the deploy script change that ships them.
+> **Correction, 2026-08-07.** The two paragraphs that used to open this document
+> said production ran the API container alone and the frontend was not
+> reachable. **That was false.** `https://saf.meichen.beauty/` answers 200 and
+> has for some time; `docs/DEPLOY_USA_VPS.md` recorded the real topology and
+> this file contradicted it. The frontend runs under **systemd**
+> (`jetscope-web.service`, `127.0.0.1:3000`) behind **host** nginx.
+>
+> Two documents disagreeing about whether the product is live is worse than
+> either being wrong alone, so: `docs/DEPLOY_USA_VPS.md` is authoritative for
+> what is running. This file is the plan for moving the frontend into a
+> container, which has not happened.
+>
+> The live site was also serving a build older than the P1.5 page-template work,
+> because `scripts/deploy-usa-vps.sh --rebuild` only ever rebuilt the API
+> container — it never rebuilt the Next app or restarted the systemd unit, so
+> every deploy reported success while the public site stood still. Fixed; the
+> script now does both, and the smoke check asserts on rendered content.
 
-Phase P4 in `docs/UI_CONTRACT.md` is done when the frontend is reachable over
-the public internet. An API container alone does not count.
+`docs/DEPLOY_USA_VPS.md` covers what production actually runs today. This
+document covers containerising the frontend: a standalone Next build, a
+production nginx in front of both services, and the cutover.
+
+Phase P4 in `docs/UI_CONTRACT.md` is about the frontend being reachable over
+the public internet. It is — just not from a container.
+
+## Cutover, and why it is not a flag on a routine deploy
+
+Everything below is built and locally verified, and **none of it is started by
+`scripts/deploy-usa-vps.sh`**. The `web` service wants `127.0.0.1:3000`, which
+`jetscope-web.service` holds. The `nginx` service wants `:80` and `:443`, which
+host nginx holds. Starting them on the live host today does not add a frontend;
+it fails to bind, and in the worst ordering it takes the working one down.
+
+Cutting over is its own operation and needs, in order:
+
+1. `systemctl stop jetscope-web.service && systemctl disable jetscope-web.service`
+2. Stop host nginx, or move it off `:80`/`:443`.
+3. Mount the existing certificates into the nginx container and add a `443`
+   server block under `infra/tls/` — see the README there. Until that exists,
+   the containerised edge is HTTP-only, which is a downgrade from what is
+   running now.
+4. `docker compose -f docker-compose.prod.yml up -d --build api web nginx`
+5. Verify on rendered content, not status codes, exactly as the deploy script's
+   smoke step does.
+
+Rollback is the reverse: stop the two containers, re-enable and start
+`jetscope-web.service`, start host nginx. Keep that path rehearsed rather than
+discovered.
 
 ## The failure this deployment can produce silently
 
@@ -35,14 +77,38 @@ code.
 
 ## What is missing
 
-| Item | Current state |
+Everything in this table has landed. The sections below are kept as the
+reference for why each piece is shaped the way it is.
+
+| Item | State |
 | --- | --- |
-| `apps/web/Dockerfile` | does not exist |
-| `output: 'standalone'` in `apps/web/next.config.mjs` | not set |
-| `web` service in `docker-compose.prod.yml` | not present, only `api` |
-| `nginx` service in `docker-compose.prod.yml` | not present |
-| production nginx config | `infra/nginx.conf` and `infra/app.conf` target the dev compose |
-| `scripts/deploy-usa-vps.sh` | hardcodes `up -d --build api` in both the compose v2 and legacy branches |
+| `apps/web/Dockerfile` | landed — three stages, build context is the repo root |
+| `output: 'standalone'` in `apps/web/next.config.mjs` | set |
+| `.dockerignore` | landed at the repo root |
+| `web` service in `docker-compose.prod.yml` | landed, with `JETSCOPE_API_BASE_URL=http://api:8000` |
+| `nginx` service in `docker-compose.prod.yml` | landed |
+| production nginx config | `infra/nginx.prod.conf`, TLS blocks left to the operator in `infra/tls/` |
+| `scripts/deploy-usa-vps.sh` | brings up `api web nginx`, and verifies the rendered page |
+
+**The one thing left is running it against the host**, from an environment that
+has `rsync`:
+
+```bash
+bash scripts/deploy-usa-vps.sh --rebuild
+```
+
+Two defects were found in the existing deploy script while wiring this up, both
+of which would have shown up at the worst moment:
+
+- The script could not parse at all. `rev-parse --verify HEAD^{commit}"` had a
+  quote on the wrong side of the revision, which opens a string that swallows
+  the rest of the `if`. `bash -n scripts/deploy-usa-vps.sh` rejected the whole
+  file. `test/shell-script-syntax.test.mjs` now parses every tracked `*.sh` so
+  this class cannot come back.
+- In the legacy `docker-compose` branch, the stale-container cleanup loop read
+  `"$container_id"` inside an **unquoted** heredoc, so the variable expanded on
+  the deploying machine to an empty string before the script ever reached the
+  host. The loop had never removed a container. The references are escaped now.
 
 ## 1. Next config
 

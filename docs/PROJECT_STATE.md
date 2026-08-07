@@ -29,7 +29,7 @@ and P3 at the number level.
 | **P1.5** | page template on every page | **done — 42 of 42** |
 | **P2** | collapse `/`, `/de`, `/en` into `/[locale]` | about 10 percent, only `navigation.ts` |
 | **P3** | `Figure` contract through the read models | contract and gate landed; 104 violations across 31 files to clear |
-| **P4** | web container and nginx on the VPS | not started — see `docs/DEPLOY_WEB_VPS.md` |
+| **P4** | web container and nginx on the VPS | see the correction below — the site is live, but not from a container |
 
 Both ratchets only turn one way and both run in `npm run web:gate`:
 
@@ -42,17 +42,66 @@ is locked in.
 
 ## What to do next, in order
 
-1. **P4, the deployment.** `docs/DEPLOY_WEB_VPS.md` has the whole plan. This is
-   the difference between a repository and a product: the contract's own
-   definition of shipped is a frontend reachable on the public internet.
-2. **P3 cleanup, 104 violations.** Mechanical and delegable. It converts read
-   models and display components to carry `Figure` instead of bare `number`,
-   which is what makes requirement 3 above true at the level of individual
-   numbers rather than whole pages. Runs in parallel with P4 — they touch
-   disjoint files, and the contract forbids two contributors editing one file
-   set at the same time.
-3. **P2, the route merge.** Internal tidiness. It changes nothing a reader sees,
-   which is why it ranks below P4.
+1. **Ship the current build.** This file and `docs/DEPLOY_WEB_VPS.md` both used
+   to say the frontend was not deployed. **That was wrong**, and it was wrong in
+   the direction that hides work: `https://saf.meichen.beauty/` has been
+   answering 200 the whole time, and `docs/DEPLOY_USA_VPS.md` said so.
+
+   What is actually true, measured 2026-08-07:
+
+   | | |
+   | --- | --- |
+   | the site | live and public |
+   | the frontend process | **systemd**, `jetscope-web.service` on `127.0.0.1:3000` — not a container |
+   | the edge | **host** nginx on `:80`/`:443`, named vhost |
+   | the build being served | **older than P1.5** — `/sources` renders its title but not its decision question |
+
+   So the reader-visible half of this program — 42 pages on one template, the
+   decision questions, the honest timestamps — **is not on the internet.** It is
+   only on `main`. Deploying is now the single highest-value action available,
+   and it is one command from an environment with `rsync` (WSL, not Git Bash):
+
+   ```bash
+   bash scripts/deploy-usa-vps.sh --rebuild
+   ```
+
+   That now rebuilds the API container *and* rebuilds the Next app and restarts
+   the systemd unit. It previously touched only the container, which is how the
+   public site drifted a whole phase behind `main` while every deploy reported
+   success.
+
+   The post-deploy check asserts on rendered content rather than on a status
+   code, because the characteristic failure here is a site that serves 200 on
+   every route while every read model sits on its fallback. `/sources` emits
+   `data-testid="page-as-of"` only when the server-side fetch actually reached
+   the API, so that stamp is the proof — checked on `:3000` and again through
+   nginx with the public `Host` header.
+
+2. **P4 proper, the containerisation.** `apps/web/Dockerfile`,
+   `output: 'standalone'`, the `web` and `nginx` services in
+   `docker-compose.prod.yml`, and `infra/nginx.prod.conf` are all in and
+   locally verified. **They are deliberately not started by the deploy script**:
+   `web` wants `:3000` and `nginx` wants `:80`/`:443`, all three of which are
+   held by the systemd unit and host nginx. Starting them today takes the site
+   down. Cutting over means stopping and disabling `jetscope-web.service`,
+   stopping host nginx, and mounting the existing certificates into the nginx
+   container — a deliberate operation with a rollback path, not a flag on a
+   routine deploy. See `docs/DEPLOY_WEB_VPS.md`.
+3. **P3 cleanup, the remaining figure violations.** The headline number used to
+   be 104, and 104 was never 104 real violations: the lint matches any
+   `foo: number` in a component, which caught SVG widths, colour-ramp stops and
+   `lerp` parameters alongside actual measurements. Those are annotated now
+   under the contract's own escape hatch, each with a reason, and the
+   self-stamping fallbacks are fixed. What is left is measurements, which is
+   what the number should have meant all along.
+
+   The rest is the real conversion: read models and display components carrying
+   `Figure` instead of bare `number`, which is what makes requirement 3 above
+   true per number rather than per page. Mechanical and delegable, in batches
+   grouped so a component and its read model move together.
+
+4. **P2, the route merge.** Internal tidiness. It changes nothing a reader sees,
+   which is why it ranks last.
 
 ### Known debts, none urgent
 
