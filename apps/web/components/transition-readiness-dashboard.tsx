@@ -75,7 +75,7 @@ function policyLabel(policyType: string): string {
   return '早期';
 }
 
-function progressTone(progress: number): 'teal' | 'amber' | 'red' | 'blue' {
+function progressTone(progress: number): 'teal' | 'amber' | 'red' | 'blue' { // figure-contract-lint-ignore: internal tone helper parameter, not a prop
   if (progress >= 55) return 'teal';
   if (progress >= 22) return 'amber';
   if (progress >= 10) return 'blue';
@@ -485,10 +485,10 @@ function SliderCard({
   label: string;
   value: string;
   current: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (value: number) => void;
+  min: number; // figure-contract-lint-ignore: slider bound, not a measurement
+  max: number; // figure-contract-lint-ignore: slider bound, not a measurement
+  step: number; // figure-contract-lint-ignore: slider step, not a measurement
+  onChange: (value: number) => void; // figure-contract-lint-ignore: callback signature, not a measurement
 }) {
   return (
     <label className="rounded-2xl border border-line bg-surface-muted px-4 py-3">

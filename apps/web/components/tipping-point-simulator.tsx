@@ -9,7 +9,7 @@ type Props = {
   reserveWeeks: number;
 };
 
-function probabilityLabel(value: number): string {
+function probabilityLabel(value: number): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
   return `${Math.round(value * 100)}%`;
 }
 
@@ -28,13 +28,13 @@ export function TippingPointSimulator({ tippingPoint, decision, reserveWeeks }: 
       key: 'net_saf_low',
       label: `${leadPathway.display_name} 低位`,
       value: leadPathway.net_cost_low_usd_per_l,
-      format: (v: number) => `$${v.toFixed(2)}/L`
+      format: (v: number) => `$${v.toFixed(2)}/L` // figure-contract-lint-ignore: slider label formatter, not a prop
     },
     {
       key: 'net_saf_high',
       label: `${leadPathway.display_name} 高位`,
       value: leadPathway.net_cost_high_usd_per_l,
-      format: (v: number) => `$${v.toFixed(2)}/L`
+      format: (v: number) => `$${v.toFixed(2)}/L` // figure-contract-lint-ignore: slider label formatter, not a prop
     },
     {
       key: 'spread_band',

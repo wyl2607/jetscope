@@ -30,7 +30,7 @@ const canonicalByKey = new Map<string, (typeof listCanonicalPathways extends () 
   listCanonicalPathways().map((pathway) => [pathway.pathwayKey, pathway])
 );
 
-function formatRange(low: number, high: number): string {
+function formatRange(low: number, high: number): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
   return `$${low.toFixed(2)}–$${high.toFixed(2)}/L`;
 }
 
