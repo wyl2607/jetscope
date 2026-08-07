@@ -28,8 +28,8 @@ and P3 at the number level.
 | **P1** | palette migration | 318 violations across 12 files remain, ratcheted |
 | **P1.5** | page template on every page | **done — 42 of 42** |
 | **P2** | collapse `/`, `/de`, `/en` into `/[locale]` | about 10 percent, only `navigation.ts` |
-| **P3** | `Figure` contract through the read models | contract and gate landed; 104 violations across 31 files to clear |
-| **P4** | web container and nginx on the VPS | see the correction below — the site is live, but not from a container |
+| **P3** | `Figure` contract through the read models | contract and gate landed; **38** violations across 14 files to clear |
+| **P4** | web container and nginx on the VPS | site is live and current, served by systemd; container built but not cut over |
 
 Both ratchets only turn one way and both run in `npm run web:gate`:
 
@@ -42,51 +42,53 @@ is locked in.
 
 ## What to do next, in order
 
-1. **Ship the current build.** This file and `docs/DEPLOY_WEB_VPS.md` both used
-   to say the frontend was not deployed. **That was wrong**, and it was wrong in
-   the direction that hides work: `https://saf.meichen.beauty/` has been
-   answering 200 the whole time, and `docs/DEPLOY_USA_VPS.md` said so.
+**Deployed 2026-08-08.** The site was live the whole time on a build older than
+P1.5 — 32 commits behind — because `--rebuild` only ever rebuilt the API
+container and the frontend is systemd-owned. Fixed and deployed:
+`.deploy-commit` is `aeb0dd7`, and `https://saf.meichen.beauty/sources` now
+renders both its decision question and a real `data-testid="page-as-of"` stamp,
+which is proof the server-side fetch reached the API rather than falling back.
 
-   What is actually true, measured 2026-08-07:
+Production, verified on the host:
 
-   | | |
-   | --- | --- |
-   | the site | live and public |
-   | the frontend process | **systemd**, `jetscope-web.service` on `127.0.0.1:3000` — not a container |
-   | the edge | **host** nginx on `:80`/`:443`, named vhost |
-   | the build being served | **older than P1.5** — `/sources` renders its title but not its decision question |
+| | |
+| --- | --- |
+| the site | live, current with `main` |
+| the frontend process | **systemd**, `jetscope-web.service` on `127.0.0.1:3000` |
+| the edge | **host** nginx on `:80`/`:443` — **shared with `esg.meichen.beauty`** |
+| the API | `jetscope-api` container on `127.0.0.1:8000` |
+| host memory | 1967 MiB total, ~1250 available. The Next build is the tight step. |
 
-   So the reader-visible half of this program — 42 pages on one template, the
-   decision questions, the honest timestamps — **is not on the internet.** It is
-   only on `main`. Deploying is now the single highest-value action available,
-   and it is one command from an environment with `rsync` (WSL, not Git Bash):
+To deploy, from an environment with `rsync` (WSL, not Git Bash):
 
-   ```bash
-   bash scripts/deploy-usa-vps.sh --rebuild
-   ```
+```bash
+bash scripts/deploy-usa-vps.sh --rebuild
+```
 
-   That now rebuilds the API container *and* rebuilds the Next app and restarts
-   the systemd unit. It previously touched only the container, which is how the
-   public site drifted a whole phase behind `main` while every deploy reported
-   success.
+`npm ci` runs only when the lockfile hash differs from the previous deploy's,
+because it removes `node_modules` and the live server needs it. Expect a few
+minutes of degradation on a dependency change; a source-only deploy skips it.
+The build runs before the restart, so a failed build leaves the previous version
+serving.
 
-   The post-deploy check asserts on rendered content rather than on a status
-   code, because the characteristic failure here is a site that serves 200 on
-   every route while every read model sits on its fallback. `/sources` emits
-   `data-testid="page-as-of"` only when the server-side fetch actually reached
-   the API, so that stamp is the proof — checked on `:3000` and again through
-   nginx with the public `Host` header.
-
-2. **P4 proper, the containerisation.** `apps/web/Dockerfile`,
+1. **P4 proper, the containerisation.** `apps/web/Dockerfile`,
    `output: 'standalone'`, the `web` and `nginx` services in
    `docker-compose.prod.yml`, and `infra/nginx.prod.conf` are all in and
    locally verified. **They are deliberately not started by the deploy script**:
    `web` wants `:3000` and `nginx` wants `:80`/`:443`, all three of which are
-   held by the systemd unit and host nginx. Starting them today takes the site
-   down. Cutting over means stopping and disabling `jetscope-web.service`,
-   stopping host nginx, and mounting the existing certificates into the nginx
-   container — a deliberate operation with a rollback path, not a flag on a
-   routine deploy. See `docs/DEPLOY_WEB_VPS.md`.
+   held by the systemd unit and host nginx.
+
+   **This is now less attractive than it looked.** The `:80`/`:443` those
+   services want are not JetScope's alone — host nginx on that VPS also serves
+   `esg.meichen.beauty`. Taking the edge into a JetScope container means taking
+   responsibility for an unrelated product's uptime and certificates, and a
+   botched cutover breaks both. Reconsider the scope before doing it: the
+   defensible version is containerising **only** the web process, leaving host
+   nginx as the shared edge and repointing its upstream. The full-edge version
+   in `docs/DEPLOY_WEB_VPS.md` was written before the shared vhost was known.
+
+   Either way it is a deliberate operation with a rehearsed rollback, not a flag
+   on a routine deploy.
 3. **P3 cleanup, the remaining figure violations.** The headline number used to
    be 104, and 104 was never 104 real violations: the lint matches any
    `foo: number` in a component, which caught SVG widths, colour-ramp stops and
