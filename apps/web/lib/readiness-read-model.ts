@@ -44,7 +44,7 @@ export type LaunchReadinessCheck = {
 };
 
 export type LaunchReadinessReadModel = {
-  generatedAt: string;
+  generatedAt: string | null;
   status: string;
   statusLabel: string;
   ready: boolean;
@@ -186,7 +186,7 @@ function normalizeChecks(checks: Record<string, ReadinessCheck> | undefined): La
 
 function fallbackReadiness(error: unknown): LaunchReadinessReadModel {
   return {
-    generatedAt: new Date().toISOString(),
+    generatedAt: null,
     status: 'not_ready',
     statusLabel: '未就绪',
     ready: false,

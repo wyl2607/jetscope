@@ -13,8 +13,8 @@ const PAD = { top: 16, right: 48, bottom: 28, left: 44 };
 function buildLine(
   points: Point[],
   value: (p: Point) => number,
-  x: (i: number) => number,
-  y: (v: number) => number
+  x: (i: number) => number, // figure-contract-lint-ignore: chart coordinate mapping, not a measurement
+  y: (v: number) => number // figure-contract-lint-ignore: chart coordinate mapping, not a measurement
 ): string {
   return points
     .map((p, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(value(p)).toFixed(1)}`)
@@ -36,9 +36,9 @@ export function GridHistoryChart({ points }: Props) {
   const costSpan = costMax - costMin || 1;
   const carbonMax = Math.max(...points.map((p) => p.carbon_price_eur_per_t), 1);
 
-  const x = (i: number) => PAD.left + (i / (points.length - 1)) * innerW;
-  const yCost = (v: number) => PAD.top + innerH - ((v - costMin) / costSpan) * innerH;
-  const yCarbon = (v: number) => PAD.top + innerH - (v / carbonMax) * innerH;
+  const x = (i: number) => PAD.left + (i / (points.length - 1)) * innerW; // figure-contract-lint-ignore: chart coordinate mapping, not a measurement
+  const yCost = (v: number) => PAD.top + innerH - ((v - costMin) / costSpan) * innerH; // figure-contract-lint-ignore: chart coordinate mapping, not a measurement
+  const yCarbon = (v: number) => PAD.top + innerH - (v / carbonMax) * innerH; // figure-contract-lint-ignore: chart coordinate mapping, not a measurement
 
   const fossilLine = buildLine(points, (p) => p.fossil_marginal_cost_eur_per_mwh, x, yCost);
   const solarLine = buildLine(points, (p) => p.solar_lcoe_eur_per_mwh, x, yCost);

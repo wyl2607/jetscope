@@ -4,7 +4,7 @@ type PriceData = {
   source: string;
   value: number;
   unit: string;
-  priority: number;
+  priority: number; // figure-contract-lint-ignore: display sort order, not a measurement
   is_fallback: boolean;
 };
 

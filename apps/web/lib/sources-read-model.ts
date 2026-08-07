@@ -10,7 +10,7 @@ import {
 const DEFAULT_FETCH_TIMEOUT_MS = 2000;
 
 type MarketSnapshot = {
-  generated_at: string;
+  generated_at: string | null;
   source_status: { overall: string };
   values: Record<string, number>;
 };
@@ -40,7 +40,7 @@ export type SourceReviewAction = {
 };
 
 export type SourcesReadModel = {
-  generatedAt: string;
+  generatedAt: string | null;
   overallStatus: string;
   coverageMetrics: SourceCoverageMetric[];
   summary: {
@@ -404,7 +404,7 @@ function buildGenericFallbackCoverageMetrics(): SourceCoverageMetric[] {
 
 function emptySnapshot(): MarketSnapshot {
   return {
-    generated_at: new Date().toISOString(),
+    generated_at: null,
     source_status: { overall: 'degraded' },
     values: {}
   };

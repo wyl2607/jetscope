@@ -3,7 +3,7 @@ import { buildApiUrl } from '@/lib/api-config';
 const DEFAULT_FETCH_TIMEOUT_MS = 2000;
 
 export type MarketSnapshot = {
-  generated_at: string;
+  generated_at: string | null;
   source_status: {
     overall: string;
     confidence?: number | null;
@@ -38,7 +38,7 @@ export type TippingPointPathway = {
 };
 
 export type TippingPointReadModel = {
-  generatedAt: string;
+  generatedAt: string | null;
   effectiveFossilJetUsdPerL: number;
   signal: string;
   inputs: {
@@ -68,7 +68,7 @@ export type DecisionReadModel = {
 };
 
 export type TippingPointResponse = {
-  generated_at: string;
+  generated_at: string | null;
   inputs: {
     fossil_jet_usd_per_l: number;
     carbon_price_eur_per_t: number;
@@ -81,7 +81,7 @@ export type TippingPointResponse = {
 };
 
 export type AirlineDecisionResponse = {
-  generated_at: string;
+  generated_at: string | null;
   inputs: {
     fossil_jet_usd_per_l: number;
     reserve_weeks: number;
