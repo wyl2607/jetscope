@@ -1,0 +1,209 @@
+# Deploying the web frontend to the VPS (P4)
+
+`docs/DEPLOY_USA_VPS.md` covers the API container, which is what currently runs
+in production. This document covers the missing half: the Next.js frontend, a
+production nginx in front of both, and the deploy script change that ships them.
+
+Phase P4 in `docs/UI_CONTRACT.md` is done when the frontend is reachable over
+the public internet. An API container alone does not count.
+
+## The failure this deployment can produce silently
+
+Read this before writing any of it.
+
+`apps/web/lib/api-config.ts` resolves the API base like this:
+
+```ts
+const DEFAULT_LOCAL_API_BASE_URL = process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8000' : '';
+export const API_BASE_URL = normalizeApiBaseUrl(
+  process.env.JETSCOPE_API_BASE_URL ?? process.env.SAFVSOIL_API_BASE_URL ?? DEFAULT_LOCAL_API_BASE_URL
+);
+```
+
+An empty base is correct for a browser calling a same-origin nginx. It is wrong
+for a server component, which has no origin to be relative to. Every page in
+this app sets `dynamic = 'force-dynamic'` and fetches on the server.
+
+So if the web container starts without `JETSCOPE_API_BASE_URL`, every server-side
+fetch fails, every read model returns its fallback, and the site renders. It
+renders invented numbers, with the pages reporting them as assumptions in small
+print, and nothing crashes. A smoke test that only checks for HTTP 200 passes.
+
+**The web container must set `JETSCOPE_API_BASE_URL=http://api:8000`**, and the
+deploy verification below must assert on a real value rather than on a status
+code.
+
+## What is missing
+
+| Item | Current state |
+| --- | --- |
+| `apps/web/Dockerfile` | does not exist |
+| `output: 'standalone'` in `apps/web/next.config.mjs` | not set |
+| `web` service in `docker-compose.prod.yml` | not present, only `api` |
+| `nginx` service in `docker-compose.prod.yml` | not present |
+| production nginx config | `infra/nginx.conf` and `infra/app.conf` target the dev compose |
+| `scripts/deploy-usa-vps.sh` | hardcodes `up -d --build api` in both the compose v2 and legacy branches |
+
+## 1. Next config
+
+Add `output: 'standalone'`. `outputFileTracingRoot` is already pointed at the
+monorepo root, which standalone tracing needs in a workspace layout.
+
+```js
+const nextConfig = {
+  output: 'standalone',
+  typedRoutes: true,
+  outputFileTracingRoot: rootDir,
+  images: { unoptimized: true }
+};
+```
+
+Verify locally before containerising: `npm run web:build`, then confirm
+`apps/web/.next/standalone/apps/web/server.js` exists. In a workspace the
+standalone tree keeps the workspace shape, so the server entrypoint is nested
+under `apps/web/` and the traced `node_modules` sits at the standalone root.
+Getting this path wrong is the usual cause of a container that exits instantly.
+
+## 2. `apps/web/Dockerfile`
+
+Build context is the **repository root**, not `apps/web` — npm workspaces means
+the lockfile and the hoisted `node_modules` live at the root.
+
+Three stages:
+
+1. **deps** — copy `package.json`, `package-lock.json`, `apps/web/package.json`,
+   `packages/*/package.json`; run `npm ci`.
+2. **build** — copy the source, run `npm --prefix apps/web run build`. Note that
+   `npm run web:gate` is not appropriate here; the gate belongs in CI, and a
+   container build that runs the test suite makes deploys slow and flaky.
+3. **runtime** — `node:22-alpine`, non-root user, copy
+   `apps/web/.next/standalone`, `apps/web/.next/static` and `apps/web/public`
+   if present. `CMD ["node", "apps/web/server.js"]`, `EXPOSE 3000`.
+
+Set `ENV NODE_ENV=production` and `ENV HOSTNAME=0.0.0.0` in the runtime stage —
+the standalone server binds to localhost inside the container otherwise, and
+nginx cannot reach it.
+
+Add a `.dockerignore` at the repo root covering `node_modules`, `.next`, `dist`,
+`data`, `.git`, and `apps/api/.venv`, or the build context will be enormous.
+
+## 3. `docker-compose.prod.yml`
+
+Add two services alongside `api`.
+
+```yaml
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: jetscope-web
+    restart: unless-stopped
+    init: true
+    depends_on:
+      - api
+    environment:
+      NODE_ENV: production
+      JETSCOPE_API_BASE_URL: http://api:8000
+      JETSCOPE_API_PREFIX: /v1
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: jetscope-nginx
+    restart: unless-stopped
+    depends_on:
+      - web
+      - api
+    volumes:
+      - ./infra/nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "80:80"
+      - "443:443"
+```
+
+Keep `api` bound to `127.0.0.1:8000` as it is now: nginx reaches it over the
+compose network, and it should not be publicly exposed directly.
+
+Give `web` the same `mem_limit` / `cpus` treatment the `api` service already
+has, so one container cannot starve the other on a small VPS.
+
+## 4. `infra/nginx.prod.conf`
+
+A new file. The existing `infra/nginx.conf` and `infra/app.conf` serve the dev
+compose and should not be reused.
+
+- `location /v1/` proxies to `http://api:8000`
+- `location /` proxies to `http://web:3000`
+- forward `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`
+- `proxy_read_timeout` above the app's own fetch timeouts, which default to a
+  few seconds via `JETSCOPE_*_FETCH_TIMEOUT_MS`
+- TLS: terminate here. Certificates are operator state and do not belong in the
+  repository; reference them by path and document the path in the operator's own
+  notes, not here.
+
+Order matters: `/v1/` must be declared before `/`, or the catch-all swallows API
+traffic and the browser silently gets HTML where it expected JSON.
+
+## 5. `scripts/deploy-usa-vps.sh`
+
+Around line 85 the script runs `docker compose -f docker-compose.prod.yml up -d
+--build api` in the compose v2 branch, and the same list again in the legacy
+`docker-compose` branch. Both need `api web nginx`.
+
+The legacy branch also force-removes containers matched by
+`label=com.docker.compose.service=api` and by the name `jetscope-api`. Extend
+that to the new services, or a stale `jetscope-web` survives a redeploy and
+serves the previous build.
+
+Deployment runs from an environment that has `rsync`. Git Bash on Windows does
+not; run it from WSL there.
+
+## 6. Verification, in order
+
+Local, before deploying:
+
+```bash
+npm run web:build
+docker build -f apps/web/Dockerfile -t jetscope-web:test .
+docker run --rm -p 3000:3000 -e JETSCOPE_API_BASE_URL=http://host.docker.internal:8000 jetscope-web:test
+```
+
+On the host, after deploying:
+
+```bash
+docker compose -f docker-compose.prod.yml ps
+curl -fsS http://127.0.0.1:3000/ > /dev/null && echo "web up"
+curl -fsS http://127.0.0.1:8000/v1/health && echo "api up"
+curl -fsS https://<public-host>/v1/health && echo "proxy up"
+```
+
+Then the check that actually matters, from the public URL:
+
+```bash
+curl -fsS https://<public-host>/sources | grep -q "实测" && echo "server-side API reachable"
+```
+
+A page whose sources all read as assumptions means the web container is not
+talking to the API, whatever the status codes say. Prefer asserting on the
+timestamp block: a page that renders a real `data as of` stamp has, by
+construction, reached a read model that returned observed data.
+
+Add this as a step in `scripts/preflight-product-smoke.mjs` or as a small
+post-deploy script, so it is not a thing a human remembers to do.
+
+## 7. Rollback
+
+`.deploy-commit` is already written on the host by the deploy script. Roll back
+by checking out that commit and re-running the deploy, or by
+`docker compose -f docker-compose.prod.yml up -d --no-build web` against the
+previously built image if it is still present. Confirm the rollback the same way
+as the deploy: on the rendered page, not on the status code.
+
+## Sequencing
+
+Steps 1 and 2 are independent of the rest and can be verified locally without
+touching the host. Steps 3 to 5 are one change and should land together — a
+compose file that references a missing nginx config leaves the site down. Step 6
+should land in the same PR as steps 3 to 5, because a deploy path without a
+verification step is how the fallback failure above survives.

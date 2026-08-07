@@ -30,7 +30,7 @@ export const INDUSTRY_AIRLINES: ReadonlyArray<IndustryAirline> = [
     currentPct: 0.8,
     target2030Pct: 10,
     sourceNote:
-      'SAF % still estimate (not in 2026-08-04 article). Verified ops facts as_of 2026-08-04: Q2 adj. op. profit €383m (−56%); Iran-war kerosene extra cost €750m in Q2 despite >80% hedge; strikes ~€150m; FY adj. op. profit guidance €1.7–2.2bn (prior year €1.96bn); fare pass-through ~60% of higher kerosene; FY fuel bill expected €8.7bn; capacity stagnate (was up to +4%); Europe cut ~1% under review; Cityline-related ~20k Europe flights removed from summer schedule; supply situation normalized per CEO; tech+cargo positive. See data/curated/lufthansa_q2_2026.json.',
+      'Estimate, needs verification: SAF % is still an estimate (not in the 2026-08-04 article). Verified ops facts as_of 2026-08-04: Q2 adj. op. profit €383m (−56%); Iran-war kerosene extra cost €750m in Q2 despite >80% hedge; strikes ~€150m; FY adj. op. profit guidance €1.7–2.2bn (prior year €1.96bn); fare pass-through ~60% of higher kerosene; FY fuel bill expected €8.7bn; capacity stagnate (was up to +4%); Europe cut ~1% under review; Cityline-related ~20k Europe flights removed from summer schedule; supply situation normalized per CEO; tech+cargo positive. See data/curated/lufthansa_q2_2026.json.',
     verificationStatus: 'estimate',
     badge: 'est./估算'
   },
