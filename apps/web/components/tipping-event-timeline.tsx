@@ -23,7 +23,7 @@ function formatTime(value: string): string {
   });
 }
 
-function formatGap(value: number): string {
+function formatGap(value: number): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
   const prefix = value > 0 ? '+' : '';
   return `${prefix}${value.toFixed(3)} USD/L`;
 }

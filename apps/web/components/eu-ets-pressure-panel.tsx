@@ -11,7 +11,7 @@ const signalTone: Record<string, string> = {
   severe: 'border-rose-300 bg-rose-50 text-rose-800'
 };
 
-function formatUsd(value: number): string {
+function formatUsd(value: number): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
   return `$${value.toFixed(3)}/L`;
 }
 

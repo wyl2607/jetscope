@@ -40,7 +40,7 @@ export function DataTable<Row>({
   caption: string;
   columns: readonly Column<Row>[];
   rows: readonly Row[];
-  rowKey: (row: Row, index: number) => string;
+  rowKey: (row: Row, index: number) => string; // figure-contract-lint-ignore: array index, not a measurement
   emptyMessage?: string;
   locale?: NavLocale;
   /** Optional semantic row highlight, e.g. a breached threshold. */

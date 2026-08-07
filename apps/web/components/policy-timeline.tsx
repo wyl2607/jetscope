@@ -118,7 +118,7 @@ const COPY_BY_LOCALE = {
       future: '→ 即将到来',
     },
     target: '目标：',
-    yearsUntil: (years: number) => `距下一里程碑还有 ${years} 年`,
+    yearsUntil: (years: number) => `距下一里程碑还有 ${years} 年`, // figure-contract-lint-ignore: copy template parameter, not a prop
     legendPast: '已完成',
     legendCurrent: '当前年份',
     legendFuture: '即将到来',
@@ -134,7 +134,7 @@ const COPY_BY_LOCALE = {
       future: '→ Bevorstehend',
     },
     target: 'Ziel:',
-    yearsUntil: (years: number) => `${years} Jahre bis zum nächsten Meilenstein`,
+    yearsUntil: (years: number) => `${years} Jahre bis zum nächsten Meilenstein`, // figure-contract-lint-ignore: copy template parameter, not a prop
     legendPast: 'Abgeschlossen',
     legendCurrent: 'Aktuelles Jahr',
     legendFuture: 'Bevorstehend',
@@ -142,6 +142,7 @@ const COPY_BY_LOCALE = {
 } as const;
 
 interface PolicyTimelineProps {
+  // figure-contract-lint-ignore: injectable clock for tests, not a measurement
   currentTimestamp?: number; // Unix timestamp in milliseconds; defaults to now()
   className?: string;
   locale?: PolicyTimelineLocale;
@@ -152,7 +153,7 @@ export function PolicyTimeline({ currentTimestamp = Date.now(), className = '', 
   const milestones = MILESTONES_BY_LOCALE[locale];
   const copy = COPY_BY_LOCALE[locale];
 
-  const getMilestoneStatus = (year: number): 'past' | 'current' | 'future' => {
+  const getMilestoneStatus = (year: number): 'past' | 'current' | 'future' => { // figure-contract-lint-ignore: calendar year, not a measurement
     if (year < currentYear) return 'past';
     if (year === currentYear) return 'current';
     return 'future';

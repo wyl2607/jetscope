@@ -18,7 +18,7 @@ const TOP = 40;
 const ROW_H = 34;
 const BOTTOM = 26;
 
-function niceMax(value: number): number {
+function niceMax(value: number): number { // figure-contract-lint-ignore: axis rounding helper, not a prop
   return Math.max(100, Math.ceil(value / 20) * 20);
 }
 
@@ -43,7 +43,7 @@ export function TransitionLadder({ summary }: Props) {
     Math.max(...lanes.map((l) => l.breakeven), ...references.map((r) => r.value), 1)
   );
   const trackW = WIDTH - LABEL_W - RIGHT_PAD;
-  const x = (v: number) => LABEL_W + (Math.min(v, maxAxis) / maxAxis) * trackW;
+  const x = (v: number) => LABEL_W + (Math.min(v, maxAxis) / maxAxis) * trackW; // figure-contract-lint-ignore: chart coordinate mapping, not a measurement
   const height = TOP + lanes.length * ROW_H + BOTTOM;
   const axisTicks = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(maxAxis * f));
   const refColors = ['#38bdf8', '#e879f9', '#fbbf24'];

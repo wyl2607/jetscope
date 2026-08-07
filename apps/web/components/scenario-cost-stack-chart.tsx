@@ -14,7 +14,7 @@ const barColors: Record<string, string> = {
   ptl: 'bg-gradient-to-r from-violet-500 to-fuchsia-300'
 };
 
-function midpoint(low: number, high: number): number {
+function midpoint(low: number, high: number): number { // figure-contract-lint-ignore: internal arithmetic helper, not a prop
   return (low + high) / 2;
 }
 
