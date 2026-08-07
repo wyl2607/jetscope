@@ -213,9 +213,19 @@ fi
 # the presence of that stamp is proof the server-side fetch reached the API.
 # This is the check that actually matters.
 #
-# The second probe carries the public Host header on purpose: host nginx serves
-# a named vhost and answers naked-IP requests from its default server, so an
-# unadorned http://127.0.0.1/ proves nothing about the public entrypoint.
+# The second probe goes to the public HTTPS URL, not to 127.0.0.1 with a Host
+# header. The first real run of this step tried the Host-header route and
+# reported a failed deploy that had in fact succeeded: host nginx answers :80
+# with a 301 to https, and the probe read the empty redirect body. Adding -L did
+# not rescue it either - the redirected request returned 404 - while a plain
+# request to https://<public host> from the same machine returned 200 and the
+# full page.
+#
+# So: ask for the page the way a reader asks for it. This host serves more than
+# one site, and reproducing nginx's vhost selection inside a smoke test only
+# creates a second thing that can be wrong. A check that cries wolf on every
+# deploy gets ignored on the deploy where it is right, which is as bad as the
+# false pass this whole step exists to prevent.
 if curl -fsS --max-time 20 http://127.0.0.1:3000/ >/dev/null 2>&1; then
   echo "WEB responding on :3000"
 else
@@ -223,15 +233,10 @@ else
   exit 1
 fi
 
-for probe in "http://127.0.0.1:3000/sources||direct :3000" "http://127.0.0.1/sources|$PUBLIC_HOST|via nginx as $PUBLIC_HOST"; do
-  url="\$(printf '%s' "\$probe" | cut -d'|' -f1)"
-  host_header="\$(printf '%s' "\$probe" | cut -d'|' -f2)"
-  label="\$(printf '%s' "\$probe" | cut -d'|' -f3)"
-  if [ -n "\$host_header" ]; then
-    body="\$(curl -fsS --max-time 25 -H "Host: \$host_header" "\$url" 2>/dev/null || true)"
-  else
-    body="\$(curl -fsS --max-time 25 "\$url" 2>/dev/null || true)"
-  fi
+for probe in "http://127.0.0.1:3000/sources|direct :3000" "https://$PUBLIC_HOST/sources|public https"; do
+  url="\${probe%%|*}"
+  label="\${probe##*|}"
+  body="\$(curl -fsS --max-time 25 "\$url" 2>/dev/null || true)"
   if [ -z "\$body" ]; then
     echo "FAIL /sources \$label — no response"
     exit 1
@@ -249,8 +254,8 @@ for probe in "http://127.0.0.1:3000/sources||direct :3000" "http://127.0.0.1/sou
 done
 
 # nginx must not let its catch-all swallow the API prefix.
-if curl -fsS --max-time 10 -H "Host: $PUBLIC_HOST" http://127.0.0.1/v1/health >/dev/null 2>&1; then
-  echo "OK /v1/health via nginx as $PUBLIC_HOST"
+if curl -fsS --max-time 10 "https://$PUBLIC_HOST/v1/health" >/dev/null 2>&1; then
+  echo "OK /v1/health via public https"
 else
   echo "FAIL /v1/health via nginx — check the /v1 location order in the active nginx config"
   exit 1
