@@ -1,9 +1,15 @@
-import { Shell } from '@/components/shell';
+import { MetricCard } from '@/components/cards';
+import { PageTemplate, SignalRow } from '@/components/page-template';
+import { Panel } from '@/components/panel';
+import { SourceFooter } from '@/components/source-footer';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { buildPageMetadata } from '@/lib/seo';
 import ClientMarketData from './client-market-data';
 import ClientBreakevenCalculator from './client-breakeven-calculator';
+
+const LUFTHANSA_NEWSROOM =
+  'https://newsroom.lufthansagroup.com/en/lufthansa-group-optimises-flight-offering-in-summer-across-all-six-hubs/';
 
 export const revalidate = 600;
 
@@ -16,204 +22,82 @@ export const metadata: Metadata = buildPageMetadata({
 
 export default function LufthansaAnalysisDE() {
   return (
-    <Shell
+    <PageTemplate
       locale="de"
       eyebrow="Tiefenanalyse Deutsche Fassung"
       title="Lufthansa kürzt 20.000 Flüge: SAF-Wendepunkt?"
-      description="Energiemarktkrise & strategische Transformation"
+      question="Sollte Lufthansa den Zeitpunkt für langfristige SAF-Abnahmeverträge jetzt neu prüfen?"
+      asOf={null}
     >
-      <div className="max-w-4xl mx-auto space-y-8">
-        
-        {/* Market data panel */}
+      <SignalRow label="Beschaffungssignale">
+        <MetricCard label="Beschaffungshaltung" value="Jetzt überprüfen" valueClassName="text-warning" hint="Kosten- und Politikdruck öffnen ein Prüffenster; aktuelle Angebote entscheiden." />
+        <MetricCard label="Kapazitätssignal" value="20.000 Flüge" hint="Statische Ereignisangabe zur angekündigten Kurzstreckenkürzung." />
+        <MetricCard label="Modellierter Kipppunkt" value="$115/Fass" hint="Abgeleitete Referenz, keine laufende Marktbeobachtung." />
+        <MetricCard label="ReFuelEU 2030" value="6% SAF" valueClassName="text-warning" hint="Auf dieser Seite als politische Szenarioannahme verwendet." />
+      </SignalRow>
+
+      <Panel title="Aktuelle Marktindikatoren" why="Nur aktuelle, quellenmarkierte Preise können zeigen, ob das statische Prüffenster heute noch offen ist.">
         <ClientMarketData />
+      </Panel>
 
-        <section className="rounded-lg border border-line bg-surface p-8">
-          <p className="text-lg text-muted leading-relaxed">
-            April 2026: Lufthansa kündigt die Streichung von <strong>20.000 Kurzstreckenflügen</strong> an – oberflächlich eine Kostenmaßnahme. Tiefere Bedeutung: Die Energiewirtschaft des Flugverkehrs durchläuft einen <strong>Wendepunkt</strong>.
-          </p>
-        </section>
-
-        <section className="space-y-6">
-          <h2 className="text-3xl font-bold text-ink">Kontext: Warum Lufthansa jetzt handelt</h2>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-surface p-4 rounded border border-line">
-              <p className="font-semibold text-accent">Öl-Schock</p>
-              <p className="text-muted text-sm mt-2">$80/Fass → $115/Fass (+43%)
-              = +30-35% Einheitskosten auf Kurzstrecke</p>
-            </div>
-            
-            <div className="bg-surface p-4 rounded border border-line">
-              <p className="font-semibold text-accent">Marge-Problem</p>
-              <p className="text-muted text-sm mt-2">Kurzstrecke: 2-3% Marge
-              Treibstoff: ~30% der Kosten
-              → Unrentabel bei $115/Fass</p>
-            </div>
+      <Panel title="Kontext: Warum Lufthansa jetzt handelt" why="Kapazitätskürzungen zeigen, wann Treibstoffdruck von einer Kostenzeile zu einer operativen Entscheidung wird.">
+        <div className="space-y-6 text-sm leading-7 text-muted tabular-nums">
+          <p className="text-lg">April 2026: Lufthansa kündigt die Streichung von <strong>20.000 Kurzstreckenflügen</strong> an – oberflächlich eine Kostenmaßnahme, in dieser Analyse zugleich ein mögliches Wendepunktsignal.</p>
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="rounded-xl border border-line bg-surface-muted p-4"><p className="font-semibold text-accent">Öl-Schock</p><p className="mt-2">$80/Fass → $115/Fass (+43%) = modelliert +30–35% Einheitskosten auf Kurzstrecke.</p></div>
+            <div className="rounded-xl border border-line bg-surface-muted p-4"><p className="font-semibold text-accent">Marge-Problem</p><p className="mt-2">Kurzstrecke: 2–3% Marge; Treibstoff: ~30% der Kosten; im Modell unrentabel bei $115/Fass.</p></div>
           </div>
+          <p>Im Wettbewerb mit Billigfliegern kann Lufthansa Ticketpreise nicht beliebig schnell erhöhen. Die modellierte Reaktion ist die Kürzung margenschwacher Flüge.</p>
+        </div>
+      </Panel>
 
-          <p className="text-muted">
-            Im brutalen Wettbewerb mit Billigfliegern kann Lufthansa nicht schnell die Ticketpreise erhöhen. Die rationale Reaktion: margenschwache Flüge streichen.
-          </p>
-        </section>
-
-        {/* Interactive break-even calculator */}
+      <Panel title="SAF-Breakeven-Rechner" why="Mit expliziten Annahmen lässt sich prüfen, ob Ölpreis, EU ETS und Beimischung die Beschaffungslücke tatsächlich schließen.">
         <ClientBreakevenCalculator />
+      </Panel>
 
-        <section className="space-y-6">
-          <h2 className="text-3xl font-bold text-ink">Die tiefere Logik: SAF-Inflexion</h2>
-          
-          <div className="bg-surface p-6 rounded border border-line">
-            <p className="font-semibold text-muted mb-3">Kostenverlauf bei unterschiedlichen Ölpreisen:</p>
-            
-            <table className="w-full text-sm text-muted">
-              <thead>
-                <tr className="border-b border-line">
-                  <th className="text-left py-2">Ölpreis</th>
-                  <th className="text-left py-2">Jet-A Kosten</th>
-                  <th className="text-left py-2">SAF Kosten</th>
-                  <th className="text-left py-2">SAF teurer?</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                <tr>
-                  <td className="py-2">$80/Fass</td>
-                  <td>$0,95/L</td>
-                  <td>$1,60-1,85/L</td>
-                  <td className="text-danger">+70% ✗</td>
-                </tr>
-                <tr>
-                  <td className="py-2">$115/Fass (2026)</td>
-                  <td>$1,20/L</td>
-                  <td>$1,60-1,85/L</td>
-                  <td className="text-warning">+35-50% ⚠</td>
-                </tr>
-                <tr>
-                  <td className="py-2">$150/Fass (2030)</td>
-                  <td>$1,60+/L</td>
-                  <td>$1,20-1,40/L</td>
-                  <td className="text-success">-15 bis +40% ✓</td>
-                </tr>
-              </tbody>
-            </table>
-            
-            <p className="mt-4 text-muted text-xs">
-              Mit EU-ETS Kohlenstoffpreisen (Ziel 2030: €150+/tCO₂) wird die Rechnung noch günstiger für SAF.
-            </p>
-          </div>
+      <Panel title="Die tiefere Logik: SAF-Inflexion" why="Die Szenarien zeigen, wie empfindlich der Beschaffungszeitpunkt gegenüber dem fossilen Referenzpreis ist.">
+        <div className="space-y-6 tabular-nums">
+          <div className="overflow-x-auto"><table className="w-full text-sm text-muted"><thead><tr className="border-b border-line"><th className="py-2 text-left">Ölpreis</th><th className="py-2 text-left">Jet-A Kosten</th><th className="py-2 text-left">SAF Kosten</th><th className="py-2 text-left">SAF-Aufschlag</th></tr></thead><tbody className="divide-y divide-line"><tr><td className="py-2">$80/Fass</td><td>$0,95/L</td><td>$1,60–1,85/L</td><td className="text-danger">+70% ✗</td></tr><tr><td className="py-2">$115/Fass (2026)</td><td>$1,20/L</td><td>$1,60–1,85/L</td><td className="text-warning">+35–50% ⚠</td></tr><tr><td className="py-2">$150/Fass (2030)</td><td>$1,60+/L</td><td>$1,20–1,40/L</td><td className="text-success">−15 bis +40% ✓</td></tr></tbody></table></div>
+          <p className="text-sm leading-7 text-muted"><strong>Inflexion bei $115/Fass:</strong> In diesem Modell wechselt SAF von „unwirtschaftlich“ zu „prüfenswert“. Das ist eine abgeleitete Schwelle, kein beobachteter Marktpreis.</p>
+        </div>
+      </Panel>
 
-          <p className="text-muted">
-            <strong>Inflexion bei $115/Fass:</strong> Das ist der genaue Punkt, an dem SAF von „total unwirtschaftlich" zu „grenzwertig akzeptabel" wechselt. Lufthansas Timing ist kein Zufall – sie positioniert sich für die SAF-Dominanz nach 2028.
-          </p>
-        </section>
+      <Panel title="Deutschland als SAF-Fabrik" why="Lokale Produktionsvorteile zählen nur, wenn sie Lieferkosten und Beschaffungsrisiko nachweisbar senken.">
+        <div className="grid gap-6 text-sm tabular-nums lg:grid-cols-3">
+          <div className="rounded-xl border border-accent bg-accent-soft p-4"><p className="font-semibold text-accent">Warum Deutschland?</p><ul className="mt-2 space-y-2 text-muted"><li>✓ Chemie-Cluster und Raffinerie-Know-how</li><li>✓ angenommene Windkraftkosten €50–80/MWh</li><li>✓ Biotechnologie und Katalytik</li></ul></div>
+          <div className="rounded-xl border border-success bg-success-soft p-4"><p className="font-semibold text-success">Möglicher Kostenvorteil</p><p className="mt-2 text-muted">Deutsches SAF mit Windstrom: im Artikel $1,25–1,50/L, etwa 10–20% unter importiertem SAF.</p></div>
+          <div className="rounded-xl border border-warning bg-warning-soft p-4"><p className="font-semibold text-warning">Lufthansas Chance</p><p className="mt-2 text-muted">Heimische Lieferketten könnten 2028–2030 niedrigere Kosten ermöglichen; belastbare Angebote fehlen auf dieser Seite.</p></div>
+        </div>
+      </Panel>
 
-        <section className="space-y-6">
-          <h2 className="text-3xl font-bold text-ink">Deutschland als SAF-Fabrik</h2>
-          
-          <div className="space-y-3">
-            <div className="bg-surface border-l-4 border-accent p-4 rounded">
-              <p className="font-semibold text-accent">Warum Deutschland?</p>
-              <ul className="mt-2 space-y-1 text-sm text-muted">
-                <li>✓ Chemie-Cluster (BASF, Covestro) → SAF-ready</li>
-                <li>✓ Windkraft €50-80/MWh → global niedrigste Stromkosten</li>
-                <li>✓ Biotechnologie & Katalytik → deutsche Kernstärken</li>
-              </ul>
-            </div>
+      <Panel title="ReFuelEU: politischer Rahmen" why="Verpflichtende Beimischung hält Beschaffungsbedarf aufrecht, auch wenn der reine Ölpreisvergleich gegen SAF spricht.">
+        <div className="space-y-4 text-sm text-muted tabular-nums"><div><p className="font-semibold">1. Jan. 2025</p><p>0,7% SAF-Quote (hier als Artikelannahme wiedergegeben)</p></div><div><p className="font-semibold">2030</p><p>6% SAF-Quote und angenommene Nachfrage von 420.000 Tonnen/Jahr</p></div><div><p className="font-semibold">2050</p><p>70% SAF-Quote als langfristiger politischer Pfad</p></div><p className="border-t border-line pt-4 text-xs">Der im Artikel genannte Investitionsbedarf von 200–300 Mrd. € ist nicht als aktuelle Messung verifiziert.</p></div>
+      </Panel>
 
-            <div className="bg-surface border-l-4 border-success p-4 rounded">
-              <p className="font-semibold text-success">Effekt: Kostenführerschaft</p>
-              <p className="mt-2 text-sm text-muted">
-                Deutsches SAF mit Windstrom: $1,25-1,50/L
-                (10-20% billiger als importierte SAF)
-              </p>
-            </div>
+      <Panel title="Drei Szenarien für 2030" why="Die Bandbreite verhindert, dass ein einzelner Ölpreispfad als sichere Beschaffungsprognose gelesen wird.">
+        <div className="grid gap-6 text-sm tabular-nums lg:grid-cols-3"><div className="rounded-xl border border-accent bg-accent-soft p-4"><p className="font-bold text-accent">Basis ($110–130/Fass)</p><p className="mt-2 text-muted">SAF-Spreads schrumpfen im Modell auf 20–30%; langfristige Verträge werden prüfenswert.</p></div><div className="rounded-xl border border-warning bg-warning-soft p-4"><p className="font-bold text-warning">Risiko ($85/Fass)</p><p className="mt-2 text-muted">SAF bleibt teuer; ReFuelEU-Annahmen halten die Nachfrage dennoch aufrecht.</p></div><div className="rounded-xl border border-success bg-success-soft p-4"><p className="font-bold text-success">Chance ($140+/Fass)</p><p className="mt-2 text-muted">Im Modell kann SAF Jet-A unterbieten; Lieferfähigkeit bleibt separat zu prüfen.</p></div></div>
+      </Panel>
 
-            <div className="bg-surface border-l-4 border-warning p-4 rounded">
-              <p className="font-semibold text-warning">Lufthansas Vorteil</p>
-              <p className="mt-2 text-sm text-muted">
-                Heimische Lieferketten + Kostenführerschaft
-                = 2028-2030 niedrigere Treibstoffkosten als andere EU-Airlines
-              </p>
-            </div>
-          </div>
-        </section>
+      <Panel title="Kernbotschaft" why="Die Seite empfiehlt eine erneute Prüfung des Timings, nicht den ungeprüften Abschluss eines Vertrags." action={<Link href="/analysis/lufthansa-flight-cuts-2026-04" className="text-sm text-accent underline">Chinesische Vollversion →</Link>}>
+        <div className="space-y-4 text-sm leading-7 text-muted tabular-nums"><p>Lufthansas Flugkürzungen sind in dieser Analyse ein Signal strategischer Transformation. Deutschlands mögliches Zeitfenster bis 2030 hängt von realen Angeboten und nachweisbarer Kapazität ab.</p><p>Investitionen in SAF-Kapazität, Windkraft-Infrastruktur und Lieferketten müssen deshalb gegen aktuelle Marktquellen und Vertragsdaten geprüft werden.</p></div>
+      </Panel>
 
-        <section className="space-y-6">
-          <h2 className="text-3xl font-bold text-ink">ReFuelEU: Der politische Rahmen</h2>
-          
-          <div className="bg-surface border border-line rounded p-6">
-            <div className="space-y-4">
-              <div>
-                <p className="font-semibold text-muted">1. Jan 2025</p>
-                <p className="text-muted text-sm">0,7% SAF-Quote verpflichtend</p>
-              </div>
-              <div>
-                <p className="font-semibold text-muted">2030 (Wendepunkt)</p>
-                <p className="text-muted text-sm">6% SAF-Quote = 420.000 Tonnen/Jahr Nachfrage</p>
-              </div>
-              <div>
-                <p className="font-semibold text-muted">2050</p>
-                <p className="text-muted text-sm">70% SAF-Quote = volle Dekarbonisierung</p>
-              </div>
-            </div>
-            
-            <p className="mt-4 text-muted text-xs border-t border-line pt-4">
-              Investitionsbedarf bis 2030: 200-300 Mrd. € in neue SAF-Kapazität
-            </p>
-          </div>
-        </section>
-
-        <section className="space-y-6">
-          <h2 className="text-3xl font-bold text-ink">3 Szenarien für 2030</h2>
-          
-          <div className="space-y-4">
-            <div className="bg-surface border-l-4 border-accent p-4 rounded">
-              <p className="font-bold text-accent mb-2">Basis ($110-130/Fass)</p>
-              <p className="text-sm text-muted">
-                Anhaltende geopolitische Spannungen. SAF-Spreads schrumpfen auf 20-30%.
-                Deutsche Industrie dominiert. Lufthansa schließt Langfrist-Kontrakte.
-              </p>
-            </div>
-
-            <div className="bg-surface border-l-4 border-warning p-4 rounded">
-              <p className="font-bold text-warning mb-2">Risiko ($85/Fass)</p>
-              <p className="text-sm text-muted">
-                Geopolitische Entspannung oder Rezession. SAF bleibt teuer, aber 
-                ReFuelEU-Quoten sind bindend. Erzwungener Kauf. Branche reift schneller.
-              </p>
-            </div>
-
-            <div className="bg-surface border-l-4 border-success p-4 rounded">
-              <p className="font-bold text-success mb-2">Chancen ($140+/Fass)</p>
-              <p className="text-sm text-muted">
-                Klimapolitik beschleunigt, Kohlenstoffpreise steigen. 
-                SAF günstiger als Jet-A. Airlines kaufen freiwillig. 
-                Deutsche Industrie profitiert massiv.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-lg border border-accent bg-surface p-8">
-          <h2 className="text-2xl font-bold text-accent mb-4">Kern-Botschaft</h2>
-          <p className="text-muted leading-relaxed">
-            Lufthansas Flugkürzungen sind <strong>kein Signal für Branchenerosion, sondern für strategische Transformation</strong>. 
-            Die alte Konkurrenz war Skalierung + Kosteneffizienz. Die zukünftige wird Energiewende + Lieferkettenkontrolle.
-          </p>
-          <p className="text-muted leading-relaxed mt-4">
-            <strong>Für Deutschland:</strong> Dies ist ein Gold-Fenster bis 2030. 
-            Investitionen in SAF-Kapazität, Windkraft-Infrastruktur und Grüntechnologie-Exporte jetzt aufbauen 
-            → 2035+ globale Marktführerschaft erreichen. 
-            Lufthansa selbst könnte einer der größten Nutznießer sein.
-          </p>
-        </section>
-
-        <section className="text-center py-8">
-          <Link href="/analysis/lufthansa-flight-cuts-2026-04" className="text-accent underline hover:text-ink">
-            Chinesische Vollversion →
-          </Link>
-        </section>
-
-      </div>
-    </Shell>
+      <SourceFooter
+        locale="de"
+        sources={[
+          { id: 'market-api', label: 'JetScope Markt- und Quellen-API; der interaktive Indikator zeigt den Laufzeitstatus', href: '/de/sources', basis: 'assumption' },
+          { id: 'lufthansa-newsroom', label: 'Lufthansa Group Newsroom: Anpassung des Sommerflugplans 2026', href: LUFTHANSA_NEWSROOM, basis: 'observed' },
+          { id: 'author-cost-model', label: 'Interaktiver Breakeven-Rechner und statische Kostenszenarien', basis: 'derived' },
+          { id: 'refueleu-targets', label: 'Im Artikel verwendete ReFuelEU-Beimischungsziele', basis: 'assumption' }
+        ]}
+        methodHref="/de/sources"
+        methodLabel="Quellen- und Methodenliste"
+        limitations={[
+          'Der Seitenkopf hat keinen Datenstempel: Nur das clientseitige Marktmodul kennt nach dem Laden seinen eigenen Quellenzeitpunkt.',
+          'Die Ereignisanalyse und ihre Kosten-, Margen-, Politik- und 2030-Werte sind ein statischer Stand und keine laufende Marktprognose.',
+          'Der Rechner arbeitet mit sichtbaren Annahmen; tatsächliche Beschaffung benötigt Lieferantenangebote, Verträge, Hedge-Positionen und Streckenprofitabilität.'
+        ]}
+      />
+    </PageTemplate>
   );
 }
