@@ -4,18 +4,18 @@ type Props = {
   initial: HeatSensitivityResponse;
 };
 
-const HEAT_STOPS: Array<{ t: number; rgb: [number, number, number] }> = [
+const HEAT_STOPS: Array<{ t: number; rgb: [number, number, number] }> = [ // figure-contract-lint-ignore: colour ramp stop, not a measurement
   { t: 0, rgb: [16, 185, 129] },
   { t: 0.5, rgb: [245, 158, 11] },
   { t: 1, rgb: [225, 29, 72] }
 ];
 
-function lerp(a: number, b: number, f: number): number {
+function lerp(a: number, b: number, f: number): number { // figure-contract-lint-ignore: colour interpolation helper, not a measurement
   return a + (b - a) * f;
 }
 
 // Lower breakeven carbon price (heat pump wins sooner) → greener; higher → red.
-function heatColor(t: number): string {
+function heatColor(t: number): string { // figure-contract-lint-ignore: colour ramp position, not a measurement
   const x = Math.max(0, Math.min(1, t));
   const [lo, hi] = x <= 0.5 ? [HEAT_STOPS[0], HEAT_STOPS[1]] : [HEAT_STOPS[1], HEAT_STOPS[2]];
   const f = hi.t === lo.t ? 0 : (x - lo.t) / (hi.t - lo.t);

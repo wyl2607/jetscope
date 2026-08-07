@@ -44,7 +44,7 @@ function formatUpdatedAt(value: string): string {
   });
 }
 
-function coverageWidth(coverageWeeks: number): number {
+function coverageWidth(coverageWeeks: number): number { // figure-contract-lint-ignore: bar width geometry, not a measurement
   return Math.max(8, Math.min(100, (coverageWeeks / 8) * 100));
 }
 

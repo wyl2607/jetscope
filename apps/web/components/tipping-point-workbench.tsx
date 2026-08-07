@@ -34,18 +34,18 @@ type Props = {
 
 const PATHWAY_KEYS = ['hefa', 'atj', 'ft', 'ptl'] as const;
 
-function finiteNumber(value: string | null, fallback: number): number {
+function finiteNumber(value: string | null, fallback: number): number { // figure-contract-lint-ignore: input parsing helper, not a prop
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
 }
 
-function boundedNumber(value: string, fallback: number, min: number, max = Number.POSITIVE_INFINITY): number {
+function boundedNumber(value: string, fallback: number, min: number, max = Number.POSITIVE_INFINITY): number { // figure-contract-lint-ignore: input clamping helper, not a prop
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.min(max, Math.max(min, parsed));
 }
 
-function formatNumber(value: number, digits = 2): string {
+function formatNumber(value: number, digits = 2): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
   return value.toFixed(digits);
 }
 

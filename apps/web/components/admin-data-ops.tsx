@@ -76,7 +76,7 @@ function bodyRecord(body: unknown): Record<string, unknown> {
   return body && typeof body === 'object' && !Array.isArray(body) ? body as Record<string, unknown> : {};
 }
 
-function friendlyAdminError(body: unknown, status: number, fallback: string): string {
+function friendlyAdminError(body: unknown, status: number, fallback: string): string { // figure-contract-lint-ignore: HTTP status code, not a measurement
   const record = bodyRecord(body);
   const raw = String(record.error ?? record.detail ?? '');
   if (raw.includes('Server admin token is not configured')) {

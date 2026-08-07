@@ -23,7 +23,7 @@ const pathwayColorMap: Record<string, string> = {
   ptl: 'from-violet-500 to-fuchsia-300'
 };
 
-function formatUsd(value: number): string {
+function formatUsd(value: number): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
   return `$${value.toFixed(2)}/L`;
 }
 

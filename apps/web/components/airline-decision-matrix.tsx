@@ -33,7 +33,7 @@ const DECISION_COPY: Record<
   }
 };
 
-function probabilityLabel(value: number): string {
+function probabilityLabel(value: number): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
   return `${Math.round(value * 100)}%`;
 }
 

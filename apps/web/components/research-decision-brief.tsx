@@ -17,7 +17,7 @@ function statusTone(status: ResearchDecisionBrief['status']): string {
   return 'border-sky-200 bg-sky-50 text-sky-800';
 }
 
-function formatConfidence(value: number): string {
+function formatConfidence(value: number): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
   return `${Math.round(value * 100)}%`;
 }
 
