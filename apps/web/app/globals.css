@@ -25,6 +25,20 @@
   --color-warning-soft: #fff4df;
   --color-danger: #b4233e;
   --color-danger-soft: #fff0f2;
+
+  /* Series colors identify one member of a set - a SAF pathway, a cost
+   * component, a chart series. They carry no good/bad meaning, which is exactly
+   * why they cannot be the semantic tokens above: painting the FT pathway
+   * `warning` claims FT is a warning. Assigned in fixed order, never cycled.
+   * Okabe-Ito, chosen for color-vision deficiency; validated all-pairs with no
+   * failure. Two results are at the floor and are the reason section 1 rule 8
+   * requires a direct label on every series: reddish-purple against bluish-green
+   * is deutan dE 7.6, and reddish-purple is 2.98:1 on surface. */
+  --color-series-1: #0072b2;
+  --color-series-2: #d55e00;
+  --color-series-3: #009e73;
+  --color-series-4: #cc79a7;
+  --color-series-5: #6d28d9;
 }
 
 :root {
