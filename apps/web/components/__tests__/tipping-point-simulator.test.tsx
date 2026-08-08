@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
+import { assumed } from '@/lib/figure';
 import { toPathwayCostRow } from '@/lib/pathways-read-model';
 
 describe('TippingPointSimulator', () => {
@@ -43,7 +44,17 @@ describe('TippingPointSimulator', () => {
     };
 
     const { container } = render(
-      <TippingPointSimulator tippingPoint={tippingPoint} decision={decision} reserveWeeks={3.5} />
+      <TippingPointSimulator
+        tippingPoint={tippingPoint}
+        decision={decision}
+        reserveWeeks={assumed({
+          value: 3.5,
+          unit: 'weeks',
+          sourceId: 'test',
+          method: 'test fixture reserve',
+          precision: 1
+        })}
+      />
     );
 
     expect(container.firstChild).not.toBeNull();

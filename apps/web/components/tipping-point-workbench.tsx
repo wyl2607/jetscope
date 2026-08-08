@@ -8,7 +8,7 @@ import { FuelVsSafPriceChart } from '@/components/fuel-vs-saf-price-chart';
 import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
 import { ScenarioCostStackChart } from '@/components/scenario-cost-stack-chart';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
-import { assumed, derived, observed, type Figure } from '@/lib/figure';
+import { assumed, derived, missing, observed, type Figure } from '@/lib/figure';
 import {
   type AirlineDecisionResponse,
   type DecisionReadModel,
@@ -19,6 +19,15 @@ import {
 } from '@/lib/product-read-model';
 
 const WORKBENCH_SOURCE_ID = 'saf-tipping-model';
+
+/**
+ * Extract a finite numeric seed for a control. Never launders null into 0 —
+ * 0 weeks reserve is a crisis signal, not "unknown". Callers must pass a Figure
+ * that already carries an assumed/observed value when the control needs a seed.
+ */
+function figureControlSeed(figure: Figure): number | null {
+  return figure.value != null && Number.isFinite(figure.value) ? figure.value : null;
+}
 
 function fossilJetFigure(
   value: number, // figure-contract-lint-ignore: constructor input, not a display prop
@@ -57,17 +66,41 @@ function effectiveFossilJetFigure(
   });
 }
 
+/**
+ * Carry reserve through to child artifacts. Keep the seed's provenance when the
+ * control still shows that value; once the user moves it, it is a scenario input.
+ */
+function reserveWeeksFigure(value: number, seed: Figure): Figure { // figure-contract-lint-ignore: constructor input, not a display prop
+  if (!Number.isFinite(value)) {
+    return missing({
+      unit: 'weeks',
+      sourceId: seed.sourceId || WORKBENCH_SOURCE_ID,
+      reason: '储备周数未知',
+      basis: seed.basis === 'assumption' ? 'assumption' : 'observed'
+    });
+  }
+  if (seed.value != null && Number.isFinite(seed.value) && Math.abs(seed.value - value) < 1e-9) {
+    return seed;
+  }
+  return assumed({
+    value,
+    unit: 'weeks',
+    sourceId: seed.sourceId || WORKBENCH_SOURCE_ID,
+    precision: 1,
+    method: 'workbench reserve-weeks control (user-adjusted scenario input)'
+  });
+}
+
 type Props = {
   initialTippingPoint: TippingPointReadModel | null;
   initialDecision: DecisionReadModel | null;
-  initialReserveWeeks: number;
-  reserveIsScenarioDefault?: boolean;
+  initialReserveWeeks: Figure;
   liveDefaults: {
-    fossilJetUsdPerL: number;
-    carbonPriceEurPerT: number;
-    subsidyUsdPerL: number;
-    blendRatePct: number;
-    reserveWeeks: number;
+    fossilJetUsdPerL: Figure;
+    carbonPriceEurPerT: Figure;
+    subsidyUsdPerL: Figure;
+    blendRatePct: Figure;
+    reserveWeeks: Figure;
     pathwayKey: string;
   };
 };
@@ -101,27 +134,38 @@ export function TippingPointWorkbench({
   initialTippingPoint,
   initialDecision,
   initialReserveWeeks,
-  reserveIsScenarioDefault = false,
   liveDefaults
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
+  const fossilSeed = figureControlSeed(liveDefaults.fossilJetUsdPerL);
+  const carbonSeed = figureControlSeed(liveDefaults.carbonPriceEurPerT);
+  const subsidySeed = figureControlSeed(liveDefaults.subsidyUsdPerL);
+  const blendSeed = figureControlSeed(liveDefaults.blendRatePct);
+  const reserveSeed =
+    figureControlSeed(liveDefaults.reserveWeeks) ?? figureControlSeed(initialReserveWeeks);
+
   const [fossilJetUsdPerL, setFossilJetUsdPerL] = useState(() =>
-    finiteNumber(searchParams.get('fuel'), liveDefaults.fossilJetUsdPerL)
+    fossilSeed == null ? finiteNumber(searchParams.get('fuel'), Number.NaN) : finiteNumber(searchParams.get('fuel'), fossilSeed)
   );
   const [carbonPriceEurPerT, setCarbonPriceEurPerT] = useState(() =>
-    finiteNumber(searchParams.get('carbon'), liveDefaults.carbonPriceEurPerT)
+    carbonSeed == null ? finiteNumber(searchParams.get('carbon'), Number.NaN) : finiteNumber(searchParams.get('carbon'), carbonSeed)
   );
   const [subsidyUsdPerL, setSubsidyUsdPerL] = useState(() =>
-    finiteNumber(searchParams.get('subsidy'), liveDefaults.subsidyUsdPerL)
+    subsidySeed == null ? finiteNumber(searchParams.get('subsidy'), Number.NaN) : finiteNumber(searchParams.get('subsidy'), subsidySeed)
   );
   const [blendRatePct, setBlendRatePct] = useState(() =>
-    Math.min(100, finiteNumber(searchParams.get('blend'), liveDefaults.blendRatePct))
+    Math.min(
+      100,
+      blendSeed == null ? finiteNumber(searchParams.get('blend'), Number.NaN) : finiteNumber(searchParams.get('blend'), blendSeed)
+    )
   );
   const [reserveWeeks, setReserveWeeks] = useState(() =>
-    finiteNumber(searchParams.get('reserve'), liveDefaults.reserveWeeks || initialReserveWeeks)
+    reserveSeed == null
+      ? finiteNumber(searchParams.get('reserve'), Number.NaN)
+      : finiteNumber(searchParams.get('reserve'), reserveSeed)
   );
   const [pathwayKey, setPathwayKey] = useState(() => {
     const raw = searchParams.get('pathway') ?? liveDefaults.pathwayKey;
@@ -203,13 +247,23 @@ export function TippingPointWorkbench({
   }, [blendRatePct, carbonPriceEurPerT, fossilJetUsdPerL, reserveWeeks, selectedPathwayKey, subsidyUsdPerL]);
 
   function useLiveValues() {
-    setFossilJetUsdPerL(liveDefaults.fossilJetUsdPerL);
-    setCarbonPriceEurPerT(liveDefaults.carbonPriceEurPerT);
-    setSubsidyUsdPerL(liveDefaults.subsidyUsdPerL);
-    setBlendRatePct(liveDefaults.blendRatePct);
-    setReserveWeeks(liveDefaults.reserveWeeks);
+    // Only apply known values — never write 0 as a stand-in for missing.
+    const nextFuel = figureControlSeed(liveDefaults.fossilJetUsdPerL);
+    const nextCarbon = figureControlSeed(liveDefaults.carbonPriceEurPerT);
+    const nextSubsidy = figureControlSeed(liveDefaults.subsidyUsdPerL);
+    const nextBlend = figureControlSeed(liveDefaults.blendRatePct);
+    const nextReserve = figureControlSeed(liveDefaults.reserveWeeks);
+    if (nextFuel != null) setFossilJetUsdPerL(nextFuel);
+    if (nextCarbon != null) setCarbonPriceEurPerT(nextCarbon);
+    if (nextSubsidy != null) setSubsidyUsdPerL(nextSubsidy);
+    if (nextBlend != null) setBlendRatePct(nextBlend);
+    if (nextReserve != null) setReserveWeeks(nextReserve);
     setPathwayKey(liveDefaults.pathwayKey);
-    setStatus('已应用实时市场默认值');
+    setStatus(
+      nextFuel == null || nextCarbon == null || nextSubsidy == null || nextBlend == null || nextReserve == null
+        ? '已应用可用的实时默认值（部分输入仍未知）'
+        : '已应用实时市场默认值'
+    );
   }
 
   function handleAdminTokenChange(value: string) {
@@ -356,14 +410,14 @@ export function TippingPointWorkbench({
             />
           </label>
           <label className="text-xs uppercase tracking-[0.18em] text-muted">
-            {reserveIsScenarioDefault ? '储备周数（假设）' : '储备周数'}
+            {initialReserveWeeks.basis === 'assumption' ? '储备周数（假设）' : '储备周数'}
             <input
               className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink transition hover:border-accent hover:bg-accent-soft"
               type="number"
               min="0.1"
               step="0.1"
-              value={reserveWeeks}
-              onChange={(event) => setReserveWeeks((current) => boundedNumber(event.target.value, current, 0.1))}
+              value={Number.isFinite(reserveWeeks) ? reserveWeeks : ''}
+              onChange={(event) => setReserveWeeks((current) => boundedNumber(event.target.value, Number.isFinite(current) ? current : 0.1, 0.1))}
             />
           </label>
           <label className="text-xs uppercase tracking-[0.18em] text-muted">
@@ -431,10 +485,18 @@ export function TippingPointWorkbench({
         />
       </section>
       <section>
-        <TippingPointSimulator tippingPoint={tippingPoint} decision={decision} reserveWeeks={reserveWeeks} />
+        <TippingPointSimulator
+          tippingPoint={tippingPoint}
+          decision={decision}
+          reserveWeeks={reserveWeeksFigure(reserveWeeks, liveDefaults.reserveWeeks.value != null ? liveDefaults.reserveWeeks : initialReserveWeeks)}
+        />
       </section>
       <section>
-        <AirlineDecisionMatrix decision={decision} reserveWeeks={reserveWeeks} pathwayKey={selectedPathwayKey} />
+        <AirlineDecisionMatrix
+          decision={decision}
+          reserveWeeks={reserveWeeksFigure(reserveWeeks, liveDefaults.reserveWeeks.value != null ? liveDefaults.reserveWeeks : initialReserveWeeks)}
+          pathwayKey={selectedPathwayKey}
+        />
       </section>
       <section>
         <SafPathwayComparisonTable pathways={pathways} selectedPathwayKey={selectedPathwayKey} />

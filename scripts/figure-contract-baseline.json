@@ -2,9 +2,6 @@
   "$comment": "Files still violating docs/UI_CONTRACT.md section 3. Counts may only decrease. Regenerate with: node scripts/figure-contract-lint.mjs --update",
   "files": {
     "apps/web/components/admin-data-ops.tsx": 5,
-    "apps/web/components/airline-decision-matrix.tsx": 1,
-    "apps/web/components/tipping-point-simulator.tsx": 1,
-    "apps/web/components/tipping-point-workbench.tsx": 6,
     "apps/web/components/transition-ladder.tsx": 1,
     "apps/web/components/transition-readiness-dashboard.tsx": 4
   }

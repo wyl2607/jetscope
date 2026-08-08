@@ -311,7 +311,48 @@ export default async function CrisisPage() {
           <TippingPointSimulator
             tippingPoint={tippingPoint}
             decision={decision}
-            reserveWeeks={reserveWeeks ?? 3}
+            reserveWeeks={
+              reserveWeeks != null && reserve
+                ? reserve.source_type === 'official'
+                  ? observed({
+                      value: reserveWeeks,
+                      unit: 'weeks',
+                      sourceId: 'eu-reserve',
+                      asOf: reserve.generated_at,
+                      precision: 1
+                    })
+                  : reserve.source_type === 'derived'
+                    ? derived({
+                        value: reserveWeeks,
+                        unit: 'weeks',
+                        sourceId: 'eu-reserve',
+                        asOf: reserve.generated_at,
+                        precision: 1,
+                        method: `derived reserve coverage from ${reserve.source_name}`
+                      })
+                    : assumed({
+                        value: reserveWeeks,
+                        unit: 'weeks',
+                        sourceId: 'eu-reserve',
+                        precision: 1,
+                        method: `reserve coverage from ${reserve.source_name} (${reserve.source_type})`
+                      })
+                : reserveWeeks != null
+                  ? assumed({
+                      value: reserveWeeks,
+                      unit: 'weeks',
+                      sourceId: 'eu-reserve',
+                      precision: 1,
+                      method: 'dashboard reserve coverage without connected reserve source metadata'
+                    })
+                  : assumed({
+                      value: 3,
+                      unit: 'weeks',
+                      sourceId: 'eu-reserve',
+                      precision: 1,
+                      method: '情景基线 3.0 周；实时储备未连接'
+                    })
+            }
           />
         </Panel>
 

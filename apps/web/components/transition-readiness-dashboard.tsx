@@ -11,7 +11,7 @@ import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-t
 import { ScenarioCostStackChart } from '@/components/scenario-cost-stack-chart';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
 import { getReserveSeverity, getTippingPointSignalMeta, type TippingPointSignalTone } from '@/lib/market-signals';
-import { assumed, derived, observed, type Figure } from '@/lib/figure';
+import { assumed, derived as derivedFigure, observed, type Figure } from '@/lib/figure';
 import { toPathwayCostRow } from '@/lib/pathways-read-model';
 import { toTippingPointReadModel, type AirlineDecisionResponse, type ReserveSignal, type TippingPointResponse } from '@/lib/product-read-model';
 
@@ -43,7 +43,7 @@ function effectiveFossilJetFigure(
   value: number, // figure-contract-lint-ignore: constructor input, not a display prop
   asOf: string | null
 ): Figure {
-  return derived({
+  return derivedFigure({
     value,
     unit: 'USD/L',
     sourceId: READINESS_SOURCE_ID,
@@ -168,8 +168,49 @@ export function TransitionReadinessDashboard({
   const [carbon, setCarbon] = useState(initialTippingPoint.inputs.carbon_price_eur_per_t);
   const [subsidy, setSubsidy] = useState(initialTippingPoint.inputs.subsidy_usd_per_l);
   const initialReserveWeeks = initialReserve?.coverage_weeks ?? 3;
-  const reserveIsScenarioDefault = initialReserve == null;
+  const reserveSeedFigure: Figure = initialReserve
+    ? initialReserve.source_type === 'official'
+      ? observed({
+          value: initialReserve.coverage_weeks,
+          unit: 'weeks',
+          sourceId: 'eu-reserve',
+          asOf: initialReserve.generated_at,
+          precision: 1
+        })
+      : initialReserve.source_type === 'derived'
+        ? derivedFigure({
+            value: initialReserve.coverage_weeks,
+            unit: 'weeks',
+            sourceId: 'eu-reserve',
+            asOf: initialReserve.generated_at,
+            precision: 1,
+            method: `derived reserve coverage from ${initialReserve.source_name}`
+          })
+        : assumed({
+            value: initialReserve.coverage_weeks,
+            unit: 'weeks',
+            sourceId: 'eu-reserve',
+            precision: 1,
+            method: `reserve coverage from ${initialReserve.source_name} (${initialReserve.source_type})`
+          })
+    : assumed({
+        value: 3,
+        unit: 'weeks',
+        sourceId: 'eu-reserve',
+        precision: 1,
+        method: '实时储备数据不可用；3.0w 仅为可编辑情景假设'
+      });
   const [reserveWeeks, setReserveWeeks] = useState(initialReserveWeeks);
+  const reserveFigure: Figure =
+    reserveSeedFigure.value != null && Math.abs(reserveSeedFigure.value - reserveWeeks) < 1e-9
+      ? reserveSeedFigure
+      : assumed({
+          value: reserveWeeks,
+          unit: 'weeks',
+          sourceId: reserveSeedFigure.sourceId,
+          precision: 1,
+          method: 'transition-readiness reserve-weeks control (user-adjusted scenario input)'
+        });
   const [selectedPathwayKey, setSelectedPathwayKey] = useState(initialDecision.inputs.pathway_key);
   const [tippingPoint, setTippingPoint] = useState(initialTippingPoint);
   const [decision, setDecision] = useState(initialDecision);
@@ -265,7 +306,7 @@ export function TransitionReadinessDashboard({
             onChange={setCarbon}
           />
           <SliderCard
-            label={reserveIsScenarioDefault ? '储备周数（假设）' : '储备周数'}
+            label={reserveSeedFigure.basis === 'assumption' ? '储备周数（假设）' : '储备周数'}
             value={`${reserveWeeks.toFixed(1)}w`}
             min={1}
             max={8}
@@ -349,7 +390,7 @@ export function TransitionReadinessDashboard({
             signal: decision.signal,
             probabilities: decision.probabilities
           }}
-          reserveWeeks={reserveWeeks}
+          reserveWeeks={reserveFigure}
         />
       </div>
 
@@ -360,7 +401,7 @@ export function TransitionReadinessDashboard({
         />
         <AirlineDecisionMatrix
           decision={decision}
-          reserveWeeks={reserveWeeks}
+          reserveWeeks={reserveFigure}
           pathwayKey={selectedPathwayKey}
         />
       </div>

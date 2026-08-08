@@ -1,9 +1,10 @@
+import { formatFigure, type Figure } from '@/lib/figure';
 import type { AirlineDecisionResponse } from '@/lib/product-read-model';
 import { getAirlineDecisionSignalLabel } from '@/lib/market-signals';
 
 type Props = {
   decision: Pick<AirlineDecisionResponse, 'signal' | 'probabilities' | 'fare_pass_through_pct' | 'labor_cost_impact_eur_m' | 'extra_fuel_cost_eur_m' | 'residual_fuel_cost_exposure'> | null;
-  reserveWeeks: number;
+  reserveWeeks: Figure;
   pathwayKey: string;
 };
 
@@ -47,7 +48,7 @@ export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Pr
               Þê¬ÕÅ©Õå│þ¡ûþƒ®ÚÿÁ
             </h4>
             <p className="mt-2 text-sm text-slate-500">
-              Õé¿ÕñçÕÄïÕèø {reserveWeeks.toFixed(1)} Õæ¿ ┬À ÕÀ▓ÚÇëÞÀ»Õ¥ä {pathwayKey.toUpperCase()}
+              Õé¿ÕñçÕÄïÕèø {formatFigure(reserveWeeks)} ┬À ÕÀ▓ÚÇëÞÀ»Õ¥ä {pathwayKey.toUpperCase()}
             </p>
           </div>
         </div>
@@ -68,7 +69,7 @@ export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Pr
             Þê¬ÕÅ©Õå│þ¡ûþƒ®ÚÿÁ
           </h4>
           <p className="mt-2 text-sm text-slate-500">
-            Õé¿ÕñçÕÄïÕèø {reserveWeeks.toFixed(1)} Õæ¿ ┬À ÕÀ▓ÚÇëÞÀ»Õ¥ä {pathwayKey.toUpperCase()}
+            Õé¿ÕñçÕÄïÕèø {formatFigure(reserveWeeks)} ┬À ÕÀ▓ÚÇëÞÀ»Õ¥ä {pathwayKey.toUpperCase()}
           </p>
         </div>
         <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs uppercase tracking-[0.18em] text-sky-800">

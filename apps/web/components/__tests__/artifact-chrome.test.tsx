@@ -112,13 +112,49 @@ describe('artifacts do not draw their own card', () => {
       <TippingPointWorkbench
         initialTippingPoint={null}
         initialDecision={null}
-        initialReserveWeeks={3}
+        initialReserveWeeks={assumed({
+          value: 3,
+          unit: 'weeks',
+          sourceId: 'test',
+          method: 'test fixture reserve',
+          precision: 1
+        })}
         liveDefaults={{
-          fossilJetUsdPerL: 1.2,
-          carbonPriceEurPerT: 80,
-          subsidyUsdPerL: 0.2,
-          blendRatePct: 2,
-          reserveWeeks: 3,
+          fossilJetUsdPerL: assumed({
+            value: 1.2,
+            unit: 'USD/L',
+            sourceId: 'test',
+            method: 'test fixture fossil jet',
+            precision: 2
+          }),
+          carbonPriceEurPerT: assumed({
+            value: 80,
+            unit: 'EUR/t',
+            sourceId: 'test',
+            method: 'test fixture carbon',
+            precision: 2
+          }),
+          subsidyUsdPerL: assumed({
+            value: 0.2,
+            unit: 'USD/L',
+            sourceId: 'test',
+            method: 'test fixture subsidy',
+            precision: 2
+          }),
+          blendRatePct: assumed({
+            value: 2,
+            unit: '%',
+            sourceId: 'test',
+            method: 'test fixture blend',
+            precision: 2
+          }),
+          reserveWeeks: assumed({
+            value: 3,
+            unit: 'weeks',
+            sourceId: 'test',
+            method: 'test fixture reserve',
+            precision: 1
+          }),
           pathwayKey: 'hefa'
         }}
       />
@@ -192,7 +228,17 @@ describe('artifacts do not draw their own card', () => {
 
   it('TippingPointSimulator renders bare', () => {
     const { container } = render(
-      <TippingPointSimulator tippingPoint={null} decision={null} reserveWeeks={3} />
+      <TippingPointSimulator
+        tippingPoint={null}
+        decision={null}
+        reserveWeeks={assumed({
+          value: 3,
+          unit: 'weeks',
+          sourceId: 'test',
+          method: 'test fixture reserve',
+          precision: 1
+        })}
+      />
     );
 
     expect(rootClassName(container)).not.toMatch(/rounded-2xl/);

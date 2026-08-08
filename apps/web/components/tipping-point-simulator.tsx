@@ -1,13 +1,14 @@
 'use client';
 
+import { FigureValue } from '@/components/figure-value';
 import { getPathwayStatusLabel } from '@/lib/market-signals';
-import { formatFigure } from '@/lib/figure';
+import { formatFigure, type Figure } from '@/lib/figure';
 import type { DecisionReadModel, TippingPointReadModel } from '@/lib/product-read-model';
 
 type Props = {
   tippingPoint: TippingPointReadModel | null;
   decision: DecisionReadModel | null;
-  reserveWeeks: number;
+  reserveWeeks: Figure;
 };
 
 function probabilityLabel(value: number): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
@@ -56,7 +57,9 @@ export function TippingPointSimulator({ tippingPoint, decision, reserveWeeks }: 
       <div className="mb-6 flex justify-end text-right">
         <div>
           <p className="text-xs uppercase tracking-wider text-slate-500">储备</p>
-          <p className="text-sm font-semibold text-slate-800">{reserveWeeks.toFixed(1)}w</p>
+          <p className="text-sm font-semibold text-slate-800">
+            <FigureValue figure={reserveWeeks} locale="zh" size="inline" showTimestamp={false} />
+          </p>
         </div>
       </div>
 
