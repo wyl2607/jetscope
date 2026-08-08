@@ -3,18 +3,29 @@ import {
   getSourceCoverageTrustState,
   type SourceCoverageMetric
 } from '@/lib/source-coverage-contract';
+import { FigureValue } from '@/components/figure-value';
+import { missing, type Figure } from '@/lib/figure';
 
 type Props = {
   metrics: SourceCoverageMetric[];
-  completeness?: number;
+  /** Absent means unknown — never silently 100%. */
+  completeness?: Figure;
   degraded?: boolean;
 };
 
+const UNKNOWN_COMPLETENESS = missing({
+  unit: '%',
+  sourceId: 'source-coverage',
+  reason: '完整度未提供',
+  basis: 'observed'
+});
+
 export function SourceCoveragePanel({
   metrics,
-  completeness = 1.0,
+  completeness,
   degraded = false
 }: Props) {
+  const completenessFigure = completeness ?? UNKNOWN_COMPLETENESS;
   const liveCount = metrics.filter((m) => getSourceCoverageTrustState(m) === 'live').length;
   const seedCount = metrics.filter((m) => m.status === 'seed').length;
   const fallbackCount = metrics.filter((m) => getSourceCoverageTrustState(m) === 'fallback').length;
@@ -33,8 +44,9 @@ export function SourceCoveragePanel({
         >
           {degraded ? '已降级' : '健康'}
         </span>
-        <span className="rounded-full border border-slate-300 bg-white px-3 py-1 text-slate-700">
-          完整度 {Math.round(completeness * 100)}%
+        <span className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-1 text-slate-700">
+          完整度{' '}
+          <FigureValue figure={completenessFigure} locale="zh" size="inline" showTimestamp={false} />
         </span>
         <span className="rounded-full border border-slate-300 bg-white px-3 py-1 text-slate-700">
           实时 {liveCount}

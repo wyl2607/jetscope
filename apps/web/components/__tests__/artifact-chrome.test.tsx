@@ -19,6 +19,7 @@ import { ScenarioRegistry } from '@/components/scenario-registry';
 import { TransitionReadinessDashboard } from '@/components/transition-readiness-dashboard';
 import { AdminDataOps } from '@/components/admin-data-ops';
 import { TransitionLadder } from '@/components/transition-ladder';
+import { observed } from '@/lib/figure';
 
 /**
  * Contract section 2 rule 3: a section is one Panel wrapping exactly one
@@ -195,7 +196,13 @@ describe('artifacts do not draw their own card', () => {
           trustLabel: 'live',
           degradedReason: 'none'
         }}
-        completeness={0.9}
+        completeness={observed({
+          value: 90,
+          unit: '%',
+          asOf: '2026-08-06T06:00:00Z',
+          sourceId: 'sources-read-model',
+          precision: 0
+        })}
         generatedAt="2026-08-06T06:00:00Z"
       />
     );

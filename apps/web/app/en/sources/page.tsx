@@ -253,7 +253,7 @@ export default async function EnglishSourcesPage({
           label="Average confidence"
           value={`${Math.round(readModel.summary.averageConfidence * 100)}%`}
           valueClassName={`${trustTone} tabular-nums`}
-          hint={`Coverage ${Math.round(readModel.completeness * 100)}% · ${readModel.summary.freshnessLabel}`}
+          hint={`Coverage ${Math.round(readModel.completeness.value ?? 0)}% · ${readModel.summary.freshnessLabel}`}
         />
         <MetricCard
           label="Input mix"
