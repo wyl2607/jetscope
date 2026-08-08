@@ -477,14 +477,16 @@ a:hover {
   white-space: nowrap;
 }
 
+/* A solid control: accent fill, surface text, and `ink` on hover - the states
+ * docs/UI_CONTRACT.md section 1 rule 7 gives for a filled primary button. */
 .js-status-action-primary {
   background: var(--js-accent);
-  color: #fff;
+  color: var(--js-surface);
 }
 
 .js-status-action-primary:hover {
-  background: #0a536f;
-  color: #fff;
+  background: var(--js-ink);
+  color: var(--js-surface);
 }
 
 .js-status-action-secondary {
@@ -493,7 +495,7 @@ a:hover {
 }
 
 .js-status-action-secondary:hover {
-  border-color: #9bcbd7;
+  border-color: var(--js-accent);
   color: var(--js-accent);
 }
 
