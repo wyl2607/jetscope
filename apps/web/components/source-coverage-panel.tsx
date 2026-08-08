@@ -44,11 +44,11 @@ export function SourceCoveragePanel({
         >
           {degraded ? '已降级' : '健康'}
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-1 text-slate-700">
+        <span className="inline-flex items-center gap-1 rounded-full border border-line-strong bg-surface px-3 py-1 text-ink">
           完整度{' '}
           <FigureValue figure={completenessFigure} locale="zh" size="inline" showTimestamp={false} />
         </span>
-        <span className="rounded-full border border-slate-300 bg-white px-3 py-1 text-slate-700">
+        <span className="rounded-full border border-line-strong bg-surface px-3 py-1 text-ink">
           实时 {liveCount}
         </span>
         {proxyCount > 0 && (
@@ -57,12 +57,12 @@ export function SourceCoveragePanel({
           </span>
         )}
         {seedCount > 0 && (
-          <span className="rounded-full border border-slate-300 bg-white px-3 py-1 text-slate-700">
+          <span className="rounded-full border border-line-strong bg-surface px-3 py-1 text-ink">
             种子 {seedCount}
           </span>
         )}
         {fallbackCount > 0 && (
-          <span className="rounded-full border border-slate-300 bg-white px-3 py-1 text-slate-700">
+          <span className="rounded-full border border-line-strong bg-surface px-3 py-1 text-ink">
             回退 {fallbackCount}
           </span>
         )}
@@ -72,19 +72,19 @@ export function SourceCoveragePanel({
           </span>
         )}
         {metrics.length === 0 && (
-          <span className="text-slate-600">暂无来源覆盖数据。</span>
+          <span className="text-muted">暂无来源覆盖数据。</span>
         )}
       </div>
       {metrics.length > 0 ? (
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {metrics.slice(0, 4).map((metric) => (
-            <div key={metric.metric_key} className="rounded-xl border border-slate-200 bg-white/90 p-3 text-xs text-slate-700">
+            <div key={metric.metric_key} className="rounded-xl border border-line bg-surface/90 p-3 text-xs text-ink">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-medium text-slate-950">{metric.metric_key}</span>
-                <span className="rounded-full border border-slate-300 px-2 py-0.5 text-slate-700">{getSourceCoverageTrustState(metric)}</span>
+                <span className="font-medium text-ink">{metric.metric_key}</span>
+                <span className="rounded-full border border-line-strong px-2 py-0.5 text-ink">{getSourceCoverageTrustState(metric)}</span>
               </div>
-              <p className="mt-2 text-slate-600">{metric.source_name} · {metric.source_type.replaceAll('_', ' ')}</p>
-              <p className="mt-1 text-slate-500">置信度 {Math.round(metric.confidence_score * 100)}% · 滞后 {formatSourceCoverageLag(metric.lag_minutes)}</p>
+              <p className="mt-2 text-muted">{metric.source_name} · {metric.source_type.replaceAll('_', ' ')}</p>
+              <p className="mt-1 text-muted">置信度 {Math.round(metric.confidence_score * 100)}% · 滞后 {formatSourceCoverageLag(metric.lag_minutes)}</p>
             </div>
           ))}
         </div>

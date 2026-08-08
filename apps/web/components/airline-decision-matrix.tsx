@@ -41,18 +41,18 @@ function probabilityLabel(value: number): string { // figure-contract-lint-ignor
 export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Props) {
   if (!decision) {
     return (
-      <section className="min-w-0 rounded-2xl border border-slate-200 bg-white/90 p-4 sm:p-5">
+      <section className="min-w-0 rounded-2xl border border-line bg-surface/90 p-4 sm:p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
+            <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-ink">
               Þê¬ÕÅ©Õå│þ¡ûþƒ®ÚÿÁ
             </h4>
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-muted">
               Õé¿ÕñçÕÄïÕèø {formatFigure(reserveWeeks)} ┬À ÕÀ▓ÚÇëÞÀ»Õ¥ä {pathwayKey.toUpperCase()}
             </p>
           </div>
         </div>
-        <p className="text-sm text-slate-600">Õå│þ¡ûµ¿íÕ×ïµÜéõ©ìÕÅ»þö¿ÒÇé</p>
+        <p className="text-sm text-muted">Õå│þ¡ûµ¿íÕ×ïµÜéõ©ìÕÅ»þö¿ÒÇé</p>
       </section>
     );
   }
@@ -62,13 +62,13 @@ export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Pr
   >;
 
   return (
-    <section className="min-w-0 rounded-2xl border border-slate-200 bg-white/90 p-4 sm:p-5">
+    <section className="min-w-0 rounded-2xl border border-line bg-surface/90 p-4 sm:p-5">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
+          <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-ink">
             Þê¬ÕÅ©Õå│þ¡ûþƒ®ÚÿÁ
           </h4>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-muted">
             Õé¿ÕñçÕÄïÕèø {formatFigure(reserveWeeks)} ┬À ÕÀ▓ÚÇëÞÀ»Õ¥ä {pathwayKey.toUpperCase()}
           </p>
         </div>
@@ -104,13 +104,13 @@ export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Pr
         {rows.map(([key, value]) => {
           const copy = DECISION_COPY[key];
           return (
-            <article key={String(key)} className="rounded-2xl border border-slate-200 bg-white/90 p-4">
+            <article key={String(key)} className="rounded-2xl border border-line bg-surface/90 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h5 className="text-sm font-medium text-slate-950">{copy.title}</h5>
-                  <p className="mt-2 text-xs leading-6 text-slate-600">{copy.body}</p>
+                  <h5 className="text-sm font-medium text-ink">{copy.title}</h5>
+                  <p className="mt-2 text-xs leading-6 text-muted">{copy.body}</p>
                 </div>
-                <span className="text-sm font-semibold text-slate-950">{probabilityLabel(value)}</span>
+                <span className="text-sm font-semibold text-ink">{probabilityLabel(value)}</span>
               </div>
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
                 <div

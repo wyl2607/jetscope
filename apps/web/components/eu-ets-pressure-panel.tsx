@@ -16,12 +16,12 @@ function formatUsd(value: number): string { // figure-contract-lint-ignore: inte
 }
 
 export function EuEtsPressurePanel({ model }: Props) {
-  const tone = signalTone[model.signal] ?? 'border-slate-300 bg-slate-50 text-slate-700';
+  const tone = signalTone[model.signal] ?? 'border-line-strong bg-surface-muted text-ink';
   return (
     // Bare artifact: card, title and why-line come from the wrapping Panel.
     <div>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <p className="max-w-2xl text-sm leading-6 text-slate-600">
+        <p className="max-w-2xl text-sm leading-6 text-muted">
           价格路径是输入项，不是内置假设：下表按给定的 EU ETS 区间逐档投影碳成本、有效成本与压力百分比。
         </p>
         <span className={`rounded-lg border px-3 py-2 text-xs font-semibold ${tone}`}>
@@ -31,9 +31,9 @@ export function EuEtsPressurePanel({ model }: Props) {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full text-left text-sm text-slate-700">
+        <table className="min-w-full text-left text-sm text-ink">
           <thead>
-            <tr className="border-b border-slate-200 text-slate-500">
+            <tr className="border-b border-line text-muted">
               <th className="py-3 pr-4">EU ETS（€/t）</th>
               <th className="py-3 pr-4">碳成本</th>
               <th className="py-3 pr-4">有效化石成本</th>
@@ -42,8 +42,8 @@ export function EuEtsPressurePanel({ model }: Props) {
           </thead>
           <tbody>
             {model.points.map((point) => (
-              <tr key={point.eu_ets_eur_per_t} className="border-b border-slate-200 last:border-none">
-                <td className="py-3 pr-4 font-medium text-slate-950">€{point.eu_ets_eur_per_t.toFixed(0)}</td>
+              <tr key={point.eu_ets_eur_per_t} className="border-b border-line last:border-none">
+                <td className="py-3 pr-4 font-medium text-ink">€{point.eu_ets_eur_per_t.toFixed(0)}</td>
                 <td className="py-3 pr-4">{formatUsd(point.carbon_cost_usd_per_l)}</td>
                 <td className="py-3 pr-4">{formatUsd(point.effective_fossil_jet_usd_per_l)}</td>
                 <td className="py-3">{point.pressure_pct === null ? '无数据' : `${point.pressure_pct.toFixed(1)}%`}</td>
@@ -53,7 +53,7 @@ export function EuEtsPressurePanel({ model }: Props) {
         </table>
       </div>
 
-      <p className="mt-4 text-xs text-slate-500">
+      <p className="mt-4 text-xs text-muted">
         来源：{model.source.source_type} · 置信度 {Math.round(model.source.confidence_score * 100)}% · {model.source.updated_at} · {model.source.cadence}
       </p>
     </div>

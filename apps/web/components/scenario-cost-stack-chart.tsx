@@ -22,12 +22,12 @@ function midpoint(low: number, high: number): number { // figure-contract-lint-i
 export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Props) {
   if (!tippingPoint || tippingPoint.pathways.length === 0) {
     return (
-      <section className="rounded-2xl border border-slate-200 bg-white/90 p-5">
+      <section className="rounded-2xl border border-line bg-surface/90 p-5">
         <div className="mb-4">
-          <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
+          <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-ink">
             情景成本堆栈
           </h4>
-          <p className="mt-2 text-sm text-slate-500">情景成本数据暂不可用。</p>
+          <p className="mt-2 text-sm text-muted">情景成本数据暂不可用。</p>
         </div>
       </section>
     );
@@ -72,12 +72,12 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
   ];
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white/90 p-5">
+    <section className="rounded-2xl border border-line bg-surface/90 p-5">
       <div className="mb-4">
-        <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
+        <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-ink">
           情景成本堆栈
         </h4>
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="mt-2 text-sm text-muted">
           紧凑对比化石航油现货成本、碳调整后成本与已选路径中点。
         </p>
       </div>
@@ -87,8 +87,8 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
           <div key={row.key}>
             <div className="flex items-center justify-between gap-4 text-sm">
               <div>
-                <div className="font-medium text-slate-950">{row.label}</div>
-                <div className="text-xs text-slate-500">{row.hint}</div>
+                <div className="font-medium text-ink">{row.label}</div>
+                <div className="text-xs text-muted">{row.hint}</div>
               </div>
               <div className="font-mono text-ink">
                 {row.value == null ? '—' : `$${row.value.toFixed(2)}/L`}

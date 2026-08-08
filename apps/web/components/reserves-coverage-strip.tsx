@@ -54,7 +54,7 @@ export function ReservesCoverageStrip({ reserve }: Props) {
       // Keeps a container of its own: the tint is the message. Same reason
       // Panel's own error placeholder is coloured rather than bare.
       <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4">
-        <p className="font-medium text-slate-950">欧盟储备数据暂不可用</p>
+        <p className="font-medium text-ink">欧盟储备数据暂不可用</p>
         <p className="mt-1 text-sm leading-6 text-rose-800">
           当前会话未连上实时储备服务。危机流程仍可浏览，但储备判断会标记为情景基线。
         </p>
@@ -100,13 +100,13 @@ export function ReservesCoverageStrip({ reserve }: Props) {
             style={{ width: `${coverageWidth(reserve.coverage_weeks)}%` }}
           />
         </div>
-        <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+        <div className="mt-2 flex items-center justify-between text-xs text-muted">
           <span>0w</span>
           <span>2w 危急</span>
           <span>4w 升高</span>
           <span>8w 稳定</span>
         </div>
-        <p className="mt-3 text-xs text-slate-500">更新于 {formatUpdatedAt(reserve.generated_at)} · 置信度 {(reserve.confidence_score * 100).toFixed(0)}%</p>
+        <p className="mt-3 text-xs text-muted">更新于 {formatUpdatedAt(reserve.generated_at)} · 置信度 {(reserve.confidence_score * 100).toFixed(0)}%</p>
       </div>
     </div>
   );

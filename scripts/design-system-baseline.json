@@ -1,17 +1,16 @@
 {
   "$comment": "Files still violating docs/UI_CONTRACT.md section 1. Counts may only decrease. Regenerate with: node scripts/design-system-lint.mjs --update",
   "files": {
-    "apps/web/components/airline-decision-matrix.tsx": 24,
-    "apps/web/components/eu-ets-pressure-panel.tsx": 22,
-    "apps/web/components/fuel-vs-saf-price-chart.tsx": 35,
-    "apps/web/components/heat-parity-workbench.tsx": 22,
-    "apps/web/components/provenance-summary.tsx": 27,
-    "apps/web/components/research-decision-brief.tsx": 32,
-    "apps/web/components/reserves-coverage-strip.tsx": 49,
-    "apps/web/components/saf-pathway-comparison-table.tsx": 14,
-    "apps/web/components/scenario-cost-stack-chart.tsx": 25,
-    "apps/web/components/source-coverage-panel.tsx": 33,
-    "apps/web/components/tipping-event-timeline.tsx": 23,
-    "apps/web/components/tipping-point-simulator.tsx": 11
+    "apps/web/components/airline-decision-matrix.tsx": 10,
+    "apps/web/components/eu-ets-pressure-panel.tsx": 12,
+    "apps/web/components/fuel-vs-saf-price-chart.tsx": 26,
+    "apps/web/components/heat-parity-workbench.tsx": 6,
+    "apps/web/components/provenance-summary.tsx": 6,
+    "apps/web/components/research-decision-brief.tsx": 17,
+    "apps/web/components/reserves-coverage-strip.tsx": 46,
+    "apps/web/components/saf-pathway-comparison-table.tsx": 5,
+    "apps/web/components/scenario-cost-stack-chart.tsx": 15,
+    "apps/web/components/source-coverage-panel.tsx": 12,
+    "apps/web/components/tipping-event-timeline.tsx": 12
   }
 }
