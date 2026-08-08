@@ -7,12 +7,12 @@ type Props = {
 };
 
 const barColors: Record<string, string> = {
-  fossil: 'bg-gradient-to-r from-rose-500 to-red-300',
-  effective: 'bg-gradient-to-r from-amber-500 to-yellow-300',
-  hefa: 'bg-gradient-to-r from-emerald-500 to-emerald-300',
-  atj: 'bg-gradient-to-r from-sky-500 to-sky-300',
-  ft: 'bg-gradient-to-r from-amber-500 to-orange-300',
-  ptl: 'bg-gradient-to-r from-violet-500 to-fuchsia-300'
+  fossil: 'bg-ink',
+  effective: 'bg-muted',
+  hefa: 'bg-series-1',
+  atj: 'bg-series-2',
+  ft: 'bg-series-3',
+  ptl: 'bg-series-4'
 };
 
 function midpoint(low: number, high: number): number { // figure-contract-lint-ignore: internal arithmetic helper, not a prop
@@ -94,10 +94,10 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
                 {row.value == null ? '—' : `$${row.value.toFixed(2)}/L`}
               </div>
             </div>
-            <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200">
+            <div className="mt-3 h-3 overflow-hidden rounded-full bg-line">
               {row.value != null ? (
                 <div
-                  className={`h-full rounded-full ${barColors[row.key] ?? 'bg-gradient-to-r from-slate-500 to-slate-300'}`}
+                  className={`h-full rounded-full ${barColors[row.key] ?? 'bg-line-strong'}`}
                   style={{ width: `${Math.max(6, (row.value / maxValue) * 100)}%` }}
                 />
               ) : null}

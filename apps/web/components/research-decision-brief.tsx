@@ -11,10 +11,10 @@ type Props = {
 };
 
 function statusTone(status: ResearchDecisionBrief['status']): string {
-  if (status === 'error') return 'border-rose-200 bg-rose-50 text-rose-800';
-  if (status === 'not_found') return 'border-amber-200 bg-amber-50 text-amber-800';
+  if (status === 'error') return 'border-danger bg-danger-soft text-danger';
+  if (status === 'not_found') return 'border-warning bg-warning-soft text-warning';
   if (status === 'empty') return 'border-line bg-surface text-ink';
-  return 'border-sky-200 bg-sky-50 text-sky-800';
+  return 'border-accent bg-accent-soft text-accent';
 }
 
 function formatConfidence(value: number): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
@@ -40,7 +40,7 @@ export function ResearchDecisionBriefCard({ brief, compact = false, showLink = t
           <h3 className="text-lg font-medium text-ink">{brief.headline}</h3>
         </div>
         {showLink ? (
-          <Link href={RESEARCH_ROUTE} className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-semibold text-ink transition hover:border-sky-300 hover:text-sky-800">
+          <Link href={RESEARCH_ROUTE} className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-semibold text-ink transition hover:border-accent hover:text-accent">
             打开信号
           </Link>
         ) : null}
@@ -51,9 +51,9 @@ export function ResearchDecisionBriefCard({ brief, compact = false, showLink = t
 
       {!compact ? (
         <div className="mt-5 grid gap-3 text-sm md:grid-cols-4">
-          <p className="rounded-xl border border-sky-200 bg-sky-50 p-3">活跃：{brief.activeCount}</p>
-          <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">利多：{brief.positiveCount}</p>
-          <p className="rounded-xl border border-rose-200 bg-rose-50 p-3">利空：{brief.negativeCount}</p>
+          <p className="rounded-xl border border-line bg-surface-muted p-3">活跃：{brief.activeCount}</p>
+          <p className="rounded-xl border border-success bg-success-soft p-3">利多：{brief.positiveCount}</p>
+          <p className="rounded-xl border border-danger bg-danger-soft p-3">利空：{brief.negativeCount}</p>
           <p className="rounded-xl border border-line bg-surface p-3">中性：{brief.neutralCount}</p>
         </div>
       ) : null}
