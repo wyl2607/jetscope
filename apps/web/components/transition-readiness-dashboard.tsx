@@ -11,7 +11,7 @@ import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-t
 import { ScenarioCostStackChart } from '@/components/scenario-cost-stack-chart';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
 import { getReserveSeverity, getTippingPointSignalMeta, type TippingPointSignalTone } from '@/lib/market-signals';
-import { assumed, derived as derivedFigure, observed, type Figure } from '@/lib/figure';
+import { assumed, derived as derivedFigure, formatFigure, observed, type Figure } from '@/lib/figure';
 import { toPathwayCostRow } from '@/lib/pathways-read-model';
 import { toTippingPointReadModel, type AirlineDecisionResponse, type ReserveSignal, type TippingPointResponse } from '@/lib/product-read-model';
 
@@ -67,9 +67,9 @@ function pathwayCostRows(tippingPoint: TippingPointResponse) {
 }
 
 type PolicyTarget = {
-  year: number;
-  saf_share_pct: number;
-  synthetic_share_pct: number;
+  year: number; // figure-contract-lint-ignore: 日历年份，不是测量值
+  saf_share_pct: Figure;
+  synthetic_share_pct: Figure;
   label: string;
 };
 
@@ -472,7 +472,7 @@ export function TransitionReadinessDashboard({
                     <div className="text-sm font-medium text-ink">{item.headlineZh}</div>
                     <div className="text-xs text-muted">
                       {target
-                        ? `${item.detailZh} · SAF ${target.saf_share_pct}% / synthetic ${target.synthetic_share_pct}%`
+                        ? `${item.detailZh} · SAF ${formatFigure(target.saf_share_pct)} / synthetic ${formatFigure(target.synthetic_share_pct)}`
                         : item.detailZh}
                     </div>
                   </div>
@@ -577,7 +577,7 @@ function SliderCard({
 }: {
   label: string;
   value: string;
-  current: number;
+  current: number; // figure-contract-lint-ignore: 滑块位置，不是测量值
   min: number; // figure-contract-lint-ignore: slider bound, not a measurement
   max: number; // figure-contract-lint-ignore: slider bound, not a measurement
   step: number; // figure-contract-lint-ignore: slider step, not a measurement

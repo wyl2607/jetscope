@@ -5,6 +5,7 @@ import { ScenarioRegistry } from '@/components/scenario-registry';
 import { SourceFooter, type SourceRef } from '@/components/source-footer';
 import { TransitionReadinessDashboard } from '@/components/transition-readiness-dashboard';
 import { buildApiUrl } from '@/lib/api-config';
+import { derived, type Figure } from '@/lib/figure';
 import { getDashboardReadModel, type AirlineDecisionResponse, type TippingPointResponse } from '@/lib/product-read-model';
 import type { Metadata } from 'next';
 import { buildPageMetadata } from '@/lib/seo';
@@ -31,12 +32,43 @@ export const metadata: Metadata = buildPageMetadata({
   path: '/scenarios'
 });
 
-type PolicyTarget = {
+type PolicyTargetWire = {
   year: number;
   saf_share_pct: number;
   synthetic_share_pct: number;
   label: string;
 };
+
+type PolicyTarget = {
+  year: number;
+  saf_share_pct: Figure;
+  synthetic_share_pct: Figure;
+  label: string;
+};
+
+const POLICY_TARGETS_SOURCE_ID = 'policy-targets';
+
+/**
+ * RefuelEU blend targets are statutory mandates, not scenario assumptions.
+ * API has no source timestamp → derived + method; never assumed().
+ */
+function toPolicyTargetFigures(row: PolicyTargetWire): PolicyTarget {
+  const shareFigure = (value: number, which: string): Figure =>
+    derived({
+      value,
+      unit: '%',
+      sourceId: POLICY_TARGETS_SOURCE_ID,
+      asOf: null,
+      precision: 1,
+      method: `RefuelEU mandatory ${which} blending target (statutory mandate, not a scenario assumption)`
+    });
+  return {
+    year: row.year,
+    saf_share_pct: shareFigure(row.saf_share_pct, 'SAF'),
+    synthetic_share_pct: shareFigure(row.synthetic_share_pct, 'synthetic aviation fuel'),
+    label: row.label
+  };
+}
 
 /**
  * Demo constants only. `generated_at: null` forces downstream
@@ -93,7 +125,8 @@ async function getPolicyTargets(): Promise<PolicyTarget[]> {
   try {
     const response = await fetch(buildApiUrl('/policies/refuel-eu'), { cache: 'no-store' });
     if (!response.ok) return [];
-    return (await response.json()) as PolicyTarget[];
+    const rows = (await response.json()) as PolicyTargetWire[];
+    return rows.map(toPolicyTargetFigures);
   } catch {
     return [];
   }
@@ -237,8 +270,8 @@ export default async function ScenariosPage() {
           },
           {
             id: 'policy-targets',
-            label: policyTargets.length ? 'RefuelEU 政策目标接口' : 'RefuelEU 政策目标暂未返回',
-            basis: 'assumption'
+            label: policyTargets.length ? 'RefuelEU 政策目标接口（法定强制掺混目标）' : 'RefuelEU 政策目标暂未返回',
+            basis: 'derived'
           }
         ]}
         methodHref="/sources"
