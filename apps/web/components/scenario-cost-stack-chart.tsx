@@ -38,11 +38,18 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
     tippingPoint.pathways[0];
   const fossilSpot = tippingPoint.inputs.fossilJetUsdPerL;
   const effectiveFossil = tippingPoint.effectiveFossilJetUsdPerL;
-  const selectedMidpoint = midpoint(
-    selectedPathway.netCostLow.value ?? 0,
-    selectedPathway.netCostHigh.value ?? 0
+  // Either end unknown → midpoint is unknown. Never launder null into 0.
+  const low = selectedPathway.netCostLow.value;
+  const high = selectedPathway.netCostHigh.value;
+  const selectedMidpoint = low != null && high != null ? midpoint(low, high) : null;
+  const midpointUnknownReason =
+    [selectedPathway.netCostLow.reason, selectedPathway.netCostHigh.reason]
+      .filter(Boolean)
+      .join('；') || '净成本区间任一端未知';
+  const knownForScale = [fossilSpot, effectiveFossil, selectedMidpoint].filter(
+    (value): value is number => value != null
   );
-  const maxValue = Math.max(fossilSpot, effectiveFossil, selectedMidpoint, 1);
+  const maxValue = Math.max(...knownForScale, 1);
   const rows = [
     {
       key: 'fossil',
@@ -83,17 +90,26 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
                 <div className="font-medium text-slate-950">{row.label}</div>
                 <div className="text-xs text-slate-500">{row.hint}</div>
               </div>
-              <div className="font-mono text-slate-950">${row.value.toFixed(2)}/L</div>
+              <div className="font-mono text-slate-950">
+                {row.value == null ? '—' : `$${row.value.toFixed(2)}/L`}
+              </div>
             </div>
             <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200">
-              <div
-                className={`h-full rounded-full ${barColors[row.key] ?? 'bg-gradient-to-r from-slate-500 to-slate-300'}`}
-                style={{ width: `${Math.max(6, (row.value / maxValue) * 100)}%` }}
-              />
+              {row.value != null ? (
+                <div
+                  className={`h-full rounded-full ${barColors[row.key] ?? 'bg-gradient-to-r from-slate-500 to-slate-300'}`}
+                  style={{ width: `${Math.max(6, (row.value / maxValue) * 100)}%` }}
+                />
+              ) : null}
             </div>
           </div>
         ))}
       </div>
+      {selectedMidpoint == null ? (
+        <p className="mt-3 text-xs text-slate-500">
+          所选路径中点未进入绘图：{midpointUnknownReason}
+        </p>
+      ) : null}
     </section>
   );
 }

@@ -225,6 +225,14 @@ export function TippingPointWorkbench({
     setStatus('正在保存情景...');
     setError(null);
     try {
+      // Midpoint is unknown when either band end is null — never launder into 0.
+      const low = selectedPathway?.netCostLow.value ?? null;
+      const high = selectedPathway?.netCostHigh.value ?? null;
+      if (selectedPathway && (low == null || high == null)) {
+        setError('所选路径净成本未知，无法写入 baseCostUsdPerLiter。');
+        setStatus('保存失败');
+        return;
+      }
       const payload = {
         name: trimmed,
         preferences: {
@@ -243,21 +251,17 @@ export function TippingPointWorkbench({
             signal: tippingPoint?.signal ?? 'unknown'
           }
         },
-        route_edits: selectedPathway
-          ? {
-              [selectedPathway.pathway_key]: {
-                name: selectedPathway.display_name,
-                pathway: selectedPathway.pathway_key,
-                baseCostUsdPerLiter: Number(
-                  (
-                    ((selectedPathway.netCostLow.value ?? 0) + (selectedPathway.netCostHigh.value ?? 0)) /
-                    2
-                  ).toFixed(4)
-                ),
-                co2SavingsKgPerLiter: 0
+        route_edits:
+          selectedPathway && low != null && high != null
+            ? {
+                [selectedPathway.pathway_key]: {
+                  name: selectedPathway.display_name,
+                  pathway: selectedPathway.pathway_key,
+                  baseCostUsdPerLiter: Number(((low + high) / 2).toFixed(4)),
+                  co2SavingsKgPerLiter: 0
+                }
               }
-            }
-          : {}
+            : {}
       };
       const response = await fetch('/api/scenarios', {
         method: 'POST',

@@ -17,25 +17,36 @@ const pathwayColorMap: Record<string, string> = {
   ptl: 'from-violet-500 to-fuchsia-300'
 };
 
-function formatUsd(value: number): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
-  return `$${value.toFixed(2)}/L`;
-}
-
-function figureNumber(figure: Figure): number {
-  return figure.value ?? 0;
-}
-
 export function FuelVsSafPriceChart({
   fossilJetUsdPerL,
   effectiveFossilJetUsdPerL,
   pathways
 }: Props) {
-  const maxValue = Math.max(
-    figureNumber(effectiveFossilJetUsdPerL),
-    figureNumber(fossilJetUsdPerL),
-    ...pathways.flatMap((item) => [figureNumber(item.netCostLow), figureNumber(item.netCostHigh)]),
-    1
-  );
+  // Axis scale: only known values. Unknown never becomes 0 (would skew the range).
+  const knownValues = [
+    fossilJetUsdPerL.value,
+    effectiveFossilJetUsdPerL.value,
+    ...pathways.flatMap((item) => [item.netCostLow.value, item.netCostHigh.value])
+  ].filter((value): value is number => value != null);
+  const maxValue = Math.max(...knownValues, 1);
+
+  const unknownNotes: string[] = [];
+  if (fossilJetUsdPerL.value == null) {
+    unknownNotes.push(`化石航油现货未知${fossilJetUsdPerL.reason ? `（${fossilJetUsdPerL.reason}）` : ''}`);
+  }
+  if (effectiveFossilJetUsdPerL.value == null) {
+    unknownNotes.push(
+      `有效化石航油成本未知${effectiveFossilJetUsdPerL.reason ? `（${effectiveFossilJetUsdPerL.reason}）` : ''}`
+    );
+  }
+  for (const pathway of pathways) {
+    if (pathway.netCostLow.value == null || pathway.netCostHigh.value == null) {
+      const reasons = [pathway.netCostLow.reason, pathway.netCostHigh.reason].filter(Boolean);
+      unknownNotes.push(
+        `${pathway.display_name} 净成本区间未知${reasons.length ? `（${reasons.join('；')}）` : ''}`
+      );
+    }
+  }
 
   return (
     // Bare artifact: card, title and why-line come from the wrapping Panel.
@@ -52,10 +63,12 @@ export function FuelVsSafPriceChart({
             </p>
           </div>
           <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-rose-500 to-red-300"
-              style={{ width: `${Math.max(6, (figureNumber(fossilJetUsdPerL) / maxValue) * 100)}%` }}
-            />
+            {fossilJetUsdPerL.value != null ? (
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-rose-500 to-red-300"
+                style={{ width: `${Math.max(6, (fossilJetUsdPerL.value / maxValue) * 100)}%` }}
+              />
+            ) : null}
           </div>
         </div>
 
@@ -70,17 +83,24 @@ export function FuelVsSafPriceChart({
             </p>
           </div>
           <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-amber-500 to-yellow-300"
-              style={{ width: `${Math.max(6, (figureNumber(effectiveFossilJetUsdPerL) / maxValue) * 100)}%` }}
-            />
+            {effectiveFossilJetUsdPerL.value != null ? (
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-amber-500 to-yellow-300"
+                style={{ width: `${Math.max(6, (effectiveFossilJetUsdPerL.value / maxValue) * 100)}%` }}
+              />
+            ) : null}
           </div>
         </div>
 
         <div className="grid gap-3">
           {pathways.map((pathway) => {
-            const widthLow = Math.max(4, (figureNumber(pathway.netCostLow) / maxValue) * 100);
-            const widthHigh = Math.max(widthLow + 4, (figureNumber(pathway.netCostHigh) / maxValue) * 100);
+            const low = pathway.netCostLow.value;
+            const high = pathway.netCostHigh.value;
+            const widthLow = low != null ? Math.max(4, (low / maxValue) * 100) : null;
+            const widthHigh =
+              high != null
+                ? Math.max(widthLow != null ? widthLow + 4 : 4, (high / maxValue) * 100)
+                : null;
             const color = pathwayColorMap[pathway.pathway_key] ?? 'from-slate-500 to-slate-300';
             const statusColor =
               pathway.status === 'competitive'
@@ -97,14 +117,16 @@ export function FuelVsSafPriceChart({
                     <p className={`mt-1 text-xs uppercase tracking-[0.18em] ${statusColor}`}>{pathway.status}</p>
                   </div>
                   <p className="text-sm text-slate-700">
-                    {formatUsd(figureNumber(pathway.netCostLow))} 至 {formatUsd(figureNumber(pathway.netCostHigh))}
+                    {formatFigure(pathway.netCostLow)} 至 {formatFigure(pathway.netCostHigh)}
                   </p>
                 </div>
                 <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200">
-                  <div
-                    className={`h-full rounded-full bg-gradient-to-r ${color}`}
-                    style={{ width: `${widthHigh}%` }}
-                  />
+                  {widthHigh != null ? (
+                    <div
+                      className={`h-full rounded-full bg-gradient-to-r ${color}`}
+                      style={{ width: `${widthHigh}%` }}
+                    />
+                  ) : null}
                 </div>
                 <div className="mt-2 flex items-center justify-between text-xs text-slate-600">
                   <span>相对有效化石航油价差</span>
@@ -116,6 +138,12 @@ export function FuelVsSafPriceChart({
             );
           })}
         </div>
+
+        {unknownNotes.length > 0 ? (
+          <p className="text-xs text-slate-500">
+            未进入绘图：{unknownNotes.join('；')}
+          </p>
+        ) : null}
       </div>
     </div>
   );

@@ -24,32 +24,31 @@ export function TippingPointSimulator({ tippingPoint, decision, reserveWeeks }: 
   ];
 
   const leadPathway = tippingPoint?.pathways?.[0] ?? null;
-  const tippingRows = leadPathway ? [
-    {
-      key: 'net_saf_low',
-      label: `${leadPathway.display_name} 低位`,
-      value: leadPathway.netCostLow.value ?? 0,
-      format: (v: number) => `$${v.toFixed(2)}/L` // figure-contract-lint-ignore: slider label formatter, not a prop
-    },
-    {
-      key: 'net_saf_high',
-      label: `${leadPathway.display_name} 高位`,
-      value: leadPathway.netCostHigh.value ?? 0,
-      format: (v: number) => `$${v.toFixed(2)}/L` // figure-contract-lint-ignore: slider label formatter, not a prop
-    },
-    {
-      key: 'spread_band',
-      label: '价差区间',
-      value: 0,
-      format: () => `${formatFigure(leadPathway.spreadLow)} 至 ${formatFigure(leadPathway.spreadHigh)}`
-    },
-    {
-      key: 'status',
-      label: '状态',
-      value: 0,
-      format: () => getPathwayStatusLabel(leadPathway.status ?? '')
-    }
-  ] : [];
+  // Display via formatFigure so null renders "—", never laundered to 0.
+  const tippingRows = leadPathway
+    ? [
+        {
+          key: 'net_saf_low',
+          label: `${leadPathway.display_name} 低位`,
+          display: formatFigure(leadPathway.netCostLow)
+        },
+        {
+          key: 'net_saf_high',
+          label: `${leadPathway.display_name} 高位`,
+          display: formatFigure(leadPathway.netCostHigh)
+        },
+        {
+          key: 'spread_band',
+          label: '价差区间',
+          display: `${formatFigure(leadPathway.spreadLow)} 至 ${formatFigure(leadPathway.spreadHigh)}`
+        },
+        {
+          key: 'status',
+          label: '状态',
+          display: getPathwayStatusLabel(leadPathway.status ?? '')
+        }
+      ]
+    : [];
 
   return (
     // Bare artifact: card, title and why-line come from the wrapping Panel.
@@ -75,9 +74,7 @@ export function TippingPointSimulator({ tippingPoint, decision, reserveWeeks }: 
               {tippingRows.map((row) => (
                 <tr key={row.key} className="border-b border-slate-200">
                   <td className="py-2 pr-4">{row.label}</td>
-                  <td className="py-2 pr-4 text-right font-mono">
-                    {row.format ? row.format(row.value) : row.value}
-                  </td>
+                  <td className="py-2 pr-4 text-right font-mono">{row.display}</td>
                 </tr>
               ))}
             </tbody>
