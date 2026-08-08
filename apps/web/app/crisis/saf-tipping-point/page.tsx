@@ -6,7 +6,7 @@ import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-t
 import { SourceFooter } from '@/components/source-footer';
 import { TippingPointWorkbench } from '@/components/tipping-point-workbench';
 import { loadEuEtsPressure } from '@/lib/eu-ets-pressure-read-model';
-import { loadPathwayComparison } from '@/lib/pathways-read-model';
+import { loadPathwayComparison, toPathwayCostRow } from '@/lib/pathways-read-model';
 import { getDashboardReadModel, toDecisionReadModel, toTippingPointReadModel } from '@/lib/product-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 import {
@@ -220,15 +220,20 @@ export default async function SafTippingPointPage() {
         {pathwayComparison ? (
           <SafPathwayComparisonTable
             selectedPathwayKey="hefa"
-            pathways={pathwayComparison.rows.map((row) => ({
-              pathway_key: row.pathway_key,
-              display_name: row.name,
-              net_cost_low_usd_per_l: row.min_usd_per_l,
-              net_cost_high_usd_per_l: row.max_usd_per_l,
-              spread_low_pct: row.spread_pct ?? 0,
-              spread_high_pct: row.spread_pct ?? 0,
-              status: row.status
-            }))}
+            pathways={pathwayComparison.rows.map((row) =>
+              toPathwayCostRow(
+                {
+                  pathway_key: row.pathway_key,
+                  display_name: row.name,
+                  net_cost_low_usd_per_l: row.min_usd_per_l,
+                  net_cost_high_usd_per_l: row.max_usd_per_l,
+                  spread_low_pct: row.spread_pct ?? 0,
+                  spread_high_pct: row.spread_pct ?? 0,
+                  status: row.status
+                },
+                { asOf: pathwayComparison.generatedAt, basis: 'observed' }
+              )
+            )}
             sources={pathwayComparison.sourceByKey}
           />
         ) : null}

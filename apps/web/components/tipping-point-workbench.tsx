@@ -8,6 +8,7 @@ import { FuelVsSafPriceChart } from '@/components/fuel-vs-saf-price-chart';
 import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
 import { ScenarioCostStackChart } from '@/components/scenario-cost-stack-chart';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
+import { assumed, derived, observed, type Figure } from '@/lib/figure';
 import {
   type AirlineDecisionResponse,
   type DecisionReadModel,
@@ -16,6 +17,45 @@ import {
   toDecisionReadModel,
   toTippingPointReadModel
 } from '@/lib/product-read-model';
+
+const WORKBENCH_SOURCE_ID = 'saf-tipping-model';
+
+function fossilJetFigure(
+  value: number, // figure-contract-lint-ignore: constructor input, not a display prop
+  asOf: string | null
+): Figure {
+  if (asOf) {
+    return observed({
+      value,
+      unit: 'USD/L',
+      sourceId: WORKBENCH_SOURCE_ID,
+      asOf,
+      precision: 2
+    });
+  }
+  return assumed({
+    value,
+    unit: 'USD/L',
+    sourceId: WORKBENCH_SOURCE_ID,
+    precision: 2,
+    method: 'workbench fossil-jet input (slider or live default without source timestamp)'
+  });
+}
+
+function effectiveFossilJetFigure(
+  value: number, // figure-contract-lint-ignore: constructor input, not a display prop
+  asOf: string | null
+): Figure {
+  return derived({
+    value,
+    unit: 'USD/L',
+    sourceId: WORKBENCH_SOURCE_ID,
+    asOf,
+    precision: 2,
+    method:
+      'effective fossil jet = spot fossil jet + carbon price pressure at selected blend rate, minus subsidy (tipping-point model)'
+  });
+}
 
 type Props = {
   initialTippingPoint: TippingPointReadModel | null;
@@ -209,7 +249,10 @@ export function TippingPointWorkbench({
                 name: selectedPathway.display_name,
                 pathway: selectedPathway.pathway_key,
                 baseCostUsdPerLiter: Number(
-                  ((selectedPathway.net_cost_low_usd_per_l + selectedPathway.net_cost_high_usd_per_l) / 2).toFixed(4)
+                  (
+                    ((selectedPathway.netCostLow.value ?? 0) + (selectedPathway.netCostHigh.value ?? 0)) /
+                    2
+                  ).toFixed(4)
                 ),
                 co2SavingsKgPerLiter: 0
               }
@@ -372,8 +415,14 @@ export function TippingPointWorkbench({
 
       <section>
         <FuelVsSafPriceChart
-          fossilJetUsdPerL={tippingPoint?.inputs.fossilJetUsdPerL ?? fossilJetUsdPerL}
-          effectiveFossilJetUsdPerL={tippingPoint?.effectiveFossilJetUsdPerL ?? fossilJetUsdPerL}
+          fossilJetUsdPerL={fossilJetFigure(
+            tippingPoint?.inputs.fossilJetUsdPerL ?? fossilJetUsdPerL,
+            tippingPoint?.generatedAt ?? null
+          )}
+          effectiveFossilJetUsdPerL={effectiveFossilJetFigure(
+            tippingPoint?.effectiveFossilJetUsdPerL ?? fossilJetUsdPerL,
+            tippingPoint?.generatedAt ?? null
+          )}
           pathways={pathways}
         />
       </section>

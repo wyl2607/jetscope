@@ -11,7 +11,60 @@ import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-t
 import { ScenarioCostStackChart } from '@/components/scenario-cost-stack-chart';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
 import { getReserveSeverity, getTippingPointSignalMeta, type TippingPointSignalTone } from '@/lib/market-signals';
+import { assumed, derived, observed, type Figure } from '@/lib/figure';
+import { toPathwayCostRow } from '@/lib/pathways-read-model';
 import { toTippingPointReadModel, type AirlineDecisionResponse, type ReserveSignal, type TippingPointResponse } from '@/lib/product-read-model';
+
+const READINESS_SOURCE_ID = 'saf-tipping-model';
+
+function fossilJetFigure(
+  value: number, // figure-contract-lint-ignore: constructor input, not a display prop
+  asOf: string | null
+): Figure {
+  if (asOf) {
+    return observed({
+      value,
+      unit: 'USD/L',
+      sourceId: READINESS_SOURCE_ID,
+      asOf,
+      precision: 2
+    });
+  }
+  return assumed({
+    value,
+    unit: 'USD/L',
+    sourceId: READINESS_SOURCE_ID,
+    precision: 2,
+    method: 'transition-readiness fossil-jet input without source timestamp'
+  });
+}
+
+function effectiveFossilJetFigure(
+  value: number, // figure-contract-lint-ignore: constructor input, not a display prop
+  asOf: string | null
+): Figure {
+  return derived({
+    value,
+    unit: 'USD/L',
+    sourceId: READINESS_SOURCE_ID,
+    asOf,
+    precision: 2,
+    method:
+      'effective fossil jet = spot fossil jet + carbon price pressure at selected blend rate, minus subsidy (tipping-point model)'
+  });
+}
+
+function pathwayCostRows(tippingPoint: TippingPointResponse) {
+  const asOf = tippingPoint.generated_at ?? null;
+  const opts = asOf
+    ? ({ asOf, basis: 'observed' as const })
+    : ({
+        asOf: null,
+        basis: 'assumption' as const,
+        method: 'transition-readiness pathway cost without source timestamp'
+      });
+  return tippingPoint.pathways.map((row) => toPathwayCostRow(row, opts));
+}
 
 type PolicyTarget = {
   year: number;
@@ -257,7 +310,11 @@ export function TransitionReadinessDashboard({
         <SignalCard
           label="最优路径"
           value={derived.bestPathway?.display_name ?? '无数据'}
-          sub={derived.bestPathway ? `价差 ${derived.bestPathway.spread_low_pct.toFixed(1)}% 至 ${derived.bestPathway.spread_high_pct.toFixed(1)}%` : '等待路径数据'}
+          sub={
+            derived.bestPathway
+              ? `价差 ${derived.bestPathway.spread_low_pct.toFixed(1)}% 至 ${derived.bestPathway.spread_high_pct.toFixed(1)}%`
+              : '等待路径数据'
+          }
           tone="purple"
         />
         <SignalCard
@@ -276,23 +333,18 @@ export function TransitionReadinessDashboard({
 
       <div className="grid min-w-0 gap-6 xl:grid-cols-[1.12fr_0.88fr]">
         <FuelVsSafPriceChart
-          fossilJetUsdPerL={tippingPoint.inputs.fossil_jet_usd_per_l}
-          effectiveFossilJetUsdPerL={tippingPoint.effective_fossil_jet_usd_per_l}
-          pathways={tippingPoint.pathways}
+          fossilJetUsdPerL={fossilJetFigure(
+            tippingPoint.inputs.fossil_jet_usd_per_l,
+            tippingPoint.generated_at
+          )}
+          effectiveFossilJetUsdPerL={effectiveFossilJetFigure(
+            tippingPoint.effective_fossil_jet_usd_per_l,
+            tippingPoint.generated_at
+          )}
+          pathways={pathwayCostRows(tippingPoint)}
         />
         <TippingPointSimulator
-          tippingPoint={{
-            generatedAt: tippingPoint.generated_at,
-            effectiveFossilJetUsdPerL: tippingPoint.effective_fossil_jet_usd_per_l,
-            signal: tippingPoint.signal,
-            inputs: {
-              fossilJetUsdPerL: tippingPoint.inputs.fossil_jet_usd_per_l,
-              carbonPriceEurPerT: tippingPoint.inputs.carbon_price_eur_per_t,
-              subsidyUsdPerL: tippingPoint.inputs.subsidy_usd_per_l,
-              blendRatePct: tippingPoint.inputs.blend_rate_pct
-            },
-            pathways: tippingPoint.pathways
-          }}
+          tippingPoint={toTippingPointReadModel(tippingPoint)}
           decision={{
             signal: decision.signal,
             probabilities: decision.probabilities
@@ -303,7 +355,7 @@ export function TransitionReadinessDashboard({
 
       <div className="grid min-w-0 gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <SafPathwayComparisonTable
-          pathways={tippingPoint.pathways}
+          pathways={pathwayCostRows(tippingPoint)}
           selectedPathwayKey={selectedPathwayKey}
         />
         <AirlineDecisionMatrix

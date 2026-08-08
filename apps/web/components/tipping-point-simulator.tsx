@@ -1,6 +1,7 @@
 'use client';
 
 import { getPathwayStatusLabel } from '@/lib/market-signals';
+import { formatFigure } from '@/lib/figure';
 import type { DecisionReadModel, TippingPointReadModel } from '@/lib/product-read-model';
 
 type Props = {
@@ -27,20 +28,20 @@ export function TippingPointSimulator({ tippingPoint, decision, reserveWeeks }: 
     {
       key: 'net_saf_low',
       label: `${leadPathway.display_name} 低位`,
-      value: leadPathway.net_cost_low_usd_per_l,
+      value: leadPathway.netCostLow.value ?? 0,
       format: (v: number) => `$${v.toFixed(2)}/L` // figure-contract-lint-ignore: slider label formatter, not a prop
     },
     {
       key: 'net_saf_high',
       label: `${leadPathway.display_name} 高位`,
-      value: leadPathway.net_cost_high_usd_per_l,
+      value: leadPathway.netCostHigh.value ?? 0,
       format: (v: number) => `$${v.toFixed(2)}/L` // figure-contract-lint-ignore: slider label formatter, not a prop
     },
     {
       key: 'spread_band',
       label: '价差区间',
       value: 0,
-      format: () => `${leadPathway.spread_low_pct.toFixed(1)}% 至 ${leadPathway.spread_high_pct.toFixed(1)}%`
+      format: () => `${formatFigure(leadPathway.spreadLow)} 至 ${formatFigure(leadPathway.spreadHigh)}`
     },
     {
       key: 'status',

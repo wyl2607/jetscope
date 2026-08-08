@@ -3,9 +3,7 @@
   "files": {
     "apps/web/components/admin-data-ops.tsx": 5,
     "apps/web/components/airline-decision-matrix.tsx": 1,
-    "apps/web/components/fuel-vs-saf-price-chart.tsx": 6,
     "apps/web/components/price-trends-chart.tsx": 5,
-    "apps/web/components/saf-pathway-comparison-table.tsx": 4,
     "apps/web/components/tipping-point-simulator.tsx": 1,
     "apps/web/components/tipping-point-workbench.tsx": 6,
     "apps/web/components/transition-ladder.tsx": 1,

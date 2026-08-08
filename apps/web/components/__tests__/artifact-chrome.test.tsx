@@ -19,7 +19,8 @@ import { ScenarioRegistry } from '@/components/scenario-registry';
 import { TransitionReadinessDashboard } from '@/components/transition-readiness-dashboard';
 import { AdminDataOps } from '@/components/admin-data-ops';
 import { TransitionLadder } from '@/components/transition-ladder';
-import { observed } from '@/lib/figure';
+import { assumed, derived, observed } from '@/lib/figure';
+import { toPathwayCostRow } from '@/lib/pathways-read-model';
 
 /**
  * Contract section 2 rule 3: a section is one Panel wrapping exactly one
@@ -150,18 +151,32 @@ describe('artifacts do not draw their own card', () => {
   it('FuelVsSafPriceChart renders bare', () => {
     const { container } = render(
       <FuelVsSafPriceChart
-        fossilJetUsdPerL={1.2}
-        effectiveFossilJetUsdPerL={1.4}
+        fossilJetUsdPerL={assumed({
+          value: 1.2,
+          unit: 'USD/L',
+          sourceId: 'test',
+          method: 'test fixture fossil jet'
+        })}
+        effectiveFossilJetUsdPerL={derived({
+          value: 1.4,
+          unit: 'USD/L',
+          sourceId: 'test',
+          asOf: null,
+          method: 'test fixture effective fossil jet'
+        })}
         pathways={[
-          {
-            pathway_key: 'hefa',
-            display_name: 'HEFA',
-            net_cost_low_usd_per_l: 1.8,
-            net_cost_high_usd_per_l: 2.2,
-            spread_low_pct: 10,
-            spread_high_pct: 20,
-            status: 'inflection'
-          }
+          toPathwayCostRow(
+            {
+              pathway_key: 'hefa',
+              display_name: 'HEFA',
+              net_cost_low_usd_per_l: 1.8,
+              net_cost_high_usd_per_l: 2.2,
+              spread_low_pct: 10,
+              spread_high_pct: 20,
+              status: 'inflection'
+            },
+            { asOf: null, basis: 'assumption', method: 'test fixture pathway cost' }
+          )
         ]}
       />
     );
@@ -237,15 +252,18 @@ describe('artifacts do not draw their own card', () => {
       <SafPathwayComparisonTable
         selectedPathwayKey="hefa"
         pathways={[
-          {
-            pathway_key: 'hefa',
-            display_name: 'HEFA',
-            net_cost_low_usd_per_l: 1.8,
-            net_cost_high_usd_per_l: 2.2,
-            spread_low_pct: 10,
-            spread_high_pct: 20,
-            status: 'inflection'
-          }
+          toPathwayCostRow(
+            {
+              pathway_key: 'hefa',
+              display_name: 'HEFA',
+              net_cost_low_usd_per_l: 1.8,
+              net_cost_high_usd_per_l: 2.2,
+              spread_low_pct: 10,
+              spread_high_pct: 20,
+              status: 'inflection'
+            },
+            { asOf: null, basis: 'assumption', method: 'test fixture pathway cost' }
+          )
         ]}
       />
     );

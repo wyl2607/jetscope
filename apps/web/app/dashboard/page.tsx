@@ -10,7 +10,7 @@ import { getDashboardReadModel, type DashboardReadModel } from '@/lib/dashboard-
 import { getPriceTrendChartReadModel } from '@/lib/product-read-model';
 import { getSourcesReadModel } from '@/lib/sources-read-model';
 import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
-import { loadPathwayComparison } from '@/lib/pathways-read-model';
+import { loadPathwayComparison, toPathwayCostRow } from '@/lib/pathways-read-model';
 import { EuEtsPressurePanel } from '@/components/eu-ets-pressure-panel';
 import { loadEuEtsPressure } from '@/lib/eu-ets-pressure-read-model';
 import { StatusBanner } from '@/components/status-banner';
@@ -360,15 +360,20 @@ export default async function DashboardPage() {
         >
           <SafPathwayComparisonTable
             selectedPathwayKey="hefa"
-            pathways={pathwayComparison.rows.map((row) => ({
-              pathway_key: row.pathway_key,
-              display_name: row.name,
-              net_cost_low_usd_per_l: row.min_usd_per_l,
-              net_cost_high_usd_per_l: row.max_usd_per_l,
-              spread_low_pct: row.spread_pct ?? 0,
-              spread_high_pct: row.spread_pct ?? 0,
-              status: row.status
-            }))}
+            pathways={pathwayComparison.rows.map((row) =>
+              toPathwayCostRow(
+                {
+                  pathway_key: row.pathway_key,
+                  display_name: row.name,
+                  net_cost_low_usd_per_l: row.min_usd_per_l,
+                  net_cost_high_usd_per_l: row.max_usd_per_l,
+                  spread_low_pct: row.spread_pct ?? 0,
+                  spread_high_pct: row.spread_pct ?? 0,
+                  status: row.status
+                },
+                { asOf: pathwayComparison.generatedAt, basis: 'observed' }
+              )
+            )}
             sources={pathwayComparison.sourceByKey}
           />
         </Panel>

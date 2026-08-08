@@ -38,6 +38,11 @@ type PolicyTarget = {
   label: string;
 };
 
+/**
+ * Demo constants only. `generated_at: null` forces downstream
+ * `toPathwayCostRow(..., { basis: 'assumption' })` so these never render as
+ * observed measurements (UI_CONTRACT.md §3 rule 2).
+ */
 function defaultTippingPointResponse(): TippingPointResponse {
   return {
     generated_at: null,
@@ -53,6 +58,7 @@ function defaultTippingPointResponse(): TippingPointResponse {
       {
         pathway_key: 'hefa',
         display_name: 'HEFA',
+        // Demo/scenario constants — not market observations.
         net_cost_low_usd_per_l: 1,
         net_cost_high_usd_per_l: 1.5,
         spread_low_pct: 0,

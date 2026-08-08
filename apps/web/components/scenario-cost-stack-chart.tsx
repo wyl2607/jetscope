@@ -1,4 +1,5 @@
 import type { TippingPointReadModel } from '@/lib/product-read-model';
+import { formatFigure } from '@/lib/figure';
 
 type Props = {
   tippingPoint: TippingPointReadModel | null;
@@ -38,8 +39,8 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
   const fossilSpot = tippingPoint.inputs.fossilJetUsdPerL;
   const effectiveFossil = tippingPoint.effectiveFossilJetUsdPerL;
   const selectedMidpoint = midpoint(
-    selectedPathway.net_cost_low_usd_per_l,
-    selectedPathway.net_cost_high_usd_per_l
+    selectedPathway.netCostLow.value ?? 0,
+    selectedPathway.netCostHigh.value ?? 0
   );
   const maxValue = Math.max(fossilSpot, effectiveFossil, selectedMidpoint, 1);
   const rows = [
@@ -59,7 +60,7 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
       key: selectedPathway.pathway_key,
       label: `${selectedPathway.display_name} 中点`,
       value: selectedMidpoint,
-      hint: `净成本区间 ${selectedPathway.net_cost_low_usd_per_l.toFixed(2)}–${selectedPathway.net_cost_high_usd_per_l.toFixed(2)}/L`,
+      hint: `净成本区间 ${formatFigure(selectedPathway.netCostLow)}–${formatFigure(selectedPathway.netCostHigh)}`,
     }
   ];
 

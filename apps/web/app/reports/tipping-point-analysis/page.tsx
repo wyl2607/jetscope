@@ -6,11 +6,49 @@ import { ResearchDecisionBriefCard } from '@/components/research-decision-brief'
 import { ReservesCoverageStrip } from '@/components/reserves-coverage-strip';
 import { SourceFooter } from '@/components/source-footer';
 import { TippingEventTimeline } from '@/components/tipping-event-timeline';
+import { assumed, derived, observed, type Figure } from '@/lib/figure';
 import {
   getDashboardReadModel,
   toDecisionReadModel,
   toTippingPointReadModel
 } from '@/lib/product-read-model';
+
+const REPORT_CHART_SOURCE_ID = 'saf-tipping-model';
+
+function fossilJetFigure(
+  value: number,
+  asOf: string | null,
+  source: 'model' | 'proxy' | 'spot' | 'assumed'
+): Figure {
+  if (source === 'assumed' || !asOf) {
+    return assumed({
+      value,
+      unit: 'USD/L',
+      sourceId: REPORT_CHART_SOURCE_ID,
+      precision: 2,
+      method: 'report page fossil-jet assumed constant 0.657 USD/L or missing timestamp'
+    });
+  }
+  return observed({
+    value,
+    unit: 'USD/L',
+    sourceId: REPORT_CHART_SOURCE_ID,
+    asOf,
+    precision: 2
+  });
+}
+
+function effectiveFossilJetFigure(value: number, asOf: string | null): Figure {
+  return derived({
+    value,
+    unit: 'USD/L',
+    sourceId: REPORT_CHART_SOURCE_ID,
+    asOf,
+    precision: 2,
+    method:
+      'effective fossil jet = spot fossil jet + carbon price pressure at selected blend rate, minus subsidy (tipping-point model)'
+  });
+}
 import { getEuReserveCoverage, getTippingPointEvents } from '@/lib/portfolio-read-model';
 import { buildResearchDecisionBrief, getResearchSignals } from '@/lib/research-signals-read-model';
 import { buildPageMetadata } from '@/lib/seo';
@@ -138,8 +176,15 @@ export default async function TippingPointReportPage() {
         }
       >
         <FuelVsSafPriceChart
-          fossilJetUsdPerL={fossilJetUsdPerL}
-          effectiveFossilJetUsdPerL={effectiveFossilJetUsdPerL}
+          fossilJetUsdPerL={fossilJetFigure(
+            fossilJetUsdPerL,
+            tippingPoint?.generatedAt ?? asOf,
+            fossilJetSource
+          )}
+          effectiveFossilJetUsdPerL={effectiveFossilJetFigure(
+            effectiveFossilJetUsdPerL,
+            tippingPoint?.generatedAt ?? asOf
+          )}
           pathways={tippingPoint?.pathways ?? []}
         />
       </Panel>
