@@ -16,7 +16,12 @@
 #   bash scripts/deploy-usa-vps.sh              # rsync + smoke only
 #   bash scripts/deploy-usa-vps.sh --rebuild    # rsync + rebuild api container + rebuild/restart systemd web + smoke
 #   bash scripts/deploy-usa-vps.sh --rebuild --api-only   # skip the web rebuild
+#   bash scripts/deploy-usa-vps.sh --rebuild --allow-unmerged  # source not on origin/main
 #   JETSCOPE_REMOTE_DIR=/opt/jetscope bash scripts/deploy-usa-vps.sh --rebuild
+#
+# The deploy source must be a clean tree AND a commit that is on origin/main.
+# Pipe the output at your peril: `deploy.sh | tail` reports tail's exit code,
+# which is how a smoke failure reads as a successful deploy.
 set -euo pipefail
 
 HOST="${JETSCOPE_DEPLOY_HOST:-usa-vps}"
@@ -29,6 +34,7 @@ PUBLIC_HOST="${JETSCOPE_PUBLIC_HOST:-saf.meichen.beauty}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REBUILD=0
 API_ONLY=0
+ALLOW_UNMERGED=0
 
 if ! DEPLOY_COMMIT="$(git -C "$ROOT" rev-parse --verify "HEAD^{commit}")"; then
   echo "ERROR: deploy source is not a Git checkout" >&2
@@ -43,8 +49,9 @@ for arg in "$@"; do
   case "$arg" in
     --rebuild) REBUILD=1 ;;
     --api-only) API_ONLY=1 ;;
+    --allow-unmerged) ALLOW_UNMERGED=1 ;;
     --help|-h)
-      sed -n '2,20p' "$0"
+      sed -n '2,22p' "$0"
       exit 0
       ;;
     *)
@@ -53,6 +60,24 @@ for arg in "$@"; do
       ;;
   esac
 done
+
+# What gets deployed is the working tree, so "which commit" is decided by
+# whatever happens to be checked out. A clean tree is not the same as a
+# reviewed one: a local branch, an unpushed commit, or a half-finished
+# experiment all pass the check above and all rsync straight to production.
+#
+# --is-ancestor rather than an equality test, so rolling back to an older
+# merged commit still works; the thing being refused is source that is not on
+# origin/main at all.
+if [[ "$ALLOW_UNMERGED" -eq 0 ]]; then
+  git -C "$ROOT" fetch origin main --quiet 2>/dev/null || true
+  if ! git -C "$ROOT" merge-base --is-ancestor "$DEPLOY_COMMIT" origin/main 2>/dev/null; then
+    echo "ERROR: $DEPLOY_COMMIT is not on origin/main." >&2
+    echo "       Production deploys only commits that were merged and passed CI." >&2
+    echo "       Check out a merged commit, or pass --allow-unmerged deliberately." >&2
+    exit 1
+  fi
+fi
 
 echo "==> Preflight SSH ($HOST)"
 if ! ssh -o BatchMode=yes -o ConnectTimeout=12 "$HOST" "echo OK && hostname"; then
@@ -223,12 +248,25 @@ else
   exit 1
 fi
 
-for probe in "http://127.0.0.1:3000/sources||direct :3000" "http://127.0.0.1/sources|$PUBLIC_HOST|via nginx as $PUBLIC_HOST"; do
+for probe in "http://127.0.0.1:3000/sources||direct :3000" "|$PUBLIC_HOST|via nginx as $PUBLIC_HOST"; do
   url="\$(printf '%s' "\$probe" | cut -d'|' -f1)"
   host_header="\$(printf '%s' "\$probe" | cut -d'|' -f2)"
   label="\$(printf '%s' "\$probe" | cut -d'|' -f3)"
   if [ -n "\$host_header" ]; then
-    body="\$(curl -fsS --max-time 25 -H "Host: \$host_header" "\$url" 2>/dev/null || true)"
+    # Probe the vhost over TLS, with the name pinned to this host.
+    #
+    # The previous form asked for http://127.0.0.1/ with a Host header. The
+    # public vhost answers :80 with a 301 to https, so the probe read the
+    # 178-byte nginx redirect page, found no as-of stamp, and reported a live,
+    # correct site as broken. A check that cries wolf is worse than no check.
+    #
+    # Following the redirect with -L is not the fix either: the Location points
+    # at the public name, which is Cloudflare-proxied, so the probe would leave
+    # the box and come back through the CDN - testing DNS and Cloudflare rather
+    # than the nginx this deploy just touched. --resolve keeps it local; -k
+    # because pinning the name to 127.0.0.1 is exactly what a cert cannot cover.
+    body="\$(curl -fsS -k --max-time 25 --resolve "\$host_header:443:127.0.0.1" \
+      "https://\$host_header/sources" 2>/dev/null || true)"
   else
     body="\$(curl -fsS --max-time 25 "\$url" 2>/dev/null || true)"
   fi
