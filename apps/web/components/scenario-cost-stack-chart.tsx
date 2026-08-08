@@ -90,7 +90,7 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
                 <div className="font-medium text-slate-950">{row.label}</div>
                 <div className="text-xs text-slate-500">{row.hint}</div>
               </div>
-              <div className="font-mono text-slate-950">
+              <div className="font-mono text-ink">
                 {row.value == null ? '—' : `$${row.value.toFixed(2)}/L`}
               </div>
             </div>
@@ -106,7 +106,7 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
         ))}
       </div>
       {selectedMidpoint == null ? (
-        <p className="mt-3 text-xs text-slate-500">
+        <p className="mt-3 text-xs text-muted">
           所选路径中点未进入绘图：{midpointUnknownReason}
         </p>
       ) : null}

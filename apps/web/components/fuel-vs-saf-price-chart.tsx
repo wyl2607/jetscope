@@ -140,7 +140,7 @@ export function FuelVsSafPriceChart({
         </div>
 
         {unknownNotes.length > 0 ? (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted">
             未进入绘图：{unknownNotes.join('；')}
           </p>
         ) : null}
