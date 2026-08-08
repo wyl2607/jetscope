@@ -38,8 +38,8 @@ export function SourceCoveragePanel({
         <span
           className={`rounded-full border px-3 py-1 font-medium ${
             degraded
-              ? 'border-amber-200 bg-amber-50 text-amber-700'
-              : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+              ? 'border-warning bg-warning-soft text-warning'
+              : 'border-success bg-success-soft text-success'
           }`}
         >
           {degraded ? '已降级' : '健康'}
@@ -52,7 +52,7 @@ export function SourceCoveragePanel({
           实时 {liveCount}
         </span>
         {proxyCount > 0 && (
-          <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sky-700">
+          <span className="rounded-full border border-accent bg-accent-soft px-3 py-1 text-accent">
             代理 {proxyCount}
           </span>
         )}
@@ -67,7 +67,7 @@ export function SourceCoveragePanel({
           </span>
         )}
         {degradedCount > 0 && (
-          <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-700">
+          <span className="rounded-full border border-warning bg-warning-soft px-3 py-1 text-warning">
             降级 {degradedCount}
           </span>
         )}

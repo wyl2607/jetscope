@@ -15,10 +15,10 @@ type Props = {
 };
 
 function sweepTone(status: HeatParityStatus): string {
-  if (status === 'dominant') return 'bg-emerald-500';
-  if (status === 'marginal_switch') return 'bg-sky-500';
-  if (status === 'inflection') return 'bg-amber-500';
-  return 'bg-rose-400';
+  if (status === 'dominant') return 'bg-success';
+  if (status === 'marginal_switch') return 'bg-accent';
+  if (status === 'inflection') return 'bg-warning';
+  return 'bg-danger';
 }
 
 export function HeatParityWorkbench({ initial }: Props) {
@@ -104,7 +104,7 @@ export function HeatParityWorkbench({ initial }: Props) {
           step={1}
           value={carbonPrice}
           onChange={(event) => setCarbonPrice(Number(event.target.value))}
-          className="mt-2 w-full accent-emerald-600"
+          className="mt-2 w-full accent-accent"
         />
         <div className="mt-1 flex justify-between text-xs text-subtle">
           <span>€0</span>
@@ -128,7 +128,7 @@ export function HeatParityWorkbench({ initial }: Props) {
         </span>
       </div>
 
-      {error && <p className="mb-3 text-xs text-amber-700">{error}</p>}
+      {error && <p className="mb-3 text-xs text-danger">{error}</p>}
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-ink">

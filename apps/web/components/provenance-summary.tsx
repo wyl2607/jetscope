@@ -24,9 +24,9 @@ function formatGeneratedAt(value: string | null): string {
 }
 
 function trustTone(summary: SourcesReadModel['summary']): string {
-  if (summary.fallbackCount > 0 || summary.degradedCount > 0) return 'text-amber-700';
-  if (summary.proxyCount > 0) return 'text-sky-700';
-  return 'text-emerald-700';
+  if (summary.fallbackCount > 0 || summary.degradedCount > 0) return 'text-warning';
+  if (summary.proxyCount > 0) return 'text-accent';
+  return 'text-success';
 }
 
 export function ProvenanceSummary({ summary, completeness, generatedAt, href }: Props) {
@@ -36,15 +36,15 @@ export function ProvenanceSummary({ summary, completeness, generatedAt, href }: 
       <div className="grid gap-3 text-sm md:grid-cols-4">
         <p className="rounded-xl border border-line bg-surface-muted p-3 text-ink">
           <span className="block text-xs uppercase tracking-[0.14em] text-muted">实时</span>
-          <span className="mt-1 block text-lg font-semibold text-emerald-700">{summary.liveCount}</span>
+          <span className="mt-1 block text-lg font-semibold text-success">{summary.liveCount}</span>
         </p>
         <p className="rounded-xl border border-line bg-surface-muted p-3 text-ink">
           <span className="block text-xs uppercase tracking-[0.14em] text-muted">代理</span>
-          <span className="mt-1 block text-lg font-semibold text-sky-700">{summary.proxyCount}</span>
+          <span className="mt-1 block text-lg font-semibold text-accent">{summary.proxyCount}</span>
         </p>
         <p className="rounded-xl border border-line bg-surface-muted p-3 text-ink">
           <span className="block text-xs uppercase tracking-[0.14em] text-muted">回退</span>
-          <span className="mt-1 block text-lg font-semibold text-amber-700">{summary.fallbackCount}</span>
+          <span className="mt-1 block text-lg font-semibold text-warning">{summary.fallbackCount}</span>
         </p>
         <p className="rounded-xl border border-line bg-surface-muted p-3 text-ink">
           <span className="block text-xs uppercase tracking-[0.14em] text-muted">置信度</span>

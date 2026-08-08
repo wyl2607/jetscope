@@ -44,13 +44,13 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, source
             {pathways.map((pathway) => {
               const canonical = canonicalByKey.get(pathway.pathway_key);
               const isSelected = pathway.pathway_key === selectedPathwayKey;
-              const rowClass = isSelected ? 'bg-sky-50 ring-1 ring-sky-300' : '';
+              const rowClass = isSelected ? 'bg-accent-soft ring-1 ring-accent' : '';
               const statusColor =
                 pathway.status === 'competitive'
-                  ? 'text-emerald-700'
+                  ? 'text-success'
                   : pathway.status === 'inflection'
-                    ? 'text-amber-700'
-                    : 'text-rose-700';
+                    ? 'text-warning'
+                    : 'text-danger';
               return (
                 <tr key={pathway.pathway_key} className={`border-b border-line last:border-none ${rowClass}`}>
                   <td className="py-3 pr-4">

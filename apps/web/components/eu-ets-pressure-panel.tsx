@@ -5,10 +5,10 @@ type Props = {
 };
 
 const signalTone: Record<string, string> = {
-  low: 'border-emerald-300 bg-emerald-50 text-emerald-800',
-  moderate: 'border-amber-300 bg-amber-50 text-amber-800',
-  high: 'border-orange-300 bg-orange-50 text-orange-800',
-  severe: 'border-rose-300 bg-rose-50 text-rose-800'
+  low: 'border-success bg-success-soft text-success',
+  moderate: 'border-warning bg-warning-soft text-warning',
+  high: 'border-danger bg-danger-soft text-danger',
+  severe: 'border-danger bg-danger text-surface'
 };
 
 function formatUsd(value: number): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
