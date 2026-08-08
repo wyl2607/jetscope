@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { TransitionReadinessDashboard } from '@/components/transition-readiness-dashboard';
+import { derived } from '@/lib/figure';
 
 describe('TransitionReadinessDashboard', () => {
   it('renders without crashing', () => {
@@ -59,8 +60,22 @@ describe('TransitionReadinessDashboard', () => {
         policyTargets={[
           {
             year: 2030,
-            saf_share_pct: 6,
-            synthetic_share_pct: 1.2,
+            saf_share_pct: derived({
+              value: 6,
+              unit: '%',
+              sourceId: 'policy-targets',
+              asOf: null,
+              precision: 1,
+              method: 'RefuelEU mandatory SAF blending target (statutory mandate, not a scenario assumption)'
+            }),
+            synthetic_share_pct: derived({
+              value: 1.2,
+              unit: '%',
+              sourceId: 'policy-targets',
+              asOf: null,
+              precision: 1,
+              method: 'RefuelEU mandatory synthetic aviation fuel blending target (statutory mandate, not a scenario assumption)'
+            }),
             label: 'Target'
           }
         ]}

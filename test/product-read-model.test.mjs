@@ -360,8 +360,10 @@ test('getPriceTrendChartReadModel maps live market history into chart-friendly m
   assert.equal(readModel.isFallback, false);
   assert.equal(readModel.error, null);
   assert.equal(readModel.metrics.brent_usd_per_bbl.metric_key, 'brent_usd_per_bbl');
-  assert.equal(readModel.metrics.brent_usd_per_bbl.latest_value, 82.4);
-  assert.equal(readModel.metrics.brent_usd_per_bbl.change_pct_7d, 3.4);
+  assert.equal(readModel.metrics.brent_usd_per_bbl.latest_value.value, 82.4);
+  assert.equal(readModel.metrics.brent_usd_per_bbl.latest_value.basis, 'observed');
+  assert.equal(readModel.metrics.brent_usd_per_bbl.change_pct_7d.value, 3.4);
+  assert.equal(readModel.metrics.brent_usd_per_bbl.change_pct_7d.basis, 'derived');
   assert.equal(readModel.metrics.brent_usd_per_bbl.points.length, 1);
 });
 

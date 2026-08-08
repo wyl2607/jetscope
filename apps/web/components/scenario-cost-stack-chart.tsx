@@ -1,4 +1,5 @@
 import type { TippingPointReadModel } from '@/lib/product-read-model';
+import { formatFigure } from '@/lib/figure';
 
 type Props = {
   tippingPoint: TippingPointReadModel | null;
@@ -37,11 +38,18 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
     tippingPoint.pathways[0];
   const fossilSpot = tippingPoint.inputs.fossilJetUsdPerL;
   const effectiveFossil = tippingPoint.effectiveFossilJetUsdPerL;
-  const selectedMidpoint = midpoint(
-    selectedPathway.net_cost_low_usd_per_l,
-    selectedPathway.net_cost_high_usd_per_l
+  // Either end unknown → midpoint is unknown. Never launder null into 0.
+  const low = selectedPathway.netCostLow.value;
+  const high = selectedPathway.netCostHigh.value;
+  const selectedMidpoint = low != null && high != null ? midpoint(low, high) : null;
+  const midpointUnknownReason =
+    [selectedPathway.netCostLow.reason, selectedPathway.netCostHigh.reason]
+      .filter(Boolean)
+      .join('；') || '净成本区间任一端未知';
+  const knownForScale = [fossilSpot, effectiveFossil, selectedMidpoint].filter(
+    (value): value is number => value != null
   );
-  const maxValue = Math.max(fossilSpot, effectiveFossil, selectedMidpoint, 1);
+  const maxValue = Math.max(...knownForScale, 1);
   const rows = [
     {
       key: 'fossil',
@@ -59,7 +67,7 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
       key: selectedPathway.pathway_key,
       label: `${selectedPathway.display_name} 中点`,
       value: selectedMidpoint,
-      hint: `净成本区间 ${selectedPathway.net_cost_low_usd_per_l.toFixed(2)}–${selectedPathway.net_cost_high_usd_per_l.toFixed(2)}/L`,
+      hint: `净成本区间 ${formatFigure(selectedPathway.netCostLow)}–${formatFigure(selectedPathway.netCostHigh)}`,
     }
   ];
 
@@ -82,17 +90,26 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
                 <div className="font-medium text-slate-950">{row.label}</div>
                 <div className="text-xs text-slate-500">{row.hint}</div>
               </div>
-              <div className="font-mono text-slate-950">${row.value.toFixed(2)}/L</div>
+              <div className="font-mono text-ink">
+                {row.value == null ? '—' : `$${row.value.toFixed(2)}/L`}
+              </div>
             </div>
             <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200">
-              <div
-                className={`h-full rounded-full ${barColors[row.key] ?? 'bg-gradient-to-r from-slate-500 to-slate-300'}`}
-                style={{ width: `${Math.max(6, (row.value / maxValue) * 100)}%` }}
-              />
+              {row.value != null ? (
+                <div
+                  className={`h-full rounded-full ${barColors[row.key] ?? 'bg-gradient-to-r from-slate-500 to-slate-300'}`}
+                  style={{ width: `${Math.max(6, (row.value / maxValue) * 100)}%` }}
+                />
+              ) : null}
             </div>
           </div>
         ))}
       </div>
+      {selectedMidpoint == null ? (
+        <p className="mt-3 text-xs text-muted">
+          所选路径中点未进入绘图：{midpointUnknownReason}
+        </p>
+      ) : null}
     </section>
   );
 }

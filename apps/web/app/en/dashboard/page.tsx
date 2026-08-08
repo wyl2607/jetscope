@@ -203,7 +203,7 @@ export default async function EnglishDashboardPage() {
           </p>
         </div>
         <p className={`mt-4 text-sm leading-7 ${sourcePostureTone}`}>
-          {sourcePosture} | completeness <span className="tabular-nums">{Math.round(sourcesReadModel.completeness * 100)}%</span>. Open Source Review for row-level recovery actions.
+          {sourcePosture} | completeness <span className="tabular-nums">{sourcesReadModel.completeness.value == null ? '—' : `${Math.round(sourcesReadModel.completeness.value)}%`}</span>. Open Source Review for row-level recovery actions.
         </p>
       </Panel>
 

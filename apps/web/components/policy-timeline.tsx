@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
  */
 
 interface Milestone {
-  year: number;
+  year: number; // figure-contract-lint-ignore: calendar year of a policy milestone, not a measurement
   title: string;
   description: string;
   regions: string[];

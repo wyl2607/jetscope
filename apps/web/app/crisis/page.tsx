@@ -7,11 +7,45 @@ import { ReservesCoverageStrip } from '@/components/reserves-coverage-strip';
 import { SourceFooter, type SourceRef } from '@/components/source-footer';
 import { TippingEventTimeline } from '@/components/tipping-event-timeline';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
+import { assumed, derived, observed, type Figure } from '@/lib/figure';
 import {
   getDashboardReadModel,
   toDecisionReadModel,
   toTippingPointReadModel
 } from '@/lib/product-read-model';
+
+const CRISIS_CHART_SOURCE_ID = 'saf-tipping-model';
+
+function fossilJetFigure(value: number, asOf: string | null, isAssumed: boolean): Figure {
+  if (isAssumed || !asOf) {
+    return assumed({
+      value,
+      unit: 'USD/L',
+      sourceId: CRISIS_CHART_SOURCE_ID,
+      precision: 2,
+      method: 'crisis page fossil-jet fallback or missing source timestamp'
+    });
+  }
+  return observed({
+    value,
+    unit: 'USD/L',
+    sourceId: CRISIS_CHART_SOURCE_ID,
+    asOf,
+    precision: 2
+  });
+}
+
+function effectiveFossilJetFigure(value: number, asOf: string | null): Figure {
+  return derived({
+    value,
+    unit: 'USD/L',
+    sourceId: CRISIS_CHART_SOURCE_ID,
+    asOf,
+    precision: 2,
+    method:
+      'effective fossil jet = spot fossil jet + carbon price pressure at selected blend rate, minus subsidy (tipping-point model)'
+  });
+}
 import { getEuReserveCoverage, getTippingPointEvents } from '@/lib/portfolio-read-model';
 import { buildResearchDecisionBrief, getResearchSignals } from '@/lib/research-signals-read-model';
 import { buildPageMetadata } from '@/lib/seo';
@@ -257,8 +291,15 @@ export default async function CrisisPage() {
           why="化石航油基准、碳调整后的有效成本，以及各路径的净成本区间——要看的是差距，不是绝对值。"
         >
           <FuelVsSafPriceChart
-            fossilJetUsdPerL={tippingPoint?.inputs.fossilJetUsdPerL ?? fallbackFossil}
-            effectiveFossilJetUsdPerL={tippingPoint?.effectiveFossilJetUsdPerL ?? fallbackFossil}
+            fossilJetUsdPerL={fossilJetFigure(
+              tippingPoint?.inputs.fossilJetUsdPerL ?? fallbackFossil,
+              tippingPoint?.generatedAt ?? null,
+              tippingPoint == null
+            )}
+            effectiveFossilJetUsdPerL={effectiveFossilJetFigure(
+              tippingPoint?.effectiveFossilJetUsdPerL ?? fallbackFossil,
+              tippingPoint?.generatedAt ?? null
+            )}
             pathways={tippingPoint?.pathways ?? []}
           />
         </Panel>
@@ -270,7 +311,48 @@ export default async function CrisisPage() {
           <TippingPointSimulator
             tippingPoint={tippingPoint}
             decision={decision}
-            reserveWeeks={reserveWeeks ?? 3}
+            reserveWeeks={
+              reserveWeeks != null && reserve
+                ? reserve.source_type === 'official'
+                  ? observed({
+                      value: reserveWeeks,
+                      unit: 'weeks',
+                      sourceId: 'eu-reserve',
+                      asOf: reserve.generated_at,
+                      precision: 1
+                    })
+                  : reserve.source_type === 'derived'
+                    ? derived({
+                        value: reserveWeeks,
+                        unit: 'weeks',
+                        sourceId: 'eu-reserve',
+                        asOf: reserve.generated_at,
+                        precision: 1,
+                        method: `derived reserve coverage from ${reserve.source_name}`
+                      })
+                    : assumed({
+                        value: reserveWeeks,
+                        unit: 'weeks',
+                        sourceId: 'eu-reserve',
+                        precision: 1,
+                        method: `reserve coverage from ${reserve.source_name} (${reserve.source_type})`
+                      })
+                : reserveWeeks != null
+                  ? assumed({
+                      value: reserveWeeks,
+                      unit: 'weeks',
+                      sourceId: 'eu-reserve',
+                      precision: 1,
+                      method: 'dashboard reserve coverage without connected reserve source metadata'
+                    })
+                  : assumed({
+                      value: 3,
+                      unit: 'weeks',
+                      sourceId: 'eu-reserve',
+                      precision: 1,
+                      method: '情景基线 3.0 周；实时储备未连接'
+                    })
+            }
           />
         </Panel>
 

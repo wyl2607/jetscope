@@ -6,7 +6,8 @@ import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-t
 import { SourceFooter } from '@/components/source-footer';
 import { TippingPointWorkbench } from '@/components/tipping-point-workbench';
 import { loadEuEtsPressure } from '@/lib/eu-ets-pressure-read-model';
-import { loadPathwayComparison } from '@/lib/pathways-read-model';
+import { assumed, derived, observed, type Figure } from '@/lib/figure';
+import { loadPathwayComparison, toPathwayCostRow } from '@/lib/pathways-read-model';
 import { getDashboardReadModel, toDecisionReadModel, toTippingPointReadModel } from '@/lib/product-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 import {
@@ -88,9 +89,109 @@ export default async function SafTippingPointPage() {
   const liveFuel = readModel.market.values?.jet_eu_proxy_usd_per_l ?? readModel.market.values?.jet_usd_per_l ?? 1.3;
   const carbonIsAssumed = readModel.market.values?.carbon_proxy_usd_per_t == null;
   const liveCarbonUsd = readModel.market.values?.carbon_proxy_usd_per_t ?? 102.6;
+  const liveCarbonEur = Number((liveCarbonUsd / 1.08).toFixed(2));
   const reserveIsAssumed = readModel.reserve == null;
   const anyInputIsAssumed = readModel.isFallback || fuelSource === 'assumed' || carbonIsAssumed || reserveIsAssumed;
   const asOf = anyInputIsAssumed ? null : readModel.market.generated_at;
+  const marketAsOf = readModel.market.generated_at;
+
+  const fossilJetDefault: Figure =
+    fuelSource === 'assumed' || readModel.isFallback || !marketAsOf
+      ? assumed({
+          value: liveFuel,
+          unit: 'USD/L',
+          sourceId: 'saf-tipping-fuel',
+          precision: 2,
+          method:
+            fuelSource === 'assumed' || readModel.isFallback
+              ? '内置化石航油假设 1.3 USD/L（市场输入不可用）'
+              : '化石航油市场输入缺少来源时间戳，按情景假设承载'
+        })
+      : fuelSource === 'spot'
+        ? observed({
+            value: liveFuel,
+            unit: 'USD/L',
+            sourceId: 'saf-tipping-fuel',
+            asOf: marketAsOf,
+            precision: 2
+          })
+        : derived({
+            value: liveFuel,
+            unit: 'USD/L',
+            sourceId: 'saf-tipping-fuel',
+            asOf: marketAsOf,
+            precision: 2,
+            method: 'EU jet fuel proxy from market snapshot'
+          });
+
+  const carbonDefault: Figure =
+    carbonIsAssumed || readModel.isFallback || !marketAsOf
+      ? assumed({
+          value: liveCarbonEur,
+          unit: 'EUR/t',
+          sourceId: 'saf-tipping-carbon',
+          precision: 2,
+          method: carbonIsAssumed || readModel.isFallback
+            ? '内置碳价假设经 USD→EUR 换算（代理不可用）'
+            : '碳价代理缺少来源时间戳，按情景假设承载'
+        })
+      : derived({
+          value: liveCarbonEur,
+          unit: 'EUR/t',
+          sourceId: 'saf-tipping-carbon',
+          asOf: marketAsOf,
+          precision: 2,
+          method: 'carbon_proxy_usd_per_t / 1.08 (EUR conversion)'
+        });
+
+  const subsidyDefault = assumed({
+    value: 0,
+    unit: 'USD/L',
+    sourceId: 'saf-tipping-model',
+    precision: 2,
+    method: 'workbench default subsidy (no subsidy seed)'
+  });
+
+  const blendDefault = assumed({
+    value: 6,
+    unit: '%',
+    sourceId: 'saf-tipping-model',
+    precision: 2,
+    method: 'workbench default blend rate (ReFuelEU-aligned seed)'
+  });
+
+  const reserveDefault: Figure = readModel.reserve
+    ? readModel.reserve.source_type === 'official'
+      ? observed({
+          value: readModel.reserve.coverage_weeks,
+          unit: 'weeks',
+          sourceId: 'saf-tipping-reserve',
+          asOf: readModel.reserve.generated_at,
+          precision: 1
+        })
+      : readModel.reserve.source_type === 'derived'
+        ? derived({
+            value: readModel.reserve.coverage_weeks,
+            unit: 'weeks',
+            sourceId: 'saf-tipping-reserve',
+            asOf: readModel.reserve.generated_at,
+            precision: 1,
+            method: `derived reserve coverage from ${readModel.reserve.source_name}`
+          })
+        : assumed({
+            value: readModel.reserve.coverage_weeks,
+            unit: 'weeks',
+            sourceId: 'saf-tipping-reserve',
+            precision: 1,
+            method: `reserve coverage from ${readModel.reserve.source_name} (${readModel.reserve.source_type})`
+          })
+    : assumed({
+        value: 3.0,
+        unit: 'weeks',
+        sourceId: 'saf-tipping-reserve',
+        precision: 1,
+        method: '内置情景默认 3.0 周；非实测储备覆盖'
+      });
   const sourceCoverageItems = (readModel.sourceCoverage?.metrics ?? [])
     .filter((metric) => SAF_SOURCE_METRICS.includes(metric.metric_key as (typeof SAF_SOURCE_METRICS)[number]))
     .map((metric) => ({ metric, trustState: getSourceCoverageTrustState(metric) }));
@@ -108,7 +209,7 @@ export default async function SafTippingPointPage() {
   try {
     pathwayComparison = await loadPathwayComparison({
       fossilJetUsdPerL: liveFuel,
-      carbonPriceEurPerT: Number((liveCarbonUsd / 1.08).toFixed(2)),
+      carbonPriceEurPerT: liveCarbonEur,
       subsidyUsdPerL: 0,
       blendRatePct: 6
     });
@@ -197,14 +298,13 @@ export default async function SafTippingPointPage() {
         <TippingPointWorkbench
           initialTippingPoint={tippingPoint}
           initialDecision={airlineDecision}
-          initialReserveWeeks={readModel.reserve?.coverage_weeks ?? 3.0}
-          reserveIsScenarioDefault={!readModel.reserve}
+          initialReserveWeeks={reserveDefault}
           liveDefaults={{
-            fossilJetUsdPerL: liveFuel,
-            carbonPriceEurPerT: Number((liveCarbonUsd / 1.08).toFixed(2)),
-            subsidyUsdPerL: 0,
-            blendRatePct: 6,
-            reserveWeeks: readModel.reserve?.coverage_weeks ?? 3.0,
+            fossilJetUsdPerL: fossilJetDefault,
+            carbonPriceEurPerT: carbonDefault,
+            subsidyUsdPerL: subsidyDefault,
+            blendRatePct: blendDefault,
+            reserveWeeks: reserveDefault,
             pathwayKey: 'hefa'
           }}
         />
@@ -220,15 +320,20 @@ export default async function SafTippingPointPage() {
         {pathwayComparison ? (
           <SafPathwayComparisonTable
             selectedPathwayKey="hefa"
-            pathways={pathwayComparison.rows.map((row) => ({
-              pathway_key: row.pathway_key,
-              display_name: row.name,
-              net_cost_low_usd_per_l: row.min_usd_per_l,
-              net_cost_high_usd_per_l: row.max_usd_per_l,
-              spread_low_pct: row.spread_pct ?? 0,
-              spread_high_pct: row.spread_pct ?? 0,
-              status: row.status
-            }))}
+            pathways={pathwayComparison.rows.map((row) =>
+              toPathwayCostRow(
+                {
+                  pathway_key: row.pathway_key,
+                  display_name: row.name,
+                  net_cost_low_usd_per_l: row.min_usd_per_l,
+                  net_cost_high_usd_per_l: row.max_usd_per_l,
+                  spread_low_pct: row.spread_pct ?? 0,
+                  spread_high_pct: row.spread_pct ?? 0,
+                  status: row.status
+                },
+                { asOf: pathwayComparison.generatedAt, basis: 'observed' }
+              )
+            )}
             sources={pathwayComparison.sourceByKey}
           />
         ) : null}

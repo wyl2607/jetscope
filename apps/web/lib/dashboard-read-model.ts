@@ -8,31 +8,9 @@ import {
   type AirlineDecisionResponse,
   type MarketHistory,
   type MarketSnapshot,
-  type ReserveSignal
+  type ReserveSignal,
+  type TippingPointResponse
 } from '@/lib/product-read-model';
-
-type TippingPointPathway = {
-  pathway_key: string;
-  display_name: string;
-  net_cost_low_usd_per_l: number;
-  net_cost_high_usd_per_l: number;
-  spread_low_pct: number;
-  spread_high_pct: number;
-  status: string;
-};
-
-type TippingPointResponse = {
-  generated_at: string | null;
-  inputs: {
-    fossil_jet_usd_per_l: number;
-    carbon_price_eur_per_t: number;
-    subsidy_usd_per_l: number;
-    blend_rate_pct: number;
-  };
-  effective_fossil_jet_usd_per_l: number;
-  pathways: TippingPointPathway[];
-  signal: string;
-};
 
 type ScenarioRecord = {
   id: string;

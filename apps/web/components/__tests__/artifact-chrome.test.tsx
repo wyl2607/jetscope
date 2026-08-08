@@ -19,6 +19,8 @@ import { ScenarioRegistry } from '@/components/scenario-registry';
 import { TransitionReadinessDashboard } from '@/components/transition-readiness-dashboard';
 import { AdminDataOps } from '@/components/admin-data-ops';
 import { TransitionLadder } from '@/components/transition-ladder';
+import { assumed, derived, observed } from '@/lib/figure';
+import { toPathwayCostRow } from '@/lib/pathways-read-model';
 
 /**
  * Contract section 2 rule 3: a section is one Panel wrapping exactly one
@@ -110,13 +112,49 @@ describe('artifacts do not draw their own card', () => {
       <TippingPointWorkbench
         initialTippingPoint={null}
         initialDecision={null}
-        initialReserveWeeks={3}
+        initialReserveWeeks={assumed({
+          value: 3,
+          unit: 'weeks',
+          sourceId: 'test',
+          method: 'test fixture reserve',
+          precision: 1
+        })}
         liveDefaults={{
-          fossilJetUsdPerL: 1.2,
-          carbonPriceEurPerT: 80,
-          subsidyUsdPerL: 0.2,
-          blendRatePct: 2,
-          reserveWeeks: 3,
+          fossilJetUsdPerL: assumed({
+            value: 1.2,
+            unit: 'USD/L',
+            sourceId: 'test',
+            method: 'test fixture fossil jet',
+            precision: 2
+          }),
+          carbonPriceEurPerT: assumed({
+            value: 80,
+            unit: 'EUR/t',
+            sourceId: 'test',
+            method: 'test fixture carbon',
+            precision: 2
+          }),
+          subsidyUsdPerL: assumed({
+            value: 0.2,
+            unit: 'USD/L',
+            sourceId: 'test',
+            method: 'test fixture subsidy',
+            precision: 2
+          }),
+          blendRatePct: assumed({
+            value: 2,
+            unit: '%',
+            sourceId: 'test',
+            method: 'test fixture blend',
+            precision: 2
+          }),
+          reserveWeeks: assumed({
+            value: 3,
+            unit: 'weeks',
+            sourceId: 'test',
+            method: 'test fixture reserve',
+            precision: 1
+          }),
           pathwayKey: 'hefa'
         }}
       />
@@ -149,18 +187,32 @@ describe('artifacts do not draw their own card', () => {
   it('FuelVsSafPriceChart renders bare', () => {
     const { container } = render(
       <FuelVsSafPriceChart
-        fossilJetUsdPerL={1.2}
-        effectiveFossilJetUsdPerL={1.4}
+        fossilJetUsdPerL={assumed({
+          value: 1.2,
+          unit: 'USD/L',
+          sourceId: 'test',
+          method: 'test fixture fossil jet'
+        })}
+        effectiveFossilJetUsdPerL={derived({
+          value: 1.4,
+          unit: 'USD/L',
+          sourceId: 'test',
+          asOf: null,
+          method: 'test fixture effective fossil jet'
+        })}
         pathways={[
-          {
-            pathway_key: 'hefa',
-            display_name: 'HEFA',
-            net_cost_low_usd_per_l: 1.8,
-            net_cost_high_usd_per_l: 2.2,
-            spread_low_pct: 10,
-            spread_high_pct: 20,
-            status: 'inflection'
-          }
+          toPathwayCostRow(
+            {
+              pathway_key: 'hefa',
+              display_name: 'HEFA',
+              net_cost_low_usd_per_l: 1.8,
+              net_cost_high_usd_per_l: 2.2,
+              spread_low_pct: 10,
+              spread_high_pct: 20,
+              status: 'inflection'
+            },
+            { asOf: null, basis: 'assumption', method: 'test fixture pathway cost' }
+          )
         ]}
       />
     );
@@ -176,7 +228,17 @@ describe('artifacts do not draw their own card', () => {
 
   it('TippingPointSimulator renders bare', () => {
     const { container } = render(
-      <TippingPointSimulator tippingPoint={null} decision={null} reserveWeeks={3} />
+      <TippingPointSimulator
+        tippingPoint={null}
+        decision={null}
+        reserveWeeks={assumed({
+          value: 3,
+          unit: 'weeks',
+          sourceId: 'test',
+          method: 'test fixture reserve',
+          precision: 1
+        })}
+      />
     );
 
     expect(rootClassName(container)).not.toMatch(/rounded-2xl/);
@@ -195,7 +257,13 @@ describe('artifacts do not draw their own card', () => {
           trustLabel: 'live',
           degradedReason: 'none'
         }}
-        completeness={0.9}
+        completeness={observed({
+          value: 90,
+          unit: '%',
+          asOf: '2026-08-06T06:00:00Z',
+          sourceId: 'sources-read-model',
+          precision: 0
+        })}
         generatedAt="2026-08-06T06:00:00Z"
       />
     );
@@ -230,15 +298,18 @@ describe('artifacts do not draw their own card', () => {
       <SafPathwayComparisonTable
         selectedPathwayKey="hefa"
         pathways={[
-          {
-            pathway_key: 'hefa',
-            display_name: 'HEFA',
-            net_cost_low_usd_per_l: 1.8,
-            net_cost_high_usd_per_l: 2.2,
-            spread_low_pct: 10,
-            spread_high_pct: 20,
-            status: 'inflection'
-          }
+          toPathwayCostRow(
+            {
+              pathway_key: 'hefa',
+              display_name: 'HEFA',
+              net_cost_low_usd_per_l: 1.8,
+              net_cost_high_usd_per_l: 2.2,
+              spread_low_pct: 10,
+              spread_high_pct: 20,
+              status: 'inflection'
+            },
+            { asOf: null, basis: 'assumption', method: 'test fixture pathway cost' }
+          )
         ]}
       />
     );
@@ -279,17 +350,45 @@ describe('artifacts do not draw their own card', () => {
   it('PriceTrendsChart renders bare once it has data', () => {
     // Deliberately the ready state. The empty and error branches return tinted
     // blocks on purpose - those containers carry the state and are allowed to.
+    const asOf = '2026-08-06T06:00:00Z';
     const { container } = render(
       <PriceTrendsChart
         metrics={{
           brent_usd_per_bbl: {
             metric_key: 'brent_usd_per_bbl',
             unit: 'USD/bbl',
-            latest_value: 87,
-            latest_as_of: '2026-08-06T06:00:00Z',
-            change_pct_1d: 0.5,
-            change_pct_7d: 1.2,
-            change_pct_30d: -2,
+            latest_value: observed({
+              value: 87,
+              unit: 'USD/bbl',
+              sourceId: 'market-history',
+              asOf,
+              precision: 2
+            }),
+            latest_as_of: asOf,
+            change_pct_1d: derived({
+              value: 0.5,
+              unit: '%',
+              sourceId: 'market-history',
+              asOf,
+              precision: 2,
+              method: '相对 1 日前的变化率'
+            }),
+            change_pct_7d: derived({
+              value: 1.2,
+              unit: '%',
+              sourceId: 'market-history',
+              asOf,
+              precision: 2,
+              method: '相对 7 日前的变化率'
+            }),
+            change_pct_30d: derived({
+              value: -2,
+              unit: '%',
+              sourceId: 'market-history',
+              asOf,
+              precision: 2,
+              method: '相对 30 日前的变化率'
+            }),
             points: [
               { as_of: '2026-08-01T06:00:00Z', value: 85 },
               { as_of: '2026-08-06T06:00:00Z', value: 87 }

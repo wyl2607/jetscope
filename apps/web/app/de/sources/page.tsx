@@ -260,7 +260,7 @@ export default async function GermanSourcesPage({
           label="Durchschnittliche Konfidenz"
           value={`${Math.round(readModel.summary.averageConfidence * 100)}%`}
           valueClassName={`${trustTone} tabular-nums`}
-          hint={`Abdeckung ${Math.round(readModel.completeness * 100)}% · ${readModel.summary.freshnessLabel}`}
+          hint={`Abdeckung ${readModel.completeness.value == null ? '—' : `${Math.round(readModel.completeness.value)}%`} · ${readModel.summary.freshnessLabel}`}
         />
         <MetricCard
           label="Input-Struktur"

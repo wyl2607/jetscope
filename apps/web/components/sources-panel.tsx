@@ -1,9 +1,12 @@
 import { InfoCard } from '@/components/cards';
+import { FigureValue } from '@/components/figure-value';
+import type { Figure } from '@/lib/figure';
 
 type SourceData = {
   name: string;
+  /** Source observation time; also the `asOf` on `fallback_rate`. */
   last_updated: string;
-  fallback_rate: number;
+  fallback_rate: Figure;
   is_primary: boolean;
 };
 
@@ -25,7 +28,8 @@ export function SourcesPanel({ sources }: SourcesPanelProps) {
               最近更新：{new Date(source.last_updated).toLocaleString('zh-CN')}
             </p>
             <p className="text-sm text-muted mb-2">
-              回退率：{(source.fallback_rate * 100).toFixed(1)}%
+              回退率：
+              <FigureValue figure={source.fallback_rate} locale="zh" size="inline" showTimestamp={false} />
             </p>
             <button className="text-accent hover:text-accent text-sm underline">
               查看详情

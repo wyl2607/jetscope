@@ -50,8 +50,10 @@ async function importSourcesReadModel() {
   const source = await readFile(new URL('../apps/web/lib/sources-read-model.ts', import.meta.url), 'utf8');
   const contractUrl = new URL('../apps/web/lib/source-coverage-contract.ts', import.meta.url).href;
   const apiConfigUrl = new URL('../apps/web/lib/api-config.ts', import.meta.url).href;
+  const figureUrl = new URL('../apps/web/lib/figure.ts', import.meta.url).href;
   const rewritten = source
     .replaceAll("'@/lib/api-config'", `'${apiConfigUrl}'`)
+    .replaceAll("'@/lib/figure'", `'${figureUrl}'`)
     .replaceAll("'./source-coverage-contract'", `'${contractUrl}'`);
   const tempDir = await mkdtemp(path.join(tmpdir(), 'jetscope-sources-read-model-'));
   const tempPath = path.join(tempDir, 'sources-read-model.ts');
@@ -370,7 +372,7 @@ test('getSourcesReadModel maps live coverage, volatility levels, and notes for t
   const backfilled = readModel.coverageMetrics.filter((m) => m.fallback_used && m.status === 'seed');
   assert.ok(backfilled.length >= 3, `expected at least 3 backfilled seed metrics, got ${backfilled.length}`);
   assert.equal(readModel.degraded, true);
-  assert.ok(readModel.completeness < 1.0);
+  assert.ok((readModel.completeness.value ?? 0) < 100);
   assert.equal(readModel.rows[0].source, 'EIA Daily Prices');
   assert.equal(readModel.rows[0].trustState, 'live');
   assert.equal(readModel.rows[0].sourceType, '市场主来源');
@@ -500,7 +502,8 @@ test('getSourcesReadModel falls back to a generic degraded state when coverage A
   assert.equal(readModel.rows[3].value, '1.080 USD/L');
   assert.equal(readModel.rows[4].value, '无数据');
   assert.equal(readModel.degraded, true);
-  assert.equal(readModel.completeness, 0.0);
+  assert.equal(readModel.completeness.value, null);
+  assert.equal(readModel.completeness.reason, '来源覆盖接口不可用，完整度未知');
   assert.equal(readModel.summary.fallbackCount, 7);
   assert.match(readModel.summary.degradedReason, /覆盖完整度 0%/);
 });
@@ -633,7 +636,7 @@ test('getSourcesReadModel backfills missing metrics when coverage is partial (5 
   assert.equal(readModel.isFallback, false);
   assert.equal(readModel.coverageMetrics.length, 7);
   assert.equal(readModel.degraded, true);
-  assert.ok(Math.abs(readModel.completeness - 5 / 7) < 0.01);
+  assert.ok(Math.abs((readModel.completeness.value ?? 0) - (5 / 7) * 100) < 1);
 
   // The 2 missing metrics (eu_ets, germany_premium) should have been
   // backfilled by the backend with seed status and fallback_used=true.

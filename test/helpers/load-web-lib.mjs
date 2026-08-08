@@ -23,6 +23,9 @@ async function reserveTempPath(relativePath) {
 
 function rewriteAppAliasImports(source, options = {}) {
   const apiConfigUrl = pathToFileURL(path.join(repoRoot, 'apps/web/lib/api-config.ts')).href;
+  const figureUrl = pathToFileURL(path.join(repoRoot, 'apps/web/lib/figure.ts')).href;
+  const pathwaysReadModelUrl =
+    options.pathwaysReadModelUrl ?? pathToFileURL(path.join(repoRoot, 'apps/web/lib/pathways-read-model.ts')).href;
   const productReadModelUrl =
     options.productReadModelUrl ?? pathToFileURL(path.join(repoRoot, 'apps/web/lib/product-read-model.ts')).href;
   const dashboardReadModelUrl =
@@ -35,6 +38,8 @@ function rewriteAppAliasImports(source, options = {}) {
     pathToFileURL(path.join(repoRoot, 'apps/web/lib/research-signals-read-model.ts')).href;
   return source
     .replaceAll("'@/lib/api-config'", `'${apiConfigUrl}'`)
+    .replaceAll("'@/lib/figure'", `'${figureUrl}'`)
+    .replaceAll("'@/lib/pathways-read-model'", `'${pathwaysReadModelUrl}'`)
     .replaceAll("'@/lib/product-read-model'", `'${productReadModelUrl}'`)
     .replaceAll("'@/lib/dashboard-read-model'", `'${dashboardReadModelUrl}'`)
     .replaceAll("'@/lib/price-trend-chart-read-model'", `'${priceTrendChartReadModelUrl}'`)
@@ -42,7 +47,8 @@ function rewriteAppAliasImports(source, options = {}) {
     .replaceAll("'./dashboard-read-model'", `'${dashboardReadModelUrl}'`)
     .replaceAll("'./price-trend-chart-read-model'", `'${priceTrendChartReadModelUrl}'`)
     .replaceAll("'./research-signals-read-model'", `'${researchSignalsReadModelUrl}'`)
-    .replaceAll("'./product-read-model'", `'${productReadModelUrl}'`);
+    .replaceAll("'./product-read-model'", `'${productReadModelUrl}'`)
+    .replaceAll("'./pathways-read-model'", `'${pathwaysReadModelUrl}'`);
 }
 
 export async function importWebLib(relativePath) {
@@ -52,20 +58,29 @@ export async function importWebLib(relativePath) {
   // Pre-allocate temp file paths so circular re-exports between
   // product-read-model and the extracted sibling modules can be rewritten consistently.
   const productReadModelPath = 'apps/web/lib/product-read-model.ts';
+  const pathwaysReadModelPath = 'apps/web/lib/pathways-read-model.ts';
   const dashboardReadModelPath = 'apps/web/lib/dashboard-read-model.ts';
   const priceTrendChartReadModelPath = 'apps/web/lib/price-trend-chart-read-model.ts';
   const researchSignalsReadModelPath = 'apps/web/lib/research-signals-read-model.ts';
   const productReadModelSlot = await reserveTempPath(productReadModelPath);
+  const pathwaysReadModelSlot = await reserveTempPath(pathwaysReadModelPath);
   const dashboardReadModelSlot = await reserveTempPath(dashboardReadModelPath);
   const priceTrendChartReadModelSlot = await reserveTempPath(priceTrendChartReadModelPath);
   const researchSignalsReadModelSlot = await reserveTempPath(researchSignalsReadModelPath);
 
   const rewriteOptions = {
     productReadModelUrl: productReadModelSlot.url,
+    pathwaysReadModelUrl: pathwaysReadModelSlot.url,
     dashboardReadModelUrl: dashboardReadModelSlot.url,
     priceTrendChartReadModelUrl: priceTrendChartReadModelSlot.url,
     researchSignalsReadModelUrl: researchSignalsReadModelSlot.url
   };
+
+  const pathwaysReadModelSource = rewriteAppAliasImports(
+    await readFile(path.join(repoRoot, pathwaysReadModelPath), 'utf8'),
+    rewriteOptions
+  );
+  await writeFile(pathwaysReadModelSlot.tempPath, pathwaysReadModelSource, 'utf8');
 
   const productReadModelSource = rewriteAppAliasImports(
     await readFile(path.join(repoRoot, productReadModelPath), 'utf8'),

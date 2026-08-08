@@ -1,10 +1,12 @@
 import type { SourcesReadModel } from '@/lib/sources-read-model';
+import type { Figure } from '@/lib/figure';
+import { FigureValue } from '@/components/figure-value';
 import type { Route } from 'next';
 import Link from 'next/link';
 
 type Props = {
   summary: SourcesReadModel['summary'];
-  completeness: number;
+  completeness: Figure;
   /**
    * Null when the read model is on fallback. The fallback stamps itself with the
    * current time, so there is no honest timestamp to show - say so explicitly
@@ -54,7 +56,10 @@ export function ProvenanceSummary({ summary, completeness, generatedAt, href }: 
         <p className={`text-sm font-semibold ${trustTone(summary)}`}>{summary.trustLabel}</p>
         <p className="mt-2 text-sm leading-6 text-slate-700">{summary.degradedReason}</p>
         <p className="mt-2 text-xs text-slate-500">
-          完整度 {Math.round(completeness * 100)}% · {summary.freshnessLabel} · 生成于 {formatGeneratedAt(generatedAt)}
+          完整度{' '}
+          <FigureValue figure={completeness} locale="zh" size="inline" showTimestamp={false} />
+          {' · '}
+          {summary.freshnessLabel} · 生成于 {formatGeneratedAt(generatedAt)}
         </p>
       </div>
     </>

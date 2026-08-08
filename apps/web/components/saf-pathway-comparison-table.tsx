@@ -1,18 +1,10 @@
 import { listCanonicalPathways } from '@core/aviation/pathways';
-import type { PathwaySourceView } from '@/lib/pathways-read-model';
-
-type TippingPointPathway = {
-  pathway_key: string;
-  display_name: string;
-  net_cost_low_usd_per_l: number;
-  net_cost_high_usd_per_l: number;
-  spread_low_pct: number;
-  spread_high_pct: number;
-  status: string;
-};
+import { FigureValue } from '@/components/figure-value';
+import { formatFigure } from '@/lib/figure';
+import type { PathwayCostRow, PathwaySourceView } from '@/lib/pathways-read-model';
 
 type Props = {
-  pathways: TippingPointPathway[];
+  pathways: PathwayCostRow[];
   selectedPathwayKey: string;
   /** Optional source-trust metadata keyed by pathway_key. When provided,
    *  the table renders provenance columns; when omitted it renders as before. */
@@ -29,10 +21,6 @@ const maturityLabels: Record<string, string> = {
 const canonicalByKey = new Map<string, (typeof listCanonicalPathways extends () => (infer T)[] ? T : never)>(
   listCanonicalPathways().map((pathway) => [pathway.pathwayKey, pathway])
 );
-
-function formatRange(low: number, high: number): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
-  return `$${low.toFixed(2)}–$${high.toFixed(2)}/L`;
-}
 
 export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, sources }: Props) {
   const showSources = Boolean(sources);
@@ -70,7 +58,11 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, source
                     <div className="text-xs text-slate-500">{pathway.pathway_key}</div>
                   </td>
                   <td className="py-3 pr-4">
-                    {formatRange(pathway.net_cost_low_usd_per_l, pathway.net_cost_high_usd_per_l)}
+                    <span className="inline-flex flex-wrap items-baseline gap-1">
+                      <FigureValue figure={pathway.netCostLow} locale="zh" size="inline" showTimestamp={false} />
+                      <span>–</span>
+                      <FigureValue figure={pathway.netCostHigh} locale="zh" size="inline" showTimestamp={false} />
+                    </span>
                   </td>
                   <td className="py-3 pr-4">
                     {canonical
@@ -82,7 +74,7 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, source
                   </td>
                   <td className={`py-3 pr-4 font-medium ${statusColor}`}>{pathway.status}</td>
                   <td className="py-3 pr-4">
-                    {pathway.spread_low_pct.toFixed(1)}% 至 {pathway.spread_high_pct.toFixed(1)}%
+                    {formatFigure(pathway.spreadLow)} 至 {formatFigure(pathway.spreadHigh)}
                   </td>
                   {showSources ? (
                     <td className="py-3">

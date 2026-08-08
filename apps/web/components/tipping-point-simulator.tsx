@@ -1,12 +1,14 @@
 'use client';
 
+import { FigureValue } from '@/components/figure-value';
 import { getPathwayStatusLabel } from '@/lib/market-signals';
+import { formatFigure, type Figure } from '@/lib/figure';
 import type { DecisionReadModel, TippingPointReadModel } from '@/lib/product-read-model';
 
 type Props = {
   tippingPoint: TippingPointReadModel | null;
   decision: DecisionReadModel | null;
-  reserveWeeks: number;
+  reserveWeeks: Figure;
 };
 
 function probabilityLabel(value: number): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
@@ -23,32 +25,31 @@ export function TippingPointSimulator({ tippingPoint, decision, reserveWeeks }: 
   ];
 
   const leadPathway = tippingPoint?.pathways?.[0] ?? null;
-  const tippingRows = leadPathway ? [
-    {
-      key: 'net_saf_low',
-      label: `${leadPathway.display_name} 低位`,
-      value: leadPathway.net_cost_low_usd_per_l,
-      format: (v: number) => `$${v.toFixed(2)}/L` // figure-contract-lint-ignore: slider label formatter, not a prop
-    },
-    {
-      key: 'net_saf_high',
-      label: `${leadPathway.display_name} 高位`,
-      value: leadPathway.net_cost_high_usd_per_l,
-      format: (v: number) => `$${v.toFixed(2)}/L` // figure-contract-lint-ignore: slider label formatter, not a prop
-    },
-    {
-      key: 'spread_band',
-      label: '价差区间',
-      value: 0,
-      format: () => `${leadPathway.spread_low_pct.toFixed(1)}% 至 ${leadPathway.spread_high_pct.toFixed(1)}%`
-    },
-    {
-      key: 'status',
-      label: '状态',
-      value: 0,
-      format: () => getPathwayStatusLabel(leadPathway.status ?? '')
-    }
-  ] : [];
+  // Display via formatFigure so null renders "—", never laundered to 0.
+  const tippingRows = leadPathway
+    ? [
+        {
+          key: 'net_saf_low',
+          label: `${leadPathway.display_name} 低位`,
+          display: formatFigure(leadPathway.netCostLow)
+        },
+        {
+          key: 'net_saf_high',
+          label: `${leadPathway.display_name} 高位`,
+          display: formatFigure(leadPathway.netCostHigh)
+        },
+        {
+          key: 'spread_band',
+          label: '价差区间',
+          display: `${formatFigure(leadPathway.spreadLow)} 至 ${formatFigure(leadPathway.spreadHigh)}`
+        },
+        {
+          key: 'status',
+          label: '状态',
+          display: getPathwayStatusLabel(leadPathway.status ?? '')
+        }
+      ]
+    : [];
 
   return (
     // Bare artifact: card, title and why-line come from the wrapping Panel.
@@ -56,7 +57,9 @@ export function TippingPointSimulator({ tippingPoint, decision, reserveWeeks }: 
       <div className="mb-6 flex justify-end text-right">
         <div>
           <p className="text-xs uppercase tracking-wider text-slate-500">储备</p>
-          <p className="text-sm font-semibold text-slate-800">{reserveWeeks.toFixed(1)}w</p>
+          <p className="text-sm font-semibold text-slate-800">
+            <FigureValue figure={reserveWeeks} locale="zh" size="inline" showTimestamp={false} />
+          </p>
         </div>
       </div>
 
@@ -74,9 +77,7 @@ export function TippingPointSimulator({ tippingPoint, decision, reserveWeeks }: 
               {tippingRows.map((row) => (
                 <tr key={row.key} className="border-b border-slate-200">
                   <td className="py-2 pr-4">{row.label}</td>
-                  <td className="py-2 pr-4 text-right font-mono">
-                    {row.format ? row.format(row.value) : row.value}
-                  </td>
+                  <td className="py-2 pr-4 text-right font-mono">{row.display}</td>
                 </tr>
               ))}
             </tbody>

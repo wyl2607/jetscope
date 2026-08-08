@@ -1,4 +1,5 @@
 import { buildApiUrl } from '@/lib/api-config';
+import { derived, missing, observed, type Figure } from '@/lib/figure';
 import {
   formatSourceCoverageLag,
   getSourceCoverageTrustState,
@@ -8,6 +9,48 @@ import {
 } from './source-coverage-contract';
 
 const DEFAULT_FETCH_TIMEOUT_MS = 2000;
+const COMPLETENESS_SOURCE_ID = 'sources-read-model';
+
+/**
+ * Coverage completeness as a Figure (unit '%', 0–100 scale).
+ * Ratio inputs (0–1) are converted here so display components never multiply by hand.
+ */
+function completenessFigure(
+  ratio: number,
+  opts: { asOf: string | null; fromApi: boolean; isFallback: boolean }
+): Figure {
+  // Coverage API unavailable → completeness is unknown, not 0%.
+  // assumed() would assert a scenario value; missing() is the honest shape.
+  if (opts.isFallback) {
+    return missing({
+      unit: '%',
+      sourceId: COMPLETENESS_SOURCE_ID,
+      precision: 0,
+      reason: '来源覆盖接口不可用，完整度未知'
+    });
+  }
+
+  const value = ratio * 100;
+  const common = {
+    value,
+    unit: '%',
+    sourceId: COMPLETENESS_SOURCE_ID,
+    precision: 0 as const
+  };
+
+  if (opts.fromApi && opts.asOf) {
+    return observed({
+      ...common,
+      asOf: opts.asOf
+    });
+  }
+
+  return derived({
+    ...common,
+    asOf: opts.asOf,
+    method: '已覆盖主指标数 / PRIMARY_METRIC_ORDER 长度'
+  });
+}
 
 type MarketSnapshot = {
   generated_at: string | null;
@@ -79,7 +122,7 @@ export type SourcesReadModel = {
   }>;
   isFallback: boolean;
   error: string | null;
-  completeness: number;
+  completeness: Figure;
   degraded: boolean;
 };
 
@@ -425,7 +468,7 @@ function fallback(
     rows,
     isFallback: true,
     error: error instanceof Error ? error.message : "未知错误",
-    completeness: 0.0,
+    completeness: completenessFigure(0, { asOf: null, fromApi: false, isFallback: true }),
     degraded: true
   };
 }
@@ -471,14 +514,22 @@ export async function getSourcesReadModel(): Promise<SourcesReadModel> {
     }
     const coverageMetrics = sortCoverageMetrics(coveragePayload.metrics);
 
-    const completeness = coveragePayload?.completeness ?? (coverageMetrics.length / PRIMARY_METRIC_ORDER.length);
+    const completenessRatio =
+      coveragePayload?.completeness ?? coverageMetrics.length / PRIMARY_METRIC_ORDER.length;
+    const fromApi = coveragePayload?.completeness != null;
+    const asOf = coveragePayload?.generated_at ?? snapshotPayload.generated_at ?? null;
+    const completeness = completenessFigure(completenessRatio, {
+      asOf,
+      fromApi,
+      isFallback: false
+    });
     const rows = buildRows(snapshotPayload, historyPayload, coverageMetrics);
-    const degraded = coveragePayload?.degraded ?? completeness < 1.0;
+    const degraded = coveragePayload?.degraded ?? completenessRatio < 1.0;
     return {
       generatedAt: coveragePayload?.generated_at ?? snapshotPayload.generated_at,
       overallStatus: snapshotPayload.source_status?.overall ?? "unknown",
       coverageMetrics,
-      summary: buildSummary(rows, completeness, degraded),
+      summary: buildSummary(rows, completenessRatio, degraded),
       rows,
       isFallback: false,
       error: null,
