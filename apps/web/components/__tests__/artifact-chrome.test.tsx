@@ -526,7 +526,7 @@ describe('an artifact whose container carries state keeps it', () => {
     // Section 3: a data gap is a finding, not a blank. Rendering nothing - or
     // rendering it in neutral grey - hides the gap instead of reporting it.
     expect(alert).not.toBeNull();
-    expect(alert?.className).toMatch(/rose/);
+    expect(alert?.className).toMatch(/danger/);
   });
 });
 

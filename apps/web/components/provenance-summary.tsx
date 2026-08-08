@@ -24,9 +24,9 @@ function formatGeneratedAt(value: string | null): string {
 }
 
 function trustTone(summary: SourcesReadModel['summary']): string {
-  if (summary.fallbackCount > 0 || summary.degradedCount > 0) return 'text-amber-700';
-  if (summary.proxyCount > 0) return 'text-sky-700';
-  return 'text-emerald-700';
+  if (summary.fallbackCount > 0 || summary.degradedCount > 0) return 'text-warning';
+  if (summary.proxyCount > 0) return 'text-accent';
+  return 'text-success';
 }
 
 export function ProvenanceSummary({ summary, completeness, generatedAt, href }: Props) {
@@ -34,28 +34,28 @@ export function ProvenanceSummary({ summary, completeness, generatedAt, href }: 
   const content = (
     <>
       <div className="grid gap-3 text-sm md:grid-cols-4">
-        <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-slate-700">
-          <span className="block text-xs uppercase tracking-[0.14em] text-slate-500">实时</span>
-          <span className="mt-1 block text-lg font-semibold text-emerald-700">{summary.liveCount}</span>
+        <p className="rounded-xl border border-line bg-surface-muted p-3 text-ink">
+          <span className="block text-xs uppercase tracking-[0.14em] text-muted">实时</span>
+          <span className="mt-1 block text-lg font-semibold text-success">{summary.liveCount}</span>
         </p>
-        <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-slate-700">
-          <span className="block text-xs uppercase tracking-[0.14em] text-slate-500">代理</span>
-          <span className="mt-1 block text-lg font-semibold text-sky-700">{summary.proxyCount}</span>
+        <p className="rounded-xl border border-line bg-surface-muted p-3 text-ink">
+          <span className="block text-xs uppercase tracking-[0.14em] text-muted">代理</span>
+          <span className="mt-1 block text-lg font-semibold text-accent">{summary.proxyCount}</span>
         </p>
-        <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-slate-700">
-          <span className="block text-xs uppercase tracking-[0.14em] text-slate-500">回退</span>
-          <span className="mt-1 block text-lg font-semibold text-amber-700">{summary.fallbackCount}</span>
+        <p className="rounded-xl border border-line bg-surface-muted p-3 text-ink">
+          <span className="block text-xs uppercase tracking-[0.14em] text-muted">回退</span>
+          <span className="mt-1 block text-lg font-semibold text-warning">{summary.fallbackCount}</span>
         </p>
-        <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-slate-700">
-          <span className="block text-xs uppercase tracking-[0.14em] text-slate-500">置信度</span>
-          <span className="mt-1 block text-lg font-semibold text-slate-950">{Math.round(summary.averageConfidence * 100)}%</span>
+        <p className="rounded-xl border border-line bg-surface-muted p-3 text-ink">
+          <span className="block text-xs uppercase tracking-[0.14em] text-muted">置信度</span>
+          <span className="mt-1 block text-lg font-semibold text-ink">{Math.round(summary.averageConfidence * 100)}%</span>
         </p>
       </div>
 
-      <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <div className="mt-5 rounded-xl border border-line bg-surface-muted p-4">
         <p className={`text-sm font-semibold ${trustTone(summary)}`}>{summary.trustLabel}</p>
-        <p className="mt-2 text-sm leading-6 text-slate-700">{summary.degradedReason}</p>
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-sm leading-6 text-ink">{summary.degradedReason}</p>
+        <p className="mt-2 text-xs text-muted">
           完整度{' '}
           <FigureValue figure={completeness} locale="zh" size="inline" showTimestamp={false} />
           {' · '}

@@ -56,8 +56,8 @@ export function TippingPointSimulator({ tippingPoint, decision, reserveWeeks }: 
     <div>
       <div className="mb-6 flex justify-end text-right">
         <div>
-          <p className="text-xs uppercase tracking-wider text-slate-500">储备</p>
-          <p className="text-sm font-semibold text-slate-800">
+          <p className="text-xs uppercase tracking-wider text-muted">储备</p>
+          <p className="text-sm font-semibold text-ink">
             <FigureValue figure={reserveWeeks} locale="zh" size="inline" showTimestamp={false} />
           </p>
         </div>
@@ -65,17 +65,17 @@ export function TippingPointSimulator({ tippingPoint, decision, reserveWeeks }: 
 
       {tippingRows.length > 0 && (
         <div className="mb-6 overflow-x-auto">
-          <h4 className="mb-2 text-sm font-medium text-slate-700 uppercase tracking-wider">SAF 路径状态</h4>
-          <table className="w-full text-sm text-slate-700">
+          <h4 className="mb-2 text-sm font-medium text-ink uppercase tracking-wider">SAF 路径状态</h4>
+          <table className="w-full text-sm text-ink">
             <thead>
-              <tr className="border-b border-slate-300">
+              <tr className="border-b border-line-strong">
                 <th className="py-2 pr-4 text-left">指标</th>
                 <th className="py-2 pr-4 text-right">数值</th>
               </tr>
             </thead>
             <tbody>
               {tippingRows.map((row) => (
-                <tr key={row.key} className="border-b border-slate-200">
+                <tr key={row.key} className="border-b border-line">
                   <td className="py-2 pr-4">{row.label}</td>
                   <td className="py-2 pr-4 text-right font-mono">{row.display}</td>
                 </tr>
@@ -86,12 +86,12 @@ export function TippingPointSimulator({ tippingPoint, decision, reserveWeeks }: 
       )}
 
       <div>
-        <h4 className="mb-2 text-sm font-medium text-slate-700 uppercase tracking-wider">航司响应概率</h4>
+        <h4 className="mb-2 text-sm font-medium text-ink uppercase tracking-wider">航司响应概率</h4>
         <div className="grid grid-cols-2 gap-3">
           {rows.map((row) => (
-            <div key={row.key} className="rounded-lg border border-slate-300 bg-white p-3">
-              <p className="text-xs text-slate-500 uppercase tracking-wider">{row.label}</p>
-              <p className="mt-1 text-lg font-semibold text-slate-950">{probabilityLabel(row.value)}</p>
+            <div key={row.key} className="rounded-lg border border-line-strong bg-surface p-3">
+              <p className="text-xs text-muted uppercase tracking-wider">{row.label}</p>
+              <p className="mt-1 text-lg font-semibold text-ink">{probabilityLabel(row.value)}</p>
             </div>
           ))}
         </div>

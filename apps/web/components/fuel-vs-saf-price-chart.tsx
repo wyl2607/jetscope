@@ -11,10 +11,10 @@ type Props = {
 };
 
 const pathwayColorMap: Record<string, string> = {
-  hefa: 'from-emerald-500 to-emerald-300',
-  atj: 'from-sky-500 to-sky-300',
-  ft: 'from-amber-500 to-orange-300',
-  ptl: 'from-violet-500 to-fuchsia-300'
+  hefa: 'bg-series-1',
+  atj: 'bg-series-2',
+  ft: 'bg-series-3',
+  ptl: 'bg-series-4'
 };
 
 export function FuelVsSafPriceChart({
@@ -52,40 +52,40 @@ export function FuelVsSafPriceChart({
     // Bare artifact: card, title and why-line come from the wrapping Panel.
     <div>
       <div className="space-y-4">
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+        <div className="rounded-xl border border-line bg-surface-muted p-4">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-rose-700">化石航油现货</p>
-              <p className="mt-1 text-xs text-slate-600">纳入碳成本压力前的当前观察价格。</p>
+              <p className="text-sm font-medium text-ink">化石航油现货</p>
+              <p className="mt-1 text-xs text-muted">纳入碳成本压力前的当前观察价格。</p>
             </div>
-            <p className="text-xl font-semibold text-slate-950">
+            <p className="text-xl font-semibold text-ink">
               <FigureValue figure={fossilJetUsdPerL} locale="zh" size="inline" showTimestamp={false} />
             </p>
           </div>
-          <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200">
+          <div className="mt-3 h-3 overflow-hidden rounded-full bg-line">
             {fossilJetUsdPerL.value != null ? (
               <div
-                className="h-full rounded-full bg-gradient-to-r from-rose-500 to-red-300"
+                className="h-full rounded-full bg-ink"
                 style={{ width: `${Math.max(6, (fossilJetUsdPerL.value / maxValue) * 100)}%` }}
               />
             ) : null}
           </div>
         </div>
 
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+        <div className="rounded-xl border border-line bg-surface-muted p-4">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-amber-800">有效化石航油成本</p>
-              <p className="mt-1 text-xs text-slate-600">包含所选掺混假设下的模型化碳成本压力。</p>
+              <p className="text-sm font-medium text-ink">有效化石航油成本</p>
+              <p className="mt-1 text-xs text-muted">包含所选掺混假设下的模型化碳成本压力。</p>
             </div>
-            <p className="text-xl font-semibold text-slate-950">
+            <p className="text-xl font-semibold text-ink">
               <FigureValue figure={effectiveFossilJetUsdPerL} locale="zh" size="inline" showTimestamp={false} />
             </p>
           </div>
-          <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200">
+          <div className="mt-3 h-3 overflow-hidden rounded-full bg-line">
             {effectiveFossilJetUsdPerL.value != null ? (
               <div
-                className="h-full rounded-full bg-gradient-to-r from-amber-500 to-yellow-300"
+                className="h-full rounded-full bg-muted"
                 style={{ width: `${Math.max(6, (effectiveFossilJetUsdPerL.value / maxValue) * 100)}%` }}
               />
             ) : null}
@@ -101,34 +101,34 @@ export function FuelVsSafPriceChart({
               high != null
                 ? Math.max(widthLow != null ? widthLow + 4 : 4, (high / maxValue) * 100)
                 : null;
-            const color = pathwayColorMap[pathway.pathway_key] ?? 'from-slate-500 to-slate-300';
+            const color = pathwayColorMap[pathway.pathway_key] ?? 'bg-line-strong';
             const statusColor =
               pathway.status === 'competitive'
-                ? 'text-emerald-700'
+                ? 'text-success'
                 : pathway.status === 'inflection'
-                  ? 'text-amber-700'
-                  : 'text-rose-700';
+                  ? 'text-warning'
+                  : 'text-danger';
 
             return (
-              <div key={pathway.pathway_key} className="rounded-xl border border-slate-200 bg-white/90 p-4">
+              <div key={pathway.pathway_key} className="rounded-xl border border-line bg-surface/90 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium text-slate-950">{pathway.display_name}</p>
+                    <p className="text-sm font-medium text-ink">{pathway.display_name}</p>
                     <p className={`mt-1 text-xs uppercase tracking-[0.18em] ${statusColor}`}>{pathway.status}</p>
                   </div>
-                  <p className="text-sm text-slate-700">
+                  <p className="text-sm text-ink">
                     {formatFigure(pathway.netCostLow)} 至 {formatFigure(pathway.netCostHigh)}
                   </p>
                 </div>
-                <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200">
+                <div className="mt-3 h-3 overflow-hidden rounded-full bg-line">
                   {widthHigh != null ? (
                     <div
-                      className={`h-full rounded-full bg-gradient-to-r ${color}`}
+                      className={`h-full rounded-full ${color}`}
                       style={{ width: `${widthHigh}%` }}
                     />
                   ) : null}
                 </div>
-                <div className="mt-2 flex items-center justify-between text-xs text-slate-600">
+                <div className="mt-2 flex items-center justify-between text-xs text-muted">
                   <span>相对有效化石航油价差</span>
                   <span>
                     {formatFigure(pathway.spreadLow)} 至 {formatFigure(pathway.spreadHigh)}

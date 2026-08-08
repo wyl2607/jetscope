@@ -7,12 +7,12 @@ type Props = {
 };
 
 const barColors: Record<string, string> = {
-  fossil: 'bg-gradient-to-r from-rose-500 to-red-300',
-  effective: 'bg-gradient-to-r from-amber-500 to-yellow-300',
-  hefa: 'bg-gradient-to-r from-emerald-500 to-emerald-300',
-  atj: 'bg-gradient-to-r from-sky-500 to-sky-300',
-  ft: 'bg-gradient-to-r from-amber-500 to-orange-300',
-  ptl: 'bg-gradient-to-r from-violet-500 to-fuchsia-300'
+  fossil: 'bg-ink',
+  effective: 'bg-muted',
+  hefa: 'bg-series-1',
+  atj: 'bg-series-2',
+  ft: 'bg-series-3',
+  ptl: 'bg-series-4'
 };
 
 function midpoint(low: number, high: number): number { // figure-contract-lint-ignore: internal arithmetic helper, not a prop
@@ -22,12 +22,12 @@ function midpoint(low: number, high: number): number { // figure-contract-lint-i
 export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Props) {
   if (!tippingPoint || tippingPoint.pathways.length === 0) {
     return (
-      <section className="rounded-2xl border border-slate-200 bg-white/90 p-5">
+      <section className="rounded-2xl border border-line bg-surface/90 p-5">
         <div className="mb-4">
-          <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
+          <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-ink">
             情景成本堆栈
           </h4>
-          <p className="mt-2 text-sm text-slate-500">情景成本数据暂不可用。</p>
+          <p className="mt-2 text-sm text-muted">情景成本数据暂不可用。</p>
         </div>
       </section>
     );
@@ -72,12 +72,12 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
   ];
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white/90 p-5">
+    <section className="rounded-2xl border border-line bg-surface/90 p-5">
       <div className="mb-4">
-        <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
+        <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-ink">
           情景成本堆栈
         </h4>
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="mt-2 text-sm text-muted">
           紧凑对比化石航油现货成本、碳调整后成本与已选路径中点。
         </p>
       </div>
@@ -87,17 +87,17 @@ export function ScenarioCostStackChart({ tippingPoint, selectedPathwayKey }: Pro
           <div key={row.key}>
             <div className="flex items-center justify-between gap-4 text-sm">
               <div>
-                <div className="font-medium text-slate-950">{row.label}</div>
-                <div className="text-xs text-slate-500">{row.hint}</div>
+                <div className="font-medium text-ink">{row.label}</div>
+                <div className="text-xs text-muted">{row.hint}</div>
               </div>
               <div className="font-mono text-ink">
                 {row.value == null ? '—' : `$${row.value.toFixed(2)}/L`}
               </div>
             </div>
-            <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200">
+            <div className="mt-3 h-3 overflow-hidden rounded-full bg-line">
               {row.value != null ? (
                 <div
-                  className={`h-full rounded-full ${barColors[row.key] ?? 'bg-gradient-to-r from-slate-500 to-slate-300'}`}
+                  className={`h-full rounded-full ${barColors[row.key] ?? 'bg-line-strong'}`}
                   style={{ width: `${Math.max(6, (row.value / maxValue) * 100)}%` }}
                 />
               ) : null}

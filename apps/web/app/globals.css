@@ -25,6 +25,20 @@
   --color-warning-soft: #fff4df;
   --color-danger: #b4233e;
   --color-danger-soft: #fff0f2;
+
+  /* Series colors identify one member of a set - a SAF pathway, a cost
+   * component, a chart series. They carry no good/bad meaning, which is exactly
+   * why they cannot be the semantic tokens above: painting the FT pathway
+   * `warning` claims FT is a warning. Assigned in fixed order, never cycled.
+   * Okabe-Ito, chosen for color-vision deficiency; validated all-pairs with no
+   * failure. Two results are at the floor and are the reason section 1 rule 8
+   * requires a direct label on every series: reddish-purple against bluish-green
+   * is deutan dE 7.6, and reddish-purple is 2.98:1 on surface. */
+  --color-series-1: #0072b2;
+  --color-series-2: #d55e00;
+  --color-series-3: #009e73;
+  --color-series-4: #cc79a7;
+  --color-series-5: #6d28d9;
 }
 
 :root {
@@ -354,104 +368,6 @@ a:hover {
   }
 }
 
-/* ---------------------------------------------------------------------------
- * DEPRECATED COMPATIBILITY LAYER - DO NOT EXTEND.
- *
- * Everything below repaints dark-era Tailwind palette classes into light values
- * with !important. It exists only because 50 files still ship those classes.
- * While it exists, the class a developer writes is not the color that renders.
- *
- * Removal condition: scripts/design-system-baseline.json is empty. At that point
- * delete this whole block in one commit. Adding a selector here is a contract
- * violation (docs/UI_CONTRACT.md section 1) - migrate the component to tokens
- * instead.
- * ------------------------------------------------------------------------- */
-.jetscope-workbench .bg-slate-950,
-.jetscope-workbench .bg-slate-950\/80,
-.jetscope-workbench .bg-slate-950\/60,
-.jetscope-workbench .bg-slate-950\/50,
-.jetscope-workbench .bg-slate-950\/40,
-.jetscope-workbench .bg-slate-900,
-.jetscope-workbench .bg-slate-900\/60,
-.jetscope-workbench .bg-slate-900\/70,
-.jetscope-workbench .bg-slate-700,
-.jetscope-workbench .bg-slate-600,
-.jetscope-workbench .bg-slate-800,
-.jetscope-workbench .bg-slate-800\/30,
-.jetscope-workbench .bg-slate-800\/60,
-.jetscope-workbench .bg-slate-700\/30 {
-  background-color: rgba(255, 255, 255, 0.82) !important;
-}
-
-.jetscope-workbench .bg-slate-800\/20,
-.jetscope-workbench .bg-slate-800\/40,
-.jetscope-workbench .bg-slate-900\/40,
-.jetscope-workbench .bg-sky-950\/30 {
-  background-color: rgba(239, 246, 255, 0.72) !important;
-}
-
-.jetscope-workbench .border-slate-900,
-.jetscope-workbench .border-slate-900\/80,
-.jetscope-workbench .border-slate-800,
-.jetscope-workbench .border-slate-700,
-.jetscope-workbench .border-slate-600 {
-  border-color: #d8e2ee !important;
-}
-
-.jetscope-workbench .text-white,
-.jetscope-workbench .text-slate-100,
-.jetscope-workbench .text-slate-200 {
-  color: #102033 !important;
-}
-
-.jetscope-workbench .text-slate-300,
-.jetscope-workbench .text-slate-400,
-.jetscope-workbench .text-slate-500 {
-  color: #53647b !important;
-}
-
-.jetscope-workbench .text-sky-300,
-.jetscope-workbench .text-sky-200,
-.jetscope-workbench a {
-  color: #075985 !important;
-}
-
-.jetscope-workbench a.bg-sky-400 {
-  color: #082f49 !important;
-}
-
-.jetscope-workbench a:hover {
-  color: #0c4a6e !important;
-}
-
-.jetscope-workbench .shadow-sky-950\/20 {
-  box-shadow: 0 18px 48px rgba(59, 89, 128, 0.12) !important;
-}
-
-.jetscope-workbench .bg-amber-950\/20,
-.jetscope-workbench .bg-amber-950\/30,
-.jetscope-workbench .bg-amber-500\/10 {
-  background-color: #fff7ed !important;
-}
-
-.jetscope-workbench .text-amber-100,
-.jetscope-workbench .text-amber-200,
-.jetscope-workbench .text-amber-300,
-.jetscope-workbench .text-yellow-300 {
-  color: #92400e !important;
-}
-
-.jetscope-workbench .bg-rose-950\/30,
-.jetscope-workbench .bg-rose-950\/40,
-.jetscope-workbench .bg-rose-500\/10 {
-  background-color: #fff1f2 !important;
-}
-
-.jetscope-workbench .text-rose-200,
-.jetscope-workbench .text-rose-300 {
-  color: #be123c !important;
-}
-
 .js-status-banner {
   display: flex;
   align-items: flex-start;
@@ -561,24 +477,26 @@ a:hover {
   white-space: nowrap;
 }
 
+/* A solid control: accent fill, surface text, and `ink` on hover - the states
+ * docs/UI_CONTRACT.md section 1 rule 7 gives for a filled primary button. */
 .js-status-action-primary {
   background: var(--js-accent);
-  color: #fff !important;
+  color: var(--js-surface);
 }
 
 .js-status-action-primary:hover {
-  background: #0a536f;
-  color: #fff !important;
+  background: var(--js-ink);
+  color: var(--js-surface);
 }
 
 .js-status-action-secondary {
   border: 1px solid var(--js-line-strong);
-  color: var(--js-ink) !important;
+  color: var(--js-ink);
 }
 
 .js-status-action-secondary:hover {
-  border-color: #9bcbd7;
-  color: var(--js-accent) !important;
+  border-color: var(--js-accent);
+  color: var(--js-accent);
 }
 
 .js-status-inline-emphasis {

@@ -15,10 +15,10 @@ type Props = {
 };
 
 function sweepTone(status: HeatParityStatus): string {
-  if (status === 'dominant') return 'bg-emerald-500';
-  if (status === 'marginal_switch') return 'bg-sky-500';
-  if (status === 'inflection') return 'bg-amber-500';
-  return 'bg-rose-400';
+  if (status === 'dominant') return 'bg-success';
+  if (status === 'marginal_switch') return 'bg-accent';
+  if (status === 'inflection') return 'bg-warning';
+  return 'bg-danger';
 }
 
 export function HeatParityWorkbench({ initial }: Props) {
@@ -88,12 +88,12 @@ export function HeatParityWorkbench({ initial }: Props) {
       </div>
 
       <div className="mb-6">
-        <div className="flex items-center justify-between text-sm text-slate-700">
+        <div className="flex items-center justify-between text-sm text-ink">
           <label htmlFor="heat-carbon-price" className="font-medium uppercase tracking-wider">
             EU ETS2 碳价
           </label>
-          <span className="font-mono text-base font-semibold text-slate-950">
-            €{carbonPrice}/t {pending && <span className="text-xs text-slate-400">...</span>}
+          <span className="font-mono text-base font-semibold text-ink">
+            €{carbonPrice}/t {pending && <span className="text-xs text-subtle">...</span>}
           </span>
         </div>
         <input
@@ -104,20 +104,20 @@ export function HeatParityWorkbench({ initial }: Props) {
           step={1}
           value={carbonPrice}
           onChange={(event) => setCarbonPrice(Number(event.target.value))}
-          className="mt-2 w-full accent-emerald-600"
+          className="mt-2 w-full accent-accent"
         />
-        <div className="mt-1 flex justify-between text-xs text-slate-400">
+        <div className="mt-1 flex justify-between text-xs text-subtle">
           <span>€0</span>
           <span>€150/t</span>
         </div>
       </div>
 
-      <div className="mb-4 rounded-lg border border-slate-300 bg-slate-50 p-3 text-sm text-slate-700">
+      <div className="mb-4 rounded-lg border border-line-strong bg-surface-muted p-3 text-sm text-ink">
         燃气参照（{gas.name}）有用热成本：
-        <span className="ml-1 font-mono font-semibold text-slate-950">
+        <span className="ml-1 font-mono font-semibold text-ink">
           €{gas.heat_cost_eur_per_mwh.toFixed(1)}/MWh
         </span>
-        <span className="ml-1 text-xs text-slate-500">
+        <span className="ml-1 text-xs text-muted">
           （燃气 €{gas.gas_price_eur_per_mwh_th.toFixed(0)}/MWhₜₕ ÷ 效率 {gas.efficiency} + ETS2 碳 €
           {(
             carbonPrice *
@@ -128,12 +128,12 @@ export function HeatParityWorkbench({ initial }: Props) {
         </span>
       </div>
 
-      {error && <p className="mb-3 text-xs text-amber-700">{error}</p>}
+      {error && <p className="mb-3 text-xs text-danger">{error}</p>}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm text-slate-700">
+        <table className="w-full text-sm text-ink">
           <thead>
-            <tr className="border-b border-slate-300 text-left">
+            <tr className="border-b border-line-strong text-left">
               <th className="py-2 pr-4">热泵技术</th>
               <th className="py-2 pr-4 text-right">COP</th>
               <th className="py-2 pr-4 text-right">热泵成本</th>
@@ -144,7 +144,7 @@ export function HeatParityWorkbench({ initial }: Props) {
           </thead>
           <tbody>
             {data.rows.map((row) => (
-              <tr key={row.tech_key} className="border-b border-slate-200">
+              <tr key={row.tech_key} className="border-b border-line">
                 <td className="py-2 pr-4">{row.name}</td>
                 <td className="py-2 pr-4 text-right font-mono">{row.cop.toFixed(1)}</td>
                 <td className="py-2 pr-4 text-right font-mono">
@@ -172,15 +172,15 @@ export function HeatParityWorkbench({ initial }: Props) {
         </table>
       </div>
 
-      <div className="mt-6 border-t border-slate-200 pt-5">
-        <h4 className="text-sm font-semibold text-slate-950">碳价扫描</h4>
-        <p className="mt-1 text-xs text-slate-500">
+      <div className="mt-6 border-t border-line pt-5">
+        <h4 className="text-sm font-semibold text-ink">碳价扫描</h4>
+        <p className="mt-1 text-xs text-muted">
           每格为 €15/t：红色＝暂不经济，琥珀＝拐点，蓝色＝临界切换，绿色＝热泵占优。
         </p>
         <div className="mt-4 space-y-3">
           {sweepByTech.map(({ row, points }) => (
             <div key={row.tech_key} className="grid gap-2 md:grid-cols-[9rem_1fr] md:items-center">
-              <div className="text-sm text-slate-700">{row.name}</div>
+              <div className="text-sm text-ink">{row.name}</div>
               <div className="grid grid-cols-11 gap-1">
                 {points.map((point) => (
                   <span
