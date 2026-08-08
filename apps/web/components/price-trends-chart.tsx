@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { FigureValue } from '@/components/figure-value';
+import { formatFigure, type Figure } from '@/lib/figure';
 
 type PricePoint = {
   as_of: string;
-  value: number;
+  value: number; // figure-contract-lint-ignore: 时序图序列点，provenance 由外层 PriceTrendData 承载
 };
 
 type MarketEvent = {
@@ -16,11 +18,11 @@ type MarketEvent = {
 type PriceTrendData = {
   metric_key: string;
   unit: string;
-  latest_value: number;
+  latest_value: Figure;
   latest_as_of: string | null;
-  change_pct_1d: number | null;
-  change_pct_7d: number | null;
-  change_pct_30d: number | null;
+  change_pct_1d: Figure;
+  change_pct_7d: Figure;
+  change_pct_30d: Figure;
   points: PricePoint[];
 };
 
@@ -391,16 +393,23 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
   const activeWindowLabel = activeWindow?.label ?? '当前窗口';
   const activeWindowNeedsMoreHistory = Boolean(activeWindow?.days && localCoverageDays < activeWindow.days);
 
-  const getChangeClass = (value: number | null) => { // figure-contract-lint-ignore: internal tone helper parameter, not a prop
-    if (value == null) return 'text-muted';
-    const magnitude = Math.abs(value);
+  const getChangeClass = (figure: Figure) => {
+    if (figure.value == null) return 'text-muted';
+    const magnitude = Math.abs(figure.value);
     if (magnitude >= 20) return 'text-danger';
     if (magnitude >= 10) return 'text-warning';
     return 'text-success';
   };
 
-  const formatChange = (value: number | null) => { // figure-contract-lint-ignore: internal formatter parameter, not a prop
-    if (value == null) return '无数据';
+  /** Signed percent for known rates; unknown stays "—" (never 0). */
+  const formatChangeFigure = (figure: Figure) => {
+    if (figure.value == null) return formatFigure(figure);
+    const sign = figure.value > 0 ? '+' : '';
+    return `${sign}${figure.value.toFixed(2)}%`;
+  };
+
+  const formatWindowChange = (value: number | null) => { // figure-contract-lint-ignore: window-local arithmetic display, not a prop
+    if (value == null) return '—';
     const sign = value > 0 ? '+' : '';
     return `${sign}${value.toFixed(2)}%`;
   };
@@ -473,7 +482,7 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
         <p className="font-semibold text-ink">当前窗口：{activeWindowLabel}</p>
         <p className="mt-1">
           样本 {windowPoints.length} 个，日期 {formatDateLabel(firstPoint?.as_of)} 至 {formatDateLabel(lastPoint?.as_of)}。
-          窗口内变化 {formatChange(windowChange)}。
+          窗口内变化 {formatWindowChange(windowChange)}。
         </p>
         <p className={activeWindowNeedsMoreHistory ? 'mt-2 text-sm font-medium text-warning' : 'mt-2 text-sm font-medium text-success'}>
           数据覆盖：本地历史约 {formatCoverageDays(localCoverageDays)}
@@ -490,24 +499,41 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
         <div className="rounded-lg border border-line bg-surface p-4">
           <p className="text-sm text-muted">最新值</p>
           <p className="mt-2 text-2xl font-semibold text-ink">
-            {data.latest_value?.toFixed(2) ?? '无数据'} {data.unit}
+            <FigureValue figure={data.latest_value} locale="zh" size="inline" showTimestamp={false} />
           </p>
-          <p className="mt-1 text-xs text-muted">截至 {data.latest_as_of ? new Date(data.latest_as_of).toLocaleString('zh-CN') : '暂无数据'}</p>
+          <p className="mt-1 text-xs text-muted">
+            截至 {data.latest_as_of ? new Date(data.latest_as_of).toLocaleString('zh-CN') : '暂无数据'}
+          </p>
         </div>
 
         <div className="rounded-lg border border-line bg-surface p-4">
           <p className="text-sm text-muted">1日</p>
-          <p className={`mt-2 text-xl font-semibold ${getChangeClass(data.change_pct_1d)}`}>{formatChange(data.change_pct_1d)}</p>
+          <p className={`mt-2 text-xl font-semibold ${getChangeClass(data.change_pct_1d)}`}>
+            {formatChangeFigure(data.change_pct_1d)}
+          </p>
+          {data.change_pct_1d.value == null && data.change_pct_1d.reason ? (
+            <p className="mt-1 text-xs text-muted">{data.change_pct_1d.reason}</p>
+          ) : null}
         </div>
 
         <div className="rounded-lg border border-line bg-surface p-4">
           <p className="text-sm text-muted">7日</p>
-          <p className={`mt-2 text-xl font-semibold ${getChangeClass(data.change_pct_7d)}`}>{formatChange(data.change_pct_7d)}</p>
+          <p className={`mt-2 text-xl font-semibold ${getChangeClass(data.change_pct_7d)}`}>
+            {formatChangeFigure(data.change_pct_7d)}
+          </p>
+          {data.change_pct_7d.value == null && data.change_pct_7d.reason ? (
+            <p className="mt-1 text-xs text-muted">{data.change_pct_7d.reason}</p>
+          ) : null}
         </div>
 
         <div className="rounded-lg border border-line bg-surface p-4">
           <p className="text-sm text-muted">30日</p>
-          <p className={`mt-2 text-xl font-semibold ${getChangeClass(data.change_pct_30d)}`}>{formatChange(data.change_pct_30d)}</p>
+          <p className={`mt-2 text-xl font-semibold ${getChangeClass(data.change_pct_30d)}`}>
+            {formatChangeFigure(data.change_pct_30d)}
+          </p>
+          {data.change_pct_30d.value == null && data.change_pct_30d.reason ? (
+            <p className="mt-1 text-xs text-muted">{data.change_pct_30d.reason}</p>
+          ) : null}
         </div>
       </div>
     </div>

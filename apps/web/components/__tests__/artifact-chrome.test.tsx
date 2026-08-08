@@ -304,17 +304,45 @@ describe('artifacts do not draw their own card', () => {
   it('PriceTrendsChart renders bare once it has data', () => {
     // Deliberately the ready state. The empty and error branches return tinted
     // blocks on purpose - those containers carry the state and are allowed to.
+    const asOf = '2026-08-06T06:00:00Z';
     const { container } = render(
       <PriceTrendsChart
         metrics={{
           brent_usd_per_bbl: {
             metric_key: 'brent_usd_per_bbl',
             unit: 'USD/bbl',
-            latest_value: 87,
-            latest_as_of: '2026-08-06T06:00:00Z',
-            change_pct_1d: 0.5,
-            change_pct_7d: 1.2,
-            change_pct_30d: -2,
+            latest_value: observed({
+              value: 87,
+              unit: 'USD/bbl',
+              sourceId: 'market-history',
+              asOf,
+              precision: 2
+            }),
+            latest_as_of: asOf,
+            change_pct_1d: derived({
+              value: 0.5,
+              unit: '%',
+              sourceId: 'market-history',
+              asOf,
+              precision: 2,
+              method: '相对 1 日前的变化率'
+            }),
+            change_pct_7d: derived({
+              value: 1.2,
+              unit: '%',
+              sourceId: 'market-history',
+              asOf,
+              precision: 2,
+              method: '相对 7 日前的变化率'
+            }),
+            change_pct_30d: derived({
+              value: -2,
+              unit: '%',
+              sourceId: 'market-history',
+              asOf,
+              precision: 2,
+              method: '相对 30 日前的变化率'
+            }),
             points: [
               { as_of: '2026-08-01T06:00:00Z', value: 85 },
               { as_of: '2026-08-06T06:00:00Z', value: 87 }
