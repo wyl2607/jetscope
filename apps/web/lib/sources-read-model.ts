@@ -1,5 +1,5 @@
 import { buildApiUrl } from '@/lib/api-config';
-import { assumed, derived, observed, type Figure } from '@/lib/figure';
+import { derived, missing, observed, type Figure } from '@/lib/figure';
 import {
   formatSourceCoverageLag,
   getSourceCoverageTrustState,
@@ -19,6 +19,17 @@ function completenessFigure(
   ratio: number,
   opts: { asOf: string | null; fromApi: boolean; isFallback: boolean }
 ): Figure {
+  // Coverage API unavailable → completeness is unknown, not 0%.
+  // assumed() would assert a scenario value; missing() is the honest shape.
+  if (opts.isFallback) {
+    return missing({
+      unit: '%',
+      sourceId: COMPLETENESS_SOURCE_ID,
+      precision: 0,
+      reason: '来源覆盖接口不可用，完整度未知'
+    });
+  }
+
   const value = ratio * 100;
   const common = {
     value,
@@ -26,13 +37,6 @@ function completenessFigure(
     sourceId: COMPLETENESS_SOURCE_ID,
     precision: 0 as const
   };
-
-  if (opts.isFallback) {
-    return assumed({
-      ...common,
-      method: '来源覆盖不可用时的回退完整度'
-    });
-  }
 
   if (opts.fromApi && opts.asOf) {
     return observed({

@@ -502,8 +502,8 @@ test('getSourcesReadModel falls back to a generic degraded state when coverage A
   assert.equal(readModel.rows[3].value, '1.080 USD/L');
   assert.equal(readModel.rows[4].value, '无数据');
   assert.equal(readModel.degraded, true);
-  assert.equal(readModel.completeness.value, 0);
-  assert.equal(readModel.completeness.basis, 'assumption');
+  assert.equal(readModel.completeness.value, null);
+  assert.equal(readModel.completeness.reason, '来源覆盖接口不可用，完整度未知');
   assert.equal(readModel.summary.fallbackCount, 7);
   assert.match(readModel.summary.degradedReason, /覆盖完整度 0%/);
 });

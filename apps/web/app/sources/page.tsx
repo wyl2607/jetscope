@@ -226,7 +226,7 @@ export default async function SourcesPage({
           label="平均置信度"
           value={`${Math.round(readModel.summary.averageConfidence * 100)}%`}
           valueClassName={`${trustTone} tabular-nums`}
-          hint={`完整度 ${Math.round(readModel.completeness.value ?? 0)}% · ${readModel.summary.freshnessLabel}`}
+          hint={`完整度 ${readModel.completeness.value == null ? '—' : `${Math.round(readModel.completeness.value)}%`} · ${readModel.summary.freshnessLabel}`}
         />
         <MetricCard
           label="输入构成"
