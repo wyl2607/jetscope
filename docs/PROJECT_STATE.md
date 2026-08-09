@@ -123,6 +123,42 @@ is locked in.
    components is what makes that class of bug impossible, which is why rule 3
    exists.
 
+   **The mechanism landed in #318**, proven on `faq`. What the remaining ten
+   routes cost was then measured rather than estimated — strip every string
+   literal and comment from each page, diff the code skeleton against its `de`
+   and `en` siblings, and count the lines that differ:
+
+   | route | zh lines | differing vs de + en |
+   | --- | ---: | ---: |
+   | `reports` | 172 | 112 |
+   | `prices/germany-jet-fuel` | 169 | 121 |
+   | `research` | 213 | 239 |
+   | `admin` | 181 | 284 |
+   | `/` (home) | 204 | 311 |
+   | `sources` | 160 | 347 |
+   | `reports/tipping-point-analysis` | 235 | 504 |
+   | `dashboard` | 410 | 618 |
+   | `scenarios` | 259 | 720 |
+   | `crisis` | 363 | 884 |
+
+   `faq` differed by 14 lines, which is why it was the right first proof and why
+   it is not representative. **The three locale trees are not one app rendered in
+   three languages; they are three separately evolved implementations of the same
+   idea.** Merging them is a reconciliation per route, not a refactor.
+
+   `reports` shows the shape at its mildest. Its three pages offer three
+   different sets of next actions — zh alone links to the tipping-point report,
+   de alone links to launch readiness, en alone links to the research workbench —
+   so a merge has to decide, per route, whether those sets converge or stay
+   distinct. The current ruling is that they stay distinct and become data.
+
+   And the same page carries a fix in one language that the others never got:
+   `de/reports` replaces a saved scenario's name with a placeholder when the name
+   contains Chinese characters, `en/reports` joins the names raw. **English
+   readers can see Chinese scenario names today.** One rule reproduces two of the
+   three current behaviours and corrects the third: substitute when the name's
+   script does not match the reader's locale.
+
 ### Known debts, none urgent
 
 - `apps/web/app/de/lufthansa-saf-2026/` uses `ClientMarketData` and
