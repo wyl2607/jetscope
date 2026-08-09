@@ -33,9 +33,8 @@ const CONVERTED_PAGES = [
   'apps/web/app/scenarios/page.tsx',
   'apps/web/app/de/scenarios/page.tsx',
   'apps/web/app/en/scenarios/page.tsx',
-  'apps/web/app/faq/page.tsx',
-  'apps/web/app/de/faq/page.tsx',
-  'apps/web/app/en/faq/page.tsx',
+  // P2: one file serves all three locales, so it is listed once.
+  'apps/web/app/[locale]/faq/page.tsx',
   'apps/web/app/admin/page.tsx',
   'apps/web/app/de/admin/page.tsx',
   'apps/web/app/en/admin/page.tsx',
@@ -114,9 +113,40 @@ test('converted pages use the template rather than Shell directly', async () => 
   }
 });
 
+/**
+ * The dictionary namespace a `[locale]` page reads its copy from, or null for a
+ * page that still holds its own copy. P2 moves copy out of the page, so for a
+ * migrated page the sentence to check lives in `src/locales/*.json`.
+ */
+function dictionaryNamespace(path) {
+  const match = path.match(/app\/\[locale\]\/(.+)\/page\.tsx$/);
+  return match ? match[1].replaceAll('/', '_') : null;
+}
+
 test('every converted page states the decision question it answers', async () => {
   for (const path of CONVERTED_PAGES) {
     const source = await read(path);
+    const namespace = dictionaryNamespace(path);
+
+    if (namespace) {
+      assert.match(
+        source,
+        /question=\{[^}]+\}/,
+        `${path} must pass a question to PageTemplate`
+      );
+      // Three sentences to check instead of one: a migrated page is only as
+      // good as its thinnest locale.
+      for (const locale of ['zh', 'de', 'en']) {
+        const dictionary = JSON.parse(await read(`apps/web/src/locales/${locale}.json`));
+        const question = dictionary[namespace]?.question;
+        assert.ok(
+          typeof question === 'string' && question.trim().length > 10,
+          `${locale}.json ${namespace}.question must be a real sentence, got: ${question}`
+        );
+      }
+      continue;
+    }
+
     const match = source.match(/question="([^"]+)"/);
     assert.ok(match, `${path} must pass a question to PageTemplate`);
     assert.ok(
@@ -135,11 +165,7 @@ test('every converted page ends with its sources', async () => {
 });
 
 test('static FAQ pages never invent a data timestamp', async () => {
-  for (const path of [
-    'apps/web/app/faq/page.tsx',
-    'apps/web/app/de/faq/page.tsx',
-    'apps/web/app/en/faq/page.tsx'
-  ]) {
+  for (const path of ['apps/web/app/[locale]/faq/page.tsx']) {
     const source = await read(path);
     assert.match(source, /asOf=\{null\}/, `${path} must explicitly state that it has no data timestamp`);
     assert.doesNotMatch(source, /new Date\(/, `${path} must not turn render or build time into an as-of stamp`);
