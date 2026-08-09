@@ -511,37 +511,54 @@ test('English Lufthansa SAF analysis page is a localized light review surface', 
 });
 
 test('localized FAQ pages explain launch boundaries without write controls', async () => {
-  const chineseFaqSource = await readFile(new URL('../apps/web/app/faq/page.tsx', import.meta.url), 'utf8');
-  const englishFaqSource = await readFile(new URL('../apps/web/app/en/faq/page.tsx', import.meta.url), 'utf8');
-  const germanFaqSource = await readFile(new URL('../apps/web/app/de/faq/page.tsx', import.meta.url), 'utf8');
+  // P2: one page under `app/[locale]`, copy in the dictionaries. These
+  // assertions keep the four guarantees this test always had - the copy exists,
+  // it links to admin and sources, the locales do not bleed into each other, and
+  // nothing on the page can write.
+  const page = await readFile(new URL('../apps/web/app/[locale]/faq/page.tsx', import.meta.url), 'utf8');
+  const dictionary = async (locale) =>
+    JSON.parse(
+      await readFile(new URL(`../apps/web/src/locales/${locale}.json`, import.meta.url), 'utf8')
+    ).faq;
 
-  assert.match(chineseFaqSource, /常见问题/);
-  assert.match(chineseFaqSource, /上线前置状态/);
-  assert.match(chineseFaqSource, /数据来源/);
-  assert.match(chineseFaqSource, /研究信号/);
-  assert.match(chineseFaqSource, /\/admin/);
-  assert.match(chineseFaqSource, /\/sources/);
+  const zh = await dictionary('zh');
+  const en = await dictionary('en');
+  const de = await dictionary('de');
 
-  assert.match(englishFaqSource, /Frequently Asked Questions/);
-  assert.match(englishFaqSource, /Launch readiness/);
-  assert.match(englishFaqSource, /Source review/);
-  assert.match(englishFaqSource, /Research workbench/);
-  assert.match(englishFaqSource, /\/en\/admin/);
-  assert.match(englishFaqSource, /\/en\/sources/);
-  assert.doesNotMatch(englishFaqSource, /上线前置状态|数据来源|研究信号|Häufige Fragen|Startbereitschaft/);
+  assert.match(zh.title, /常见问题/);
+  assert.match(zh.questions.readiness.action, /上线前置状态/);
+  assert.match(zh.questions.sources.action, /数据来源/);
+  assert.match(zh.questions.research.action, /研究信号/);
 
-  assert.match(germanFaqSource, /Häufige Fragen/);
-  assert.match(germanFaqSource, /Startbereitschaft/);
-  assert.match(germanFaqSource, /Quellenprüfung/);
-  assert.match(germanFaqSource, /Forschungswerkstatt/);
-  assert.match(germanFaqSource, /\/de\/admin/);
-  assert.match(germanFaqSource, /\/de\/sources/);
-  assert.doesNotMatch(germanFaqSource, /Frequently Asked Questions|Launch readiness|Source review|上线前置状态|数据来源/);
+  assert.match(en.title, /Frequently Asked Questions/);
+  assert.match(en.questions.readiness.action, /Launch readiness/);
+  assert.match(en.questions.sources.action, /Source review/);
+  assert.match(en.questions.research.action, /Research workbench/);
 
-  for (const source of [chineseFaqSource, englishFaqSource, germanFaqSource]) {
-    assert.doesNotMatch(source, /<input|<textarea|AdminDataOps|ScenarioRegistry|x-admin-token/i);
-    assert.doesNotMatch(source, /text-white|text-slate-300|bg-slate-900|bg-slate-950|border-slate-800/);
-  }
+  assert.match(de.title, /Häufige Fragen/);
+  assert.match(de.questions.readiness.action, /Startbereitschaft/);
+  assert.match(de.questions.sources.action, /Quellenprüfung/);
+  assert.match(de.questions.research.action, /Forschungswerkstatt/);
+
+  // The links are generated from these locale-free targets by `localeHref`,
+  // which is what turns `/admin` into `/de/admin` for a German reader.
+  assert.match(page, /route: '\/admin'/);
+  assert.match(page, /route: '\/sources'/);
+  assert.match(page, /localeHref\(locale, route\)/);
+
+  // No bleed. One shared page makes this matter more, not less: a mis-keyed
+  // dictionary would now show the same words to all three audiences.
+  assert.doesNotMatch(
+    JSON.stringify(en),
+    /上线前置状态|数据来源|研究信号|Häufige Fragen|Startbereitschaft/
+  );
+  assert.doesNotMatch(
+    JSON.stringify(de),
+    /Frequently Asked Questions|Launch readiness|Source review|上线前置状态|数据来源/
+  );
+
+  assert.doesNotMatch(page, /<input|<textarea|AdminDataOps|ScenarioRegistry|x-admin-token/i);
+  assert.doesNotMatch(page, /text-white|text-slate-300|bg-slate-900|bg-slate-950|border-slate-800/);
 });
 
 test('crisis page uses light semantic data cards instead of gray dark boxes', async () => {
