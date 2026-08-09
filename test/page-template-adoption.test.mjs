@@ -12,9 +12,8 @@ import { readFile } from 'node:fs/promises';
  */
 const CONVERTED_PAGES = [
   'apps/web/app/heat/page.tsx',
-  'apps/web/app/reports/page.tsx',
-  'apps/web/app/de/reports/page.tsx',
-  'apps/web/app/en/reports/page.tsx',
+  // P2: one file serves all three locales, so it is listed once.
+  'apps/web/app/[locale]/reports/page.tsx',
   'apps/web/app/crisis/page.tsx',
   'apps/web/app/de/crisis/page.tsx',
   'apps/web/app/en/crisis/page.tsx',
@@ -63,9 +62,7 @@ const STATIC_LUFTHANSA_ANALYSIS_PAGES = [
 
 /** Pages that render a read model with an isFallback flag. */
 const FALLBACK_AWARE_PAGES = [
-  'apps/web/app/reports/page.tsx',
-  'apps/web/app/de/reports/page.tsx',
-  'apps/web/app/en/reports/page.tsx',
+  'apps/web/app/[locale]/reports/page.tsx',
   'apps/web/app/dashboard/page.tsx',
   'apps/web/app/de/dashboard/page.tsx',
   'apps/web/app/en/dashboard/page.tsx',

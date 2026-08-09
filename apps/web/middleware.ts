@@ -14,12 +14,24 @@ import { NextResponse, type NextRequest } from 'next/server';
  * moves, this list becomes "everything" and collapses to a single check - and
  * `de` and `en` need no entry at all, because their prefix already selects the
  * segment.
+ *
+ * `match: 'exact'` is required when a parent path has migrated but a child has
+ * not (e.g. `/reports` vs `/reports/tipping-point-analysis`). A prefix match
+ * would rewrite the child to `/zh/reports/tipping-point-analysis`, which does
+ * not exist under `[locale]` yet and 404s.
  */
-const MIGRATED = ['/faq'] as const;
+const MIGRATED = [
+  { path: '/faq', match: 'prefix' },
+  { path: '/reports', match: 'exact' }
+] as const;
 
-/** `/faq` and `/faq/anything`, but not `/faq-archive`. */
-function isMigrated(pathname: string): boolean {
-  return MIGRATED.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+/** Exported for unit tests — must stay pure (no Next request objects). */
+export function isMigrated(pathname: string): boolean {
+  return MIGRATED.some(({ path, match }) =>
+    match === 'exact'
+      ? pathname === path
+      : pathname === path || pathname.startsWith(`${path}/`)
+  );
 }
 
 export function middleware(request: NextRequest): NextResponse {
