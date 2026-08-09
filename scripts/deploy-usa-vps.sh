@@ -248,6 +248,22 @@ else
   exit 1
 fi
 
+# Every route the middleware rewrites, probed without following redirects.
+#
+# This exists because a deploy passed every check while /faq and /reports were
+# 308ing to themselves: the default locale is the only one that gets rewritten,
+# and the only page this smoke check read was /sources, which is not rewritten.
+# A route that answers 3xx here is a redirect loop, not a redirect.
+for path in /faq /reports; do
+  code="\$(curl -s -o /dev/null --max-time 15 -w '%{http_code}' "http://127.0.0.1:3000\$path" || echo 000)"
+  if [ "\$code" = "200" ]; then
+    echo "OK \$path — default locale rewrite resolves"
+  else
+    echo "FAIL \$path — expected 200, got \$code. The default-locale rewrite is not resolving."
+    exit 1
+  fi
+done
+
 for probe in "http://127.0.0.1:3000/sources||direct :3000" "|$PUBLIC_HOST|via nginx as $PUBLIC_HOST"; do
   url="\$(printf '%s' "\$probe" | cut -d'|' -f1)"
   host_header="\$(printf '%s' "\$probe" | cut -d'|' -f2)"
