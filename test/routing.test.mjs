@@ -145,9 +145,17 @@ test('sitemap only advertises app pages that exist', async () => {
       )
     );
 
-    assert.ok(
-      found.some(Boolean),
-      `sitemap route ${route} should map to one of: ${candidates.join(', ')}`
+    // Exactly one, not at least one. Both existing means a migration stopped
+    // half way: Next resolves the static segment and the `[locale]` page silently
+    // stops being the one that serves, so the copy someone just moved into the
+    // dictionaries never reaches a reader.
+    const matches = found.filter(Boolean).length;
+    assert.equal(
+      matches,
+      1,
+      matches === 0
+        ? `sitemap route ${route} should map to one of: ${candidates.join(', ')}`
+        : `sitemap route ${route} resolves to both ${candidates.join(' and ')} - delete the per-locale copy`
     );
   }
 });
