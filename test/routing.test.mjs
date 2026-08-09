@@ -11,7 +11,8 @@ const LOCALES_DIR = new URL('../apps/web/src/locales/', import.meta.url);
  * dictionary test below is what checks their words instead.
  */
 const MIGRATED = [
-  { route: '/faq', dir: 'faq', copyKey: 'faq', titles: { zh: '常见问题', de: 'Häufige Fragen', en: 'Frequently Asked Questions' } }
+  { route: '/faq', dir: 'faq', copyKey: 'faq', titles: { zh: '常见问题', de: 'Häufige Fragen', en: 'Frequently Asked Questions' } },
+  { route: '/reports', dir: 'reports', copyKey: 'reports', titles: { zh: '报告工作台', de: 'Berichtswerkstatt', en: 'Report Workbench' } }
 ];
 
 /**
@@ -36,7 +37,6 @@ const ROUTES = [
   ['en/prices/germany-jet-fuel/page.tsx', 'Germany Jet-Fuel Price Monitor'],
   ['en/sources/page.tsx', 'Source Review'],
   ['en/research/page.tsx', 'Research Workbench'],
-  ['en/reports/page.tsx', 'Report Workbench'],
   ['en/reports/tipping-point-analysis/page.tsx', 'Tipping-Point Report'],
   ['en/admin/page.tsx', 'Launch Readiness'],
   ['en/scenarios/page.tsx', 'Scenario Workbench'],
@@ -48,7 +48,6 @@ const ROUTES = [
   ['de/sources/page.tsx', 'Quellenprüfung'],
   ['de/admin/page.tsx', 'Startbereitschaft'],
   ['de/scenarios/page.tsx', 'Szenario-Workbench'],
-  ['de/reports/page.tsx', 'Berichtswerkstatt'],
   ['de/reports/tipping-point-analysis/page.tsx', 'Kipppunktbericht'],
   ['de/research/page.tsx', 'Forschungswerkstatt'],
   ['crisis/page.tsx', '危机监测'],
@@ -58,7 +57,6 @@ const ROUTES = [
   ['heat/page.tsx', '供暖平价分析'],
   ['sources/page.tsx', '来源'],
   ['research/page.tsx', '研究信号'],
-  ['reports/page.tsx', '报告工作台'],
   ['admin/page.tsx', '上线前置状态'],
   ['scenarios/page.tsx', '情景工作区'],
   ['reports/tipping-point-analysis/page.tsx', '临界点报告']
@@ -93,6 +91,61 @@ test('migrated routes exist once under [locale] and carry copy in every locale',
       assert.ok(dict[copyKey], `${locale}.json should define the "${copyKey}" namespace`);
       assert.equal(dict[copyKey].title, title, `${locale}.json ${copyKey}.title`);
     }
+  }
+});
+
+/**
+ * Mirror of apps/web/middleware.ts isMigrated. Kept here (not imported) because
+ * middleware pulls in next/server, which node:test cannot resolve outside Next.
+ * If the middleware shape drifts, the source assertions below fail first.
+ */
+function isMigratedMirror(pathname, entries) {
+  return entries.some(({ path, match }) =>
+    match === 'exact'
+      ? pathname === path
+      : pathname === path || pathname.startsWith(`${path}/`)
+  );
+}
+
+test('/reports migrates exactly; /reports/tipping-point-analysis stays reachable', async () => {
+  const middleware = await readFile(new URL('../apps/web/middleware.ts', import.meta.url), 'utf8');
+
+  // Contract: reports is exact, faq stays prefix. A prefix match on /reports
+  // would rewrite /reports/tipping-point-analysis → /zh/reports/... and 404.
+  assert.match(
+    middleware,
+    /path:\s*'\/reports',\s*match:\s*'exact'/,
+    'middleware must list /reports as an exact match'
+  );
+  assert.match(
+    middleware,
+    /path:\s*'\/faq',\s*match:\s*'prefix'/,
+    'middleware must keep /faq as a prefix match'
+  );
+
+  const entries = [
+    { path: '/faq', match: 'prefix' },
+    { path: '/reports', match: 'exact' }
+  ];
+  assert.equal(isMigratedMirror('/reports', entries), true);
+  assert.equal(
+    isMigratedMirror('/reports/tipping-point-analysis', entries),
+    false,
+    'unmigrated child must not be claimed by the /reports exact entry'
+  );
+  assert.equal(isMigratedMirror('/faq', entries), true);
+  assert.equal(isMigratedMirror('/faq/anything', entries), true);
+
+  // The child page files still live outside [locale], so Next can serve them.
+  for (const relative of [
+    'reports/tipping-point-analysis/page.tsx',
+    'de/reports/tipping-point-analysis/page.tsx',
+    'en/reports/tipping-point-analysis/page.tsx'
+  ]) {
+    await assert.doesNotReject(
+      () => readFile(new URL(relative, APP_DIR), 'utf8'),
+      `${relative} must remain so /reports/tipping-point-analysis stays reachable`
+    );
   }
 });
 

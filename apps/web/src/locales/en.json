@@ -96,5 +96,84 @@
       "These answers describe the current deployment design intent and do not change with live data; use the Admin page for the environment’s actual readiness.",
       "The FAQ does not replace the current states and limitations on the Sources, Research, or Scenarios pages."
     ]
+  },
+  "reports": {
+    "meta_title": "Report Workbench",
+    "meta_description": "English JetScope report readiness workbench for source status, saved scenarios, risk signals, and launch posture.",
+    "eyebrow": "Report readiness",
+    "title": "Report Workbench",
+    "question": "Is this report solid enough to be published as decision evidence right now?",
+    "signal_row_label": "Launch readiness signals",
+    "metric_readiness": "Launch posture",
+    "readiness_review": "Review needed",
+    "readiness_ready": "Publish candidate",
+    "readiness_hint_fallback": "The report surface can render, but the local API fallback is active: {error}.",
+    "readiness_hint_degraded": "Source status is {status}; review source evidence before launch or publication.",
+    "readiness_hint_ok": "Report entry points can be reviewed from the current read model.",
+    "metric_source": "Source status",
+    "source_hint": "Confidence {confidence} | fallback rate {fallback} | {freshness} {minutes} min.",
+    "metric_risk": "Risk signal",
+    "risk_none": "No anomaly",
+    "risk_hint": "{level} | {change}",
+    "risk_hint_none": "The market history window has not produced a ranked alert yet.",
+    "metric_scenarios": "Scenario count",
+    "no_scenarios": "No saved scenario yet.",
+    "scenario_placeholder": "Saved scenario {n}",
+    "catalog_title": "Report catalog",
+    "catalog_why": "Each report entry point, and whether it is wired to live data or to a static narrative.",
+    "actions_title": "Pre-launch actions",
+    "actions_why": "The next report step is evidence review, not guesswork - every entry point leads to something verifiable.",
+    "source_status": {
+      "ok": "healthy",
+      "degraded": "degraded",
+      "offline": "offline",
+      "unknown": "unknown"
+    },
+    "freshness": {
+      "fresh": "fresh",
+      "stale": "stale",
+      "critical": "critical"
+    },
+    "risk": {
+      "normal": "normal",
+      "watch": "watch",
+      "alert": "alert"
+    },
+    "catalog": [
+      {
+        "title": "Tipping-point report",
+        "description": "Primary long-form report tying reserve pressure, fuel economics, airline decision probability, and research signals together.",
+        "route": "/reports/tipping-point-analysis",
+        "status": "Connected to live read model"
+      }
+    ],
+    "actions": [
+      {
+        "label": "Review source evidence",
+        "description": "Check fallback, proxy, degraded, and volatility rows before treating report output as decision evidence.",
+        "route": "/sources?filter=review"
+      },
+      {
+        "label": "Open decision cockpit",
+        "description": "Return to the current market snapshot, source posture, scenarios, and top risk signal.",
+        "route": "/dashboard"
+      },
+      {
+        "label": "Open research workbench",
+        "description": "Confirm whether research signals are enabled, empty, degraded, or ready for explanatory use.",
+        "route": "/research"
+      }
+    ],
+    "footer_market_ok": "Market snapshot API (source status, confidence, fallback rate, freshness)",
+    "footer_market_fallback": "Market snapshot API unreachable; built-in fallback values are in use ({error})",
+    "footer_scenario": "Local scenario store ({count} saved scenarios)",
+    "footer_risk": "The risk signal is derived from movement across the market history window, not supplied upstream",
+    "method_label": "Source and method list",
+    "unknown_error": "unknown cause",
+    "limitations": [
+      "\"Publish candidate\" means the data path is reviewable, not that a human has reviewed the conclusion.",
+      "The risk signal depends on history-window sample size. No alert on thin samples does not mean no risk.",
+      "Saved scenarios are local assumptions for review and discussion; they do not replace procurement approval."
+    ]
   }
 }
