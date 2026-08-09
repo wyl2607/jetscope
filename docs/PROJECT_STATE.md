@@ -152,6 +152,14 @@ is locked in.
    so a merge has to decide, per route, whether those sets converge or stay
    distinct. The current ruling is that they stay distinct and become data.
 
+   One convergence was allowed deliberately when `reports` merged. The four
+   signal cards ran readiness/source/**risk**/scenarios in zh and
+   readiness/source/**scenarios**/risk in de and en; the merged page uses one
+   order everywhere. Every locale already had all four cards, so nothing appears
+   or disappears — and an order that differs by language is precisely the "nine
+   accumulated systems" problem this program exists to remove. Which *panels* a
+   locale renders is still left exactly as it was; only this ordering converged.
+
    And the same page carries a fix in one language that the others never got:
    `de/reports` replaces a saved scenario's name with a placeholder when the name
    contains Chinese characters, `en/reports` joins the names raw. **English
