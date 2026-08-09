@@ -25,10 +25,10 @@ and P3 at the number level.
 | Phase | Scope | State |
 | --- | --- | --- |
 | **P0** | tokens, ratchet gate, single navigation source | done |
-| **P1** | palette migration | 318 violations across 12 files remain, ratcheted |
+| **P1** | palette migration | **done — 0 violations, compatibility layer deleted** (#316) |
 | **P1.5** | page template on every page | **done — 42 of 42** |
-| **P2** | collapse `/`, `/de`, `/en` into `/[locale]` | about 10 percent, only `navigation.ts` |
-| **P3** | `Figure` contract through the read models | contract and gate landed; 104 violations across 31 files to clear |
+| **P2** | collapse `/`, `/de`, `/en` into `/[locale]` | about 10 percent, only `navigation.ts` — and larger than it looks, see below |
+| **P3** | `Figure` contract through the read models | **done — 0 violations** (#314) |
 | **P4** | web container and nginx on the VPS | see the correction below — the site is live, but not from a container |
 
 Both ratchets only turn one way and both run in `npm run web:gate`:
@@ -54,12 +54,13 @@ is locked in.
    | the site | live and public |
    | the frontend process | **systemd**, `jetscope-web.service` on `127.0.0.1:3000` — not a container |
    | the edge | **host** nginx on `:80`/`:443`, named vhost |
-   | the build being served | **older than P1.5** — `/sources` renders its title but not its decision question |
+   | the build being served | `4cc37d22`, deployed 2026-08-08 — P1.5 and P3 are live |
 
-   So the reader-visible half of this program — 42 pages on one template, the
-   decision questions, the honest timestamps — **is not on the internet.** It is
-   only on `main`. Deploying is now the single highest-value action available,
-   and it is one command from an environment with `rsync` (WSL, not Git Bash):
+   That deploy closed the gap this entry was written about: the 42 pages on one
+   template, the decision questions and the honest timestamps are on the
+   internet. **P1 (#316) is not** — the palette work landed after it, so the
+   public site is one phase behind `main` again. Deploying is one command from
+   an environment with `rsync` (WSL, not Git Bash):
 
    ```bash
    bash scripts/deploy-usa-vps.sh --rebuild
@@ -87,21 +88,40 @@ is locked in.
    stopping host nginx, and mounting the existing certificates into the nginx
    container — a deliberate operation with a rollback path, not a flag on a
    routine deploy. See `docs/DEPLOY_WEB_VPS.md`.
-3. **P3 cleanup, the remaining figure violations.** The headline number used to
-   be 104, and 104 was never 104 real violations: the lint matches any
-   `foo: number` in a component, which caught SVG widths, colour-ramp stops and
-   `lerp` parameters alongside actual measurements. Those are annotated now
-   under the contract's own escape hatch, each with a reason, and the
-   self-stamping fallbacks are fixed. What is left is measurements, which is
-   what the number should have meant all along.
+3. **P3 is done** (#314). The headline number used to be 104, and 104 was never
+   104 real violations: the lint matches any `foo: number` in a component, which
+   caught SVG widths, colour-ramp stops and `lerp` parameters alongside actual
+   measurements. Those are annotated under the contract's own escape hatch, each
+   with a reason; the self-stamping fallbacks are fixed; the rest were converted.
+   `figure-contract-lint` reports zero.
 
-   The rest is the real conversion: read models and display components carrying
-   `Figure` instead of bare `number`, which is what makes requirement 3 above
-   true per number rather than per page. Mechanical and delegable, in batches
-   grouped so a component and its read model move together.
+4. **P2, the route merge.** This entry used to read "internal tidiness, changes
+   nothing a reader sees, which is why it ranks last." That was wrong, and
+   measuring it is what showed the error. P2 as section 4 of the contract defines
+   it is four jobs, and only the first is internal:
 
-4. **P2, the route merge.** Internal tidiness. It changes nothing a reader sees,
-   which is why it ranks last.
+   | | |
+   | --- | --- |
+   | collapse the three directories into `/[locale]` | mechanical, touches every page |
+   | **7 routes exist in some locales and not others** | rule 2 — a product call, not a refactor |
+   | **~1,320 lines of copy are hardcoded in `.tsx`** | rule 3 — 846 in the zh pages, 474 in shared components |
+   | **there is no i18n mechanism to move that copy into** | `src/locales/*.json` exist, hold 6 keys each, and *nothing imports them* |
+
+   The asymmetry, precisely: `analysis` and its two articles, `crisis/eu-jet-reserves`,
+   `crisis/saf-tipping-point`, `grid` and `heat` exist only in zh;
+   `lufthansa-saf-2026` exists only in de and en. `navigation.ts` already encodes
+   this as `null` paths, which is the right shape — but closing those nulls means
+   either writing German and English versions of six zh-only pages or removing
+   them, and that is a decision about what the site publishes.
+
+   One symptom of the missing mechanism is worth naming, because it is a live
+   bug rather than untidiness: `app/en/sources/page.tsx` translates the read
+   model's **Chinese** output by string comparison
+   (`if (value === '覆盖不可用') return 'Coverage unavailable'`) and falls
+   through with `return value`. Any rewording on the zh side silently ships
+   Chinese text to English readers. Copy in locale files instead of in
+   components is what makes that class of bug impossible, which is why rule 3
+   exists.
 
 ### Known debts, none urgent
 
