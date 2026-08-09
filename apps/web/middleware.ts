@@ -37,14 +37,18 @@ export function isMigrated(pathname: string): boolean {
 export function middleware(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
 
-  // `/zh/faq` and `/faq` would otherwise serve identical content at two URLs.
-  // The prefix-free one is canonical (rule 4), so send readers and crawlers there.
-  if (pathname === '/zh' || pathname.startsWith('/zh/')) {
-    const url = request.nextUrl.clone();
-    url.pathname = pathname.slice('/zh'.length) || '/';
-    return NextResponse.redirect(url, 308);
-  }
-
+  // A `/zh/... -> /...` redirect used to sit here, to keep one page off two
+  // URLs. It took production down. In a production build the rewrite below
+  // re-enters this middleware as `/zh/faq`; the redirect sent that back to
+  // `/faq`; the rewrite fired again. `/faq` 308ed to itself forever, and only
+  // the default locale was affected, because only it is rewritten.
+  //
+  // `next dev` did not reproduce it - which is the reason a routing change is
+  // now only believable after `next build && next start`, never after dev.
+  //
+  // Canonicalising `/zh/*` is still worth having. It has to be written so it
+  // cannot see an internally rewritten request, and proven against a production
+  // build before it ships again.
   if (isMigrated(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = `/zh${pathname}`;
