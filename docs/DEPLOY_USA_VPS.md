@@ -112,6 +112,48 @@ deploy script still excludes `.env` and `data/*.db` and does not use `rsync --de
 | `GET /v1/sources/coverage` | Metrics + completeness/degraded |
 | `GET /v1/reserves/eu` | No invented IATA claim |
 | Dashboard `/dashboard` | Live strip + LH event card when web is served |
+| Through-nginx headers on `/sources` | `Content-Security-Policy-Report-Only`, five security headers, `s-maxage=60` |
+| Through-nginx `/v1/health` and `/api/health` | `Cache-Control: private, no-store` |
+
+Header and cache assertions in `scripts/deploy-usa-vps.sh` probe **through
+nginx** (`curl --resolve` + public `Host`), not only `127.0.0.1:3000`. Edge
+headers are invisible on the direct Node port. Commit `8c8a4c4` is the
+production incident behind that rule: a middleware rewrite returned 500 to
+real readers while `:3000` answered 200 because the probe omitted the
+forwarded request shape.
+
+## Public-page edge cache
+
+Host nginx (`infra/server/nginx.conf`) and the P4 container edge
+(`infra/nginx.prod.conf`) set the same Cache-Control policy. Classification
+was derived from the codebase, not assumed:
+
+| Path | Cache-Control | Why |
+| --- | --- | --- |
+| Public HTML (`location /`) | `public, max-age=0, s-maxage=60, stale-while-revalidate=300` | Anonymous SSR; same HTML for every reader |
+| `/_next/static/` | `public, max-age=31536000, immutable` | Content-hashed build assets |
+| `/api/` | `private, no-store` | BFF proxies; may carry `x-admin-token`; must track live API |
+| `/v1/` (and `= /v1` in prod) | `private, no-store` | Live API; never shared-cache |
+| `/admin`, `/de/admin`, `/en/admin` (+ trailing-slash prefixes) | `private, no-store` | Basic Auth surface; response varies on `Authorization` |
+
+**Evidence that public HTML is not per-visitor:**
+
+- No `Set-Cookie` / `cookies()` / visitor cookie use in `apps/web` for identity.
+- Locales are path prefixes (`/de`, `/en`), not `Accept-Language` negotiation.
+- Workspace preferences and saved scenarios use a shared `WORKSPACE_SLUG`
+  (env default `default`). Interactive scenario editing is client-side
+  (`ScenarioRegistry` → `/api/…`) after hydrate; it does not personalise the
+  server-rendered HTML per reader.
+
+**nginx inheritance trap:** `add_header` replaces, it does not merge. Every
+location that sets any header (including Cache-Control) restates the full
+security header set. Contract tests in
+`test/nginx-security-headers-cache-contract.test.mjs` fail if a location
+gains a lone `add_header` and drops HSTS.
+
+CSP report-only is set in Next (`apps/web/next.config.mjs`), not only at the
+edge, so it holds whichever nginx is in front. Promotion path:
+`docs/SECURITY_NOTES.md`.
 
 ## Admin UI edge gate (host nginx)
 

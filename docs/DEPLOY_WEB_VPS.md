@@ -88,6 +88,7 @@ reference for why each piece is shaped the way it is.
 | `web` service in `docker-compose.prod.yml` | landed, with `JETSCOPE_API_BASE_URL=http://api:8000` |
 | `nginx` service in `docker-compose.prod.yml` | landed |
 | production nginx config | `infra/nginx.prod.conf`, TLS blocks left to the operator in `infra/tls/` |
+| security headers + edge cache | same five headers and Cache-Control policy as host nginx (`infra/server/nginx.conf`); every `add_header` location restates the full set (nginx does not merge). See `docs/DEPLOY_USA_VPS.md` "Public-page edge cache" |
 | `scripts/deploy-usa-vps.sh` | brings up `api web nginx`, and verifies the rendered page |
 
 **The one thing left is running it against the host**, from an environment that

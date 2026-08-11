@@ -309,6 +309,88 @@ else
   echo "FAIL /v1/health via nginx — check the /v1 location order in the active nginx config"
   exit 1
 fi
+
+# --- Edge header / cache contract (through nginx only) ---------------------
+# These headers are set by nginx (Cache-Control, security suite) or by Next
+# behind nginx (CSP-Report-Only). Probing :3000 alone cannot see the edge
+# Cache-Control policy and was the class of miss behind 8c8a4c4: a check that
+# does not carry the public Host / TLS path is not a check of what readers hit.
+#
+# Use the same --resolve form as the /sources body probe above.
+edge_headers() {
+  local path="\$1"
+  curl -sI -k --max-time 15 --resolve "$PUBLIC_HOST:443:127.0.0.1" \
+    "https://$PUBLIC_HOST\$path" 2>/dev/null || true
+}
+
+hdrs="\$(edge_headers /sources)"
+if [ -z "\$hdrs" ]; then
+  echo "FAIL edge header probe /sources — no response through nginx"
+  exit 1
+fi
+
+# CSP must be report-only. An enforcing Content-Security-Policy without
+# -Report-Only is a failed promotion, not a success.
+if printf '%s' "\$hdrs" | grep -qi '^content-security-policy-report-only:'; then
+  echo "OK edge CSP-Report-Only present on /sources"
+else
+  echo "FAIL edge CSP-Report-Only missing on /sources through nginx"
+  exit 1
+fi
+if printf '%s' "\$hdrs" | grep -qi '^content-security-policy:' \
+  && ! printf '%s' "\$hdrs" | grep -qi '^content-security-policy-report-only:'; then
+  echo "FAIL enforcing Content-Security-Policy without Report-Only on /sources"
+  exit 1
+fi
+
+for h in \
+  'strict-transport-security:' \
+  'x-content-type-options:' \
+  'x-frame-options:' \
+  'referrer-policy:' \
+  'permissions-policy:'
+do
+  if printf '%s' "\$hdrs" | grep -qi "^\$h"; then
+    echo "OK edge security header \$h on /sources"
+  else
+    echo "FAIL edge security header \$h missing on /sources through nginx"
+    exit 1
+  fi
+done
+
+if printf '%s' "\$hdrs" | grep -qi 'cache-control:.*s-maxage=60'; then
+  echo "OK edge public-page cache policy (s-maxage=60) on /sources"
+else
+  echo "FAIL edge public-page Cache-Control missing s-maxage=60 on /sources"
+  echo "\$hdrs" | grep -i cache-control || true
+  exit 1
+fi
+
+# The App Router serves two different bodies at the same URL: HTML for a real
+# navigation, an RSC flight payload when the client sends `RSC: 1`. A shared
+# cache tells them apart only by the upstream `Vary`. Since `s-maxage` above
+# makes these responses shared-cacheable, that Vary is load-bearing — without
+# it a cached flight payload can be served to a browser asking for the page.
+# Nothing in the nginx config guarantees it; Next emits it. Assert it here so
+# a framework upgrade that drops it fails the deploy instead of the reader.
+if printf '%s' "\$hdrs" | grep -qi '^vary:.*RSC'; then
+  echo "OK edge Vary carries RSC on /sources"
+else
+  echo "FAIL edge Vary must carry RSC while public HTML is shared-cacheable"
+  printf '%s' "\$hdrs" | grep -i '^vary:' || echo "  (no Vary header at all)"
+  exit 1
+fi
+
+for path in /v1/health /api/health; do
+  path_hdrs="\$(edge_headers "\$path")"
+  if printf '%s' "\$path_hdrs" | grep -qi 'cache-control:.*private, no-store'; then
+    echo "OK edge no-store on \$path"
+  else
+    echo "FAIL edge Cache-Control must be private, no-store on \$path"
+    echo "\$path_hdrs" | grep -i cache-control || true
+    exit 1
+  fi
+done
 REMOTE
 
 echo "==> Deploy finished for $HOST:$REMOTE_DIR (rebuild=$REBUILD)"
