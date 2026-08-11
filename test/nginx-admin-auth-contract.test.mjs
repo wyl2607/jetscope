@@ -39,10 +39,26 @@ function locationBlocks(conf) {
   return blocks;
 }
 
+/**
+ * A `location` selector is `[modifier] path` — `= /admin`, `^~ /admin/`, or a
+ * bare `/admin`. Return just the path, so blocks can be matched by value.
+ * Building a regex out of the path instead would need escaping and would still
+ * be a looser test than equality.
+ */
+function locationPath(selector) {
+  const parts = selector.trim().split(/\s+/);
+  return parts[parts.length - 1];
+}
+
+function matchesAdminPath(selector, adminPath) {
+  const path = locationPath(selector);
+  // The trailing-slash form is the prefix location for the same route.
+  // Equality is what keeps /administrator out.
+  return path === adminPath || path === `${adminPath}/`;
+}
+
 function isAdminLocation(selector) {
-  // Match = /admin, ^~ /admin/, /admin, = /de/admin, etc.
-  // Reject accidental /administrator by requiring end or trailing slash after admin.
-  return /(?:^|[\s=])\/(?:de\/|en\/)?admin(?:\s|\/|$)/.test(selector);
+  return ADMIN_PATHS.some((adminPath) => matchesAdminPath(selector, adminPath));
 }
 
 function assertAdminLocationsGuarded(conf, fileLabel) {
@@ -55,11 +71,7 @@ function assertAdminLocationsGuarded(conf, fileLabel) {
   );
 
   for (const adminPath of ADMIN_PATHS) {
-    const matching = adminBlocks.filter((block) => {
-      // selector mentions this path without extending into /administrator
-      const escaped = adminPath.replace(/\//g, '\\/');
-      return new RegExp(`${escaped}(?:\\s|\\/|$)`).test(block.selector);
-    });
+    const matching = adminBlocks.filter((block) => matchesAdminPath(block.selector, adminPath));
     assert.ok(
       matching.length > 0,
       `${fileLabel}: missing location for ${adminPath}`
