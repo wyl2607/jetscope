@@ -201,6 +201,11 @@ compose and should not be reused.
 
 - `location /v1/` proxies to `http://api:8000`
 - `location /` proxies to `http://web:3000`
+- Admin paths (`/admin`, `/de/admin`, `/en/admin`) use edge Basic Auth via
+  `auth_basic` + `auth_basic_user_file /etc/nginx/secrets/admin.htpasswd`
+  (credential file is operator state; mount it, never bake it into the image).
+  Application write routes keep `x-admin-token` as a second layer. The live
+  host-nginx equivalent and operator steps live in `docs/DEPLOY_USA_VPS.md`.
 - forward `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`
 - `proxy_read_timeout` above the app's own fetch timeouts, which default to a
   few seconds via `JETSCOPE_*_FETCH_TIMEOUT_MS`
@@ -209,7 +214,8 @@ compose and should not be reused.
   notes, not here.
 
 Order matters: `/v1/` must be declared before `/`, or the catch-all swallows API
-traffic and the browser silently gets HTML where it expected JSON.
+traffic and the browser silently gets HTML where it expected JSON. Admin auth
+locations must also sit before the catch-all `/`.
 
 ## 5. `scripts/deploy-usa-vps.sh`
 
