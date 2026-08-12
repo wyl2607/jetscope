@@ -88,9 +88,8 @@ export default function ClientMarketData() {
   const sourceStatus = data.source_status?.overall ?? 'unknown';
 
   return (
-    <section className="rounded-lg border border-accent bg-surface p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-accent">Echtzeit-Marktdaten</h2>
+    <section className="space-y-4">
+      <div className="flex items-center justify-end">
         <span className={`text-xs px-2 py-1 rounded ${
           sourceStatus === 'ok' ? 'bg-success-soft text-success' :
           sourceStatus === 'degraded' ? 'bg-warning-soft text-warning' :
