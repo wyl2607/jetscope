@@ -172,7 +172,13 @@ is locked in.
    `faq` in `apps/web/src/locales/{zh,de,en}.json` and are loaded by
    `apps/web/lib/i18n.ts`. `/faq`, `/de/faq` and `/en/faq` remain real page files
    that render one shared `FaqPage` with an explicit `locale`. Middleware and
-   `/[locale]` rewrites stay forbidden. Remaining routes are unchanged.
+   `/[locale]` rewrites stay forbidden.
+
+   **Prices copy, same pattern.** `/prices/germany-jet-fuel`,
+   `/de/prices/germany-jet-fuel` and `/en/prices/germany-jet-fuel` render one
+   shared `GermanyJetFuelPage`. The trend-chart panel is locale data
+   (`show_trend_chart`): zh keeps it, de/en do not. Remaining routes still
+   hardcode copy.
 
 ### Known debts, none urgent
 

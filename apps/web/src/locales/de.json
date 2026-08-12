@@ -96,5 +96,48 @@
       "Diese Antworten beschreiben die beabsichtigte Funktion des aktuellen Deployments und ändern sich nicht mit Echtzeitdaten; die konkrete Bereitschaft steht auf der Admin-Seite.",
       "Die FAQ ersetzt nicht die aktuellen Zustände und Grenzen auf den Quellen-, Forschungs- oder Szenarioseiten."
     ]
+  },
+  "prices": {
+    "meta_title": "Deutschland Kerosinpreis",
+    "meta_description": "Indexierbare serverseitig gerenderte Seite für Deutschland mit Brent, globalem Jet-Fuel, EU-Jet-Proxy, Carbon-Proxy und 1d/7d/30d-Änderung.",
+    "eyebrow": "Preise · Deutschland",
+    "title": "Deutschland Jet-Fuel Preis-Monitor",
+    "question": "Ist der aktuelle Deutschlandpreis für Jet-Fuel so weit abgewichen, dass Vertrag oder Hedging neu geprüft werden müssen?",
+    "signal_label": "Deutschland Jet-Fuel Entscheidungssignale",
+    "decision_label": "Entscheidungsdruck",
+    "decision_review_source": "Quelle prüfen",
+    "decision_revisit": "Vertrag/Hedge prüfen",
+    "decision_review": "Prüfung nötig",
+    "decision_hold": "Noch kein Anlass",
+    "decision_hint": "EU-Jet-Proxy {value} · {window30} {change} · Status {status}",
+    "decision_missing": "Für den EU-Jet-Proxy ist aktuell kein Wert verfügbar.",
+    "window_1d": "1T",
+    "window_7d": "7T",
+    "window_30d": "30T",
+    "na": "n/a",
+    "status_live": "live",
+    "status_proxy": "proxy",
+    "status_degraded": "degraded",
+    "status_fallback": "unbekannt",
+    "use_status_fallback": false,
+    "show_trend_chart": false,
+    "trend_title": "Preistrend",
+    "trend_why": "Ein einzelner Preis ist nur ein Punkt. Erst die 1T-, 7T- und 30T-Fenster zeigen, ob die Abweichung Vertrag oder Hedging neu prüfen lässt.",
+    "source_read_model": "Deutschland-Jet-Fuel-Read-Model (Brent, Jet-Fuel, EU-Jet-Proxy und Carbon-Proxy)",
+    "source_read_model_fallback": "Deutschland-Jet-Fuel-Read-Model nicht verfügbar; Fallback-Schätzungen werden verwendet ({error})",
+    "source_unknown_error": "unbekannter Grund",
+    "source_brent": "Brent-Quellenstatus",
+    "source_jet": "Globaler Jet-Quellenstatus",
+    "source_jet_eu": "EU-Jet-Proxy-Quellenstatus",
+    "source_carbon": "Carbon-Proxy-Quellenstatus",
+    "source_trend": "Preistrend-Historie (1T-, 7T-, 30T-Fenster)",
+    "source_trend_fallback": "Preistrend-Historie nicht verfügbar ({error})",
+    "method_label": "Methode für Quellen und Preisbewegungen",
+    "limitations": [
+      "Jet-Fuel-Preise sind Proxies und können von standortspezifischen Vertragswerten in Deutschland abweichen.",
+      "Der EU-Jet-Proxy kann bei Datenfeed-Ausfall vorübergehend auf die globale Jet-Serie zurückfallen; ein Fallback ist keine Messung.",
+      "Der Carbon-Proxy zeigt Richtlinien-Kostendruck und muss mit Route und Beimischungsannahmen gelesen werden.",
+      "Diese Seite unterstützt Entscheidungen, ist aber kein Ausführungsfeed; Beschaffungsentscheidungen müssen gegen Lieferantenangebote geprüft werden."
+    ]
   }
 }
