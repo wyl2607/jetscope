@@ -169,18 +169,11 @@ is locked in.
 
 ### Known debts, none urgent
 
-- `apps/web/app/de/lufthansa-saf-2026/` uses `ClientMarketData` and
-  `ClientBreakevenCalculator`, which still draw their own card chrome and
-  therefore nest a card inside the wrapping `Panel`. Contract section 2 rule 3.
-- `getReserveSeverity` in `apps/web/lib/market-signals.ts` returns `text-accent`
-  for the 4-to-6-week watch level. Accent is the product colour, not a severity;
-  a watch state should read as a warning.
-- `GridHistoryChart` contains literal SVG colours. The design lint does not scan
-  SVG attributes, so this is invisible to the gate.
 - `apps/web/lib/research-signals-read-model.ts` stamps a signal with the current
   time when the upstream record has no `published_at`. It is recorded in the
   figure-contract baseline; clearing it means deciding what an undated signal
-  should show instead.
+  should show instead. The other #304 items (nested Lufthansa cards, watch
+  reserve using accent, GridHistoryChart hex) are closed.
 
 ## How the work gets delegated
 

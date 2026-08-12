@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises';
-import { render } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { render, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import ClientBreakevenCalculator from '@/app/de/lufthansa-saf-2026/client-breakeven-calculator';
+import ClientMarketData from '@/app/de/lufthansa-saf-2026/client-market-data';
 import { FuelVsSafPriceChart } from '@/components/fuel-vs-saf-price-chart';
 import { HeatSensitivityMatrix } from '@/components/heat-sensitivity-matrix';
 import { GridParityWorkbench } from '@/components/grid-parity-workbench';
@@ -40,6 +42,10 @@ import { toPathwayCostRow } from '@/lib/pathways-read-model';
 
 function rootClassName(container: HTMLElement): string {
   return (container.firstElementChild as HTMLElement | null)?.className ?? '';
+}
+
+function looksLikeCardChrome(className: string): boolean {
+  return /rounded-/.test(className) && /\bborder\b/.test(className) && /\bp-6\b/.test(className);
 }
 
 describe('artifacts do not draw their own card', () => {
@@ -485,6 +491,49 @@ describe('artifacts do not draw their own card', () => {
 
     expect(rootClassName(container)).not.toMatch(/rounded-2xl|js-panel/);
     expect(container.querySelectorAll('.js-panel')).toHaveLength(0);
+  });
+
+  it('ClientMarketData renders bare with data', async () => {
+    vi.mocked(fetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/api/market')) {
+        return {
+          ok: true,
+          json: async () => ({
+            generated_at: '2026-08-06T06:00:00Z',
+            source_status: { overall: 'ok' },
+            values: {
+              brent_usd_per_bbl: 87,
+              jet_eu_proxy_usd_per_l: 0.74,
+              eu_ets_price_eur_per_t: 80,
+              germany_premium_pct: 2.5,
+              rotterdam_jet_fuel_usd_per_l: 0.72
+            }
+          })
+        } as Response;
+      }
+      return {
+        ok: true,
+        json: async () => ({ metrics: [] })
+      } as Response;
+    });
+
+    const { container } = render(<ClientMarketData />);
+
+    await waitFor(() => {
+      expect(container.textContent).toMatch(/Brent/);
+    });
+
+    expect(looksLikeCardChrome(rootClassName(container))).toBe(false);
+    expect(container.querySelector('h2')).toBeNull();
+  });
+
+  it('ClientBreakevenCalculator renders bare with data', () => {
+    const { container } = render(<ClientBreakevenCalculator />);
+
+    expect(looksLikeCardChrome(rootClassName(container))).toBe(false);
+    expect(container.querySelector('h2')).toBeNull();
+    expect(container.textContent).toMatch(/Interaktiv/);
   });
 
   it('TransitionLadder renders bare once it has data', () => {
