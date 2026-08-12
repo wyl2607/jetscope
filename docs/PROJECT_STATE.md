@@ -123,7 +123,8 @@ is locked in.
    components is what makes that class of bug impossible, which is why rule 3
    exists.
 
-   **The mechanism landed in #318**, proven on `faq`. What the remaining ten
+   **#318 proved the mechanism on `faq`, then #321 reverted the middleware.**
+   FAQ copy is re-landed without rewrite (see below). What the remaining ten
    routes cost was then measured rather than estimated — strip every string
    literal and comment from each page, diff the code skeleton against its `de`
    and `en` siblings, and count the lines that differ:
