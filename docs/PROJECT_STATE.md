@@ -105,7 +105,7 @@ is locked in.
    | collapse the three directories into `/[locale]` | mechanical, touches every page |
    | **7 routes exist in some locales and not others** | rule 2 — a product call, not a refactor |
    | **~1,320 lines of copy are hardcoded in `.tsx`** | rule 3 — 846 in the zh pages, 474 in shared components |
-   | **there is no i18n mechanism to move that copy into** | `src/locales/*.json` exist, hold 6 keys each, and *nothing imports them* |
+   | **i18n mechanism** | `lib/i18n.ts` now loads the locale files; FAQ is the first consumer. Other routes still hardcode copy. |
 
    The asymmetry, precisely: `analysis` and its two articles, `crisis/eu-jet-reserves`,
    `crisis/saf-tipping-point`, `grid` and `heat` exist only in zh;
@@ -123,7 +123,8 @@ is locked in.
    components is what makes that class of bug impossible, which is why rule 3
    exists.
 
-   **The mechanism landed in #318**, proven on `faq`. What the remaining ten
+   **#318 proved the mechanism on `faq`, then #321 reverted the middleware.**
+   FAQ copy is re-landed without rewrite (see below). What the remaining ten
    routes cost was then measured rather than estimated — strip every string
    literal and comment from each page, diff the code skeleton against its `de`
    and `en` siblings, and count the lines that differ:
@@ -166,6 +167,12 @@ is locked in.
    readers can see Chinese scenario names today.** One rule reproduces two of the
    three current behaviours and corrects the third: substitute when the name's
    script does not match the reader's locale.
+
+   **FAQ copy, safe reland (after #321).** User-facing FAQ strings now live under
+   `faq` in `apps/web/src/locales/{zh,de,en}.json` and are loaded by
+   `apps/web/lib/i18n.ts`. `/faq`, `/de/faq` and `/en/faq` remain real page files
+   that render one shared `FaqPage` with an explicit `locale`. Middleware and
+   `/[locale]` rewrites stay forbidden. Remaining routes are unchanged.
 
 ### Known debts, none urgent
 

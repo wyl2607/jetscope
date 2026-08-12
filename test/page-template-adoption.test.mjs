@@ -106,9 +106,21 @@ async function read(path) {
   return readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 }
 
+/**
+ * Thin locale wrappers render `<FaqPage locale="…" />`. The template contract
+ * lives in that shared view, not in the three route files.
+ */
+async function implementationOf(path) {
+  const source = await read(path);
+  if (/\/faq\/page\.tsx$/.test(path) && source.includes('<FaqPage')) {
+    return read('apps/web/components/faq-page.tsx');
+  }
+  return source;
+}
+
 test('converted pages use the template rather than Shell directly', async () => {
   for (const path of CONVERTED_PAGES) {
-    const source = await read(path);
+    const source = await implementationOf(path);
     assert.match(source, /<PageTemplate/, `${path} must render PageTemplate`);
     assert.doesNotMatch(source, /<Shell\b/, `${path} must not reach past the template to Shell`);
   }
@@ -116,7 +128,25 @@ test('converted pages use the template rather than Shell directly', async () => 
 
 test('every converted page states the decision question it answers', async () => {
   for (const path of CONVERTED_PAGES) {
-    const source = await read(path);
+    const source = await implementationOf(path);
+
+    if (/\/faq\/page\.tsx$/.test(path)) {
+      assert.match(
+        source,
+        /question=\{copy\.question\}/,
+        `${path} must pass a question to PageTemplate`
+      );
+      for (const locale of ['zh', 'de', 'en']) {
+        const dictionary = JSON.parse(await read(`apps/web/src/locales/${locale}.json`));
+        const question = dictionary.faq?.question;
+        assert.ok(
+          typeof question === 'string' && question.trim().length > 10,
+          `${locale}.json faq.question must be a real sentence, got: ${question}`
+        );
+      }
+      continue;
+    }
+
     const match = source.match(/question="([^"]+)"/);
     assert.ok(match, `${path} must pass a question to PageTemplate`);
     assert.ok(
@@ -128,7 +158,7 @@ test('every converted page states the decision question it answers', async () =>
 
 test('every converted page ends with its sources', async () => {
   for (const path of CONVERTED_PAGES) {
-    const source = await read(path);
+    const source = await implementationOf(path);
     assert.match(source, /<SourceFooter/, `${path} must close with SourceFooter (contract section 2 rule 4)`);
     assert.match(source, /limitations=\{/, `${path} must state its limitations, not imply completeness`);
   }
@@ -140,7 +170,7 @@ test('static FAQ pages never invent a data timestamp', async () => {
     'apps/web/app/de/faq/page.tsx',
     'apps/web/app/en/faq/page.tsx'
   ]) {
-    const source = await read(path);
+    const source = await implementationOf(path);
     assert.match(source, /asOf=\{null\}/, `${path} must explicitly state that it has no data timestamp`);
     assert.doesNotMatch(source, /new Date\(/, `${path} must not turn render or build time into an as-of stamp`);
   }
