@@ -60,6 +60,14 @@ describe('TippingPointReportPage', () => {
     expect(screen.queryByTestId('page-as-of')).toBeNull();
   });
 
+  it('renders missing probability and confidence as unavailable, not zero', async () => {
+    const copy = messagesFor('en').tipping_point_report;
+    await renderReport('en');
+
+    expect(screen.getAllByText(copy.number_unavailable).length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByText(/^0(?:[.,]0)?%$/)).toBeNull();
+  });
+
   it('does not introduce middleware or a [locale] rewrite', () => {
     const view = readFileSync('components/tipping-point-report-page.tsx', 'utf8');
     const zhPage = readFileSync('app/reports/tipping-point-analysis/page.tsx', 'utf8');
@@ -75,6 +83,8 @@ describe('TippingPointReportPage', () => {
     expect(zhPage).toMatch(/locale="zh"/);
     expect(dePage).toMatch(/locale="de"/);
     expect(enPage).toMatch(/locale="en"/);
+    expect(view).not.toMatch(/report page fossil-jet assumed constant|effective fossil jet =/);
+    expect(view).toMatch(/asOf: fossilJetIsAssumed \? null : fossilJetAsOf/);
   });
 
   it('does not bleed copy across locale files', () => {

@@ -101,7 +101,8 @@ function tippingSignalTone(signal?: string): string {
   return 'text-warning';
 }
 
-function probabilityTone(probability: number): string { // figure-contract-lint-ignore: internal tone helper parameter, not a prop
+function probabilityTone(probability: number | null): string { // figure-contract-lint-ignore: internal tone helper parameter, not a prop
+  if (probability == null) return 'text-warning';
   if (probability >= 67) return 'text-success';
   if (probability >= 34) return 'text-warning';
   return 'text-danger';
@@ -159,7 +160,8 @@ function researchPosture(
 function fossilJetFigure(
   value: number, // figure-contract-lint-ignore: constructor input, not a display prop
   asOf: string | null,
-  source: FossilJetSource
+  source: FossilJetSource,
+  assumedMethod: string
 ): Figure {
   if (source === 'assumed' || !asOf) {
     return assumed({
@@ -167,7 +169,7 @@ function fossilJetFigure(
       unit: 'USD/L',
       sourceId: REPORT_CHART_SOURCE_ID,
       precision: 2,
-      method: 'report page fossil-jet assumed constant 0.657 USD/L or missing timestamp'
+      method: assumedMethod
     });
   }
   return observed({
@@ -181,16 +183,26 @@ function fossilJetFigure(
 
 function effectiveFossilJetFigure(
   value: number, // figure-contract-lint-ignore: constructor input, not a display prop
-  asOf: string | null
+  asOf: string | null,
+  method: string,
+  isAssumed: boolean
 ): Figure {
+  if (isAssumed) {
+    return assumed({
+      value,
+      unit: 'USD/L',
+      sourceId: REPORT_CHART_SOURCE_ID,
+      precision: 2,
+      method
+    });
+  }
   return derived({
     value,
     unit: 'USD/L',
     sourceId: REPORT_CHART_SOURCE_ID,
     asOf,
     precision: 2,
-    method:
-      'effective fossil jet = spot fossil jet + carbon price pressure at selected blend rate, minus subsidy (tipping-point model)'
+    method
   });
 }
 
@@ -288,13 +300,23 @@ export async function TippingPointReportPage({ locale }: { locale: Locale }) {
   const signal = features.assumedFossilFallback ? zhFossil?.tipping?.signal : evidenceFossil?.tipping?.signal;
   const decision = readModel.airlineDecision;
   const latestEvent = events[0] ?? null;
-  const switchProbability = Math.round(
-    Math.max(decision?.probabilities?.buy_spot_saf ?? 0, decision?.probabilities?.sign_long_term_offtake ?? 0) * 100
-  );
+  const decisionProbabilities = decision
+    ? [decision.probabilities.buy_spot_saf, decision.probabilities.sign_long_term_offtake].filter(
+        (value): value is number => typeof value === 'number' && Number.isFinite(value)
+      )
+    : [];
+  const switchProbability = decisionProbabilities.length > 0
+    ? Math.round(Math.max(...decisionProbabilities) * 100)
+    : null;
   const sourceStatus = readModel.market.source_status;
-  const sourceConfidence = formatPercent((sourceStatus.confidence ?? 0) * 100, copy.number_unavailable);
+  const sourceConfidence = formatPercent(
+    readModel.isFallback || sourceStatus.confidence == null ? null : sourceStatus.confidence * 100,
+    copy.number_unavailable
+  );
   const researchStatus = researchPosture(research.status, research.signals.length, copy);
   const asOf = readModel.isFallback ? null : readModel.market.generated_at;
+  const fossilJetAsOf = zhFossil?.tipping?.generatedAt ?? evidenceFossil?.tipping?.generated_at ?? asOf;
+  const fossilJetIsAssumed = readModel.isFallback || fossilJetSource === 'assumed' || fossilJetAsOf == null;
   const researchBrief = features.researchBrief ? buildResearchDecisionBrief(research) : null;
   const fossilPrice = evidenceFossil?.fossilPrice;
   const eventsHint = features.sourceConfidence
@@ -320,7 +342,7 @@ export async function TippingPointReportPage({ locale }: { locale: Locale }) {
         />
         <MetricCard
           label={copy.probability_label}
-          value={`${switchProbability}%`}
+          value={switchProbability == null ? copy.number_unavailable : `${switchProbability}%`}
           valueClassName={probabilityTone(switchProbability)}
           hint={copy.probability_hint}
         />
@@ -372,17 +394,20 @@ export async function TippingPointReportPage({ locale }: { locale: Locale }) {
         <Panel
           locale={locale}
           title={copy.chart_title}
-          why={fossilJetSource === 'assumed' ? copy.chart_why_assumed : copy.chart_why}
+          why={fossilJetIsAssumed ? copy.chart_why_assumed : copy.chart_why}
         >
           <FuelVsSafPriceChart
             fossilJetUsdPerL={fossilJetFigure(
               zhFossil.fossilJetUsdPerL,
-              zhFossil.tipping?.generatedAt ?? asOf,
-              fossilJetSource
+              fossilJetIsAssumed ? null : fossilJetAsOf,
+              fossilJetIsAssumed ? 'assumed' : fossilJetSource,
+              copy.figure_methods.fossil_assumed
             )}
             effectiveFossilJetUsdPerL={effectiveFossilJetFigure(
               zhFossil.effectiveFossilJetUsdPerL,
-              zhFossil.tipping?.generatedAt ?? asOf
+              fossilJetIsAssumed ? null : fossilJetAsOf,
+              copy.figure_methods.effective_fossil,
+              fossilJetIsAssumed
             )}
             pathways={zhFossil.tipping?.pathways ?? []}
           />
@@ -481,9 +506,9 @@ export async function TippingPointReportPage({ locale }: { locale: Locale }) {
           },
           {
             id: 'report-fossil-anchor',
-            label: fossilJetSource === 'assumed' ? copy.source_fossil_assumed : copy.source_fossil_live,
-            asOf,
-            basis: readModel.isFallback ? 'assumption' : fossilJetSource === 'spot' ? 'observed' : fossilJetSource === 'assumed' ? 'assumption' : 'derived'
+            label: fossilJetIsAssumed ? copy.source_fossil_assumed : copy.source_fossil_live,
+            asOf: fossilJetIsAssumed ? null : fossilJetAsOf,
+            basis: fossilJetIsAssumed ? 'assumption' : fossilJetSource === 'spot' ? 'observed' : 'derived'
           },
           {
             id: 'tipping-events',

@@ -168,6 +168,10 @@
       }
     },
     "number_unavailable": "n/a",
+    "figure_methods": {
+      "fossil_assumed": "报告页使用内置化石航油常量 0.657 USD/L，或当前缺少可引用时间戳",
+      "effective_fossil": "有效化石航油成本 = 现货航油 + 所选掺混比例下的碳价压力 - 补贴（临界点模型）"
+    },
     "source_dashboard": "驾驶舱读模型与市场状态",
     "source_reserve": "欧盟航煤储备覆盖（{source}）",
     "source_unavailable": "来源暂不可用",

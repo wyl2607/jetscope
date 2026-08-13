@@ -168,6 +168,10 @@
       }
     },
     "number_unavailable": "n/a",
+    "figure_methods": {
+      "fossil_assumed": "Die Berichtsseite verwendet die angenommene Konstante 0,657 USD/L für fossiles Kerosin oder es fehlt ein zitierbarer Zeitstempel",
+      "effective_fossil": "Effektive fossile Kerosinkosten = Spotpreis + CO₂-Kostendruck beim gewählten Beimischungsanteil - Förderung (Kipppunktmodell)"
+    },
     "source_dashboard": "Dashboard-Read-Model und Marktstatus",
     "source_reserve": "EU-Reserveabdeckung über {source}",
     "source_unavailable": "nicht verfügbare Quelle",

@@ -168,6 +168,10 @@
       }
     },
     "number_unavailable": "n/a",
+    "figure_methods": {
+      "fossil_assumed": "Report-page assumed fossil-jet constant of 0.657 USD/L, or no citable timestamp is available",
+      "effective_fossil": "Effective fossil jet = spot fossil jet + carbon-price pressure at the selected blend rate - subsidy (tipping-point model)"
+    },
     "source_dashboard": "Dashboard read model and market status",
     "source_reserve": "EU reserve coverage via {source}",
     "source_unavailable": "unavailable source",
