@@ -516,12 +516,14 @@ function DashboardStatusBanners({
           label={fill(copy.status_event_label, { asOf: event.as_of ?? copy.na })}
           title={`${event.entity?.name ?? 'Lufthansa'} — ${event.source?.title ?? event.id}`}
         >
-          Q2 adj. profit €{String(facts.q2_adjusted_operating_profit_eur_m ?? '—')}m (
-          {String(facts.q2_adjusted_operating_profit_yoy_change_pct ?? '—')}%) · extra kerosene €
-          {String(facts.q2_extra_kerosene_cost_iran_war_eur_m ?? '—')}m · strikes ~€
-          {String(facts.q2_strike_cost_eur_m_approx ?? '—')}m · pass-through ~
-          {String(facts.kerosene_cost_pass_through_pct_approx ?? '—')}% · FY fuel €
-          {String(facts.fy_fuel_cost_expected_eur_bn ?? '—')}bn
+          {fill(copy.status_event_summary, {
+            profit: String(facts.q2_adjusted_operating_profit_eur_m ?? copy.na),
+            profitYoy: String(facts.q2_adjusted_operating_profit_yoy_change_pct ?? copy.na),
+            kerosene: String(facts.q2_extra_kerosene_cost_iran_war_eur_m ?? copy.na),
+            strikes: String(facts.q2_strike_cost_eur_m_approx ?? copy.na),
+            passThrough: String(facts.kerosene_cost_pass_through_pct_approx ?? copy.na),
+            fuel: String(facts.fy_fuel_cost_expected_eur_bn ?? copy.na)
+          })}
           {decision?.residual_fuel_cost_exposure != null ? (
             <span className="js-status-inline-emphasis">
               {fill(copy.status_residual, {

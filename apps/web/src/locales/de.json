@@ -143,6 +143,7 @@
     "status_lh_action": "LH Q2 2026 →",
     "status_alert_action": "Details ansehen →",
     "status_event_label": "Luftfahrtereignis · nur kuratierte Daten · as_of {asOf}",
+    "status_event_summary": "Bereinigtes operatives Ergebnis Q2 €{profit}m ({profitYoy}%) · zusätzliche Kerosinkosten €{kerosene}m · Streikkosten ca. €{strikes}m · Kostenweitergabe ca. {passThrough}% · erwartete Treibstoffkosten Gesamtjahr €{fuel} Mrd.",
     "status_residual": "Residual exposure {exposure} · pass-through {passThrough}",
     "footer_read_model_live": "Markt-Snapshot-API (Marktwerte, Quellenstatus und Aktualität)",
     "footer_read_model_fallback": "Markt-Snapshot-API nicht erreichbar; es werden interne Ersatzwerte verwendet",

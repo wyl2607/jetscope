@@ -181,6 +181,43 @@ describe('DashboardPage', () => {
     expect(getPriceTrendChartReadModel).toHaveBeenCalled();
   });
 
+  it('renders the aviation-event summary from the zh locale dictionary', async () => {
+    const copy = messagesFor('zh').dashboard;
+    const values = {
+      profit: '100',
+      profitYoy: '5',
+      kerosene: '20',
+      strikes: '10',
+      passThrough: '40',
+      fuel: '8'
+    };
+    getDashboardReadModel.mockResolvedValue({
+      ...mockReadModel(),
+      aviationEvent: {
+        id: 'lh-q2',
+        as_of: '2026-08-01',
+        entity: { name: 'Lufthansa' },
+        source: { title: 'Q2 2026' },
+        verified_facts: {
+          q2_adjusted_operating_profit_eur_m: 100,
+          q2_adjusted_operating_profit_yoy_change_pct: 5,
+          q2_extra_kerosene_cost_iran_war_eur_m: 20,
+          q2_strike_cost_eur_m_approx: 10,
+          kerosene_cost_pass_through_pct_approx: 40,
+          fy_fuel_cost_expected_eur_bn: 8
+        }
+      }
+    });
+
+    render(await DashboardPage({ locale: 'zh' }));
+    const expected = copy.status_event_summary.replace(
+      /\{([a-zA-Z0-9_]+)\}/g,
+      (_, key: keyof typeof values) => values[key]
+    );
+    expect(screen.getByText(expected)).toBeInTheDocument();
+    expect(screen.queryByText(/Q2 adj\. profit/)).toBeNull();
+  });
+
   it('does not show zh-only panels on de', async () => {
     render(await DashboardPage({ locale: 'de' }));
 

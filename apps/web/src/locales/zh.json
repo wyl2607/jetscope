@@ -139,6 +139,7 @@
     "status_lh_action": "LH Q2 2026 →",
     "status_alert_action": "查看详情 →",
     "status_event_label": "航空事件 · 仅策展数据 · as_of {asOf}",
+    "status_event_summary": "二季度调整后营业利润 €{profit}m（同比 {profitYoy}%）· 伊朗战争额外煤油成本 €{kerosene}m · 罢工成本约 €{strikes}m · 成本传导约 {passThrough}% · 全年燃油成本预计 €{fuel}bn",
     "status_residual": "Residual exposure {exposure} · pass-through {passThrough}",
     "footer_read_model_live": "市场快照接口（市场读数、来源状态、新鲜度）",
     "footer_read_model_fallback": "市场快照接口无响应，当前为内置兜底值（{error}）",

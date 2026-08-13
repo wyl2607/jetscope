@@ -139,6 +139,7 @@
     "status_lh_action": "LH Q2 2026 →",
     "status_alert_action": "View details →",
     "status_event_label": "Aviation event · curated data only · as_of {asOf}",
+    "status_event_summary": "Q2 adjusted operating profit €{profit}m ({profitYoy}%) · extra kerosene cost €{kerosene}m · strike cost about €{strikes}m · pass-through about {passThrough}% · expected FY fuel cost €{fuel}bn",
     "status_residual": "Residual exposure {exposure} · pass-through {passThrough}",
     "footer_read_model_live": "Market snapshot API (market values, source status, and freshness)",
     "footer_read_model_fallback": "Market snapshot API unavailable; internal fallback values are in use ({error})",
