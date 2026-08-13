@@ -951,10 +951,66 @@ test('German sources page exposes source review without Chinese UI copy', async 
 });
 
 test('German dashboard keeps source drill-through in the German locale', async () => {
+  const page = await readFile(new URL('../apps/web/components/dashboard-page.tsx', import.meta.url), 'utf8');
   const germanDashboardSource = await readFile(new URL('../apps/web/app/de/dashboard/page.tsx', import.meta.url), 'utf8');
 
-  assert.match(germanDashboardSource, /de\/sources\?focus=/);
-  assert.doesNotMatch(germanDashboardSource, /`\/sources\?focus=/);
+  assert.match(page, /hrefFor\(locale, 'sources'\)\}\?focus=/);
+  assert.match(page, /hrefFor\(locale, 'sources'\)/);
+  assert.match(germanDashboardSource, /locale="de"/);
+  assert.doesNotMatch(page, /`\/sources\?focus=/);
+});
+
+test('localized dashboard pages share one view without middleware', async () => {
+  const page = await readFile(new URL('../apps/web/components/dashboard-page.tsx', import.meta.url), 'utf8');
+  const zhPage = await readFile(new URL('../apps/web/app/dashboard/page.tsx', import.meta.url), 'utf8');
+  const enPage = await readFile(new URL('../apps/web/app/en/dashboard/page.tsx', import.meta.url), 'utf8');
+  const dePage = await readFile(new URL('../apps/web/app/de/dashboard/page.tsx', import.meta.url), 'utf8');
+  const dictionary = async (locale) =>
+    JSON.parse(
+      await readFile(new URL(`../apps/web/src/locales/${locale}.json`, import.meta.url), 'utf8')
+    ).dashboard;
+
+  const zh = await dictionary('zh');
+  const en = await dictionary('en');
+  const de = await dictionary('de');
+
+  assert.equal(zh.show_provenance, true);
+  assert.equal(zh.show_price_trends, true);
+  assert.equal(zh.show_pathways, true);
+  assert.equal(zh.show_ets, true);
+  assert.equal(zh.show_policy_timeline, true);
+  assert.equal(zh.show_status_banners, true);
+  assert.equal(zh.show_sources_matrix, false);
+
+  assert.equal(de.show_provenance, false);
+  assert.equal(de.show_price_trends, false);
+  assert.equal(de.show_pathways, false);
+  assert.equal(de.show_ets, false);
+  assert.equal(de.show_policy_timeline, true);
+  assert.equal(de.show_status_banners, false);
+  assert.equal(de.show_sources_matrix, false);
+
+  assert.equal(en.show_provenance, false);
+  assert.equal(en.show_price_trends, false);
+  assert.equal(en.show_pathways, false);
+  assert.equal(en.show_ets, false);
+  assert.equal(en.show_policy_timeline, false);
+  assert.equal(en.show_status_banners, false);
+  assert.equal(en.show_sources_matrix, true);
+
+  assert.match(zh.title, /决策驾驶舱/);
+  assert.match(de.title, /Entscheidungscockpit/);
+  assert.match(en.title, /Decision Cockpit/);
+
+  assert.match(zhPage, /locale="zh"/);
+  assert.match(enPage, /locale="en"/);
+  assert.match(dePage, /locale="de"/);
+
+  for (const source of [page, zhPage, enPage, dePage]) {
+    assert.doesNotMatch(source, /middleware/i);
+    assert.doesNotMatch(source, /app\/\[locale\]/);
+    assert.doesNotMatch(source, /text-white|text-slate-300|bg-slate-900|bg-slate-950|border-slate-800/);
+  }
 });
 
 test('German scenarios page reviews saved assumptions without Chinese editor UI', async () => {
@@ -1061,7 +1117,7 @@ test('German research page exposes research pipeline boundaries without Chinese 
 });
 
 test('dashboard and admin avoid leaking raw implementation labels into UI copy', async () => {
-  const dashboardSource = await readFile(new URL('../apps/web/app/dashboard/page.tsx', import.meta.url), 'utf8');
+  const dashboardSource = await readFile(new URL('../apps/web/components/dashboard-page.tsx', import.meta.url), 'utf8');
   const adminSource = await readFile(new URL('../apps/web/app/admin/page.tsx', import.meta.url), 'utf8');
 
   assert.match(dashboardSource, /sourceStatusLabel/);

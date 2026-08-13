@@ -27,7 +27,9 @@ export type Locale = (typeof LOCALES)[number];
 type WidenStrings<T> = T extends string
   ? string
   : T extends readonly (infer U)[]
-    ? WidenStrings<U>[]
+    ? [U] extends [never]
+      ? string[]
+      : WidenStrings<U>[]
     : T extends object
       ? { [K in keyof T]: WidenStrings<T[K]> }
       : T;
@@ -36,6 +38,7 @@ type WidenStrings<T> = T extends string
 export type Messages = WidenStrings<typeof zh>;
 
 export type FaqMessages = Messages['faq'];
+export type DashboardMessages = Messages['dashboard'];
 
 const catalog: Record<Locale, Messages> = { zh, de, en };
 
