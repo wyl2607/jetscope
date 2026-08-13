@@ -104,6 +104,10 @@
     "title": "Szenario-Workbench",
     "question": "Repräsentieren die gespeicherten Annahmen noch den aktuellen Markt?",
     "signal_row_label": "Szenarioentscheidung",
+    "policy_target_methods": {
+      "saf": "Verbindliches RefuelEU-SAF-Beimischungsziel (gesetzliche Vorgabe, keine Szenarioannahme)",
+      "synthetic": "Verbindliches RefuelEU-Beimischungsziel für synthetischen Flugkraftstoff (gesetzliche Vorgabe, keine Szenarioannahme)"
+    },
     "transition_signal": {
       "label": "Übergangssignal",
       "hint": "Aktuelle Kipppunkt-Einschätzung der SAF-Kosten gegenüber fossilem Kerosin.",

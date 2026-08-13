@@ -105,10 +105,13 @@ function formatNumber(
  * RefuelEU blend targets are statutory mandates, not scenario assumptions.
  * API has no source timestamp → derived + method; never assumed().
  */
-function toPolicyTargetFigures(row: PolicyTargetWire): PolicyTarget {
+function toPolicyTargetFigures(
+  row: PolicyTargetWire,
+  methods: ScenariosMessages['policy_target_methods']
+): PolicyTarget {
   const shareFigure = (
     value: number, // figure-contract-lint-ignore: wire payload, converted to Figure before render
-    which: string
+    method: string
   ): Figure =>
     derived({
       value,
@@ -116,12 +119,12 @@ function toPolicyTargetFigures(row: PolicyTargetWire): PolicyTarget {
       sourceId: POLICY_TARGETS_SOURCE_ID,
       asOf: null,
       precision: 1,
-      method: `RefuelEU mandatory ${which} blending target (statutory mandate, not a scenario assumption)`
+      method
     });
   return {
     year: row.year,
-    saf_share_pct: shareFigure(row.saf_share_pct, 'SAF'),
-    synthetic_share_pct: shareFigure(row.synthetic_share_pct, 'synthetic aviation fuel'),
+    saf_share_pct: shareFigure(row.saf_share_pct, methods.saf),
+    synthetic_share_pct: shareFigure(row.synthetic_share_pct, methods.synthetic),
     label: row.label
   };
 }
@@ -176,12 +179,14 @@ function defaultAirlineDecisionResponse(): AirlineDecisionResponse {
   };
 }
 
-async function getPolicyTargets(): Promise<PolicyTarget[]> {
+async function getPolicyTargets(
+  methods: ScenariosMessages['policy_target_methods']
+): Promise<PolicyTarget[]> {
   try {
     const response = await fetch(buildApiUrl('/policies/refuel-eu'), { cache: 'no-store' });
     if (!response.ok) return [];
     const rows = (await response.json()) as PolicyTargetWire[];
-    return rows.map(toPolicyTargetFigures);
+    return rows.map((row) => toPolicyTargetFigures(row, methods));
   } catch {
     return [];
   }
@@ -511,7 +516,9 @@ export async function ScenariosPage({ locale }: { locale: Locale }) {
   const isWorkspace = surface.show_scenario_registry || surface.show_transition_readiness;
   const [readModel, policyTargets] = await Promise.all([
     getDashboardReadModel(locale),
-    surface.show_transition_readiness ? getPolicyTargets() : Promise.resolve([] as PolicyTarget[])
+    surface.show_transition_readiness
+      ? getPolicyTargets(copy.policy_target_methods)
+      : Promise.resolve([] as PolicyTarget[])
   ]);
   const usingDefaultTippingPoint = readModel.tippingPoint == null;
   const usingDefaultDecision = readModel.airlineDecision == null;

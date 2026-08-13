@@ -244,6 +244,15 @@ describe('ScenariosPage', () => {
     expect(enPage).toMatch(/locale="en"/);
   });
 
+  it('loads policy-target methods from locale data instead of hardcoding them in TSX', () => {
+    const shared = readFileSync(join(here, '..', 'scenarios-page.tsx'), 'utf8');
+
+    expect(shared).not.toMatch(/RefuelEU mandatory/);
+    expect(messagesFor('zh').scenarios.policy_target_methods.saf).toMatch(/法定/);
+    expect(messagesFor('de').scenarios.policy_target_methods.saf).toMatch(/gesetzliche Vorgabe/);
+    expect(messagesFor('en').scenarios.policy_target_methods.saf).toMatch(/statutory mandate/);
+  });
+
   it('does not bleed review copy across locale files', () => {
     const zh = JSON.stringify(messagesFor('zh').scenarios);
     const de = JSON.stringify(messagesFor('de').scenarios);

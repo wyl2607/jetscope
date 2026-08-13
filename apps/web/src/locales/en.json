@@ -104,6 +104,10 @@
     "title": "Scenario Workbench",
     "question": "Do the saved assumptions still represent the current market?",
     "signal_row_label": "Scenario decision signals",
+    "policy_target_methods": {
+      "saf": "RefuelEU mandatory SAF blending target (statutory mandate, not a scenario assumption)",
+      "synthetic": "RefuelEU mandatory synthetic aviation fuel blending target (statutory mandate, not a scenario assumption)"
+    },
     "transition_signal": {
       "label": "Transition signal",
       "hint": "The current tipping-point model’s view of SAF cost versus fossil jet.",

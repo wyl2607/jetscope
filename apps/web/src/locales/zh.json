@@ -104,6 +104,10 @@
     "title": "情景管理与转型监测",
     "question": "这些保存下来的假设，还能不能代表当前市场？",
     "signal_row_label": "情景结论信号",
+    "policy_target_methods": {
+      "saf": "RefuelEU 法定 SAF 掺混目标（法定要求，不是情景假设）",
+      "synthetic": "RefuelEU 法定合成航空燃料掺混目标（法定要求，不是情景假设）"
+    },
     "transition_signal": {
       "label": "转型信号",
       "hint": "当前临界点模型对 SAF 成本相对化石航油的判断。",
