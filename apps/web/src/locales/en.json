@@ -96,5 +96,120 @@
       "These answers describe the current deployment design intent and do not change with live data; use the Admin page for the environment’s actual readiness.",
       "The FAQ does not replace the current states and limitations on the Sources, Research, or Scenarios pages."
     ]
+  },
+  "research": {
+    "meta_title": "Research Workbench",
+    "meta_description": "English JetScope research workbench for AI research pipeline status, signal counts, confidence, and evidence handoffs.",
+    "eyebrow": "AI research pipeline",
+    "title": "Research Workbench",
+    "question": "Are today’s research signals strong enough to explain why the market is moving?",
+    "signal_row_label": "Research conclusion signals",
+    "decision_brief_mode": "counts",
+    "summary_mode": "en_if_clean",
+    "cjk_title_template": "{signal_type} signal {n}",
+    "panel_order": ["status", "decision", "actions", "signals"],
+    "pipeline_error_unknown": "unknown cause",
+    "metrics": {
+      "pipeline_status": "Pipeline status",
+      "signal_count": "Signal count",
+      "signal_count_hint": "Positive {positive} | Negative {negative} | Neutral {neutral}",
+      "latest_signal": "Latest signal",
+      "latest_none": "No signal",
+      "latest_none_hint": "No persisted research signal is available for the current review window.",
+      "usage_boundary": "Usage boundary",
+      "boundary_enabled": "Evidence layer",
+      "boundary_disabled": "Boundary only",
+      "boundary_hint": "Research explains possible causes; it never replaces market, reserve, scenario, or source review."
+    },
+    "pipeline": {
+      "disabled": {
+        "label": "Disabled",
+        "detail": "The research pipeline is disabled. This page does not claim that live AI analysis is running."
+      },
+      "waiting": {
+        "label": "Waiting for signals",
+        "detail": "The research API is enabled, but no persisted signal is available yet. The daily research job still needs to produce reviewable evidence."
+      },
+      "not_found": {
+        "label": "Not deployed",
+        "detail": "The research service is not deployed or cannot be found in this environment. An empty result is not a market finding."
+      },
+      "error": {
+        "label": "Error",
+        "detail": "Research API error: {message}. Do not cite research findings until it recovers."
+      },
+      "ready": {
+        "label": "Running",
+        "detail": "The research API is enabled; this page displays persisted signals from the current review window."
+      }
+    },
+    "panels": {
+      "status": {
+        "title": "Research pipeline status",
+        "why": "Keep configuration boundaries, waiting, missing deployment, and failures distinct before citing a signal."
+      },
+      "decision": {
+        "title": "Decision brief",
+        "why": "Research is explanatory evidence, not an autonomous recommendation for market or procurement decisions."
+      },
+      "signals": {
+        "title": "Signal list",
+        "why": "The individual signals keep direction, source context, and confidence visible instead of hiding them in an aggregate."
+      },
+      "actions": {
+        "title": "Evidence actions",
+        "why": "Every research signal must reconnect to the decision chain and a reviewable source."
+      }
+    },
+    "impacts": {
+      "positive": "Positive",
+      "negative": "Negative",
+      "neutral": "Neutral",
+      "unknown": "Unknown"
+    },
+    "counts": {
+      "active": "Active",
+      "positive": "Positive",
+      "negative": "Negative",
+      "neutral": "Neutral"
+    },
+    "confidence": "Confidence",
+    "summary_placeholder": "No reviewed summary is available for this signal yet.",
+    "summary_en_cjk": "English summary is not available for this signal yet.",
+    "summary_en_missing": "No English summary is available for this signal yet.",
+    "actions": [
+      {
+        "id": "tipping_point",
+        "nav_id": "reports",
+        "suffix": "/tipping-point-analysis",
+        "label": "Open tipping-point report",
+        "description": "Put research signals back into the reserve, fuel-price, and SAF switching context."
+      },
+      {
+        "id": "sources",
+        "nav_id": "sources",
+        "suffix": "?filter=review",
+        "label": "Review source evidence",
+        "description": "Check market provenance, proxy assumptions, fallback rows, and volatility before citing research signals."
+      },
+      {
+        "id": "admin",
+        "nav_id": "admin",
+        "suffix": "",
+        "label": "Open admin prerequisites",
+        "description": "Use the primary operations console to verify research configuration and protected refresh readiness."
+      }
+    ],
+    "footer": {
+      "source_signals_ok": "Research signal read model (direction, confidence, and publication time)",
+      "source_signals_error": "Research signal API is currently unavailable",
+      "source_pipeline": "Research pipeline enablement and deployment status",
+      "method_label": "Sources and methods",
+      "limitations": [
+        "Research explains possible causes; it does not replace market, reserve, scenario, or source review.",
+        "Disabled, waiting, not deployed, or error states have no valid data-as-of. The timestamp comes only from the latest signal.",
+        "An empty result is not evidence that the market has not moved."
+      ]
+    }
   }
 }

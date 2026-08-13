@@ -96,5 +96,120 @@
       "Diese Antworten beschreiben die beabsichtigte Funktion des aktuellen Deployments und ändern sich nicht mit Echtzeitdaten; die konkrete Bereitschaft steht auf der Admin-Seite.",
       "Die FAQ ersetzt nicht die aktuellen Zustände und Grenzen auf den Quellen-, Forschungs- oder Szenarioseiten."
     ]
+  },
+  "research": {
+    "meta_title": "Forschungswerkstatt",
+    "meta_description": "Deutsche JetScope-Forschungswerkstatt für AI-Research-Pipeline-Status, Signalanzahl, Konfidenz und Evidenzübergaben.",
+    "eyebrow": "AI-Forschungspipeline",
+    "title": "Forschungswerkstatt",
+    "question": "Repräsentieren die heutigen Forschungssignale ausreichend, warum sich der Markt bewegt?",
+    "signal_row_label": "Forschungsergebnisse",
+    "decision_brief_mode": "counts",
+    "summary_mode": "placeholder",
+    "cjk_title_template": "Forschungssignal {n}",
+    "panel_order": ["status", "decision", "actions", "signals"],
+    "pipeline_error_unknown": "unbekannte Ursache",
+    "metrics": {
+      "pipeline_status": "Pipeline-Status",
+      "signal_count": "Signalanzahl",
+      "signal_count_hint": "Positiv {positive} | Negativ {negative} | Neutral {neutral}",
+      "latest_signal": "Neuestes Signal",
+      "latest_none": "Kein Signal",
+      "latest_none_hint": "Für den aktuellen Prüfzeitraum ist kein persistiertes Forschungssignal verfügbar.",
+      "usage_boundary": "Nutzungsgrenze",
+      "boundary_enabled": "Evidenzebene",
+      "boundary_disabled": "Nur Grenze",
+      "boundary_hint": "Forschung erklärt mögliche Ursachen; sie ersetzt nie Markt-, Reserve-, Szenario- oder Quellenprüfung."
+    },
+    "pipeline": {
+      "disabled": {
+        "label": "Deaktiviert",
+        "detail": "Die Forschungspipeline ist deaktiviert. Diese Seite behauptet keine laufende AI-Analyse."
+      },
+      "waiting": {
+        "label": "Wartet auf Signale",
+        "detail": "Die Forschungs-API ist aktiviert, aber es gibt noch kein persistiertes Signal. Der tägliche Forschungsjob muss erst Evidenz liefern."
+      },
+      "not_found": {
+        "label": "Nicht bereitgestellt",
+        "detail": "Der Forschungsdienst ist noch nicht bereitgestellt oder in dieser Umgebung nicht auffindbar. Ein leeres Ergebnis ist kein Marktbefund."
+      },
+      "error": {
+        "label": "Fehler",
+        "detail": "Forschungs-API-Fehler: {message}. Forschungsergebnisse erst nach Wiederherstellung nutzen."
+      },
+      "ready": {
+        "label": "Aktiv",
+        "detail": "Die Forschungs-API ist aktiviert; diese Seite zeigt persistierte Signale aus dem aktuellen Prüfzeitraum."
+      }
+    },
+    "panels": {
+      "status": {
+        "title": "Forschungsstatus",
+        "why": "Konfiguration, Warten, fehlende Bereitstellung und Fehler müssen sichtbar getrennt bleiben, bevor ein Signal zitiert wird."
+      },
+      "decision": {
+        "title": "Entscheidungsnotiz",
+        "why": "Forschung ist erklärende Evidenz, keine autonome Empfehlung für Markt- oder Beschaffungsentscheidungen."
+      },
+      "signals": {
+        "title": "Signalliste",
+        "why": "Die einzelnen Signale zeigen Richtung, Quelle und Konfidenz statt nur eine aggregierte Aussage."
+      },
+      "actions": {
+        "title": "Evidenzaktionen",
+        "why": "Jedes Forschungssignal muss zurück in die Entscheidungskette und zur prüfbaren Quelle führen."
+      }
+    },
+    "impacts": {
+      "positive": "Positiv",
+      "negative": "Negativ",
+      "neutral": "Neutral",
+      "unknown": "Unbekannt"
+    },
+    "counts": {
+      "active": "Aktiv",
+      "positive": "Positiv",
+      "negative": "Negativ",
+      "neutral": "Neutral"
+    },
+    "confidence": "Konfidenz",
+    "summary_placeholder": "Für dieses Signal liegt noch keine geprüfte deutsche Zusammenfassung vor. Vor Nutzung im Bericht Originalquelle, Marktkontext und Quellenstatus gegenprüfen.",
+    "summary_en_cjk": "Für dieses Signal liegt noch keine geprüfte englische Zusammenfassung vor.",
+    "summary_en_missing": "Für dieses Signal liegt keine englische Zusammenfassung vor.",
+    "actions": [
+      {
+        "id": "reports",
+        "nav_id": "reports",
+        "suffix": "",
+        "label": "Berichtswerkstatt öffnen",
+        "description": "Forschungssignale zurück in Quellenstatus, Szenarien, Risikosignale und Berichtseinstiege einordnen."
+      },
+      {
+        "id": "sources",
+        "nav_id": "sources",
+        "suffix": "?filter=review",
+        "label": "Quellennachweise prüfen",
+        "description": "Marktprovenienz, Proxy-Annahmen, Fallback-Zeilen und Volatilität prüfen, bevor Forschungssignale zitiert werden."
+      },
+      {
+        "id": "admin",
+        "nav_id": "admin",
+        "suffix": "",
+        "label": "Startbereitschaft prüfen",
+        "description": "Forschungskonfiguration, Admin-Token und geschützte Refresh-Bereitschaft vor operativer Nutzung bestätigen."
+      }
+    ],
+    "footer": {
+      "source_signals_ok": "Forschungs-Signal-Read-Model (Richtung, Konfidenz und Veröffentlichungszeit)",
+      "source_signals_error": "Forschungs-Signal-API aktuell nicht verfügbar",
+      "source_pipeline": "Aktivierung und Bereitstellungsstatus der Forschungspipeline",
+      "method_label": "Quellen- und Methodenliste",
+      "limitations": [
+        "Forschung erklärt mögliche Ursachen; sie ersetzt keine Markt-, Reserve-, Szenario- oder Quellenprüfung.",
+        "Deaktiviert, wartend, nicht bereitgestellt oder fehlerhaft bedeutet: kein gültiger Datenstand. Der Zeitstempel kommt nur vom neuesten Signal.",
+        "Ein leeres Ergebnis ist kein Beleg dafür, dass sich der Markt nicht bewegt hat."
+      ]
+    }
   }
 }

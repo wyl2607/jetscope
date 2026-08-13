@@ -37,6 +37,8 @@ export type Messages = WidenStrings<typeof zh>;
 
 export type FaqMessages = Messages['faq'];
 
+export type ResearchMessages = Messages['research'];
+
 const catalog: Record<Locale, Messages> = { zh, de, en };
 
 export function messagesFor(locale: Locale): Messages {

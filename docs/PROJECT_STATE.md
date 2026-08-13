@@ -174,6 +174,14 @@ is locked in.
    that render one shared `FaqPage` with an explicit `locale`. Middleware and
    `/[locale]` rewrites stay forbidden. Remaining routes are unchanged.
 
+   **Research copy, safe reland (after #321).** User-facing research strings now
+   live under `research` in `apps/web/src/locales/{zh,de,en}.json`. `/research`,
+   `/de/research` and `/en/research` remain real page files that render one
+   shared `ResearchPage` with an explicit `locale`. Locale-specific actions,
+   decision-brief mode, panel order, and signal-script substitution stay data.
+   Middleware and `/[locale]` rewrites stay forbidden. Remaining routes are
+   unchanged.
+
 ### Known debts, none urgent
 
 - `apps/web/lib/research-signals-read-model.ts` stamps a signal with the current
