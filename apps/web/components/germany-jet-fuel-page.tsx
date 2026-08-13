@@ -37,8 +37,8 @@ function fill(template: string, vars: Record<string, string>): string {
 
 function formatMetricValue(
   locale: Locale,
-  value: number | null,
-  digits: number,
+  value: number | null, // figure-contract-lint-ignore: internal formatter parameter, not a prop
+  digits: number, // figure-contract-lint-ignore: display-digit count, not a measurement
   unit: string,
   na: string
 ): string {
@@ -49,14 +49,14 @@ function formatMetricValue(
   })} ${unit}`;
 }
 
-function formatChange(value: number | null, na: string): string {
+function formatChange(value: number | null, na: string): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
   if (!Number.isFinite(value ?? NaN)) return na;
   const numeric = Number(value);
   const sign = numeric > 0 ? '+' : '';
   return `${sign}${numeric.toFixed(2)}%`;
 }
 
-function changeClass(value: number | null): string {
+function changeClass(value: number | null): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
   if (!Number.isFinite(value ?? NaN)) return 'text-warning';
   const magnitude = Math.abs(Number(value));
   if (magnitude >= 20) return 'text-danger';
@@ -65,7 +65,7 @@ function changeClass(value: number | null): string {
 }
 
 function decisionLabel(
-  change: number | null,
+  change: number | null, // figure-contract-lint-ignore: internal formatter parameter, not a prop
   isFallback: boolean,
   copy: ReturnType<typeof messagesFor>['prices']
 ): string {
@@ -76,7 +76,7 @@ function decisionLabel(
   return copy.decision_hold;
 }
 
-function decisionTone(change: number | null, isFallback: boolean): string {
+function decisionTone(change: number | null, isFallback: boolean): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
   if (isFallback || !Number.isFinite(change ?? NaN)) return 'text-danger';
   const magnitude = Math.abs(Number(change));
   if (magnitude >= 20) return 'text-danger';
