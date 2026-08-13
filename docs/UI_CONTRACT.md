@@ -307,7 +307,9 @@ after a 2,000-line unreviewable diff.
 | **P3** | `Figure` contract through the read-model layer; `figure-contract-lint` | `figure-contract-baseline.json` reaches zero |
 | **P4** | Web production container + nginx on the VPS | frontend reachable in public |
 
-Phases run **strictly in order**. P2 route slices may be developed independently
+Phases run **strictly in order**. Routing-contract corrections must land on
+`main` before any P2 route slice advances toward integration or merge. P2 route
+slices may be developed independently
 only when their feature files do not overlap, but shared locale catalogs, state
 docs, and source-scanning tests are integrated sequentially in one preview
 stack. The stacked result is revalidated before any slice advances to `main`.
