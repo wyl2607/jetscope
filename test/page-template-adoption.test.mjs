@@ -252,7 +252,7 @@ test('a page on fallback data never stamps it with a fresh timestamp', async () 
     );
     assert.match(
       source,
-      /basis:\s*(?:dashboardReadModel|readModel)\.isFallback\s*\?\s*'assumption'\s*:/,
+      /basis:\s*(?:dashboardReadModel|readModel)\.isFallback\s*\?\s*\(?\s*'assumption'(?:\s+as\s+const)?\s*\)?\s*:/,
       `${path} must label fallback data as an assumption, never as observed`
     );
   }
@@ -329,7 +329,8 @@ test('home-page event tone fallbacks remain semantic problem states', async () =
 
     // Mutation check: prove this guard fails for the historical regression,
     // rather than merely matching the current implementation by accident.
-    const regressed = source.replace(/(function eventTone\([^)]*\)[^{]*\{[\s\S]*?)return 'text-warning';\n\}/, "$1return 'text-muted';\n}");
+    const regressed = source.replace(/(function eventTone\([^)]*\)[^{]*\{[\s\S]*?)return 'text-warning';\r?\n\}/, "$1return 'text-muted';\n}");
+    assert.notEqual(regressed, source, `${path} mutation must alter the source`);
     assert.throws(
       () => assertSemanticFallback(regressed, `${path} (mutated)`),
       /must not wash an unknown event type/
@@ -337,16 +338,36 @@ test('home-page event tone fallbacks remain semantic problem states', async () =
   }
 });
 
+function assertTippingFossilAnchor(source, path) {
+  assert.match(source, /const fossilJetSource\s*=/, `${path} must retain the fossil-price fallback level`);
+  assert.match(
+    source,
+    /const fossilJetIsAssumed\s*=\s*readModel\.isFallback\s*\|\|\s*fossilJetSource === 'assumed'\s*\|\|\s*fossilJetAsOf == null/,
+    `${path} must treat fallback, assumed, and undated fossil anchors as assumptions`
+  );
+  assert.match(
+    source,
+    /basis:\s*fossilJetIsAssumed\s*\?\s*'assumption'\s*:\s*fossilJetSource === 'spot'\s*\?\s*'observed'\s*:\s*'derived'/,
+    `${path} must label the built-in or missing fossil anchor as an assumption`
+  );
+}
+
 test('tipping-point reports never label an assumed fossil anchor as observed', async () => {
   const zhCopy = JSON.parse(await read('apps/web/src/locales/zh.json')).tipping_point_report;
   for (const path of TIPPING_POINT_REPORT_PAGES) {
     const source = await implementationOf(path);
-    assert.match(source, /const fossilJetSource\s*=/, `${path} must retain the fossil-price fallback level`);
-    assert.match(
-      source,
-      /fossilJetSource === 'spot' \? 'observed' : fossilJetSource === 'assumed' \? 'assumption' : 'derived'/,
-      `${path} must label the built-in or missing fossil anchor as an assumption`
+    assertTippingFossilAnchor(source, path);
+
+    const regressed = source.replace(
+      "basis: fossilJetIsAssumed ? 'assumption'",
+      "basis: fossilJetIsAssumed ? 'observed'"
     );
+    assert.notEqual(regressed, source, `${path} mutation must alter the fossil-anchor basis`);
+    assert.throws(
+      () => assertTippingFossilAnchor(regressed, `${path} (mutated)`),
+      /must label the built-in or missing fossil anchor as an assumption/
+    );
+
     if (source.includes('0.657')) {
       assert.match(source, /fossilJetSource === 'assumed'/, `${path} must expose the 0.657 fallback branch`);
       assert.match(
