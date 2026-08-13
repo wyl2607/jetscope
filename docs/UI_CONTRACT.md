@@ -325,6 +325,6 @@ stack. The stacked result is revalidated before any slice advances to `main`.
 - [ ] Assumptions visibly marked; nulls render "—" with a reason
 - [ ] Empty / loading / error states present
 - [ ] Strings from locale files; existing route availability and public URLs preserved
-- [ ] Concrete locale route wrappers pass `locale` explicitly; no middleware or locale rewrite
+- [ ] Concrete locale route wrappers pass `locale` explicitly; no middleware, `app/[locale]`, or locale rewrite
 - [ ] Keyboard reachable, focus visible, contrast checked
 - [ ] `npm run web:gate` passes locally
