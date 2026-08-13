@@ -96,5 +96,94 @@
       "这些回答描述的是当前部署的设计意图，不随实时数据变化；具体环境是否就绪以上线前置状态为准。",
       "FAQ 不替代来源、研究或情景页面上的实时状态与适用边界。"
     ]
+  },
+  "reports": {
+    "meta_title": "报告工作台",
+    "meta_description": "JetScope SAF 临界点分析的报告工作台，展示来源状态、情景数量与风险信号。",
+    "eyebrow": "组合报告",
+    "title": "报告工作台",
+    "question": "这份报告现在能不能作为决策依据发出去？",
+    "signals_label": "发布就绪信号",
+    "readiness": {
+      "label": "上线姿态",
+      "review": "需复核",
+      "publish": "可发布候选",
+      "hint_fallback": "报告可渲染，但当前使用 fallback：{error}",
+      "hint_source": "来源状态为{status}，发布前先复核数据来源",
+      "hint_ok": "所有报告入口可从当前 read model 复核"
+    },
+    "source": {
+      "label": "来源状态",
+      "ok": "正常",
+      "degraded": "降级",
+      "offline": "离线",
+      "unknown": "未知",
+      "hint": "置信度 {confidence} · 回退率 {fallback_rate} · {freshness} {minutes} 分钟"
+    },
+    "freshness": {
+      "fresh": "新鲜",
+      "stale": "偏旧",
+      "critical": "严重过期"
+    },
+    "risk": {
+      "label": "风险信号",
+      "none": "暂无异常",
+      "hint": "{level} · {change}",
+      "empty": "市场历史窗口尚未形成可排序警报",
+      "normal": "normal",
+      "watch": "watch",
+      "alert": "alert"
+    },
+    "scenarios": {
+      "label": "情景数量",
+      "empty": "暂无已保存情景",
+      "placeholder": "已保存情景 {n}"
+    },
+    "catalog": {
+      "title": "报告目录",
+      "why": "每份报告的入口，以及它当前接的是实时数据还是静态叙事。",
+      "tipping_point": {
+        "title": "临界点报告",
+        "description": "串联储备压力、燃料经济性、航司决策概率与研究信号的主报告。",
+        "status": "已接入实时 read model"
+      }
+    },
+    "actions": {
+      "title": "发布前动作",
+      "why": "报告页的下一步不是猜测，而是复核——每个入口都指向可验证的证据。",
+      "tipping_point": {
+        "label": "打开临界点报告",
+        "description": "阅读当前最完整的 SAF-vs-航油阈值叙事。"
+      },
+      "review_sources": {
+        "label": "复核来源",
+        "description": "检查回退、代理、降级和波动警报。"
+      },
+      "dashboard": {
+        "label": "查看驾驶舱",
+        "description": "回到实时市场、情景与风险总览。"
+      },
+      "admin": {
+        "label": "检查上线前置状态",
+        "description": "发布前确认来源覆盖、管理令牌与研究基础。"
+      },
+      "research": {
+        "label": "打开研究工作台",
+        "description": "确认研究信号是启用、空、降级还是可用于解释。"
+      }
+    },
+    "footer": {
+      "source_live": "市场快照接口（来源状态、置信度、回退率、新鲜度）",
+      "source_fallback": "市场快照接口无响应，当前为内置兜底值（{error}）",
+      "unknown_cause": "未知原因",
+      "source_scenarios": "本地情景库（当前 {count} 个已保存情景）",
+      "source_risk": "风险信号由市场历史窗口的变动幅度推导，非上游直接给出",
+      "method_label": "口径与来源清单",
+      "limitations": [
+        "“可发布候选”只表示数据链路可复核，不代表结论已被人工审阅。",
+        "风险信号依赖历史窗口样本量，样本不足时不会产生警报，不等于没有风险。",
+        "情景库是本地保存的假设，用于复盘和讨论，不替代真实采购审批。"
+      ]
+    }
   }
 }

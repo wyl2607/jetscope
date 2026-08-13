@@ -96,5 +96,94 @@
       "Diese Antworten beschreiben die beabsichtigte Funktion des aktuellen Deployments und ändern sich nicht mit Echtzeitdaten; die konkrete Bereitschaft steht auf der Admin-Seite.",
       "Die FAQ ersetzt nicht die aktuellen Zustände und Grenzen auf den Quellen-, Forschungs- oder Szenarioseiten."
     ]
+  },
+  "reports": {
+    "meta_title": "Berichtswerkstatt",
+    "meta_description": "Deutsche JetScope-Berichtswerkstatt für Quellenstatus, gespeicherte Szenarien, Risikosignale und Startprüfung vor Veröffentlichung.",
+    "eyebrow": "Berichtsbereitschaft",
+    "title": "Berichtswerkstatt",
+    "question": "Ist dieser Bericht belastbar genug, um jetzt als Entscheidungsgrundlage veröffentlicht zu werden?",
+    "signals_label": "Startbereitschaftssignale",
+    "readiness": {
+      "label": "Startposition",
+      "review": "Prüfung nötig",
+      "publish": "Veröffentlichungskandidat",
+      "hint_fallback": "Die Berichtswerkstatt kann rendern, aber der lokale API-Fallback ist aktiv; Quellen und Startbereitschaft vor Nutzung prüfen.",
+      "hint_source": "Quellenstatus ist {status}; vor Start oder Veröffentlichung zuerst Evidenz prüfen.",
+      "hint_ok": "Berichtseinstiege können aus dem aktuellen Read Model geprüft werden."
+    },
+    "source": {
+      "label": "Quellenstatus",
+      "ok": "gesund",
+      "degraded": "eingeschränkt",
+      "offline": "offline",
+      "unknown": "unbekannt",
+      "hint": "Konfidenz {confidence} | Fallback-Rate {fallback_rate} | {freshness} {minutes} Min."
+    },
+    "freshness": {
+      "fresh": "aktuell",
+      "stale": "veraltet",
+      "critical": "kritisch"
+    },
+    "risk": {
+      "label": "Risikosignal",
+      "none": "Keine Anomalie",
+      "hint": "{level} | {change}",
+      "empty": "Das Marktfenster hat noch kein priorisiertes Warnsignal erzeugt.",
+      "normal": "normal",
+      "watch": "Beobachtung",
+      "alert": "Alarm"
+    },
+    "scenarios": {
+      "label": "Szenarioanzahl",
+      "empty": "Noch kein gespeichertes Szenario.",
+      "placeholder": "Gespeichertes Szenario {n}"
+    },
+    "catalog": {
+      "title": "Berichtskatalog",
+      "why": "Jeder Berichtseinstieg und ob er an Live-Daten oder an eine statische Darstellung angebunden ist.",
+      "tipping_point": {
+        "title": "Tipping-Point-Bericht",
+        "description": "Hauptbericht, der Reserve-Druck, Kraftstoffökonomie, Airline-Entscheidungswahrscheinlichkeit und Forschungssignale zusammenführt.",
+        "status": "Mit aktuellem Read Model verbunden"
+      }
+    },
+    "actions": {
+      "title": "Vor dem Start",
+      "why": "Der nächste Schritt ist Evidenzprüfung, nicht Vermutung - jeder Einstieg führt zu etwas Nachprüfbarem.",
+      "tipping_point": {
+        "label": "Kipppunktbericht öffnen",
+        "description": "Die vollständigste SAF-gegen-Kerosin-Schwellen-Erzählung lesen."
+      },
+      "review_sources": {
+        "label": "Quellennachweise prüfen",
+        "description": "Fallback-, Proxy-, eingeschränkte und volatile Zeilen prüfen, bevor Berichtsergebnisse als Entscheidungsgrundlage genutzt werden."
+      },
+      "dashboard": {
+        "label": "Entscheidungscockpit öffnen",
+        "description": "Zum aktuellen Marktsnapshot, zur Quellenlage, zu Szenarien und zum wichtigsten Risikosignal zurückkehren."
+      },
+      "admin": {
+        "label": "Startbereitschaft prüfen",
+        "description": "Quellenabdeckung, Admin-Token und Forschungsgrundlagen vor Start oder Veröffentlichung bestätigen."
+      },
+      "research": {
+        "label": "Forschungswerkstatt öffnen",
+        "description": "Prüfen, ob Forschungssignale aktiv, leer, eingeschränkt oder erklärend nutzbar sind."
+      }
+    },
+    "footer": {
+      "source_live": "Markt-Snapshot-API (Quellenstatus, Konfidenz, Fallback-Rate, Aktualität)",
+      "source_fallback": "Markt-Snapshot-API nicht erreichbar; es werden interne Ersatzwerte verwendet",
+      "unknown_cause": "unbekannte Ursache",
+      "source_scenarios": "Lokaler Szenariospeicher ({count} gespeicherte Szenarien)",
+      "source_risk": "Das Risikosignal wird aus der Bewegung im Markthistorienfenster abgeleitet, nicht vom Upstream geliefert",
+      "method_label": "Quellen- und Methodenliste",
+      "limitations": [
+        "„Veröffentlichungskandidat“ heißt, dass der Datenpfad prüfbar ist - nicht, dass die Aussage fachlich geprüft wurde.",
+        "Das Risikosignal hängt von der Stichprobengröße im Historienfenster ab. Kein Alarm bei dünner Stichprobe heißt nicht kein Risiko.",
+        "Gespeicherte Szenarien sind lokale Annahmen für Prüfung und Diskussion; sie ersetzen keine Beschaffungsfreigabe."
+      ]
+    }
   }
 }
