@@ -96,5 +96,174 @@
       "These answers describe the current deployment design intent and do not change with live data; use the Admin page for the environment’s actual readiness.",
       "The FAQ does not replace the current states and limitations on the Sources, Research, or Scenarios pages."
     ]
+  },
+  "crisis": {
+    "show_price_chart": false,
+    "show_reserves_strip": false,
+    "show_event_timeline": false,
+    "show_simulator": false,
+    "show_research_brief": false,
+    "show_zh_subpage_links": false,
+    "meta_title": "Fuel Stress Brief",
+    "meta_description": "English JetScope crisis monitor for EU jet-fuel reserve stress, source confidence, tipping events, and research posture.",
+    "eyebrow": "Crisis monitor",
+    "title": "Fuel Stress Brief",
+    "question": "Is reserve stress high enough to change an operating decision right now?",
+    "signals_label": "Crisis signals",
+    "na": "n/a",
+    "stress": {
+      "critical": "critical",
+      "elevated": "elevated",
+      "guarded": "guarded",
+      "normal": "normal",
+      "unknown": "review"
+    },
+    "source_type": {
+      "official": "official source",
+      "manual": "manual estimate",
+      "derived": "model-derived",
+      "unknown": "scenario baseline"
+    },
+    "confidence": {
+      "missing": "no confidence",
+      "high": "high confidence",
+      "medium_high": "medium-high confidence",
+      "medium": "medium confidence",
+      "unavailable": "unavailable"
+    },
+    "signal": {
+      "saf_cost_advantaged": "SAF cost-advantaged",
+      "switch_window_opening": "switch window opening",
+      "fossil_still_advantaged": "fossil jet still advantaged",
+      "unknown": "scenario baseline"
+    },
+    "source_status": {
+      "ok": "healthy",
+      "degraded": "degraded",
+      "offline": "offline",
+      "unknown": "unknown"
+    },
+    "research_posture": {
+      "disabled": "disabled boundary",
+      "empty": "waiting for signals",
+      "backed": "signal-backed"
+    },
+    "monitor": {
+      "decision_label": "Decision signal",
+      "decision_hint": "{status} · fossil jet baseline ${price}/L",
+      "reserve_connected": "Reserve data connected",
+      "reserve_baseline": "Using the scenario baseline",
+      "coverage_label": "Reserve coverage",
+      "coverage_weeks": "{weeks} weeks",
+      "coverage_missing": "Needs reconnect",
+      "coverage_hint": "Stress level: {stress} · {source}",
+      "coverage_source_missing": "no live reserve source connected",
+      "reserve_confidence_label": "Reserve confidence",
+      "reserve_confidence_hint": "{confidence} · source type: {source_type}",
+      "market_confidence_label": "Market confidence",
+      "market_confidence_hint": "Overall market-snapshot confidence, which decides whether the price ladder can be cited",
+      "actions_title": "Next actions",
+      "actions_why": "Confirm reserve credibility first, then test SAF economics — do not skip the first step into procurement.",
+      "reserves_panel_title": "EU jet-fuel reserve coverage",
+      "reserves_panel_why": "Reserve weeks are the base of the crisis narrative. Below the watch line, price and policy responses accelerate together.",
+      "timeline_title": "SAF crossover timeline",
+      "timeline_why": "Record the moment SAF effective cost actually crossed fossil jet, not the moment a model said it would.",
+      "research_title": "Research decision layer",
+      "research_why": "Explains why the numbers above are moving. The signal is not the conclusion; it is the reason for one.",
+      "chart_title": "Jet-fuel and SAF price ladder",
+      "chart_why": "Fossil baseline, carbon-adjusted effective cost, and pathway net-cost bands — the gap is the point, not the absolute.",
+      "simulator_title": "Tipping-point simulator",
+      "simulator_why": "API model of fuel price, carbon price, reserve stress, and pathway economics; used to probe when the conclusion flips.",
+      "methods": {
+        "fossil_fallback": "crisis page fossil-jet fallback or missing source timestamp",
+        "effective_fossil": "effective fossil jet = spot fossil jet + carbon price pressure at selected blend rate, minus subsidy (tipping-point model)",
+        "reserve_derived": "derived reserve coverage from {name}",
+        "reserve_named": "reserve coverage from {name} ({type})",
+        "reserve_dashboard": "dashboard reserve coverage without connected reserve source metadata",
+        "reserve_baseline": "scenario baseline 3.0 weeks; live reserve not connected"
+      }
+    },
+    "zh_links": {
+      "reserves": {
+        "title": "Open reserve detail",
+        "description": "Check coverage weeks, source type, confidence, and the supply gap before changing a procurement call.",
+        "eyebrow": "Reserve"
+      },
+      "workbench": {
+        "title": "Open SAF workbench",
+        "description": "Carry the current fuel, carbon, and reserve readings in and test pathway sensitivity directly.",
+        "eyebrow": "Simulate"
+      },
+      "sources": {
+        "title": "Review data sources",
+        "description": "Inspect market inputs that need review and confirm live, proxy, fallback, and degraded states.",
+        "eyebrow": "Sources"
+      }
+    },
+    "brief": {
+      "stress_label": "Reserve stress",
+      "stress_weeks": "{weeks} weeks",
+      "stress_hint": "EU reserve posture: {stress} | {source}",
+      "fallback_source": "fallback scenario baseline",
+      "source_label": "Source confidence",
+      "source_hint": "Market status {status} | reserve confidence {reserve}",
+      "events_label": "Tipping events",
+      "events_hint": "{type} | {pathway} | {when}",
+      "events_empty": "No events in the current review window.",
+      "research_label": "Research posture",
+      "research_hint": "{count} research signals available for review.",
+      "research_hint_empty": "The page exposes the research boundary instead of inventing evidence.",
+      "readout_title": "Operating readout",
+      "readout_why": "What the numbers above mean together, and how to tell whether they came from live evidence or from a fallback posture.",
+      "readout_p1_lead": "The current fossil fuel anchor is",
+      "readout_p1_tail": ". JetScope keeps that value beside EU reserve coverage and source confidence so reviewers can separate live evidence from fallback posture before changing procurement or SAF adoption assumptions.",
+      "readout_p2": "The crisis brief comes from the FastAPI crisis-brief contract, so the page can show one coherent operating readout without duplicating reserve, source, tipping-event, and research aggregation in the display layer.",
+      "evidence_title": "Evidence discipline",
+      "evidence_why": "The four readings that decide whether this brief can be used as decision evidence or has to go through source review first.",
+      "freshness_label": "Market freshness",
+      "freshness_minutes": "{minutes} min",
+      "freshness_review": "review",
+      "fallback_rate_label": "Fallback rate",
+      "reserve_timestamp_label": "Reserve timestamp",
+      "as_of_unavailable": "not available",
+      "contract_label": "Contract status",
+      "contract_fallback": "fallback",
+      "contract_connected": "connected",
+      "actions_title": "Next steps",
+      "actions_why": "A crisis brief that only shows numbers changes nothing. Every entry point here leads to something checkable."
+    },
+    "recovery": {
+      "review_sources": {
+        "title": "Review source evidence",
+        "description": "Check fallback, proxy, degraded, and volatile rows before treating the crisis signal as operational evidence."
+      },
+      "open_report": {
+        "title": "Open localized report",
+        "description": "Move from the brief into the source-backed tipping-point report for a longer review narrative."
+      },
+      "review_scenarios": {
+        "title": "Review scenarios",
+        "description": "Compare saved assumptions against the current reserve stress and market confidence before changing the plan."
+      }
+    },
+    "footer": {
+      "reserve_connected": "EU jet-fuel reserve coverage via {type} ({name})",
+      "reserve_missing": "Reserve service not connected; coverage uses the scenario baseline",
+      "market_snapshot": "Market snapshot (fossil jet baseline ${price}/L, carbon proxy €{carbon}/t)",
+      "tipping_events": "{count} observed SAF crossover events in the review window",
+      "tipping_model": "Decision signal and pathway net costs are derived by the tipping-point model, not an upstream raw reading",
+      "brief_error": "Crisis brief API unreachable; internal fallback values are in use ({error})",
+      "brief_ok": "Crisis brief API (reserve, source status, tipping events, research posture)",
+      "reserve_via": "EU reserve posture via {name}",
+      "events_observed": "{count} observed SAF tipping events in the review window",
+      "fossil_anchor": "Fossil cost anchor {price}, derived from the market snapshot",
+      "method_label": "Source and method list"
+    },
+    "limitations": [
+      "This brief describes reserve pressure across the region, not one operator’s supply position. An airline’s own contracts and stock are not in here.",
+      "Tipping events are counted inside the review window. No events does not mean no risk; it means no crossing was observed in this window.",
+      "When the reserve source is a manual estimate it is tagged “scenario assumption” above, and must not be read as an official filing.",
+      "This brief is a review surface, not a procurement recommendation."
+    ]
   }
 }

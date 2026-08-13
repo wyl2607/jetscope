@@ -107,13 +107,17 @@ async function read(path) {
 }
 
 /**
- * Thin locale wrappers render `<FaqPage locale="…" />`. The template contract
- * lives in that shared view, not in the three route files.
+ * Thin locale wrappers render `<FaqPage locale="…" />` or
+ * `<CrisisPage locale="…" />`. The template contract lives in that shared
+ * view, not in the three route files.
  */
 async function implementationOf(path) {
   const source = await read(path);
   if (/\/faq\/page\.tsx$/.test(path) && source.includes('<FaqPage')) {
     return read('apps/web/components/faq-page.tsx');
+  }
+  if (/\/crisis\/page\.tsx$/.test(path) && source.includes('<CrisisPage')) {
+    return read('apps/web/components/crisis-page.tsx');
   }
   return source;
 }
@@ -130,7 +134,13 @@ test('every converted page states the decision question it answers', async () =>
   for (const path of CONVERTED_PAGES) {
     const source = await implementationOf(path);
 
-    if (/\/faq\/page\.tsx$/.test(path)) {
+    const dictionaryKey = /\/faq\/page\.tsx$/.test(path)
+      ? 'faq'
+      : /\/crisis\/page\.tsx$/.test(path)
+        ? 'crisis'
+        : null;
+
+    if (dictionaryKey) {
       assert.match(
         source,
         /question=\{copy\.question\}/,
@@ -138,10 +148,10 @@ test('every converted page states the decision question it answers', async () =>
       );
       for (const locale of ['zh', 'de', 'en']) {
         const dictionary = JSON.parse(await read(`apps/web/src/locales/${locale}.json`));
-        const question = dictionary.faq?.question;
+        const question = dictionary[dictionaryKey]?.question;
         assert.ok(
           typeof question === 'string' && question.trim().length > 10,
-          `${locale}.json faq.question must be a real sentence, got: ${question}`
+          `${locale}.json ${dictionaryKey}.question must be a real sentence, got: ${question}`
         );
       }
       continue;
@@ -252,7 +262,7 @@ test('a page on fallback data never stamps it with a fresh timestamp', async () 
 
 test('a crisis-brief page on fallback data never stamps it with a fresh timestamp', async () => {
   for (const path of CRISIS_BRIEF_PAGES) {
-    const source = await read(path);
+    const source = await implementationOf(path);
     assert.match(
       source,
       /readModel\.error\s*\?\s*null\s*:/,
@@ -295,7 +305,7 @@ test('a reserve reading is labelled by how it was produced, not assumed observed
   // the failure this contract exists to prevent, so every crisis page has to
   // route source_type through a basis mapping rather than hardcoding observed.
   for (const path of ['apps/web/app/crisis/page.tsx', ...CRISIS_BRIEF_PAGES]) {
-    const source = await read(path);
+    const source = await implementationOf(path);
     assert.match(source, /function reserveBasis\(/, `${path} must map reserve source_type to a basis`);
     assert.match(source, /return 'assumption'/, `${path} must fall back to assumption, not to observed`);
   }

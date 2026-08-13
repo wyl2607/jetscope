@@ -26,16 +26,21 @@ export type Locale = (typeof LOCALES)[number];
  */
 type WidenStrings<T> = T extends string
   ? string
-  : T extends readonly (infer U)[]
-    ? WidenStrings<U>[]
-    : T extends object
-      ? { [K in keyof T]: WidenStrings<T[K]> }
-      : T;
+  : T extends boolean
+    ? boolean
+    : T extends number
+      ? number
+      : T extends readonly (infer U)[]
+        ? WidenStrings<U>[]
+        : T extends object
+          ? { [K in keyof T]: WidenStrings<T[K]> }
+          : T;
 
 /** The reference shape. Adding a key here obliges `de.json` and `en.json`. */
 export type Messages = WidenStrings<typeof zh>;
 
 export type FaqMessages = Messages['faq'];
+export type CrisisMessages = Messages['crisis'];
 
 const catalog: Record<Locale, Messages> = { zh, de, en };
 
