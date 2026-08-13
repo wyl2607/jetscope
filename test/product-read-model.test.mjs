@@ -890,27 +890,40 @@ test('German tipping-point report detail stays localized and source-backed', asy
 });
 
 test('English admin page exposes launch readiness without protected write controls', async () => {
+  const page = await readFile(new URL('../apps/web/components/admin-page.tsx', import.meta.url), 'utf8');
   const englishAdminSource = await readFile(new URL('../apps/web/app/en/admin/page.tsx', import.meta.url), 'utf8');
+  const en = JSON.parse(
+    await readFile(new URL('../apps/web/src/locales/en.json', import.meta.url), 'utf8')
+  ).admin;
 
   assert.match(englishAdminSource, /Launch Readiness/);
-  assert.match(englishAdminSource, /getLaunchReadinessReadModel/);
-  assert.match(englishAdminSource, /Admin token/);
-  assert.match(englishAdminSource, /AI research pipeline/);
-  assert.match(englishAdminSource, /Protected operations/);
-  assert.match(englishAdminSource, /check\.blocking/);
-  assert.match(englishAdminSource, /check\.severity/);
-  assert.match(englishAdminSource, /check\.configKeys/);
-  assert.match(englishAdminSource, /Blocks launch/);
-  assert.match(englishAdminSource, /Review needed/);
-  assert.match(englishAdminSource, /Related config/);
-  assert.match(englishAdminSource, /en\/sources\?filter=review/);
-  assert.match(englishAdminSource, /en\/research/);
+  assert.match(englishAdminSource, /locale="en"/);
+  assert.match(page, /getLaunchReadinessReadModel/);
+  assert.equal(en.show_admin_ops, false);
+  assert.match(en.check_labels.admin_token, /Admin token/);
+  assert.match(en.check_labels.ai_research_pipeline, /AI research pipeline/);
+  assert.match(en.scope_title, /Protected operations/);
+  assert.match(page, /check\.blocking/);
+  assert.match(page, /check\.severity/);
+  assert.match(page, /check\.configKeys/);
+  assert.match(en.impact_blocking, /Blocks launch/);
+  assert.match(en.impact_review, /Review needed/);
+  assert.match(en.config_keys_label, /Related config/);
+  assert.equal(en.actions.source_coverage.nav_id, 'sources');
+  assert.match(en.actions.source_coverage.query, /filter=review/);
+  assert.equal(en.actions.ai_research_pipeline.nav_id, 'research');
+  assert.match(page, /NAV_ENTRIES/);
   assert.doesNotMatch(englishAdminSource, /AdminDataOps/);
   assert.doesNotMatch(
     englishAdminSource,
     /管理台|上线前置状态|假设与数据接入管理|管理令牌|缺少配置|未启用|打开研究工作台/
   );
+  assert.doesNotMatch(
+    JSON.stringify(en),
+    /管理台|上线前置状态|假设与数据接入管理|管理令牌|缺少配置|未启用|打开研究工作台/
+  );
   assert.doesNotMatch(englishAdminSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+  assert.doesNotMatch(page, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
 });
 
 test('English scenarios page reviews saved assumptions without Chinese editor UI', async () => {
@@ -981,31 +994,48 @@ test('German scenarios page reviews saved assumptions without Chinese editor UI'
 });
 
 test('German admin page exposes launch readiness without protected write controls', async () => {
+  const page = await readFile(new URL('../apps/web/components/admin-page.tsx', import.meta.url), 'utf8');
   const germanAdminSource = await readFile(new URL('../apps/web/app/de/admin/page.tsx', import.meta.url), 'utf8');
+  const de = JSON.parse(
+    await readFile(new URL('../apps/web/src/locales/de.json', import.meta.url), 'utf8')
+  ).admin;
 
   assert.match(germanAdminSource, /Startbereitschaft/);
-  assert.match(germanAdminSource, /getLaunchReadinessReadModel/);
-  assert.match(germanAdminSource, /Admin-Token/);
-  assert.match(germanAdminSource, /AI-Research-Pipeline/);
-  assert.match(germanAdminSource, /Geschützte Operationen/);
-  assert.match(germanAdminSource, /check\.blocking/);
-  assert.match(germanAdminSource, /check\.severity/);
-  assert.match(germanAdminSource, /check\.configKeys/);
-  assert.match(germanAdminSource, /Blockiert Start/);
-  assert.match(germanAdminSource, /Prüfung nötig/);
-  assert.match(germanAdminSource, /Relevante Konfiguration/);
-  assert.match(germanAdminSource, /de\/sources\?filter=review/);
-  assert.match(germanAdminSource, /\/de\/dashboard/);
+  assert.match(germanAdminSource, /locale="de"/);
+  assert.match(page, /getLaunchReadinessReadModel/);
+  assert.equal(de.show_admin_ops, false);
+  assert.match(de.check_labels.admin_token, /Admin-Token/);
+  assert.match(de.check_labels.ai_research_pipeline, /AI-Research-Pipeline/);
+  assert.match(de.scope_title, /Geschützte Operationen/);
+  assert.match(page, /check\.blocking/);
+  assert.match(page, /check\.severity/);
+  assert.match(page, /check\.configKeys/);
+  assert.match(de.impact_blocking, /Blockiert Start/);
+  assert.match(de.impact_review, /Prüfung nötig/);
+  assert.match(de.config_keys_label, /Relevante Konfiguration/);
+  assert.equal(de.actions.source_coverage.nav_id, 'sources');
+  assert.match(de.actions.source_coverage.query, /filter=review/);
+  assert.equal(de.actions.default.nav_id, 'dashboard');
+  assert.match(page, /NAV_ENTRIES/);
   assert.doesNotMatch(germanAdminSource, /AdminDataOps|<input|type="password"/);
   assert.doesNotMatch(
     germanAdminSource,
     /管理台|上线前置状态|假设与数据接入管理|管理令牌|缺少配置|未启用|打开研究工作台/
   );
   assert.doesNotMatch(
+    JSON.stringify(de),
+    /管理台|上线前置状态|假设与数据接入管理|管理令牌|缺少配置|未启用|打开研究工作台/
+  );
+  assert.doesNotMatch(
     germanAdminSource,
     /Launch Readiness|Protected operations|Missing configuration|Open sources|Open research|Not ready/
   );
+  assert.doesNotMatch(
+    JSON.stringify(de),
+    /Launch Readiness|Protected operations|Missing configuration|Open sources|Open research/
+  );
   assert.doesNotMatch(germanAdminSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+  assert.doesNotMatch(page, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
 });
 
 test('research page is an honest signal workbench with disabled-state actions', async () => {
@@ -1062,7 +1092,11 @@ test('German research page exposes research pipeline boundaries without Chinese 
 
 test('dashboard and admin avoid leaking raw implementation labels into UI copy', async () => {
   const dashboardSource = await readFile(new URL('../apps/web/app/dashboard/page.tsx', import.meta.url), 'utf8');
-  const adminSource = await readFile(new URL('../apps/web/app/admin/page.tsx', import.meta.url), 'utf8');
+  const adminSource = await readFile(new URL('../apps/web/components/admin-page.tsx', import.meta.url), 'utf8');
+  const zhAdminPage = await readFile(new URL('../apps/web/app/admin/page.tsx', import.meta.url), 'utf8');
+  const zh = JSON.parse(
+    await readFile(new URL('../apps/web/src/locales/zh.json', import.meta.url), 'utf8')
+  ).admin;
 
   assert.match(dashboardSource, /sourceStatusLabel/);
   assert.match(dashboardSource, /freshnessLabel/);
@@ -1071,4 +1105,7 @@ test('dashboard and admin avoid leaking raw implementation labels into UI copy',
   assert.doesNotMatch(dashboardSource, /新鲜度=\$\{readModel\.freshnessSignal\.level\}/);
   assert.match(adminSource, /<code className=/);
   assert.doesNotMatch(adminSource, /<p>`route_catalog`/);
+  assert.match(zhAdminPage, /<AdminPage locale="zh"/);
+  assert.equal(zh.show_admin_ops, true);
+  assert.match(adminSource, /AdminDataOps/);
 });

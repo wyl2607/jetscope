@@ -107,13 +107,17 @@ async function read(path) {
 }
 
 /**
- * Thin locale wrappers render `<FaqPage locale="…" />`. The template contract
- * lives in that shared view, not in the three route files.
+ * Thin locale wrappers render `<FaqPage locale="…" />` or
+ * `<AdminPage locale="…" />`. The template contract lives in that shared view,
+ * not in the three route files.
  */
 async function implementationOf(path) {
   const source = await read(path);
   if (/\/faq\/page\.tsx$/.test(path) && source.includes('<FaqPage')) {
     return read('apps/web/components/faq-page.tsx');
+  }
+  if (/\/admin\/page\.tsx$/.test(path) && source.includes('<AdminPage')) {
+    return read('apps/web/components/admin-page.tsx');
   }
   return source;
 }
@@ -130,7 +134,12 @@ test('every converted page states the decision question it answers', async () =>
   for (const path of CONVERTED_PAGES) {
     const source = await implementationOf(path);
 
-    if (/\/faq\/page\.tsx$/.test(path)) {
+    const localeCopyKey = /\/faq\/page\.tsx$/.test(path)
+      ? 'faq'
+      : /\/admin\/page\.tsx$/.test(path)
+        ? 'admin'
+        : null;
+    if (localeCopyKey) {
       assert.match(
         source,
         /question=\{copy\.question\}/,
@@ -138,10 +147,10 @@ test('every converted page states the decision question it answers', async () =>
       );
       for (const locale of ['zh', 'de', 'en']) {
         const dictionary = JSON.parse(await read(`apps/web/src/locales/${locale}.json`));
-        const question = dictionary.faq?.question;
+        const question = dictionary[localeCopyKey]?.question;
         assert.ok(
           typeof question === 'string' && question.trim().length > 10,
-          `${locale}.json faq.question must be a real sentence, got: ${question}`
+          `${locale}.json ${localeCopyKey}.question must be a real sentence, got: ${question}`
         );
       }
       continue;
@@ -162,6 +171,16 @@ test('every converted page ends with its sources', async () => {
     assert.match(source, /<SourceFooter/, `${path} must close with SourceFooter (contract section 2 rule 4)`);
     assert.match(source, /limitations=\{/, `${path} must state its limitations, not imply completeness`);
   }
+});
+
+test('admin pages never invent a data timestamp', async () => {
+  const source = await read('apps/web/components/admin-page.tsx');
+  assert.match(
+    source,
+    /readiness\.error \? null : readiness\.generatedAt/,
+    'admin must suppress the timestamp when readiness is on fallback'
+  );
+  assert.doesNotMatch(source, /new Date\(/, 'admin must not turn fetch or render time into an as-of stamp');
 });
 
 test('static FAQ pages never invent a data timestamp', async () => {
@@ -321,7 +340,7 @@ test('home-page event tone fallbacks remain semantic problem states', async () =
 
     // Mutation check: prove this guard fails for the historical regression,
     // rather than merely matching the current implementation by accident.
-    const regressed = source.replace(/(function eventTone\([^)]*\)[^{]*\{[\s\S]*?)return 'text-warning';\n\}/, "$1return 'text-muted';\n}");
+    const regressed = source.replace(/(function eventTone\([^)]*\)[^{]*\{[\s\S]*?)return 'text-warning';\r?\n\}/, "$1return 'text-muted';\n}");
     assert.throws(
       () => assertSemanticFallback(regressed, `${path} (mutated)`),
       /must not wash an unknown event type/

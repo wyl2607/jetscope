@@ -96,5 +96,132 @@
       "These answers describe the current deployment design intent and do not change with live data; use the Admin page for the environment’s actual readiness.",
       "The FAQ does not replace the current states and limitations on the Sources, Research, or Scenarios pages."
     ]
+  },
+  "admin": {
+    "show_admin_ops": false,
+    "eyebrow": "Launch operations",
+    "title": "Launch Readiness",
+    "question": "Can this backend safely write data and go live now?",
+    "signals_label": "Launch-decision signals",
+    "decision_label": "Launch decision",
+    "decision_hint_error": "Readiness API unavailable: {error}",
+    "decision_hint_ready": "No prerequisite currently blocks launch.",
+    "decision_hint_blocked": "Resolve blockers before writes or launch.",
+    "blocking_label": "Blocking checks",
+    "blocking_hint": "Any blocker prevents a safe launch.",
+    "review_label": "Review checks",
+    "review_hint": "Not necessarily blocking, but must be confirmed before launch.",
+    "environment_label": "Environment context",
+    "environment_hint": "Schema {mode}; this conclusion applies only to this environment.",
+    "scope_title": "Protected operations",
+    "scope_why": "These boundaries distinguish read-only checks from actions that must remain in the primary console.",
+    "scope_items": [
+      "Protected writes, refreshes, and parameter edits remain in the primary admin console.",
+      "This English surface is read-only and never displays secret values.",
+      "Use readiness checks to decide whether source, research, token, or database work is still required."
+    ],
+    "scope_bullet": "",
+    "contract_title": "Backend contract",
+    "contract_why": "The readiness contract defines which prerequisites are checked without exposing secret values.",
+    "contract_items": [
+      { "code": "", "text": "Database bootstrap, market snapshots, source coverage, admin token configuration, and AI research readiness are reported by the API readiness contract." },
+      { "code": "", "text": "Secret values are never returned by readiness and are not requested by this English page." },
+      { "code": "", "text": "Protected parameter editing, manual refresh, and token entry stay in the primary admin console." }
+    ],
+    "checks_title": "Launch readiness checks",
+    "checks_why": "Each check identifies the prerequisite that blocks launch or still needs confirmation.",
+    "badge_ready": "Ready",
+    "badge_not_ready": "Not ready",
+    "badge_degraded": "Degraded",
+    "env_badge": "{environment} | {apiPrefix} | schema {schemaBootstrapMode}",
+    "error_banner": "Readiness API is unavailable: {error}",
+    "config_keys_label": "Related config:",
+    "ops_title": "Write workspace remains in the primary admin console.",
+    "ops_why": "This English surface is read-only; parameter edits, refresh, and token entry stay in the primary admin console.",
+    "source_unavailable": "Readiness API currently unavailable",
+    "source_available": "Server-derived Readiness API checks",
+    "source_contract": "Backend data contract: route_catalog / policy_parameters / market_snapshots / scenarios",
+    "method_label": "Open source and data conventions",
+    "limitations": [
+      "This page reports the readiness of the current deployment environment, not the upper limit of the product’s capabilities.",
+      "Checks are derived server-side from configuration and data contracts; protected writes still require valid admin authorization."
+    ],
+    "readiness_status": {
+      "ready": "Launch candidate",
+      "degraded": "Runnable, needs review",
+      "not_ready": "Not ready"
+    },
+    "readiness_status_unknown": "Unrecognized status: {status}",
+    "check_status": {
+      "ok": "Healthy",
+      "degraded": "Degraded",
+      "missing": "Missing configuration",
+      "disabled": "Disabled",
+      "missing_credentials": "Missing credentials",
+      "mock": "Mock mode",
+      "seed": "Seed data",
+      "error": "Error"
+    },
+    "check_status_unknown": "Unrecognized: {status}",
+    "check_labels": {
+      "database": "Database",
+      "market_snapshot": "Market snapshot",
+      "source_coverage": "Source coverage",
+      "admin_token": "Admin token",
+      "ai_research_pipeline": "AI research pipeline"
+    },
+    "impact_blocking": "Blocks launch",
+    "impact_review": "Review needed",
+    "impact_ok": "Ready for launch",
+    "impact_unknown": "Unrecognized status",
+    "detail_cjk_fallback": "Review this prerequisite in the primary admin console.",
+    "detail_empty": "No detail provided.",
+    "detail_market_count": "",
+    "detail_source_completeness": "",
+    "detail_source_metrics": "",
+    "detail_by_key": {
+      "database": "",
+      "market_snapshot": "",
+      "source_coverage": "",
+      "admin_token": "",
+      "ai_research_pipeline": ""
+    },
+    "actions": {
+      "source_coverage": {
+        "label_ok": "Open sources",
+        "label_fix": "Fix sources",
+        "nav_id": "sources",
+        "query": "?filter=review",
+        "target_locale": ""
+      },
+      "market_snapshot": {
+        "label_ok": "Open market sources",
+        "label_fix": "Open market sources",
+        "nav_id": "sources",
+        "query": "",
+        "target_locale": ""
+      },
+      "admin_token": {
+        "label_ok": "Open primary admin",
+        "label_fix": "Open primary admin",
+        "nav_id": "admin",
+        "query": "",
+        "target_locale": "zh"
+      },
+      "ai_research_pipeline": {
+        "label_ok": "Open research",
+        "label_fix": "Open research",
+        "nav_id": "research",
+        "query": "",
+        "target_locale": ""
+      },
+      "default": {
+        "label_ok": "Open primary admin",
+        "label_fix": "Open primary admin",
+        "nav_id": "admin",
+        "query": "",
+        "target_locale": "zh"
+      }
+    }
   }
 }
