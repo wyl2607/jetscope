@@ -9,6 +9,8 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(scriptDir, '..');
 const adminToken = 'smoke-admin-token';
 const maxAttempts = 2;
+// Windows cannot spawn the `npm` shim without a shell; use npm.cmd explicitly.
+const npmBin = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const apiPython = process.env.JETSCOPE_PYTHON_BIN
   ?? process.env.PYTHON_BIN
   ?? (existsSync(join(rootDir, 'apps/api/.venv/Scripts/python.exe'))
@@ -54,10 +56,14 @@ async function waitForErrorText(page, pattern, timeout = 10_000) {
 }
 
 function startProcess(name, command, args, options = {}) {
+  // Node on Windows cannot spawn .cmd shims without a shell (EINVAL).
+  const useShell = Boolean(options.shell) || (process.platform === 'win32' && /\.cmd$/i.test(command));
   const child = spawn(command, args, {
     cwd: options.cwd ?? rootDir,
     env: options.env ?? process.env,
-    stdio: ['ignore', 'pipe', 'pipe']
+    stdio: ['ignore', 'pipe', 'pipe'],
+    shell: useShell,
+    windowsHide: true
   });
 
   const logs = [];
@@ -444,7 +450,7 @@ async function runAttempt(attempt) {
 
     webProc = startProcess(
       'web',
-      'npm',
+      npmBin,
       ['--prefix', 'apps/web', 'run', 'start', '--', '--hostname', '127.0.0.1', '--port', String(webPort)],
       {
         cwd: rootDir,
