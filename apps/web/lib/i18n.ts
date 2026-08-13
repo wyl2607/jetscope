@@ -36,6 +36,7 @@ type WidenStrings<T> = T extends string
 export type Messages = WidenStrings<typeof zh>;
 
 export type FaqMessages = Messages['faq'];
+export type TippingPointReportMessages = Messages['tipping_point_report'];
 
 const catalog: Record<Locale, Messages> = { zh, de, en };
 

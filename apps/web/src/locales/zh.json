@@ -96,5 +96,90 @@
       "这些回答描述的是当前部署的设计意图，不随实时数据变化；具体环境是否就绪以上线前置状态为准。",
       "FAQ 不替代来源、研究或情景页面上的实时状态与适用边界。"
     ]
+  },
+  "tipping_point_report": {
+    "meta_title": "临界点报告",
+    "meta_description": "以数据支撑的 JetScope 报告页，解释欧洲航油压力与 SAF 切换经济性。",
+    "eyebrow": "报告页",
+    "title": "临界点报告",
+    "question": "这份报告的经济学论点，现在还站得住吗？",
+    "signal_row_label": "临界点结论",
+    "signal_label": "当前临界点信号",
+    "signal_unknown": "未识别",
+    "signal_hint": "结论优先；未知信号保留为需复核状态。",
+    "probability_label": "SAF 切换概率",
+    "probability_hint": "取现货采购与长期承购两项概率中的较高值。",
+    "confidence_metric_label": "来源置信度",
+    "confidence_metric_hint": "市场状态：{status}",
+    "events_label": "已加载事件",
+    "events_hint": "当前 42 天复核窗口内的事件样本量。",
+    "events_hint_latest": "最近：{event}",
+    "events_hint_empty": "当前复核窗口内没有事件。",
+    "thesis_title": "核心论点",
+    "thesis_why": "先说明这份报告要验证的因果链，避免读者把任一单项指标误当成完整结论。",
+    "thesis_lead": "当储备压力、传统航油价格与政策惩罚同时收敛时，SAF 采购会变得理性。",
+    "thesis_body": "JetScope 将欧洲航空燃料危机视为决策阈值，而不是静态合规叙事。当前报告页使用实时驾驶舱契约，并清晰标注代理或人工来源；AI 研究信号用于解释运营论点为何正在变化。",
+    "reserves_title": "欧盟航煤储备覆盖",
+    "reserves_why": "储备周数决定这份报告的紧迫度：覆盖越薄，价格与政策的反应窗口越短。",
+    "chart_title": "航油与 SAF 价格阶梯",
+    "chart_why": "化石航油基准、碳调整后的有效成本，以及各路径的净成本区间——报告的经济学论点全部落在这张图的差距上。",
+    "chart_why_assumed": "化石航油基准未取到实时值，使用内置假设 0.657 USD/L；因此价格差只能用于情景讨论。",
+    "decision_title": "航司决策含义",
+    "decision_why": "把模型输出翻译成可复核的运营含义，避免概率被误读为简单的是或否建议。",
+    "decision_body": "决策模型刻意以概率与阈值证据呈现，而不是给出简单的是/否建议。储备事件显示运营环境何时跨过警戒或严重区间；研究信号解释概率叙事为何发生变化。",
+    "research_title": "研究决策层",
+    "research_why": "解释这份报告的论点为什么在变。信号本身不是结论，是结论的理由。",
+    "timeline_title": "SAF 交叉时间线",
+    "timeline_why": "记录 SAF 有效成本真的越过化石航油的时刻，而不是模型预测它会越过。",
+    "confidence_title": "来源置信度",
+    "confidence_why": "这四项说明结论能承载多少权重，以及还缺哪些证据。",
+    "market_status_label": "市场状态",
+    "fallback_rate_label": "回退率",
+    "latest_event_label": "最近事件",
+    "latest_event_none": "无",
+    "research_status_label": "研究状态",
+    "source_status": {
+      "ok": "健康",
+      "degraded": "降级",
+      "offline": "离线",
+      "unknown": "未知"
+    },
+    "research_posture": {
+      "disabled": "已关闭边界",
+      "error": "降级",
+      "not_found": "未部署",
+      "with_signals": "已有信号",
+      "waiting": "等待信号"
+    },
+    "next_title": "下一步复核",
+    "next_why": "只有来源、情景假设和发布路径仍然可达，报告才真正可执行。",
+    "next_actions": {
+      "sources": {
+        "title": "复核市场来源",
+        "description": "对外使用前检查实时、代理、回退和降级输入。"
+      },
+      "scenarios": {
+        "title": "比较情景假设",
+        "description": "改变采购姿态前确认已保存的假设。"
+      },
+      "reports": {
+        "title": "返回报告工作台",
+        "description": "再次核对上线姿态和报告目录。"
+      }
+    },
+    "number_unavailable": "n/a",
+    "source_dashboard": "驾驶舱读模型与市场状态",
+    "source_reserve": "欧盟航煤储备覆盖（{source}）",
+    "source_unavailable": "来源暂不可用",
+    "source_fossil_assumed": "内置化石航油基准 0.657 USD/L",
+    "source_fossil_live": "驾驶舱化石航油价格基准",
+    "source_events": "SAF 临界点事件流（42 天窗口，{count} 条）",
+    "source_research": "研究信号流（{count} 条）",
+    "method_label": "口径与来源清单",
+    "limitations": [
+      "报告展示跨市场的经济学阈值，不替代单一航司的合同、库存或采购审批。",
+      "切换概率来自模型情景，不是对未来行为的观测；低样本事件窗口也不等于没有风险。",
+      "化石航油实时值缺失时会明确使用 0.657 USD/L 内置假设，届时价格结论只能作为情景依据。"
+    ]
   }
 }

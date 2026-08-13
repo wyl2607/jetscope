@@ -107,13 +107,20 @@ async function read(path) {
 }
 
 /**
- * Thin locale wrappers render `<FaqPage locale="…" />`. The template contract
- * lives in that shared view, not in the three route files.
+ * Thin locale wrappers render `<FaqPage locale="…" />` or
+ * `<TippingPointReportPage locale="…" />`. The template contract lives in
+ * that shared view, not in the three route files.
  */
 async function implementationOf(path) {
   const source = await read(path);
   if (/\/faq\/page\.tsx$/.test(path) && source.includes('<FaqPage')) {
     return read('apps/web/components/faq-page.tsx');
+  }
+  if (
+    /\/reports\/tipping-point-analysis\/page\.tsx$/.test(path) &&
+    source.includes('<TippingPointReportPage')
+  ) {
+    return read('apps/web/components/tipping-point-report-page.tsx');
   }
   return source;
 }
@@ -130,7 +137,8 @@ test('every converted page states the decision question it answers', async () =>
   for (const path of CONVERTED_PAGES) {
     const source = await implementationOf(path);
 
-    if (/\/faq\/page\.tsx$/.test(path)) {
+    if (/\/faq\/page\.tsx$/.test(path) || /\/reports\/tipping-point-analysis\/page\.tsx$/.test(path)) {
+      const dictionaryKey = /\/faq\/page\.tsx$/.test(path) ? 'faq' : 'tipping_point_report';
       assert.match(
         source,
         /question=\{copy\.question\}/,
@@ -138,10 +146,10 @@ test('every converted page states the decision question it answers', async () =>
       );
       for (const locale of ['zh', 'de', 'en']) {
         const dictionary = JSON.parse(await read(`apps/web/src/locales/${locale}.json`));
-        const question = dictionary.faq?.question;
+        const question = dictionary[dictionaryKey]?.question;
         assert.ok(
           typeof question === 'string' && question.trim().length > 10,
-          `${locale}.json faq.question must be a real sentence, got: ${question}`
+          `${locale}.json ${dictionaryKey}.question must be a real sentence, got: ${question}`
         );
       }
       continue;
@@ -233,7 +241,7 @@ test('a page on fallback data never stamps it with a fresh timestamp', async () 
   // that as a data timestamp would present fabricated values as freshly
   // observed, which is the failure this contract exists to prevent.
   for (const path of FALLBACK_AWARE_PAGES) {
-    const source = await read(path);
+    const source = await implementationOf(path);
     // Matched loosely on purpose: the guarantee is "the stamp is gated on
     // isFallback", not one particular spelling of it. Pinning the exact line
     // would make a prettier run look like a contract violation.
@@ -330,8 +338,9 @@ test('home-page event tone fallbacks remain semantic problem states', async () =
 });
 
 test('tipping-point reports never label an assumed fossil anchor as observed', async () => {
+  const zhCopy = JSON.parse(await read('apps/web/src/locales/zh.json')).tipping_point_report;
   for (const path of TIPPING_POINT_REPORT_PAGES) {
-    const source = await read(path);
+    const source = await implementationOf(path);
     assert.match(source, /const fossilJetSource\s*=/, `${path} must retain the fossil-price fallback level`);
     assert.match(
       source,
@@ -340,7 +349,11 @@ test('tipping-point reports never label an assumed fossil anchor as observed', a
     );
     if (source.includes('0.657')) {
       assert.match(source, /fossilJetSource === 'assumed'/, `${path} must expose the 0.657 fallback branch`);
-      assert.match(source, /内置假设 0\.657 USD\/L/, `${path} must disclose the 0.657 assumption on the page`);
+      assert.match(
+        `${zhCopy.chart_why_assumed}\n${zhCopy.source_fossil_assumed}\n${zhCopy.limitations.join('\n')}`,
+        /内置假设 0\.657 USD\/L/,
+        `${path} must disclose the 0.657 assumption in the zh locale file`
+      );
     }
   }
 });
