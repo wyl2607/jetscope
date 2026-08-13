@@ -96,5 +96,182 @@
       "Diese Antworten beschreiben die beabsichtigte Funktion des aktuellen Deployments und ändern sich nicht mit Echtzeitdaten; die konkrete Bereitschaft steht auf der Admin-Seite.",
       "Die FAQ ersetzt nicht die aktuellen Zustände und Grenzen auf den Quellen-, Forschungs- oder Szenarioseiten."
     ]
+  },
+  "scenarios": {
+    "meta_title": "Szenario-Workbench",
+    "meta_description": "Deutsche JetScope-Ansicht für gespeicherte SAF-Übergangsannahmen, Marktkontext, Risikosignale und geschützte Schreibgrenzen.",
+    "eyebrow": "Szenarioprüfung",
+    "title": "Szenario-Workbench",
+    "question": "Repräsentieren die gespeicherten Annahmen noch den aktuellen Markt?",
+    "signal_row_label": "Szenarioentscheidung",
+    "transition_signal": {
+      "label": "Übergangssignal",
+      "hint": "Aktuelle Kipppunkt-Einschätzung der SAF-Kosten gegenüber fossilem Kerosin.",
+      "hint_fallback": "Die Kipppunkt-Schnittstelle hat kein Ergebnis geliefert; die aktuelle Aussage stammt aus eingebauten Annahmen.",
+      "saf_advantaged": "SAF ist im Vorteil",
+      "switch_window": "Wechselfenster offen",
+      "fossil_advantaged": "SAF bleibt unwirtschaftlich",
+      "needs_review": "Prüfung nötig"
+    },
+    "data_posture": {
+      "label": "Datenlage",
+      "connected": "Daten angebunden",
+      "partial": "Teilweise Annahmen",
+      "assumed": "Eingebaute Annahmen",
+      "hint": "{count} zentrale Eingaben nutzen Annahmen oder nicht verfügbare Daten.",
+      "hint_fallback": "Der Markt-Snapshot-Fallback ist aktiv; Zahlen auf der Seite sind keine frisch beobachteten Marktfakten."
+    },
+    "airline_signal": {
+      "label": "Airline-Entscheidungssignal",
+      "hint": "Reserve, CO2-Preis und Kerosin werden in diskutierbare Airline-Handlungswahrscheinlichkeiten übersetzt.",
+      "switch_window": "Wechselfenster offen",
+      "capacity_stress": "Kapazitätsdruck dominant",
+      "incremental": "Schrittweise Anpassung",
+      "needs_review": "Prüfung nötig"
+    },
+    "reserve": {
+      "label": "Reserveabdeckung",
+      "weeks": "{weeks} Wochen",
+      "needs_review": "Prüfung nötig",
+      "hint": "Quelle {source} · Konfidenz {confidence}%",
+      "hint_fallback": "Echtzeit-Reservedaten sind nicht verfügbar; die aktuelle Wochenzahl ist nur eine editierbare Szenarioannahme."
+    },
+    "assumption_posture": {
+      "label": "Annahmenstatus",
+      "unreliable": "Nicht belastbar",
+      "reassess": "Neu bewerten",
+      "review": "Prüfen",
+      "usable": "Vertretbar",
+      "hint_fallback": "Der Markt-Read-Model-Fallback macht die gespeicherten Annahmen nicht automatisch belastbar.",
+      "hint_review": "Quellenlage, Risiko oder fehlende Szenarien verlangen eine Prüfung vor der Übernahme.",
+      "hint_ok": "Aktuelle Quellenlage und Risikofenster geben keinen unmittelbaren Prüfhinweis."
+    },
+    "saved_scenarios": {
+      "label": "Gespeicherte Szenarien",
+      "hint": "Workspace-Annahmen stehen für Vergleich und Review bereit.",
+      "hint_empty": "Noch kein gespeichertes Szenario; neues Szenario in der primären Arbeitsfläche anlegen."
+    },
+    "market_context": {
+      "label": "Marktkontext",
+      "value": "{brent} USD/bbl",
+      "hint": "Jet {jet} USD/L | EU-Jet-Proxy {eu} USD/L | Carbon {carbon} USD/tCO2"
+    },
+    "risk_signal": {
+      "label": "Höchstes Risikosignal",
+      "none": "Keine Anomalie",
+      "none_hint": "Das Marktfenster hat noch kein priorisiertes Warnsignal erzeugt.",
+      "hint": "{level} | Stichproben {samples} | Stand {asOf}",
+      "level_normal": "normal",
+      "level_watch": "Beobachtung",
+      "level_alert": "Alarm"
+    },
+    "source_status": {
+      "ok": "gesund",
+      "degraded": "eingeschränkt",
+      "offline": "offline",
+      "unknown": "unbekannt"
+    },
+    "unknown_cause": "unbekannte Ursache",
+    "not_available": "n/a",
+    "readiness_panel": {
+      "title": "Übergangsüberwachung",
+      "why": "Kraftstoffpreis, CO2-Preis, Reservedruck und Politikziele in einer Arbeitsfläche prüfen, welche SAF-Pfade nah an der Umsetzbarkeit liegen."
+    },
+    "registry_panel": {
+      "title": "Szenarioverwaltung",
+      "why": "Vom Team bestätigte Übergangsannahmen speichern und prüfen; geschützte Schreibvorgänge bleiben in der primären Arbeitsfläche."
+    },
+    "capabilities_panel": {
+      "title": "Workspace-Fähigkeiten",
+      "why": "Diese Fähigkeiten beschreiben, wie Szenarien genutzt werden können, ohne Workflow-Text als Marktaussage zu lesen."
+    },
+    "capabilities": [
+      {
+        "title": "Annahmen speichern",
+        "body": "Ölpreis, CO2-Preis, Subventionen und Streckenkosten als wiederverwendbare Entscheidungsversionen speichern."
+      },
+      {
+        "title": "Druck vergleichen",
+        "body": "Aktuellen Markt, Reservedruck und Politikziele gegenüberstellen und prüfen, welcher Pfad zuerst tragfähig wird."
+      },
+      {
+        "title": "Sensitivität scannen",
+        "body": "Kraftstoff, CO2-Preis und Subventionen im Bereich scannen und die einflussreichsten Eingaben finden."
+      }
+    ],
+    "duties_panel": {
+      "title": "Seitenzuständigkeit",
+      "why": "Die Auswahlfrage der Szenarioseite von Cockpit, Krisenmonitor und Quellenprüfung trennen."
+    },
+    "duties": [
+      "Echtzeitpreise stehen im Entscheidungscockpit und beantworten, was gerade passiert.",
+      "Der Krisenmonitor erklärt die Druckquelle und beantwortet, warum gehandelt werden muss.",
+      "Die Szenario-Arbeitsfläche speichert Annahmen und Vergleiche und beantwortet, wie als Nächstes gewählt wird.",
+      "Die Quellenprüfung auf der Quellenseite beantwortet, ob die Beweiskette der Zahlen belastbar genug ist."
+    ],
+    "assumptions_panel": {
+      "title": "Szenarioannahmen",
+      "why": "Gespeicherte Workspace-Datensätze zeigen, welche Annahmen für Vergleich und Review verfügbar sind.",
+      "empty": "Noch keine gespeicherten Annahmen verfügbar. Nutze den primären Szenario-Editor, um überprüfbare Fälle für Preis-, Reserve-, Routen- und Policy-Diskussionen anzulegen."
+    },
+    "scenario_name_placeholder": "Gespeichertes Szenario {index}",
+    "context_panel": {
+      "title": "Entscheidungskontext",
+      "why": "Szenarien werden erst mit aktueller Evidenz entscheidungsrelevant; Fallbacks und fehlende Signale müssen sichtbar bleiben."
+    },
+    "context_paragraphs": [
+      "Szenarien sind Evidenzdatensätze für Review und Teamdiskussion; sie ersetzen keine Beschaffungsfreigabe, Quellenvalidierung oder geschützte Admin-Konfiguration.",
+      "Vor dem Vergleich von Annahmen prüfen, ob Quellenabdeckung und Startbereitschaft Fallbacks oder deaktivierte Systemteile sichtbar machen."
+    ],
+    "delivery_fallback": "Lokaler API-Fallback ist aktiv; Annahmen vor Nutzung mit Quellenprüfung und Startbereitschaft abgleichen.",
+    "delivery_live": "Quellenstatus: {status} | Aktualität {minutes} Min.",
+    "review_panel": {
+      "title": "Review-Ablauf",
+      "why": "Die nächsten Schritte führen von gespeicherten Annahmen zurück zu Evidenz, Startbereitschaft und geschützten Schreibgrenzen."
+    },
+    "write_boundary_label": "Geschützte Schreibgrenze",
+    "write_boundary_body": "Erstellen, Aktualisieren und Löschen bleiben in der primären Szenario-Arbeitsfläche.",
+    "actions": [
+      {
+        "id": "primary_editor",
+        "label": "Primären Szenario-Editor öffnen",
+        "description": "Szenarien in der primären Arbeitsfläche erstellen, aktualisieren oder löschen; Schreibvorgänge bleiben dort durch den Admin-Token geschützt."
+      },
+      {
+        "id": "sources",
+        "label": "Quellennachweise prüfen",
+        "description": "Fallback-, Proxy-, eingeschränkte und volatile Zeilen prüfen, bevor gespeicherte Annahmen für Entscheidungen genutzt werden."
+      },
+      {
+        "id": "dashboard",
+        "label": "Entscheidungscockpit öffnen",
+        "description": "Zum Live-Marktsnapshot, zur Quellenlage und zum wichtigsten Risikosignal zurückkehren."
+      },
+      {
+        "id": "admin",
+        "label": "Startbereitschaft prüfen",
+        "description": "Bestätigen, ob geschützte Schreibvorgänge, Quellenabdeckung und Forschungsgrundlagen einsatzbereit sind."
+      }
+    ],
+    "source_dashboard_fallback": "Markt-Snapshot-API nicht erreichbar; es werden interne Ersatzwerte verwendet",
+    "source_dashboard_live": "Markt-Snapshot-API (Quellenstatus, Konfidenz, Fallback-Rate und Aktualität)",
+    "source_tipping_fallback": "Kipppunktanalyse nicht erreichbar; es werden eingebaute Szenarioannahmen verwendet",
+    "source_tipping_live": "Kipppunktanalyse (SAF-Kostensignal aus Markteingaben abgeleitet)",
+    "source_airline_fallback": "Airline-Entscheidungsanalyse nicht erreichbar; es werden eingebaute Szenarioannahmen verwendet",
+    "source_airline_live": "Airline-Entscheidungsanalyse (Handlungswahrscheinlichkeiten aus Markt- und Reserveeingaben abgeleitet)",
+    "source_reserve_live": "Reservesignal ({source})",
+    "source_reserve_fallback": "Reservesignal nicht verfügbar; es wird eine editierbare Wochenannahme verwendet",
+    "source_store": "Lokaler Szenariospeicher (gespeicherte Teamannahmen, keine Marktmessung)",
+    "source_store_count": "Lokaler Szenariospeicher ({count} gespeicherte Szenarien)",
+    "source_policy_live": "RefuelEU-Politikziel-Schnittstelle (gesetzliche Beimischungsvorgaben)",
+    "source_policy_empty": "RefuelEU-Politikziele wurden noch nicht zurückgegeben",
+    "source_risk": "Das Risikosignal wird aus der Bewegung im Markthistorienfenster abgeleitet, nicht vom Upstream geliefert",
+    "method_label": "Quellen- und Methodenliste",
+    "limitations": [
+      "Gespeicherte Szenarien sind lokale Annahmen für Prüfung und Diskussion; sie ersetzen keine Beschaffungsfreigabe.",
+      "Ein Fallback-Read-Model erhält die Seite sichtbar, liefert aber keinen gültigen Datenstand für die enthaltenen Ersatzwerte.",
+      "Kein Risikosignal bei dünner Stichprobe heißt nicht, dass kein Risiko besteht.",
+      "Die geschützte Schreibgrenze liegt in der primären Szenario-Arbeitsfläche."
+    ]
   }
 }

@@ -96,5 +96,182 @@
       "These answers describe the current deployment design intent and do not change with live data; use the Admin page for the environment’s actual readiness.",
       "The FAQ does not replace the current states and limitations on the Sources, Research, or Scenarios pages."
     ]
+  },
+  "scenarios": {
+    "meta_title": "Scenario Workbench",
+    "meta_description": "English JetScope scenario review surface for saved assumptions, market context, risk signals, and protected write boundaries.",
+    "eyebrow": "Scenario review",
+    "title": "Scenario Workbench",
+    "question": "Do the saved assumptions still represent the current market?",
+    "signal_row_label": "Scenario decision signals",
+    "transition_signal": {
+      "label": "Transition signal",
+      "hint": "The current tipping-point model’s view of SAF cost versus fossil jet.",
+      "hint_fallback": "The tipping-point API did not return a result; the current conclusion is a built-in assumption.",
+      "saf_advantaged": "SAF is advantaged",
+      "switch_window": "Switch window opening",
+      "fossil_advantaged": "SAF is still uneconomic",
+      "needs_review": "Needs review"
+    },
+    "data_posture": {
+      "label": "Data posture",
+      "connected": "Data connected",
+      "partial": "Partial assumptions",
+      "assumed": "Built-in assumptions",
+      "hint": "{count} key inputs use assumptions or unavailable data.",
+      "hint_fallback": "The market snapshot API is on fallback; numbers on this page are not freshly observed market facts."
+    },
+    "airline_signal": {
+      "label": "Airline decision signal",
+      "hint": "Maps reserve, carbon price, and jet-fuel inputs into discussable airline action probabilities.",
+      "switch_window": "Switch window opening",
+      "capacity_stress": "Capacity stress dominant",
+      "incremental": "Incremental adjustment",
+      "needs_review": "Needs review"
+    },
+    "reserve": {
+      "label": "Reserve coverage",
+      "weeks": "{weeks} weeks",
+      "needs_review": "Needs review",
+      "hint": "Source {source} · confidence {confidence}%",
+      "hint_fallback": "Live reserve data is unavailable; the current week count is only an editable scenario assumption."
+    },
+    "assumption_posture": {
+      "label": "Assumption posture",
+      "unreliable": "Not reliable",
+      "reassess": "Reassess",
+      "review": "Review first",
+      "usable": "Usable",
+      "hint_fallback": "The market read-model fallback does not make saved assumptions reliable by itself.",
+      "hint_review": "Source posture, risk, or missing scenarios require review before carrying assumptions forward.",
+      "hint_ok": "Current source posture and risk window show no immediate review trigger."
+    },
+    "saved_scenarios": {
+      "label": "Saved scenarios",
+      "hint": "Workspace assumptions are available for comparison.",
+      "hint_empty": "No saved scenario yet; create one in the primary scenario editor."
+    },
+    "market_context": {
+      "label": "Market context",
+      "value": "${brent}/bbl",
+      "hint": "Jet ${jet}/L | EU jet proxy ${eu}/L | carbon ${carbon}/tCO2"
+    },
+    "risk_signal": {
+      "label": "Highest risk signal",
+      "none": "No anomaly",
+      "none_hint": "The market history window has not produced a ranked alert yet.",
+      "hint": "{level} | samples {samples} | as of {asOf}",
+      "level_normal": "normal",
+      "level_watch": "watch",
+      "level_alert": "alert"
+    },
+    "source_status": {
+      "ok": "healthy",
+      "degraded": "degraded",
+      "offline": "offline",
+      "unknown": "unknown"
+    },
+    "unknown_cause": "unknown cause",
+    "not_available": "n/a",
+    "readiness_panel": {
+      "title": "Transition monitoring",
+      "why": "Place fuel price, carbon price, reserve pressure, and policy targets in one workspace to see which SAF paths are close to an executable range."
+    },
+    "registry_panel": {
+      "title": "Scenario management",
+      "why": "Save and review team-confirmed transition assumptions; protected writes stay in this primary workspace."
+    },
+    "capabilities_panel": {
+      "title": "Workspace capabilities",
+      "why": "These capabilities explain how readers can use scenarios, without treating workflow copy as a market conclusion."
+    },
+    "capabilities": [
+      {
+        "title": "Save assumptions",
+        "body": "Save oil price, carbon price, subsidy, and route cost as reusable decision versions."
+      },
+      {
+        "title": "Compare pressure",
+        "body": "Compare the current market, reserve pressure, and policy targets to see which path becomes viable first."
+      },
+      {
+        "title": "Sensitivity scan",
+        "body": "Scan ranges around fuel, carbon price, and subsidy to find the inputs that move the conclusion most."
+      }
+    ],
+    "duties_panel": {
+      "title": "Page responsibilities",
+      "why": "Keep the scenario page’s choice question separate from the cockpit, crisis monitor, and source-review pages."
+    },
+    "duties": [
+      "Live prices live on the decision cockpit and answer what is happening now.",
+      "Crisis monitoring explains the source of pressure and answers why action is needed.",
+      "The scenario workspace saves assumptions and comparisons and answers how to choose next.",
+      "Source review on the sources page answers whether the evidence chain behind the numbers is reliable enough."
+    ],
+    "assumptions_panel": {
+      "title": "Scenario assumptions",
+      "why": "Saved workspace records show which assumptions are available for comparison and review.",
+      "empty": "No saved assumptions are available yet. Use the primary scenario editor to create reviewable cases for pricing, reserve, route, and policy discussions."
+    },
+    "scenario_name_placeholder": "Saved scenario {index}",
+    "context_panel": {
+      "title": "Decision context",
+      "why": "Scenarios become decision-relevant only alongside current evidence; fallback and missing-signal boundaries stay visible."
+    },
+    "context_paragraphs": [
+      "Scenarios are evidence records for review and team discussion; they do not replace procurement approval, source validation, or protected admin configuration.",
+      "Before comparing assumptions, confirm that source coverage and launch readiness are not hiding fallback or disabled-state boundaries."
+    ],
+    "delivery_fallback": "Local API fallback is active: {error}. Review assumptions against source evidence before use.",
+    "delivery_live": "Source status: {status} | freshness {minutes} min.",
+    "review_panel": {
+      "title": "Review workflow",
+      "why": "The next steps move from saved assumptions back to evidence, launch readiness, and protected write boundaries."
+    },
+    "write_boundary_label": "Protected write boundary",
+    "write_boundary_body": "create, update, and delete actions remain in the primary scenario workspace.",
+    "actions": [
+      {
+        "id": "primary_editor",
+        "label": "Open primary scenario editor",
+        "description": "Create, update, or delete scenarios in the primary workspace where admin-token writes are already guarded."
+      },
+      {
+        "id": "sources",
+        "label": "Review source evidence",
+        "description": "Check fallback, proxy, degraded, and volatility rows before using saved assumptions in decisions."
+      },
+      {
+        "id": "dashboard",
+        "label": "Open decision cockpit",
+        "description": "Return to the live market snapshot, source posture, and top risk signal."
+      },
+      {
+        "id": "admin",
+        "label": "Check launch readiness",
+        "description": "Confirm whether protected writes, source coverage, and research prerequisites are ready."
+      }
+    ],
+    "source_dashboard_fallback": "Market snapshot API unavailable; internal fallback values are being used",
+    "source_dashboard_live": "Market snapshot API (source posture, confidence, fallback rate, and freshness)",
+    "source_tipping_fallback": "Tipping-point analysis unavailable; built-in scenario assumptions are being used",
+    "source_tipping_live": "Tipping-point analysis API (SAF cost signal derived from market inputs)",
+    "source_airline_fallback": "Airline-decision analysis unavailable; built-in scenario assumptions are being used",
+    "source_airline_live": "Airline-decision analysis API (action probabilities derived from market and reserve inputs)",
+    "source_reserve_live": "Reserve signal ({source})",
+    "source_reserve_fallback": "Reserve signal unavailable; an editable week-count assumption is being used",
+    "source_store": "Local scenario store (saved team assumptions, not market observations)",
+    "source_store_count": "Local scenario store ({count} saved scenarios)",
+    "source_policy_live": "RefuelEU policy-target API (statutory blending mandates)",
+    "source_policy_empty": "RefuelEU policy targets have not been returned yet",
+    "source_risk": "Risk signal derived from movement in the market history window, not supplied directly by upstream",
+    "method_label": "Sources and methods",
+    "limitations": [
+      "Saved scenarios are local assumptions for review and discussion; they do not replace procurement approval.",
+      "A fallback read model keeps the page available but does not provide a valid data-as-of for its replacement values.",
+      "No risk signal with a thin sample does not mean there is no risk.",
+      "Protected writes remain in the primary scenario workspace."
+    ]
   }
 }
