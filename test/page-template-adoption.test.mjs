@@ -107,13 +107,16 @@ async function read(path) {
 }
 
 /**
- * Thin locale wrappers render `<FaqPage locale="…" />`. The template contract
- * lives in that shared view, not in the three route files.
+ * Thin locale wrappers render `<FaqPage locale="…" />` or `<HomePage locale="…" />`.
+ * The template contract lives in that shared view, not in the three route files.
  */
 async function implementationOf(path) {
   const source = await read(path);
   if (/\/faq\/page\.tsx$/.test(path) && source.includes('<FaqPage')) {
     return read('apps/web/components/faq-page.tsx');
+  }
+  if (HOME_PAGES.includes(path) && source.includes('<HomePage')) {
+    return read('apps/web/components/home-page.tsx');
   }
   return source;
 }
@@ -130,7 +133,8 @@ test('every converted page states the decision question it answers', async () =>
   for (const path of CONVERTED_PAGES) {
     const source = await implementationOf(path);
 
-    if (/\/faq\/page\.tsx$/.test(path)) {
+    if (/\/faq\/page\.tsx$/.test(path) || HOME_PAGES.includes(path)) {
+      const dictionaryKey = HOME_PAGES.includes(path) ? 'home' : 'faq';
       assert.match(
         source,
         /question=\{copy\.question\}/,
@@ -138,10 +142,10 @@ test('every converted page states the decision question it answers', async () =>
       );
       for (const locale of ['zh', 'de', 'en']) {
         const dictionary = JSON.parse(await read(`apps/web/src/locales/${locale}.json`));
-        const question = dictionary.faq?.question;
+        const question = dictionary[dictionaryKey]?.question;
         assert.ok(
           typeof question === 'string' && question.trim().length > 10,
-          `${locale}.json faq.question must be a real sentence, got: ${question}`
+          `${locale}.json ${dictionaryKey}.question must be a real sentence, got: ${question}`
         );
       }
       continue;
@@ -303,7 +307,7 @@ test('a reserve reading is labelled by how it was produced, not assumed observed
 
 test('home-page event tone fallbacks remain semantic problem states', async () => {
   function assertSemanticFallback(source, path) {
-    const mapping = source.match(/function eventTone\([^)]*\)[^{]*\{([\s\S]*?)\n\}/);
+    const mapping = source.match(/function eventTone\([^)]*\)[^{]*\{([\s\S]*?)\r?\n\}/);
     assert.ok(mapping, `${path} must keep eventTone as an explicit status mapping`);
     const returns = [...mapping[1].matchAll(/return\s+'([^']+)'/g)].map((match) => match[1]);
     const fallback = returns.at(-1);
@@ -315,18 +319,22 @@ test('home-page event tone fallbacks remain semantic problem states', async () =
     );
   }
 
-  for (const path of HOME_PAGES) {
-    const source = await read(path);
-    assertSemanticFallback(source, path);
+  const path = 'apps/web/components/home-page.tsx';
+  const source = await read(path);
+  assertSemanticFallback(source, path);
 
-    // Mutation check: prove this guard fails for the historical regression,
-    // rather than merely matching the current implementation by accident.
-    const regressed = source.replace(/(function eventTone\([^)]*\)[^{]*\{[\s\S]*?)return 'text-warning';\n\}/, "$1return 'text-muted';\n}");
-    assert.throws(
-      () => assertSemanticFallback(regressed, `${path} (mutated)`),
-      /must not wash an unknown event type/
-    );
-  }
+  // Mutation check: prove this guard fails for the historical regression,
+  // rather than merely matching the current implementation by accident.
+  // `\r?` keeps the mutation live on a Windows working tree without
+  // changing the LF source CI reads.
+  const regressed = source.replace(
+    /(function eventTone\([^)]*\)[^{]*\{[\s\S]*?)return 'text-warning';\r?\n\}/,
+    "$1return 'text-muted';\n}"
+  );
+  assert.throws(
+    () => assertSemanticFallback(regressed, `${path} (mutated)`),
+    /must not wash an unknown event type/
+  );
 });
 
 test('tipping-point reports never label an assumed fossil anchor as observed', async () => {
@@ -347,7 +355,7 @@ test('tipping-point reports never label an assumed fossil anchor as observed', a
 
 test('home pages derive as-of from source timestamps, never the current clock', async () => {
   for (const path of HOME_PAGES) {
-    const source = await read(path);
+    const source = await implementationOf(path);
     const assignment = source.match(/const asOf\s*=\s*([^;]+);/);
     assert.ok(assignment, `${path} must derive a page-level asOf`);
     assert.doesNotMatch(assignment[1], /new Date\s*\(/, `${path} must not stamp the home page with the current clock`);

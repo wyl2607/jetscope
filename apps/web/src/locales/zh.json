@@ -15,7 +15,115 @@
     "description": "用五分钟了解欧洲航油压力信号、SAF 转折点事件、EU ETS 成本影响与 AI 辅助研究工作流。",
     "primary_cta": "打开决策驾驶舱",
     "scenario_cta": "测试情景",
-    "sources_cta": "查看来源质量"
+    "sources_cta": "查看来源质量",
+    "page_title": "JetScope",
+    "eyebrow": "Phase C 作品集入口",
+    "question": "这个产品能不能回答我关心的问题，我该从哪一页开始？",
+    "show_transition_ladder": true,
+    "show_research_brief": true,
+    "show_thesis": true,
+    "show_dual_domain": true,
+    "swap_research_limitation": true,
+    "entry_layout": "portfolio",
+    "chinese_workspace_cta": "",
+    "chinese_workspace_href": "/dashboard",
+    "thesis_ctas": ["primary", "scenario", "sources"],
+    "signals": {
+      "label": "产品入口与当前信号",
+      "recommended_label": "推荐起点",
+      "recommended_value": "决策驾驶舱",
+      "recommended_hint": "先看全局结论，再按问题进入详情页。",
+      "reserve_label": "库存覆盖",
+      "reserve_unavailable": "暂不可用",
+      "reserve_unit": "周",
+      "reserve_hint": "压力等级：{stress_level} · /v1/reserves/eu",
+      "reserve_hint_unavailable": "上游储备数据暂不可用，必须复核。",
+      "event_label": "最近转折事件",
+      "event_empty": "暂无事件",
+      "event_hint": "{pathway} · 已载入 {count} 条 · /v1/analysis/tipping-point/events",
+      "event_hint_empty": "事件流为空，不等于没有风险。",
+      "research_label": "研究信号",
+      "research_not_found": "未部署",
+      "research_error": "接口异常",
+      "research_count": "{count} 条",
+      "research_hint": "/v1/research/signals · 状态口径与研究页一致。"
+    },
+    "thesis": {
+      "title": "产品论点",
+      "why": "先判断 JetScope 的问题空间是否与你的工作相关，再决定进入驾驶舱、情景或来源复核。",
+      "headline": "欧洲 Jet-A 航油库存已连续六周徘徊在三周覆盖线附近。SAF 要到什么价格，才会成为经营理性选择？",
+      "body": "JetScope 用实时市场数据与策略模型回答何时 SAF 不再只是合规成本，而是经营理性选择。"
+    },
+    "dual_domain": {
+      "title": "双域叙事",
+      "why": "同一碳价如何连接航空与电力，决定读者应进入哪一个问题域继续分析。",
+      "body": "同一 EU ETS 碳价正在同时推动天上的 SAF 转折点与地上的电网平价：它把化石燃料的排放成本显性化，也让低碳替代方案更快跨过经营理性线。",
+      "grid_cta": "查看电网平价",
+      "saf_cta": "查看 SAF 转折点"
+    },
+    "transition": {
+      "title": "脱碳碳价阶梯",
+      "why": "把不同技术放在同一碳价轴上，帮助读者选择值得继续查看的转型路径。",
+      "error_detail": "转型摘要接口暂不可用；本页保留错误态，避免这块内容静默消失。",
+      "empty_detail": "接口已响应，但没有可展示的转型摘要。"
+    },
+    "research_brief": {
+      "title": "研究决策层",
+      "why": "研究信号解释上面的市场数字在往哪个方向动，以及哪些说法仍需复核。"
+    },
+    "entries": {
+      "title": "选择下一页",
+      "why": "这些入口按任务分工，而不是用装饰性色彩暗示不存在的状态。",
+      "eyebrow_label": "深入查看",
+      "open_label": ""
+    },
+    "entry_cards": [
+      {
+        "title": "危机监测",
+        "description": "面向运营团队的实时库存覆盖、压力色带与转折事件时间线。",
+        "navId": "crisis",
+        "suffix": ""
+      },
+      {
+        "title": "研究信号台",
+        "description": "AI 信号流、双语摘要与置信度过滤，帮助快速筛选可行动线索。",
+        "navId": "research",
+        "suffix": ""
+      },
+      {
+        "title": "路径推演",
+        "description": "比较 SAF 路径与成本情景，判断何时 SAF 成为经营理性选择。",
+        "navId": "crisis",
+        "suffix": "/saf-tipping-point"
+      },
+      {
+        "title": "电网平价",
+        "description": "比较可再生 LCOE 与化石发电加 EU ETS 碳成本的交叉点。",
+        "navId": "grid",
+        "suffix": ""
+      },
+      {
+        "title": "分析报告",
+        "description": "为招聘方、评审者和业务读者准备的结构化投资与产品论证。",
+        "navId": "reports",
+        "suffix": "/tipping-point-analysis"
+      }
+    ],
+    "sources": {
+      "reserve_label": "欧盟储备覆盖 API（{source_name}）",
+      "reserve_unavailable": "当前不可用",
+      "events_label": "SAF 临界点事件流（{count} 条）",
+      "events_nav_id": "crisis",
+      "events_suffix": "/saf-tipping-point",
+      "research_label": "研究信号流（{count} 条）",
+      "method_label": "口径与来源清单"
+    },
+    "limitations": [
+      "首页是摘要与导航入口，不呈现每个数字的完整计算口径；请进入对应详情页复核。",
+      "空事件窗口不代表没有风险，研究接口未部署或异常也不代表没有市场变化。"
+    ],
+    "limitation_research_enabled": "研究信号是文章与流水线派生证据，不替代市场观测。",
+    "limitation_research_disabled": "当前环境未启用 AI 研究流水线，首页明确展示这一边界。"
   },
   "dashboard": {
     "market_price": "市场价格",

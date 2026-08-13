@@ -15,7 +15,133 @@
     "description": "A five-minute view of Europe jet fuel stress signals, SAF tipping-point events, EU ETS cost impact, and AI-assisted research workflows.",
     "primary_cta": "Open decision cockpit",
     "scenario_cta": "Test a scenario",
-    "sources_cta": "Check source quality"
+    "sources_cta": "Check source quality",
+    "page_title": "JetScope Europe",
+    "eyebrow": "English preview",
+    "question": "Can this product answer my question, and which page should I open first?",
+    "show_transition_ladder": false,
+    "show_research_brief": false,
+    "show_thesis": true,
+    "show_dual_domain": false,
+    "swap_research_limitation": false,
+    "entry_layout": "index",
+    "chinese_workspace_cta": "Open full Chinese workspace",
+    "chinese_workspace_href": "/dashboard",
+    "thesis_ctas": ["primary", "chinese_workspace"],
+    "signals": {
+      "label": "Entry point and current signals",
+      "recommended_label": "Recommended start",
+      "recommended_value": "Decision cockpit",
+      "recommended_hint": "Begin with the whole picture, then move into the relevant review.",
+      "reserve_label": "EU reserve coverage",
+      "reserve_unavailable": "Unavailable",
+      "reserve_unit": "weeks",
+      "reserve_hint": "Reserve posture · /v1/reserves/eu",
+      "reserve_hint_unavailable": "Reserve posture · /v1/reserves/eu",
+      "event_label": "Latest tipping event",
+      "event_empty": "No event",
+      "event_hint": "{count} events in the 42-day window · /v1/analysis/tipping-point/events",
+      "event_hint_empty": "{count} events in the 42-day window · /v1/analysis/tipping-point/events",
+      "research_label": "Research signals",
+      "research_not_found": "Not deployed",
+      "research_error": "Error",
+      "research_count": "{count} signals",
+      "research_hint": "/v1/research/signals · same status language as the research page"
+    },
+    "thesis": {
+      "title": "Product thesis",
+      "why": "Decide whether JetScope covers your problem space before choosing a detailed workflow.",
+      "headline": "When does SAF become an operating decision, not only a compliance cost?",
+      "body": "JetScope combines market snapshots, reserve stress, policy cost pressure, and research signals into a reviewable workflow."
+    },
+    "dual_domain": {
+      "title": "Two problem spaces",
+      "why": "The same carbon price connects aviation and power, but they remain separate review paths.",
+      "body": "EU ETS carbon pricing pushes both the SAF tipping point and grid parity.",
+      "grid_cta": "Open grid parity",
+      "saf_cta": "Open SAF tipping point"
+    },
+    "transition": {
+      "title": "Decarbonisation ladder",
+      "why": "Compare technologies on one carbon-price axis.",
+      "error_detail": "The transition summary is temporarily unavailable.",
+      "empty_detail": "The endpoint responded, but there is no transition summary to show."
+    },
+    "research_brief": {
+      "title": "Research decision layer",
+      "why": "Research signals explain which way the market numbers are moving."
+    },
+    "entries": {
+      "title": "Choose the next page",
+      "why": "Each neutral entry card names a task; colour is reserved for actual status in the signal row.",
+      "eyebrow_label": "",
+      "open_label": "Open surface"
+    },
+    "entry_cards": [
+      {
+        "title": "Decision cockpit",
+        "description": "Live market snapshot, scenario count, source posture, and highest-risk fuel-price movement.",
+        "navId": "dashboard",
+        "suffix": ""
+      },
+      {
+        "title": "Germany price monitor",
+        "description": "English price surface for Brent, global jet fuel, EU jet proxy, and carbon proxy.",
+        "navId": "prices",
+        "suffix": ""
+      },
+      {
+        "title": "Source review",
+        "description": "Row-level provenance, confidence, fallback state, and recovery actions.",
+        "navId": "sources",
+        "suffix": ""
+      },
+      {
+        "title": "Research workbench",
+        "description": "Pipeline status, empty-state honesty, signal counts, and evidence handoffs.",
+        "navId": "research",
+        "suffix": ""
+      },
+      {
+        "title": "Report workbench",
+        "description": "Source status, saved scenarios, risk signal, and launch posture.",
+        "navId": "reports",
+        "suffix": ""
+      },
+      {
+        "title": "Launch readiness",
+        "description": "Read-only prerequisite checks for admin token, source coverage, and backend readiness.",
+        "navId": "admin",
+        "suffix": ""
+      },
+      {
+        "title": "Scenario workbench",
+        "description": "Saved assumptions, current market context, risk signal, and protected write boundaries.",
+        "navId": "scenarios",
+        "suffix": ""
+      },
+      {
+        "title": "Lufthansa SAF analysis",
+        "description": "English review of the Lufthansa flight-cut signal and SAF breakeven pressure.",
+        "navId": "analysis",
+        "suffix": ""
+      }
+    ],
+    "sources": {
+      "reserve_label": "EU reserve coverage via {source_name}",
+      "reserve_unavailable": "unavailable source",
+      "events_label": "SAF tipping-point event stream ({count})",
+      "events_nav_id": "reports",
+      "events_suffix": "/tipping-point-analysis",
+      "research_label": "Derived research signals ({count})",
+      "method_label": "Source and method registry"
+    },
+    "limitations": [
+      "The home page is a summary and navigation surface; full definitions remain on each detail page.",
+      "An empty event window does not mean there is no risk."
+    ],
+    "limitation_research_enabled": "Research signals are derived evidence, not direct market observations.",
+    "limitation_research_disabled": "Research signals are derived evidence, not direct market observations."
   },
   "dashboard": {
     "market_price": "SAF Market Price",
