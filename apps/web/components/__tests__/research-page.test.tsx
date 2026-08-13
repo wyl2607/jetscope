@@ -45,7 +45,9 @@ function readyResult(signals: ResearchSignal[]): ResearchSignalsResult {
 }
 
 function actionLink(label: string) {
-  return screen.getByRole('link', { name: new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) });
+  return screen.getByRole('link', {
+    name: (accessibleName) => accessibleName.startsWith(label)
+  });
 }
 
 async function renderResearch(locale: Locale, result: ResearchSignalsResult = readyResult([signal()])) {
