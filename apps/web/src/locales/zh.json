@@ -96,5 +96,197 @@
       "这些回答描述的是当前部署的设计意图，不随实时数据变化；具体环境是否就绪以上线前置状态为准。",
       "FAQ 不替代来源、研究或情景页面上的实时状态与适用边界。"
     ]
+  },
+  "sources": {
+    "meta_title": "来源 · Trust Center",
+    "meta_description": "查看 JetScope 来源溯源、as-of、置信度、滞后、回退状态与 market refresh 健康度。",
+    "eyebrow": "来源目录",
+    "title": "来源与溯源视图",
+    "question": "这一屏的市场输入，现在有哪些还不能直接拿去做决策？",
+    "signal_row_label": "来源可信信号",
+    "metrics": {
+      "needs_review": {
+        "label": "需复核",
+        "hint_open": "{fallback} 个回退、{degraded} 个降级，或存在代理/波动警报。",
+        "hint_clear": "当前来源行没有需要额外复核的信号。"
+      },
+      "trust_posture": {
+        "label": "信任姿态"
+      },
+      "average_confidence": {
+        "label": "平均置信度",
+        "hint": "完整度 {completeness} · {freshness}"
+      },
+      "input_mix": {
+        "label": "输入构成",
+        "value": "{live} 个实时",
+        "hint": "代理 {proxy} · 回退 {fallback} · 降级 {degraded}"
+      }
+    },
+    "trust_posture": {
+      "review": "需核验降级输入",
+      "proxy": "含代理来源",
+      "ready": "实时来源就绪"
+    },
+    "trust_hint": {
+      "review": "决策支持：请核验降级输入",
+      "proxy": "决策支持：含代理来源",
+      "ready": "决策支持：实时来源就绪"
+    },
+    "freshness": {
+      "unknown": "新鲜度未知",
+      "latest": "最新来源 {lag}"
+    },
+    "filters": {
+      "all": { "label": "全部", "hint": "完整矩阵" },
+      "review": { "label": "需复核", "hint": "回退、降级、代理或波动警报" },
+      "fallback": { "label": "回退", "hint": "当前依赖回退路径" },
+      "proxy": { "label": "代理", "hint": "代理或派生估算" },
+      "live": { "label": "实时", "hint": "实时主来源或官方来源" }
+    },
+    "surfaces": {
+      "brent_usd_per_bbl": "Brent",
+      "jet_usd_per_l": "航煤",
+      "carbon_proxy_usd_per_t": "碳价代理",
+      "jet_eu_proxy_usd_per_l": "航煤（欧盟代理）",
+      "rotterdam_jet_fuel_usd_per_l": "Rotterdam 航煤",
+      "eu_ets_price_eur_per_t": "EU ETS",
+      "germany_premium_pct": "德国溢价"
+    },
+    "trust": {
+      "live": "实时",
+      "proxy": "代理",
+      "fallback": "回退",
+      "degraded": "降级"
+    },
+    "status": {
+      "ok": "正常",
+      "seed": "种子回退",
+      "fallback": "回退",
+      "error": "异常",
+      "unknown": "未知"
+    },
+    "alert": {
+      "alert": "警报",
+      "watch": "观察",
+      "normal": "正常"
+    },
+    "source_type": {
+      "live": "实时主来源或官方来源",
+      "proxy": "代理或派生",
+      "fallback": "回退路径",
+      "degraded": "需排查"
+    },
+    "read_model_literals": {
+      "无数据": "无数据",
+      "覆盖不可用": "覆盖不可用",
+      "Brent 派生回退": "Brent 派生回退"
+    },
+    "read_model_replacements": {
+      "派生回退": "派生回退",
+      "回退": "回退"
+    },
+    "panels": {
+      "provenance": {
+        "title": "来源溯源",
+        "why": "当前市场快照里有多少是实测、多少是代理、多少是回退——这决定下面每一行能不能直接引用。"
+      },
+      "coverage": {
+        "title": "来源覆盖",
+        "why": "覆盖状态说明哪些 canonical metric 有可追溯的输入，避免把缺口误读成完整市场视图。"
+      },
+      "market_health": {
+        "title": "Market refresh health",
+        "why": "刷新循环的健康度决定来源表是近期快照，还是可能已经脱离预期更新节奏。"
+      },
+      "recovery": {
+        "title": "恢复步骤",
+        "why": "把需要复核的来源变成可执行入口，避免数据质量问题停留在状态标签里。"
+      },
+      "matrix": {
+        "title": "市场输入矩阵",
+        "why": "逐行展示来源、时间、滞后、数值和处理入口，支持在引用市场输入前完成复核。"
+      }
+    },
+    "market_health": {
+      "line1": "间隔 {interval}s · age {age} · next ETA {eta} · status",
+      "line2": "runs {ok}/{total}",
+      "success": " · success {rate}%",
+      "unavailable": "无法加载 /v1/market/health。请确认 API 已启动并有 refresh run。"
+    },
+    "recovery": {
+      "review_badge": "需复核 {count}",
+      "priority_badge": "优先处理 {count}",
+      "open_admin": "打开 Admin 刷新",
+      "show_review": "只看需复核",
+      "back_dashboard": "返回驾驶舱",
+      "open_action": "处理入口",
+      "empty": "当前来源没有回退或降级行；代理来源仍应在重大采购、定价、披露前做人工复核。"
+    },
+    "review_actions": {
+      "critical": {
+        "label": "刷新并复核",
+        "detail": "配置管理令牌后触发刷新，再回到本页确认该指标脱离回退或错误状态。"
+      },
+      "review": {
+        "label": "人工复核代理假设",
+        "detail": "用于高风险定价或采购决策前，交叉核对原始报价、政策口径和报告说明。"
+      },
+      "normal": {
+        "label": "保留快照证据",
+        "detail": "当前来源可用；重大决策前记录生成时间、置信度和快照链接。"
+      }
+    },
+    "reasons": {
+      "fallback": "实时覆盖不可用，或已使用回退路径。",
+      "status": "来源状态为 {status}。",
+      "proxy": "派生或代理指标；用于高风险决策前需要复核。",
+      "alert": "近期波动被标记为 {alert}。",
+      "ok": "实时主来源或官方来源，未标记降级。"
+    },
+    "table": {
+      "surface": "界面",
+      "source": "来源",
+      "trust": "可信状态",
+      "scope": "范围",
+      "confidence": "置信度",
+      "as_of": "As of",
+      "lag": "滞后",
+      "status": "状态",
+      "fallback": "Fallback",
+      "value": "数值",
+      "change_1d": "1d",
+      "change_7d": "7d",
+      "change_30d": "30d",
+      "volatility": "波动",
+      "trend": "趋势",
+      "action": "操作",
+      "reason": "可信原因 / 降级原因",
+      "empty": "当前筛选没有匹配来源。",
+      "focus": "聚焦",
+      "record": "留证",
+      "handle": "处理",
+      "trend_alt": "{surface} 趋势",
+      "na": "n/a",
+      "showing": "正在显示 {visible} / {total}",
+      "generated": "生成于 {when}",
+      "no_stamp": "生成时间不可作为数据时间",
+      "fallback_note": " · 实时来源覆盖不可用时显示回退估算",
+      "focus_banner": "已从驾驶舱风险信号聚焦：",
+      "clear_focus": "清除"
+    },
+    "footer": {
+      "source_ok": "来源读模型（覆盖、置信度、滞后、回退与复核状态）",
+      "source_fallback": "来源读模型不可用，当前为回退估算（{error}）",
+      "health_ok": "Market refresh health API",
+      "health_unavailable": "Market refresh health API 当前不可用",
+      "unknown_error": "未知原因",
+      "method_label": "来源覆盖与复核方法",
+      "limitations": [
+        "来源状态说明输入质量，不证明单个市场数字适用于所有机场、合同或交易场景。",
+        "代理、派生、回退和降级行在重大采购、定价或披露前都需要人工复核。",
+        "回退读模型的生成时间是抓取失败后的本地时间，因此本页不会把它显示为数据时间。"
+      ]
+    }
   }
 }

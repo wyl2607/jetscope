@@ -932,22 +932,34 @@ test('English scenarios page reviews saved assumptions without Chinese editor UI
 });
 
 test('German sources page exposes source review without Chinese UI copy', async () => {
-  const germanSourcesSource = await readFile(new URL('../apps/web/app/de/sources/page.tsx', import.meta.url), 'utf8');
+  const page = await readFile(new URL('../apps/web/components/sources-page.tsx', import.meta.url), 'utf8');
+  const dePage = await readFile(new URL('../apps/web/app/de/sources/page.tsx', import.meta.url), 'utf8');
+  const de = JSON.parse(
+    await readFile(new URL('../apps/web/src/locales/de.json', import.meta.url), 'utf8')
+  ).sources;
 
-  assert.match(germanSourcesSource, /Quellenprüfung/);
-  assert.match(germanSourcesSource, /getSourcesReadModel/);
-  assert.match(germanSourcesSource, /Wiederherstellungsaktionen/);
-  assert.match(germanSourcesSource, /Quellenmatrix/);
-  assert.match(germanSourcesSource, /key: 'review', label: 'Prüfen'/);
-  assert.match(germanSourcesSource, /de\/sources\?filter=review/);
-  assert.match(germanSourcesSource, /\/de\/dashboard/);
-  assert.doesNotMatch(germanSourcesSource, /from '@\/app\/sources|from '@\/app\/en\/sources/);
+  assert.match(de.title, /Quellenprüfung/);
+  assert.match(de.panels.recovery.title, /Wiederherstellungsaktionen/);
+  assert.match(de.panels.matrix.title, /Quellenmatrix/);
+  assert.match(de.filters.review.label, /Prüfen/);
+  assert.match(de.recovery.show_review, /Prüfzeilen/);
+  assert.match(page, /NAV_ENTRIES/);
+  assert.match(page, /getSourcesReadModel/);
+  assert.match(page, /filter=review|set\('filter', filter\)/);
+  assert.match(page, /hrefFor\(locale, 'dashboard'\)/);
+  assert.match(dePage, /loadSourcesPageProps\('de'/);
+  assert.match(dePage, /Quellenprüfung/);
+  assert.doesNotMatch(dePage, /from '@\/app\/sources|from '@\/app\/en\/sources/);
   assert.doesNotMatch(
-    germanSourcesSource,
-    /数据来源|来源复核|恢复步骤|需复核|回退|代理|实时|打开 Admin 刷新|正在显示|暂无|管理令牌/
+    JSON.stringify(de),
+    /数据来源|来源复核|恢复步骤|需复核|打开 Admin 刷新|正在显示|暂无|管理令牌/
   );
-  assert.doesNotMatch(germanSourcesSource, /Source Review|Recovery actions|Market input matrix|Needs review|Show review rows/);
-  assert.doesNotMatch(germanSourcesSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+  assert.doesNotMatch(
+    JSON.stringify(de),
+    /Source Review|Recovery actions|Market input matrix|Needs review|Show review rows/
+  );
+  assert.doesNotMatch(page, /if \(value === ['']覆盖不可用['']\)/);
+  assert.doesNotMatch(dePage, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
 });
 
 test('German dashboard keeps source drill-through in the German locale', async () => {
