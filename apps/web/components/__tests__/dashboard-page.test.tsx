@@ -278,11 +278,13 @@ describe('DashboardPage', () => {
     expect(screen.queryByRole('link', { name: 'Brent 1d +1.20%' })).toBeNull();
   });
 
-  it('substitutes scenario names whose script does not match the reader locale', async () => {
-    render(await DashboardPage({ locale: 'de' }));
-    expect(screen.getByText(/Base case/)).toBeInTheDocument();
-    expect(screen.getByText(/Gespeichertes Szenario 2/)).toBeInTheDocument();
-    expect(screen.queryByText(/基准情景/)).toBeNull();
+  it('preserves saved scenario names instead of rewriting user data', async () => {
+    for (const locale of ['zh', 'de', 'en'] as const) {
+      render(await DashboardPage({ locale }));
+      expect(screen.getByText(/Base case/)).toBeInTheDocument();
+      expect(screen.getByText(/基准情景/)).toBeInTheDocument();
+      cleanup();
+    }
   });
 
   it('does not invent a data timestamp on fallback', async () => {

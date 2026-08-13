@@ -108,7 +108,6 @@
     "scenarios_why": "这些是可供对比的已保存假设；它们说明情景准备度，不等于已经批准的采购决定。",
     "scenarios_action": "打开情景工作区",
     "scenarios_empty": "暂无保存情景。可通过 scenario API 创建一个情景，用于端到端验证 CRUD。",
-    "scenario_name_placeholder": "已保存情景 {n}",
     "pathways_title": "SAF 路径净成本与来源可信度",
     "pathways_why": "以当前市场切片算出各路径的净成本与价差，并标注来源类型与置信度——便宜但来源不可信的路径不该赢。",
     "pathways_signal": "对比信号：{signal}",

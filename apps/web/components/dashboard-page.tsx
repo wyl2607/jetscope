@@ -117,18 +117,6 @@ function deliveryTone(locale: Locale, isFallback: boolean, overall: string): str
   return 'text-warning';
 }
 
-function nameMatchesLocale(name: string, locale: Locale): boolean {
-  const hasHan = /[\u4e00-\u9fff]/.test(name);
-  if (locale === 'zh') return hasHan || !/[A-Za-z]/.test(name);
-  return !hasHan;
-}
-
-// figure-contract-lint-ignore: internal formatter parameter, not a prop
-function displayScenarioName(name: string, locale: Locale, index: number, placeholder: string): string {
-  if (nameMatchesLocale(name, locale)) return name;
-  return fill(placeholder, { n: String(index + 1) });
-}
-
 function isSignalId(id: string): id is SignalId {
   return (SIGNAL_IDS as readonly string[]).includes(id);
 }
@@ -365,7 +353,7 @@ export async function DashboardPage({ locale }: { locale: Locale }) {
         {readModel.recentScenarioNames.length ? (
           <ul className="space-y-2 text-sm leading-7 text-muted">
             {readModel.recentScenarioNames.map((name, index) => (
-              <li key={`${name}-${index}`}>• {displayScenarioName(name, locale, index, copy.scenario_name_placeholder)}</li>
+              <li key={`${name}-${index}`}>• {name}</li>
             ))}
           </ul>
         ) : (

@@ -108,7 +108,6 @@
     "scenarios_why": "Saved scenarios are local assumptions for comparison and do not replace a reviewed procurement decision.",
     "scenarios_action": "",
     "scenarios_empty": "No saved scenarios yet. Use the primary scenario workspace to create and compare operating assumptions.",
-    "scenario_name_placeholder": "Saved scenario {n}",
     "pathways_title": "SAF pathway net cost and source trust",
     "pathways_why": "Net cost and spread for each pathway from the current market slice, with source type and confidence.",
     "pathways_signal": "Comparison signal: {signal}",

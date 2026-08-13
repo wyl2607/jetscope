@@ -112,7 +112,6 @@
     "scenarios_why": "Gespeicherte Szenarien sind lokale Annahmen zum Vergleich und ersetzen keine fachliche oder beschaffungsseitige Freigabe.",
     "scenarios_action": "",
     "scenarios_empty": "Noch keine gespeicherten Szenarien. Lege ein Szenario über die API an, um CRUD Ende-zu-Ende zu prüfen.",
-    "scenario_name_placeholder": "Gespeichertes Szenario {n}",
     "pathways_title": "SAF-Pfad-Nettokosten und Quellenvertrauen",
     "pathways_why": "Nettokosten und Spreads der Pfade aus dem aktuellen Marktschnitt, mit Quellentyp und Konfidenz.",
     "pathways_signal": "Vergleichssignal: {signal}",
