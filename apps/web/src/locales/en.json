@@ -104,6 +104,7 @@
     "title": "Report Workbench",
     "question": "Is this report solid enough to be published as decision evidence right now?",
     "signals_label": "Launch readiness signals",
+    "number_unavailable": "Unavailable",
     "readiness": {
       "label": "Launch posture",
       "review": "Review needed",

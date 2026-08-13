@@ -104,6 +104,7 @@
     "title": "报告工作台",
     "question": "这份报告现在能不能作为决策依据发出去？",
     "signals_label": "发布就绪信号",
+    "number_unavailable": "不可用",
     "readiness": {
       "label": "上线姿态",
       "review": "需复核",

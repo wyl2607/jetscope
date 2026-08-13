@@ -103,6 +103,9 @@ export async function ReportsPage({ locale }: { locale: Locale }) {
   const needsReview = readModel.isFallback || sourceStatus.overall !== 'ok';
   const readiness = needsReview ? copy.readiness.review : copy.readiness.publish;
   const unknownCause = copy.footer.unknown_cause;
+  const sourceConfidence = readModel.isFallback || sourceStatus.confidence == null
+    ? copy.number_unavailable
+    : formatPercent(sourceStatus.confidence * 100);
   const readinessHint = readModel.isFallback
     ? fill(copy.readiness.hint_fallback, { error: readModel.error ?? unknownCause })
     : sourceStatus.overall !== 'ok'
@@ -138,7 +141,7 @@ export async function ReportsPage({ locale }: { locale: Locale }) {
           value={sourceStatusLabel(sourceStatus.overall, copy.source)}
           valueClassName={sourceStatusTone(sourceStatus.overall)}
           hint={fill(copy.source.hint, {
-            confidence: formatPercent((sourceStatus.confidence ?? 0) * 100),
+            confidence: sourceConfidence,
             fallback_rate: formatPercent(sourceStatus.fallback_rate),
             freshness: freshnessLabel(readModel.freshnessSignal.level, copy.freshness),
             minutes: String(readModel.freshnessSignal.minutes)

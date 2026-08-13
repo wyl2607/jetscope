@@ -145,6 +145,7 @@ describe('ReportsPage', () => {
   });
 
   it('does not invent a data timestamp on fallback', async () => {
+    const copy = messagesFor('zh').reports;
     await renderReports(
       'zh',
       fakeReadModel({
@@ -164,6 +165,7 @@ describe('ReportsPage', () => {
       })
     );
     expect(screen.queryByTestId('page-as-of')).toBeNull();
+    expect(screen.getByText((content) => content.includes(copy.number_unavailable))).toBeInTheDocument();
   });
 
   it('does not use middleware or a [locale] rewrite', () => {

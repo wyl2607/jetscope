@@ -104,6 +104,7 @@
     "title": "Berichtswerkstatt",
     "question": "Ist dieser Bericht belastbar genug, um jetzt als Entscheidungsgrundlage veröffentlicht zu werden?",
     "signals_label": "Startbereitschaftssignale",
+    "number_unavailable": "Nicht verfügbar",
     "readiness": {
       "label": "Startposition",
       "review": "Prüfung nötig",
