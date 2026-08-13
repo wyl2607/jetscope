@@ -14,6 +14,19 @@ const nextConfig = {
   outputFileTracingRoot: rootDir,
   images: {
     unoptimized: true
+  },
+  // Admin is an operational surface. Keep it out of search indexes regardless
+  // of which edge (host nginx today, container nginx after P4) sits in front.
+  async headers() {
+    const noIndex = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }];
+    return [
+      { source: '/admin', headers: noIndex },
+      { source: '/admin/:path*', headers: noIndex },
+      { source: '/de/admin', headers: noIndex },
+      { source: '/de/admin/:path*', headers: noIndex },
+      { source: '/en/admin', headers: noIndex },
+      { source: '/en/admin/:path*', headers: noIndex }
+    ];
   }
 };
 

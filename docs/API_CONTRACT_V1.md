@@ -396,6 +396,29 @@ usable for reviewers and API clients, not only browser users.
 | `RATE_LIMITED` | 429 | Upstream or API rate limit. | Back off and use cached state. |
 | validation error | 422 | FastAPI request validation failed. | Fix request parameters. |
 
+### Public web proxy failures (`apps/web` → FastAPI)
+
+Browser-facing routes under `/api/*` that use the shared `proxyToApi` helper
+never forward raw upstream exceptions, hostnames, URLs, or stack text. On a
+transport failure the public JSON body is always:
+
+```json
+{
+  "error": "Upstream API timed out",
+  "correlationId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+}
+```
+
+| Condition | HTTP status | `error` string |
+| --- | --- | --- |
+| Upstream fetch aborted by proxy timeout | 504 | `Upstream API timed out` |
+| Any other upstream transport failure | 502 | `Upstream API unavailable` |
+
+`correlationId` is a server-generated UUID. Operators match it to the
+server-side log line (`proxy_upstream_failure`) that records the original
+exception. Successful upstream responses are still relayed as-is (status and
+body from FastAPI).
+
 ## Compatibility Notes
 
 - Older docs and scripts may still mention earlier project names. Treat that as legacy branding.

@@ -113,6 +113,148 @@ deploy script still excludes `.env` and `data/*.db` and does not use `rsync --de
 | `GET /v1/reserves/eu` | No invented IATA claim |
 | Dashboard `/dashboard` | Live strip + LH event card when web is served |
 
+## Admin UI edge gate (host nginx)
+
+The public admin pages (`/admin`, `/de/admin`, `/en/admin`) show operational
+detail and write controls. Mutating API calls already require
+`x-admin-token`; the edge Basic Auth layer is the first gate for the HTML UI.
+
+**Topology reminder:** traffic hits **host** nginx (`saf.meichen.beauty`), which
+proxies to `127.0.0.1:3000` (systemd `jetscope-web.service`). The container
+edge in `infra/nginx.prod.conf` is built for P4 cutover and is **not** serving
+public traffic today. Both configs carry the same admin gate so cutover does
+not drop it. This host also serves unrelated products (for example
+`esg.meichen.beauty`); only touch the `saf.meichen.beauty` vhost.
+
+### 1. Create the credential file on the VPS (never commit it)
+
+```bash
+ssh usa-vps
+sudo mkdir -p /etc/nginx/secrets
+sudo chmod 750 /etc/nginx/secrets
+# First user: -c creates the file. Additional users: omit -c.
+sudo htpasswd -c /etc/nginx/secrets/jetscope-admin.htpasswd <username>
+sudo chmod 640 /etc/nginx/secrets/jetscope-admin.htpasswd
+sudo chown root:www-data /etc/nginx/secrets/jetscope-admin.htpasswd
+```
+
+Use a strong password. Do not put the password, the hash, or the file contents
+into the repository, deploy logs, or chat.
+
+### 2. Host nginx stanza (copy-paste into the live vhost)
+
+If the live vhost is still the file under `/etc/nginx/sites-enabled/` rather
+than a full reinstall of `infra/server/nginx.conf`, add these blocks **before**
+the catch-all `location /` inside the `server_name saf.meichen.beauty` HTTPS
+server. Same shape as `infra/server/nginx.conf`:
+
+```nginx
+# Admin UI: edge Basic Auth. Layer 2 remains x-admin-token on write APIs.
+# Credential path is host-local operator state — never inline hashes here.
+location = /admin {
+    auth_basic "JetScope admin";
+    auth_basic_user_file /etc/nginx/secrets/jetscope-admin.htpasswd;
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_connect_timeout 30s;
+    proxy_send_timeout 30s;
+    proxy_read_timeout 30s;
+}
+
+location ^~ /admin/ {
+    auth_basic "JetScope admin";
+    auth_basic_user_file /etc/nginx/secrets/jetscope-admin.htpasswd;
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_connect_timeout 30s;
+    proxy_send_timeout 30s;
+    proxy_read_timeout 30s;
+}
+
+location = /de/admin {
+    auth_basic "JetScope admin";
+    auth_basic_user_file /etc/nginx/secrets/jetscope-admin.htpasswd;
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_connect_timeout 30s;
+    proxy_send_timeout 30s;
+    proxy_read_timeout 30s;
+}
+
+location ^~ /de/admin/ {
+    auth_basic "JetScope admin";
+    auth_basic_user_file /etc/nginx/secrets/jetscope-admin.htpasswd;
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_connect_timeout 30s;
+    proxy_send_timeout 30s;
+    proxy_read_timeout 30s;
+}
+
+location = /en/admin {
+    auth_basic "JetScope admin";
+    auth_basic_user_file /etc/nginx/secrets/jetscope-admin.htpasswd;
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_connect_timeout 30s;
+    proxy_send_timeout 30s;
+    proxy_read_timeout 30s;
+}
+
+location ^~ /en/admin/ {
+    auth_basic "JetScope admin";
+    auth_basic_user_file /etc/nginx/secrets/jetscope-admin.htpasswd;
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_connect_timeout 30s;
+    proxy_send_timeout 30s;
+    proxy_read_timeout 30s;
+}
+```
+
+Then validate and reload **only after** the credential file exists (nginx
+refuses to start/reload if `auth_basic_user_file` is missing):
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+curl -sI https://saf.meichen.beauty/admin | head   # expect 401 without credentials
+curl -sI -u '<username>:<password>' https://saf.meichen.beauty/admin | head
+```
+
+The Next app also sets `X-Robots-Tag: noindex, nofollow` on the admin routes
+via `apps/web/next.config.mjs`, independent of the edge.
+
+### 3. P4 container edge
+
+`infra/nginx.prod.conf` uses the same admin locations with
+`auth_basic_user_file /etc/nginx/secrets/admin.htpasswd`. When cutting over,
+mount that file into the nginx container; do not bake credentials into the
+image.
+
 ## Notes / risks
 
 - Compose owns the API; systemd owns Next.js; nginx proxies the public Host `saf.meichen.beauty`. A naked IP request is expected to hit the default nginx server and return 404.
@@ -120,6 +262,7 @@ deploy script still excludes `.env` and `data/*.db` and does not use `rsync --de
 - Market snapshot/history reads are bounded; still use the liveness endpoint as the watchdog signal and the external public smoke workflow for ingress/latency detection.
 - Keep off-host copies of verified SQLite backups; local timer retention does not protect against VPS or volume loss.
 - Deploy only a reviewed commit from `main` and verify the `.deploy-commit` marker after rollout.
+- Admin UI edge Basic Auth is repo-side in nginx configs; **installing the htpasswd file and reloading host nginx is a human production step** (see section above).
 
 ## Rollback
 
