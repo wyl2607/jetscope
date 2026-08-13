@@ -90,8 +90,18 @@ function fossilJetFigure(
 function effectiveFossilJetFigure(
   value: number, // figure-contract-lint-ignore: constructor input, not a display prop
   asOf: string | null,
-  method: string
+  method: string,
+  isAssumed: boolean
 ): Figure {
+  if (isAssumed) {
+    return assumed({
+      value,
+      unit: 'USD/L',
+      sourceId: CRISIS_CHART_SOURCE_ID,
+      precision: 2,
+      method
+    });
+  }
   return derived({
     value,
     unit: 'USD/L',
@@ -329,10 +339,17 @@ async function CrisisMonitor({ locale, copy }: { locale: Locale; copy: CrisisMes
   const confidence = reserve ? `${Math.round(reserve.confidence_score * 100)}%` : copy.confidence.unavailable;
   const marketConfidence = dashboardReadModel.market.source_status.confidence;
   const marketConfidenceText =
-    typeof marketConfidence === 'number' ? `${Math.round(marketConfidence * 100)}%` : copy.confidence.unavailable;
+    !dashboardReadModel.isFallback && typeof marketConfidence === 'number'
+      ? `${Math.round(marketConfidence * 100)}%`
+      : copy.confidence.unavailable;
   const carbonPriceEurPerT = Number(
     ((dashboardReadModel.market.values.carbon_proxy_usd_per_t ?? 102.6) / 1.08).toFixed(2)
   );
+  const marketSnapshotUsesFallback =
+    dashboardReadModel.isFallback ||
+    (dashboardReadModel.market.values.jet_eu_proxy_usd_per_l == null &&
+      dashboardReadModel.market.values.jet_usd_per_l == null) ||
+    dashboardReadModel.market.values.carbon_proxy_usd_per_t == null;
   const safWorkbenchHref = buildSafWorkbenchHref({
     fallbackFossil,
     carbonPriceEurPerT,
@@ -462,7 +479,8 @@ async function CrisisMonitor({ locale, copy }: { locale: Locale; copy: CrisisMes
             effectiveFossilJetUsdPerL={effectiveFossilJetFigure(
               tippingPoint?.effectiveFossilJetUsdPerL ?? fallbackFossil,
               tippingPoint?.generatedAt ?? null,
-              copy.monitor.methods.effective_fossil
+              copy.monitor.methods.effective_fossil,
+              tippingPoint == null
             )}
             pathways={tippingPoint?.pathways ?? []}
           />
@@ -499,8 +517,8 @@ async function CrisisMonitor({ locale, copy }: { locale: Locale; copy: CrisisMes
               price: fallbackFossil.toFixed(2),
               carbon: carbonPriceEurPerT.toFixed(2)
             }),
-            asOf: dashboardReadModel.market.generated_at,
-            basis: 'observed'
+            asOf: marketSnapshotUsesFallback ? null : dashboardReadModel.market.generated_at,
+            basis: marketSnapshotUsesFallback ? 'assumption' : 'derived'
           },
           {
             id: 'tipping-events',
@@ -530,14 +548,15 @@ async function CrisisBrief({ locale, copy }: { locale: Locale; copy: CrisisMessa
   const reserveConfidence = readModel.reserve?.confidence_score ?? null;
   const reserveSourceName = readModel.reserve?.source_name ?? copy.brief.fallback_source;
   const fossilPrice = readModel.fossilJetUsdPerL;
-  const sourceConfidence = formatPercent((sourceStatus.confidence ?? 0) * 100);
+  const sourceConfidence = readModel.error || sourceStatus.confidence == null
+    ? copy.confidence.unavailable
+    : formatPercent(sourceStatus.confidence * 100);
   const researchStatus = researchPosture(readModel.research.status, readModel.research.signal_count, copy.research_posture);
   const reviewSourcesRoute = actionHref(readModel, 'review_sources', hrefFor(locale, 'sources', '?filter=review'));
   const reportRoute = actionHref(readModel, 'open_report', hrefFor(locale, 'reports', '/tipping-point-analysis'));
   const scenariosRoute = actionHref(readModel, 'review_scenarios', hrefFor(locale, 'scenarios'));
 
-  // On fallback the read model stamps itself with the current time, so
-  // rendering that as a data timestamp would present invented values as fresh.
+  // A failed crisis-brief contract has no citable data timestamp.
   const asOf = readModel.error ? null : (readModel.reserve?.generated_at ?? readModel.marketGeneratedAt);
 
   return (
@@ -570,7 +589,10 @@ async function CrisisBrief({ locale, copy }: { locale: Locale; copy: CrisisMessa
           valueClassName={sourceStatusTone(sourceStatus.overall)}
           hint={fill(copy.brief.source_hint, {
             status: sourceStatusLabel(sourceStatus.overall, copy.source_status),
-            reserve: formatPercent((reserveConfidence ?? 0) * 100)
+            reserve:
+              readModel.error || reserveConfidence == null
+                ? copy.confidence.unavailable
+                : formatPercent(reserveConfidence * 100)
           })}
           cardHref={reviewSourcesRoute}
         />

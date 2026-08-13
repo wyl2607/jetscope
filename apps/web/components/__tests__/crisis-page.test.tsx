@@ -48,7 +48,16 @@ vi.mock('@/components/tipping-point-simulator', () => ({
 }));
 
 vi.mock('@/components/fuel-vs-saf-price-chart', () => ({
-  FuelVsSafPriceChart: () => <div data-testid="fuel-vs-saf-price-chart" />
+  FuelVsSafPriceChart: ({
+    effectiveFossilJetUsdPerL
+  }: {
+    effectiveFossilJetUsdPerL: { basis: string };
+  }) => (
+    <div
+      data-testid="fuel-vs-saf-price-chart"
+      data-effective-basis={effectiveFossilJetUsdPerL.basis}
+    />
+  )
 }));
 
 vi.mock('@/components/reserves-coverage-strip', () => ({
@@ -157,9 +166,13 @@ function fakeBrief(overrides: Partial<CrisisBriefReadModel> = {}): CrisisBriefRe
   };
 }
 
-async function renderCrisis(locale: Locale) {
-  getDashboardReadModel.mockResolvedValue(fakeDashboard());
-  getEuReserveCoverage.mockResolvedValue(fakeDashboard().reserve);
+async function renderCrisis(
+  locale: Locale,
+  dashboard: DashboardReadModel = fakeDashboard(),
+  brief: CrisisBriefReadModel = fakeBrief()
+) {
+  getDashboardReadModel.mockResolvedValue(dashboard);
+  getEuReserveCoverage.mockResolvedValue(dashboard.reserve);
   getTippingPointEvents.mockResolvedValue([]);
   getResearchSignals.mockResolvedValue({ status: 'error', signals: [], message: 'mocked' });
   buildResearchDecisionBrief.mockReturnValue({
@@ -173,7 +186,7 @@ async function renderCrisis(locale: Locale) {
     neutralCount: 0,
     topSignals: []
   });
-  getCrisisBriefReadModel.mockResolvedValue(fakeBrief());
+  getCrisisBriefReadModel.mockResolvedValue(brief);
   const ui = await CrisisPage({ locale });
   return render(ui);
 }
@@ -297,6 +310,59 @@ describe('CrisisPage', () => {
     const ui = await CrisisPage({ locale: 'en' });
     render(ui);
     expect(screen.queryByTestId('page-as-of')).toBeNull();
+  });
+
+  it('marks a fallback monitor snapshot as an unstamped assumption', async () => {
+    const copy = messagesFor('zh').crisis;
+    const dashboard = fakeDashboard({
+      isFallback: true,
+      error: 'market unavailable',
+      market: {
+        generated_at: '2026-08-01T12:00:00Z',
+        source_status: {
+          overall: 'degraded',
+          confidence: 0,
+          freshness_minutes: null,
+          fallback_rate: 100,
+          is_fallback: true
+        },
+        values: {}
+      }
+    });
+    await renderCrisis('zh', dashboard);
+
+    const label = copy.footer.market_snapshot.replace('{price}', '0.66').replace('{carbon}', '95.00');
+    const row = screen.getByText(label).closest('li');
+    expect(row).toHaveTextContent('情景假设');
+    expect(row?.querySelector('time')).toBeNull();
+    expect(screen.getByTestId('fuel-vs-saf-price-chart')).toHaveAttribute(
+      'data-effective-basis',
+      'assumption'
+    );
+  });
+
+  it('shows unavailable rather than zero confidence on a brief fallback', async () => {
+    const copy = messagesFor('en').crisis;
+    const base = fakeBrief();
+    await renderCrisis(
+      'en',
+      fakeDashboard(),
+      fakeBrief({
+        error: 'crisis brief unavailable',
+        sourceStatus: { ...base.sourceStatus, overall: 'degraded', confidence: 0 },
+        reserve: base.reserve ? { ...base.reserve, confidence_score: 0 } : null
+      })
+    );
+
+    expect(screen.getByText(copy.confidence.unavailable)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        copy.brief.source_hint
+          .replace('{status}', copy.source_status.degraded)
+          .replace('{reserve}', copy.confidence.unavailable)
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/^0(?:[.,]0)?%$/)).toBeNull();
   });
 
   it('does not bleed copy across locale files', () => {
