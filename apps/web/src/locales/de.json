@@ -182,6 +182,10 @@
       "覆盖不可用": "Abdeckung nicht verfügbar",
       "Brent 派生回退": "Brent-abgeleiteter Fallback"
     },
+    "read_model_fallbacks": {
+      "no_data": "Keine Daten",
+      "coverage_unavailable": "Abdeckung nicht verfügbar"
+    },
     "read_model_replacements": {
       "派生回退": "abgeleiteter Fallback",
       "回退": "Fallback"

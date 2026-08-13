@@ -182,6 +182,10 @@
       "覆盖不可用": "覆盖不可用",
       "Brent 派生回退": "Brent 派生回退"
     },
+    "read_model_fallbacks": {
+      "no_data": "无数据",
+      "coverage_unavailable": "覆盖不可用"
+    },
     "read_model_replacements": {
       "派生回退": "派生回退",
       "回退": "回退"

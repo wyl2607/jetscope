@@ -139,6 +139,19 @@ describe('SourcesPage', () => {
     expect(screen.getByText(messagesFor('de').sources.read_model_literals['覆盖不可用'])).toBeInTheDocument();
   });
 
+  it('renders trend marks with a series token and keeps fallback keys out of TSX', () => {
+    const model = makeReadModel();
+    model.rows[0].sparkline = '20,40,60';
+    const { container } = render(<SourcesPage locale="en" readModel={model} />);
+
+    expect(container.querySelector('svg[aria-label] .stroke-series-1')).not.toBeNull();
+    expect(container.querySelector('img[src^="data:image/svg+xml"]')).toBeNull();
+
+    const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../sources-page.tsx'), 'utf8');
+    expect(source).not.toMatch(/rgb\(/);
+    expect(source).not.toMatch(/literals\[['"](?:无数据|覆盖不可用)/);
+  });
+
   it('does not introduce middleware or a /[locale] rewrite', () => {
     const here = dirname(fileURLToPath(import.meta.url));
     const files = [

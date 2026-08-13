@@ -166,7 +166,7 @@ function labeled(
 
 function localizeSource(value: string, copy: SourcesMessages, locale: Locale): string {
   const literals = copy.read_model_literals as Record<string, string>;
-  if (!value) return literals['无数据'] ?? value;
+  if (!value) return copy.read_model_fallbacks.no_data;
   const exact = literals[value];
   if (exact) return exact;
   let next = value;
@@ -174,7 +174,7 @@ function localizeSource(value: string, copy: SourcesMessages, locale: Locale): s
     next = next.replaceAll(from, to);
   }
   if (locale !== 'zh' && CJK.test(next)) {
-    return literals['覆盖不可用'] ?? next;
+    return copy.read_model_fallbacks.coverage_unavailable;
   }
   return next;
 }
@@ -184,7 +184,7 @@ function localizeScalar(value: string, copy: SourcesMessages, locale: Locale): s
   const exact = literals[value];
   if (exact) return exact;
   if (locale !== 'zh' && CJK.test(value)) {
-    return literals['覆盖不可用'] ?? value;
+    return copy.read_model_fallbacks.coverage_unavailable;
   }
   return value;
 }
@@ -264,7 +264,7 @@ function formatEta(seconds: number | null): string {
   return `${Math.round(seconds / 60)}m`;
 }
 
-function sparklineDataUrl(encoded: string): string | null {
+function sparklinePoints(encoded: string): string | null {
   if (!encoded) return null;
   const values = encoded
     .split(',')
@@ -281,11 +281,7 @@ function sparklineDataUrl(encoded: string): string | null {
       return `${x},${y}`;
     })
     .join(' ');
-  const svg =
-    `<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'>` +
-    `<polyline fill='none' stroke='rgb(56 189 248)' stroke-width='2' points='${points}'/>` +
-    `</svg>`;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  return points;
 }
 
 export type SourcesPageProps = {
@@ -617,7 +613,7 @@ export function SourcesPage({
             <tbody>
               {visibleRows.map((row) => {
                 const action = localizedReviewAction(row, locale, copy);
-                const sparkline = sparklineDataUrl(row.sparkline);
+                const sparkline = sparklinePoints(row.sparkline);
                 const surface = surfaceLabel(
                   row.metricKey,
                   locale === 'zh' ? row.surface : row.metricKey,
@@ -641,7 +637,7 @@ export function SourcesPage({
                     <td className="py-3 pr-4">{localizeSource(row.source, copy, locale)}</td>
                     <td className="py-3 pr-4">
                       <span
-                        className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.18em] ${trustClass(row.trustState)}`}
+                        className={`rounded-xl border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.18em] ${trustClass(row.trustState)}`}
                       >
                         {trustLabel(row.trustState, copy)}
                       </span>
@@ -666,12 +662,18 @@ export function SourcesPage({
                     </td>
                     <td className="py-3 pr-4">
                       {sparkline ? (
-                        <img
-                          src={sparkline}
-                          alt={interpolate(copy.table.trend_alt, { surface })}
-                          width={120}
-                          height={28}
-                        />
+                        <svg
+                          viewBox="0 0 120 28"
+                          className="h-7 w-[120px]"
+                          role="img"
+                          aria-label={interpolate(copy.table.trend_alt, { surface })}
+                        >
+                          <polyline
+                            className="fill-none stroke-series-1"
+                            strokeWidth="2"
+                            points={sparkline}
+                          />
+                        </svg>
                       ) : (
                         <span className="text-subtle">{copy.table.na}</span>
                       )}

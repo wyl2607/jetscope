@@ -182,6 +182,10 @@
       "覆盖不可用": "Coverage unavailable",
       "Brent 派生回退": "Brent-derived fallback"
     },
+    "read_model_fallbacks": {
+      "no_data": "No data",
+      "coverage_unavailable": "Coverage unavailable"
+    },
     "read_model_replacements": {
       "派生回退": "derived fallback",
       "回退": "fallback"
