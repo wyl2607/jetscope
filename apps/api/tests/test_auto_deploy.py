@@ -1,4 +1,6 @@
 import os
+import shlex
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -9,8 +11,60 @@ LOCAL_COMMIT = "1" * 40
 REMOTE_COMMIT = "2" * 40
 
 
+def bash_path(path: Path | str) -> str:
+    """Drive path with forward slashes so bash does not eat backslashes."""
+    return Path(path).resolve().as_posix()
+
+
+def bash_msys_path(path: Path | str) -> str:
+    """MSYS/Git-Bash path form (/c/Users/...) for PATH and shell lookups."""
+    posix = bash_path(path)
+    if len(posix) >= 2 and posix[1] == ":":
+        return f"/{posix[0].lower()}{posix[2:]}"
+    return posix
+
+
+def resolve_bash() -> str:
+    """Prefer Git Bash on Windows; PATH's `bash` is often WSL and cannot see Windows paths."""
+    for key in ("JETSCOPE_BASH", "BASH"):
+        override = os.environ.get(key)
+        if override:
+            return override
+    git = shutil.which("git")
+    if git:
+        candidate = Path(git).resolve().parent.parent / "bin" / "bash.exe"
+        if candidate.is_file():
+            return str(candidate)
+    for fallback in (
+        Path(r"C:\Program Files\Git\bin\bash.exe"),
+        Path(r"C:\Program Files\Git\usr\bin\bash.exe"),
+    ):
+        if fallback.is_file():
+            return str(fallback)
+    return "bash"
+
+
+def run_bash_script(script: Path, *args: str, bin_dir: Path, env: dict, timeout: int = 10):
+    """Run a shell script with harness stubs first on PATH (works under Git Bash)."""
+    msys_bin = bash_msys_path(bin_dir)
+    quoted_args = " ".join(shlex.quote(a) for a in args)
+    # Prepend inside bash so extensionless stubs beat host git.exe/curl.exe.
+    command = (
+        f'export PATH={shlex.quote(msys_bin)}:"$PATH"; '
+        f"exec bash {shlex.quote(bash_path(script))} {quoted_args}"
+    ).rstrip()
+    return subprocess.run(
+        [resolve_bash(), "-c", command],
+        cwd=REPO_ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=timeout,
+    )
+
+
 def write_executable(path, content):
-    path.write_text(content)
+    path.write_text(content, encoding="utf-8", newline="\n")
     path.chmod(0o755)
 
 
@@ -35,14 +89,19 @@ def make_harness(
     head_file = tmp_path / "head"
     head_file.write_text(local)
     git_log = tmp_path / "git.log"
+    head_bash = bash_path(head_file)
+    git_log_bash = bash_path(git_log)
+    deploy_bash = bash_path(deploy_dir)
+    log_bash = bash_path(tmp_path / "deploy.log")
+    build_log_bash = bash_path(tmp_path / "build.log")
 
     patched = (
-        AUTO_DEPLOY.read_text()
-        .replace('DEPLOY_DIR="/opt/jetscope"', f'DEPLOY_DIR="{deploy_dir}"')
-        .replace('LOG="/var/log/jetscope-deploy.log"', f'LOG="{tmp_path / "deploy.log"}"')
-        .replace('BUILD_LOG="/var/log/jetscope-build.log"', f'BUILD_LOG="{tmp_path / "build.log"}"')
+        AUTO_DEPLOY.read_text(encoding="utf-8")
+        .replace('DEPLOY_DIR="/opt/jetscope"', f'DEPLOY_DIR="{deploy_bash}"')
+        .replace('LOG="/var/log/jetscope-deploy.log"', f'LOG="{log_bash}"')
+        .replace('BUILD_LOG="/var/log/jetscope-build.log"', f'BUILD_LOG="{build_log_bash}"')
     )
-    script.write_text(patched)
+    script.write_text(patched, encoding="utf-8", newline="\n")
     script.chmod(0o755)
 
     write_executable(
@@ -51,13 +110,13 @@ def make_harness(
 set -eu
 case "$1 $2" in
   "symbolic-ref --short") echo main ;;
-  "rev-parse HEAD") cat "{head_file}" ;;
+  "rev-parse HEAD") cat "{head_bash}" ;;
   "rev-parse origin/main") echo "{remote}" ;;
   "fetch origin") exit 0 ;;
   "status --porcelain") [ "{'1' if dirty else ''}" ] && echo " M local-file" || true ;;
   "merge-base --is-ancestor") exit 0 ;;
-  "merge --ff-only") printf 'merge %s\\n' "$*" >> "{git_log}"; printf '%s\\n' "{remote}" > "{head_file}" ;;
-  "reset --hard") printf 'reset %s\\n' "$*" >> "{git_log}"; printf '%s\\n' "$3" > "{head_file}" ;;
+  "merge --ff-only") printf 'merge %s\\n' "$*" >> "{git_log_bash}"; printf '%s\\n' "{remote}" > "{head_bash}" ;;
+  "reset --hard") printf 'reset %s\\n' "$*" >> "{git_log_bash}"; printf '%s\\n' "$3" > "{head_bash}" ;;
   *) echo "unexpected git $*" >&2; exit 99 ;;
 esac
 """,
@@ -115,22 +174,20 @@ def run_deploy(
 ):
     env = {
         **os.environ,
-        "PATH": f"{bin_dir}:{os.environ['PATH']}",
         "APPROVE_JETSCOPE_DEPLOY": "token",
         "JETSCOPE_EXPECT_COMMIT": expected,
-        "JETSCOPE_DEPLOY_STATE_DIR": str(state_dir),
+        "JETSCOPE_DEPLOY_STATE_DIR": bash_path(state_dir),
         "JETSCOPE_HEALTH_TIMEOUT_SECONDS": "1",
         "JETSCOPE_HEALTH_INTERVAL_SECONDS": "1",
         "JETSCOPE_CURL_MAX_TIME_SECONDS": "1",
         "JETSCOPE_ENABLE_AUTO_RESTORE": "1" if auto_restore else "0",
     }
-    return subprocess.run(
-        ["bash", str(script), "--approval-token", "token"],
-        cwd=REPO_ROOT,
+    return run_bash_script(
+        script,
+        "--approval-token",
+        "token",
+        bin_dir=bin_dir,
         env=env,
-        text=True,
-        capture_output=True,
-        timeout=10,
     )
 
 

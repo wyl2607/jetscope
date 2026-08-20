@@ -92,6 +92,6 @@ APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token 
 
 ## Known Gaps
 
-- Local backend pytest is restored through `npm run api:test`, which uses `apps/api/.venv/bin/python -m pytest tests`.
+- Local backend pytest is restored through `npm run api:test`, which resolves the API virtualenv via `scripts/api-test.mjs` (Windows `Scripts/python.exe` or POSIX `.venv/bin/python`) and runs `python -m pytest tests`.
 - `scripts/rollback.sh` is older and more destructive than the preferred release path; do not make it the default recovery flow without explicit user approval.
 - Content-level secret scanning uses `gitleaks` when installed; otherwise `scripts/security_check.sh` falls back to a built-in high-signal pattern scan and logs a warning.
