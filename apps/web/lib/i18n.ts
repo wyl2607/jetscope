@@ -54,6 +54,7 @@ export type DashboardMessages = Messages['dashboard'];
 
 export type ScenariosMessages = Messages['scenarios'];
 export type CrisisMessages = Messages['crisis'];
+export type TippingPointReportMessages = Messages['tipping_point_report'];
 
 const catalog: Record<Locale, Messages> = { zh, de, en };
 

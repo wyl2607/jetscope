@@ -179,6 +179,12 @@ const SHARED_VIEWS = [
     source: 'apps/web/components/crisis-page.tsx',
     i18nKey: 'crisis',
   },
+  {
+    route: /\/reports\/tipping-point-analysis\/page\.tsx$/,
+    component: 'TippingPointReportPage',
+    source: 'apps/web/components/tipping-point-report-page.tsx',
+    i18nKey: 'tipping_point_report',
+  },
 ];
 
 function sharedViewFor(path) {
@@ -348,7 +354,7 @@ test('a page on fallback data never stamps it with a fresh timestamp', async () 
     );
     assert.match(
       source,
-      /basis:\s*(?:dashboardReadModel|readModel)\.isFallback\s*\?\s*'assumption'\s*:/,
+      /basis:\s*(?:dashboardReadModel|readModel)\.isFallback\s*\?\s*\(?\s*'assumption'(?:\s+as\s+const)?\s*\)?\s*:/,
       `${path} must label fallback data as an assumption, never as observed`
     );
   }
@@ -437,18 +443,43 @@ test('home-page event tone fallbacks remain semantic problem states', async () =
   );
 });
 
+function assertTippingFossilAnchor(source, path) {
+  assert.match(source, /const fossilJetSource\s*=/, `${path} must retain the fossil-price fallback level`);
+  assert.match(
+    source,
+    /const fossilJetIsAssumed\s*=\s*readModel\.isFallback\s*\|\|\s*fossilJetSource === 'assumed'\s*\|\|\s*fossilJetAsOf == null/,
+    `${path} must treat fallback, assumed, and undated fossil anchors as assumptions`
+  );
+  assert.match(
+    source,
+    /basis:\s*fossilJetIsAssumed\s*\?\s*'assumption'\s*:\s*fossilJetSource === 'spot'\s*\?\s*'observed'\s*:\s*'derived'/,
+    `${path} must label the built-in or missing fossil anchor as an assumption`
+  );
+}
+
 test('tipping-point reports never label an assumed fossil anchor as observed', async () => {
+  const zhCopy = JSON.parse(await read('apps/web/src/locales/zh.json')).tipping_point_report;
   for (const path of TIPPING_POINT_REPORT_PAGES) {
-    const source = await read(path);
-    assert.match(source, /const fossilJetSource\s*=/, `${path} must retain the fossil-price fallback level`);
-    assert.match(
-      source,
-      /fossilJetSource === 'spot' \? 'observed' : fossilJetSource === 'assumed' \? 'assumption' : 'derived'/,
-      `${path} must label the built-in or missing fossil anchor as an assumption`
+    const source = await implementationOf(path);
+    assertTippingFossilAnchor(source, path);
+
+    const regressed = source.replace(
+      "basis: fossilJetIsAssumed ? 'assumption'",
+      "basis: fossilJetIsAssumed ? 'observed'"
     );
+    assert.notEqual(regressed, source, `${path} mutation must alter the fossil-anchor basis`);
+    assert.throws(
+      () => assertTippingFossilAnchor(regressed, `${path} (mutated)`),
+      /must label the built-in or missing fossil anchor as an assumption/
+    );
+
     if (source.includes('0.657')) {
       assert.match(source, /fossilJetSource === 'assumed'/, `${path} must expose the 0.657 fallback branch`);
-      assert.match(source, /内置假设 0\.657 USD\/L/, `${path} must disclose the 0.657 assumption on the page`);
+      assert.match(
+        `${zhCopy.chart_why_assumed}\n${zhCopy.source_fossil_assumed}\n${zhCopy.limitations.join('\n')}`,
+        /内置假设 0\.657 USD\/L/,
+        `${path} must disclose the 0.657 assumption in the zh locale file`
+      );
     }
   }
 });

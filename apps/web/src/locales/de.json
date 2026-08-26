@@ -1311,5 +1311,94 @@
       "Ist die Reservequelle eine manuelle Schätzung, trägt sie oben die Kennzeichnung „Szenarioannahme\" und darf nicht wie eine amtliche Meldung gelesen werden.",
       "Der Brief ist eine Prüffläche, keine Beschaffungsempfehlung."
     ]
+  },
+  "tipping_point_report": {
+    "meta_title": "Kipppunktbericht",
+    "meta_description": "Deutscher JetScope-Berichtsdetailblick für SAF-Kipppunkt, Quellenvertrauen, Reservestress und Forschungsstatus.",
+    "eyebrow": "Berichtsdetail",
+    "title": "Kipppunktbericht",
+    "question": "Trägt die wirtschaftliche These dieses Berichts noch?",
+    "signal_row_label": "Kipppunkt-Fazit",
+    "signal_label": "Kipppunkt-Signal",
+    "signal_unknown": "Prüfung",
+    "signal_hint": "Das Fazit zuerst; ein unbekanntes Signal bleibt prüfpflichtig.",
+    "probability_label": "Entscheidungswahrscheinlichkeit",
+    "probability_hint": "Höchster Wert aus Spot-SAF-Kauf und langfristiger Abnahme.",
+    "confidence_metric_label": "Quellenvertrauen",
+    "confidence_metric_hint": "Marktstatus: {status}",
+    "events_label": "Geladene Ereignisse",
+    "events_hint": "Ereignisse im aktuellen 42-Tage-Prüffenster.",
+    "events_hint_latest": "Zuletzt: {event}",
+    "events_hint_empty": "Keine Ereignisse im aktuellen Prüffenster.",
+    "thesis_title": "Kernthese",
+    "thesis_why": "Die Evidenzkette zeigt, ob das Modell als Entscheidungsgrundlage taugt oder zuerst in die Quellenprüfung muss.",
+    "thesis_lead": "JetScope behandelt den Kipppunkt als Zusammenlaufen von fossilen Kraftstoffkosten, Kohlenstoffexponierung, Reservestress und SAF-Pfadabstand. Der aktuelle fossile Kostenanker liegt bei {price}.",
+    "thesis_body": "Der Quellenstatus ist {status} mit {confidence} Vertrauen. Bei Fallback-Zeilen bleibt der Bericht lesbar, muss aber vor Veröffentlichung geprüft werden.",
+    "reserves_title": "EU-Kerosinreserve",
+    "reserves_why": "Die Reservewochen bestimmen die Dringlichkeit: Je dünner die Deckung, desto kürzer das Reaktionsfenster.",
+    "chart_title": "Kerosin- und SAF-Preisstaffel",
+    "chart_why": "Fossiler Anker, kohlenstoffbereinigte Effektivkosten und Netto-Pfadkosten — die ökonomische These sitzt in diesen Abständen.",
+    "chart_why_assumed": "Kein fossiler Echtzeitanker; die Preisdifferenz dient nur der Szenariodiskussion.",
+    "decision_title": "Implikationen für Airlines",
+    "decision_why": "Modellausgaben in prüfbare Betriebsimplikationen übersetzen, statt Wahrscheinlichkeiten als Ja/Nein zu lesen.",
+    "decision_body": "Das Entscheidungsmodell zeigt Wahrscheinlichkeiten und Schwellen, keine einfachen Ja/Nein-Empfehlungen.",
+    "research_title": "Forschungsentscheidungsschicht",
+    "research_why": "Erklärt, warum sich die These ändert. Signale sind Gründe, keine Schlüsse.",
+    "timeline_title": "SAF-Kreuzungszeitleiste",
+    "timeline_why": "Hält fest, wann die effektiven SAF-Kosten den fossilen Anker wirklich überschritten — nicht wann das Modell es erwartet.",
+    "confidence_title": "Quellenvertrauen",
+    "confidence_why": "Diese vier Angaben erklären, wie belastbar das Fazit ist und welche Evidenz noch fehlt.",
+    "market_status_label": "Marktstatus",
+    "fallback_rate_label": "Fallback-Rate",
+    "latest_event_label": "Letztes Ereignis",
+    "latest_event_none": "keins",
+    "research_status_label": "Forschungsstatus",
+    "source_status": {
+      "ok": "gesund",
+      "degraded": "eingeschränkt",
+      "offline": "offline",
+      "unknown": "unbekannt"
+    },
+    "research_posture": {
+      "disabled": "deaktivierte Grenze",
+      "error": "eingeschränkt",
+      "not_found": "nicht bereitgestellt",
+      "with_signals": "mit Signalen belegt",
+      "waiting": "wartet auf Signale"
+    },
+    "next_title": "Nächste Prüfschritte",
+    "next_why": "Die Berichtsthese wird erst nutzbar, wenn Quellen, Szenarioannahmen und Veröffentlichungspfad erreichbar bleiben.",
+    "next_actions": {
+      "sources": {
+        "title": "Quellen prüfen",
+        "description": "Live-, Proxy-, Fallback- und eingeschränkte Eingaben vor externer Nutzung prüfen."
+      },
+      "scenarios": {
+        "title": "Szenarioannahmen vergleichen",
+        "description": "Gespeicherte Annahmen prüfen, bevor sich die Beschaffungshaltung ändert."
+      },
+      "reports": {
+        "title": "Zur Berichtswerkstatt",
+        "description": "Startposition und Berichtskatalog auf der Übersicht erneut prüfen."
+      }
+    },
+    "number_unavailable": "n/a",
+    "figure_methods": {
+      "fossil_assumed": "Die Berichtsseite verwendet die angenommene Konstante 0,657 USD/L für fossiles Kerosin oder es fehlt ein zitierbarer Zeitstempel",
+      "effective_fossil": "Effektive fossile Kerosinkosten = Spotpreis + CO₂-Kostendruck beim gewählten Beimischungsanteil - Förderung (Kipppunktmodell)"
+    },
+    "source_dashboard": "Dashboard-Read-Model und Marktstatus",
+    "source_reserve": "EU-Reserveabdeckung über {source}",
+    "source_unavailable": "nicht verfügbare Quelle",
+    "source_fossil_assumed": "Kein fossiler Kostenanker verfügbar",
+    "source_fossil_live": "Fossiler Jet-Fuel-Kostenanker",
+    "source_events": "SAF-Kipppunktereignisse ({count})",
+    "source_research": "Abgeleitete Forschungssignale ({count})",
+    "method_label": "Quellen- und Methodenliste",
+    "limitations": [
+      "Der Bericht beschreibt marktweite Schwellen, nicht Verträge, Vorräte oder Freigaben einer einzelnen Airline.",
+      "Entscheidungswahrscheinlichkeiten sind Modellergebnisse und keine beobachteten zukünftigen Handlungen.",
+      "Fehlende Ereignisse in einem dünnen Prüffenster bedeuten nicht, dass kein Risiko besteht."
+    ]
   }
 }

@@ -237,6 +237,14 @@ is locked in.
    the slimmer brief. The `crisis/eu-jet-reserves` and `crisis/saf-tipping-point`
    subpages remain zh-only. Middleware and `/[locale]` rewrites stay forbidden.
 
+   **Tipping-point report copy, same pattern.** User-facing strings for
+   `/reports/tipping-point-analysis` now live under `tipping_point_report` in the
+   locale files and render through one shared `TippingPointReportPage`. The three
+   locale routes stay real page files. zh keeps the chart, reserve strip,
+   timeline and research brief; de/en stay evidence reviews. Missing artifacts
+   are locale flags that default false. Middleware and `/[locale]` stay
+   forbidden.
+
 ### Known debts, none urgent
 
 - `apps/web/lib/research-signals-read-model.ts` stamps a signal with the current

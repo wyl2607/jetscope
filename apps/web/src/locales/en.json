@@ -1310,5 +1310,94 @@
       "When the reserve source is a manual estimate it is tagged “scenario assumption” above, and must not be read as an official filing.",
       "This brief is a review surface, not a procurement recommendation."
     ]
+  },
+  "tipping_point_report": {
+    "meta_title": "Tipping-Point Report",
+    "meta_description": "English JetScope report detail for SAF tipping-point evidence, market source confidence, reserve stress, and research posture.",
+    "eyebrow": "Report detail",
+    "title": "Tipping-Point Report",
+    "question": "Does this report's economic case still hold?",
+    "signal_row_label": "Tipping-point conclusion",
+    "signal_label": "Tipping-point signal",
+    "signal_unknown": "review",
+    "signal_hint": "Conclusion first; an unknown signal remains review-required.",
+    "probability_label": "Decision probability",
+    "probability_hint": "Maximum probability across spot SAF purchase and long-term offtake.",
+    "confidence_metric_label": "Source confidence",
+    "confidence_metric_hint": "Market status: {status}",
+    "events_label": "Events loaded",
+    "events_hint": "Event sample in the current 42-day review window.",
+    "events_hint_latest": "Latest: {event}",
+    "events_hint_empty": "No events in the current review window.",
+    "thesis_title": "Core argument",
+    "thesis_why": "The evidence chain shows whether the model can support a decision or must go through source review first.",
+    "thesis_lead": "JetScope treats the tipping point as a convergence of fossil fuel cost, carbon exposure, reserve stress, and SAF pathway spread. The current fossil cost anchor is {price}.",
+    "thesis_body": "The source posture is {status} with {confidence} confidence. If fallback rows are active, the report remains readable but must be reviewed before publication.",
+    "reserves_title": "EU jet-fuel reserve coverage",
+    "reserves_why": "Reserve weeks set the urgency: the thinner the cover, the shorter the price and policy reaction window.",
+    "chart_title": "Jet-fuel and SAF price ladder",
+    "chart_why": "The fossil anchor, carbon-adjusted effective cost, and pathway net-cost ranges — the report's economic case sits in those gaps.",
+    "chart_why_assumed": "No live fossil anchor is available; the price gap is for scenario discussion only.",
+    "decision_title": "Airline decision implications",
+    "decision_why": "Translate model output into reviewable operating implications, so probabilities are not read as a yes-or-no recommendation.",
+    "decision_body": "The decision model presents probabilities and threshold evidence rather than a simple yes/no recommendation.",
+    "research_title": "Research decision layer",
+    "research_why": "Explains why this report's argument is changing. Signals are reasons, not conclusions.",
+    "timeline_title": "SAF crossover timeline",
+    "timeline_why": "Records when SAF effective cost actually crossed fossil jet, not when the model expected it to.",
+    "confidence_title": "Source confidence",
+    "confidence_why": "These four checks explain how much weight the conclusion can carry and which evidence is still missing.",
+    "market_status_label": "Market status",
+    "fallback_rate_label": "Fallback rate",
+    "latest_event_label": "Latest event",
+    "latest_event_none": "none",
+    "research_status_label": "Research posture",
+    "source_status": {
+      "ok": "healthy",
+      "degraded": "degraded",
+      "offline": "offline",
+      "unknown": "unknown"
+    },
+    "research_posture": {
+      "disabled": "disabled boundary",
+      "error": "degraded",
+      "not_found": "not deployed",
+      "with_signals": "signal-backed",
+      "waiting": "waiting for signals"
+    },
+    "next_title": "Next review steps",
+    "next_why": "The report becomes actionable only when its sources, scenario assumptions, and publication path remain reachable.",
+    "next_actions": {
+      "sources": {
+        "title": "Review market sources",
+        "description": "Check live, proxy, fallback, and degraded inputs before external use."
+      },
+      "scenarios": {
+        "title": "Compare scenario assumptions",
+        "description": "Confirm saved assumptions before changing procurement posture."
+      },
+      "reports": {
+        "title": "Return to report workbench",
+        "description": "Review launch posture and report catalog status."
+      }
+    },
+    "number_unavailable": "n/a",
+    "figure_methods": {
+      "fossil_assumed": "Report-page assumed fossil-jet constant of 0.657 USD/L, or no citable timestamp is available",
+      "effective_fossil": "Effective fossil jet = spot fossil jet + carbon-price pressure at the selected blend rate - subsidy (tipping-point model)"
+    },
+    "source_dashboard": "Dashboard read model and market status",
+    "source_reserve": "EU reserve coverage via {source}",
+    "source_unavailable": "unavailable source",
+    "source_fossil_assumed": "No fossil cost anchor available",
+    "source_fossil_live": "Fossil jet-fuel cost anchor",
+    "source_events": "SAF tipping-point events ({count})",
+    "source_research": "Derived research signals ({count})",
+    "method_label": "Source and method registry",
+    "limitations": [
+      "The report describes market-wide thresholds, not one airline’s contracts, inventory, or approvals.",
+      "Decision probabilities are model outputs, not observed future behaviour.",
+      "No events in a thin review window does not mean there is no risk."
+    ]
   }
 }
