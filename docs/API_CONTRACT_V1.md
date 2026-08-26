@@ -396,6 +396,8 @@ usable for reviewers and API clients, not only browser users.
 | `RATE_LIMITED` | 429 | Upstream or API rate limit. | Back off and use cached state. |
 | validation error | 422 | FastAPI request validation failed. | Fix request parameters. |
 
+The Next.js `/api/*` proxy uses a separate public failure contract: `{ "error": "Upstream API unavailable", "request_id": "..." }`. Non-timeout upstream failures return HTTP 502 and timeouts return HTTP 504. The original exception is logged server-side only.
+
 ## Compatibility Notes
 
 - Older docs and scripts may still mention earlier project names. Treat that as legacy branding.
