@@ -139,5 +139,118 @@
       "碳价代理跟踪政策成本压力，应结合航线与掺混假设解读。",
       "本页用于决策支持，不用于交易执行；采购决策仍需与合约供应商报价交叉核验。"
     ]
+  },
+  "research": {
+    "meta_title": "研究工作台",
+    "meta_description": "AI 辅助的 SAF 与航油研究信号工作台，附带启用状态、置信度与复核动作。",
+    "eyebrow": "AI 研究流水线",
+    "title": "研究工作台",
+    "question": "今天的研究信号，够不够解释市场为什么在动？",
+    "signal_row_label": "研究结论信号",
+    "decision_brief_mode": "card",
+    "summary_mode": "both",
+    "cjk_title_template": "",
+    "panel_order": [
+      "status",
+      "decision",
+      "signals",
+      "actions"
+    ],
+    "pipeline_error_unknown": "未知原因",
+    "metrics": {
+      "pipeline_status": "流水线状态",
+      "signal_count": "信号总数",
+      "signal_count_hint": "正向 {positive} · 负向 {negative} · 中性 {neutral}",
+      "latest_signal": "最新信号",
+      "latest_none": "暂无",
+      "latest_none_hint": "还没有可用于报告叙事的研究记录",
+      "usage_boundary": "使用边界",
+      "boundary_enabled": "可解释",
+      "boundary_disabled": "只读空态",
+      "boundary_hint": "研究信号只解释变化原因，不替代市场、储备或来源复核。"
+    },
+    "pipeline": {
+      "disabled": {
+        "label": "未启用",
+        "detail": "开启研究流水线前，本页只提供产品工作台，不声称正在运行实时 AI 分析。"
+      },
+      "waiting": {
+        "label": "等待信号",
+        "detail": "研究 API 已启用，但当前没有持久化信号；等待每日研究任务产出可复核记录。"
+      },
+      "not_found": {
+        "label": "未部署",
+        "detail": "研究服务尚未部署或当前环境找不到它；不要把空结果解释成没有市场变化。"
+      },
+      "error": {
+        "label": "错误",
+        "detail": "Research API 错误：{message}。恢复前不要引用研究结论。"
+      },
+      "ready": {
+        "label": "运行中",
+        "detail": "研究 API 已启用，页面展示最近 30 天内持久化的研究信号。"
+      }
+    },
+    "panels": {
+      "status": {
+        "title": "研究流水线状态",
+        "why": "先区分配置边界、等待、未部署和故障，再决定是否引用研究结论。"
+      },
+      "decision": {
+        "title": "研究决策层",
+        "why": "把下面这串信号压成一句可以拿去做决定的话，以及它现在有多可信。"
+      },
+      "signals": {
+        "title": "信号列表",
+        "why": "逐条查看研究结论、影响方向和置信度，避免只引用汇总判断。"
+      },
+      "actions": {
+        "title": "使用动作",
+        "why": "研究信号必须回到证据链，读者应能从这里进入报告和来源复核。"
+      }
+    },
+    "impacts": {
+      "positive": "正向",
+      "negative": "负向",
+      "neutral": "中性",
+      "unknown": "未知"
+    },
+    "counts": {
+      "active": "活跃",
+      "positive": "正向",
+      "negative": "负向",
+      "neutral": "中性"
+    },
+    "confidence": "置信度",
+    "summary_placeholder": "该信号暂无已复核的摘要。",
+    "summary_en_cjk": "该信号尚无可用的英文摘要。",
+    "summary_en_missing": "该信号没有英文摘要。",
+    "actions": [
+      {
+        "id": "tipping_point",
+        "nav_id": "reports",
+        "suffix": "/tipping-point-analysis",
+        "label": "打开临界点报告",
+        "description": "把研究信号放回储备、航油价格和 SAF 切换概率的报告语境。"
+      },
+      {
+        "id": "sources",
+        "nav_id": "sources",
+        "suffix": "?filter=review",
+        "label": "复核来源",
+        "description": "先确认市场来源、代理和回退状态，再使用研究信号解释变化。"
+      }
+    ],
+    "footer": {
+      "source_signals_ok": "研究信号 read model（文章级信号、影响方向、置信度）",
+      "source_signals_error": "研究信号 API 当前不可用",
+      "source_pipeline": "研究流水线启用配置与部署状态",
+      "method_label": "口径与来源清单",
+      "limitations": [
+        "研究信号解释可能的变化原因，不替代市场、储备、情景或来源复核。",
+        "未启用、等待、未部署和错误都不产生可引用的 as-of 时间；只有最新信号的 published_at 才作为页面时间。",
+        "研究 API 出错或没有信号时，空结果不等于市场没有变化。"
+      ]
+    }
   }
 }

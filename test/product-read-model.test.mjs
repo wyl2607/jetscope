@@ -1028,55 +1028,87 @@ test('German admin page exposes launch readiness without protected write control
 });
 
 test('research page is an honest signal workbench with disabled-state actions', async () => {
-  const researchSource = await readFile(new URL('../apps/web/app/research/page.tsx', import.meta.url), 'utf8');
+  // One shared view, copy in the dictionaries, three real route files. Locale
+  // differences (actions, decision brief, signal-script rules) stay data.
+  const page = await readFile(new URL('../apps/web/components/research-page.tsx', import.meta.url), 'utf8');
+  const zhPage = await readFile(new URL('../apps/web/app/research/page.tsx', import.meta.url), 'utf8');
+  const zh = JSON.parse(
+    await readFile(new URL('../apps/web/src/locales/zh.json', import.meta.url), 'utf8')
+  ).research;
 
-  assert.match(researchSource, /研究工作台/);
-  assert.match(researchSource, /AI_RESEARCH_ENABLED/);
-  assert.match(researchSource, /ResearchDecisionBriefCard/);
-  assert.match(researchSource, /showLink=\{false\}/);
-  assert.match(researchSource, /信号总数/);
-  assert.match(researchSource, /开启研究流水线/);
-  assert.match(researchSource, /reports\/tipping-point-analysis/);
-  assert.match(researchSource, /sources\?filter=review/);
-  assert.doesNotMatch(researchSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+  assert.match(zh.title, /研究工作台/);
+  assert.match(zh.metrics.signal_count, /信号总数/);
+  assert.match(zh.pipeline.disabled.detail, /开启研究流水线/);
+  assert.equal(zh.actions[0].suffix, '/tipping-point-analysis');
+  assert.equal(zh.actions[1].suffix, '?filter=review');
+  assert.ok(!zh.actions.some((action) => action.id === 'admin'));
+
+  assert.match(page, /AI_RESEARCH_ENABLED/);
+  assert.match(page, /ResearchDecisionBriefCard/);
+  assert.match(page, /showLink=\{false\}/);
+  assert.match(page, /NAV_ENTRIES/);
+  assert.match(zhPage, /locale="zh"/);
+  assert.match(zhPage, /研究信号/);
+
+  assert.doesNotMatch(page, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+  assert.doesNotMatch(zhPage, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
 });
 
 test('English research page exposes research pipeline boundaries without Chinese UI copy', async () => {
-  const englishResearchSource = await readFile(new URL('../apps/web/app/en/research/page.tsx', import.meta.url), 'utf8');
+  const page = await readFile(new URL('../apps/web/components/research-page.tsx', import.meta.url), 'utf8');
+  const enPage = await readFile(new URL('../apps/web/app/en/research/page.tsx', import.meta.url), 'utf8');
+  const en = JSON.parse(
+    await readFile(new URL('../apps/web/src/locales/en.json', import.meta.url), 'utf8')
+  ).research;
 
-  assert.match(englishResearchSource, /Research Workbench/);
-  assert.match(englishResearchSource, /AI_RESEARCH_ENABLED/);
-  assert.match(englishResearchSource, /research pipeline is disabled/i);
-  assert.match(englishResearchSource, /en\/reports\/tipping-point-analysis/);
-  assert.match(englishResearchSource, /en\/sources\?filter=review/);
-  assert.match(englishResearchSource, /en\/admin/);
+  assert.match(en.title, /Research Workbench/);
+  assert.match(en.pipeline.disabled.detail, /research pipeline is disabled/i);
+  assert.equal(en.actions.find((action) => action.id === 'tipping_point')?.suffix, '/tipping-point-analysis');
+  assert.equal(en.actions.find((action) => action.id === 'sources')?.suffix, '?filter=review');
+  assert.equal(en.actions.find((action) => action.id === 'admin')?.nav_id, 'admin');
+  assert.match(page, /AI_RESEARCH_ENABLED/);
+  assert.match(page, /NAV_ENTRIES/);
+  assert.match(enPage, /locale="en"/);
+  assert.match(enPage, /Research Workbench/);
+
   assert.doesNotMatch(
-    englishResearchSource,
+    JSON.stringify(en),
     /研究工作台|开启研究流水线|信号总数|复核来源|正向|负向|中性|暂无/
   );
-  assert.doesNotMatch(englishResearchSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+  assert.doesNotMatch(page, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+  assert.doesNotMatch(enPage, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
 });
 
 test('German research page exposes research pipeline boundaries without Chinese or English UI copy', async () => {
-  const germanResearchSource = await readFile(new URL('../apps/web/app/de/research/page.tsx', import.meta.url), 'utf8');
+  const page = await readFile(new URL('../apps/web/components/research-page.tsx', import.meta.url), 'utf8');
+  const dePage = await readFile(new URL('../apps/web/app/de/research/page.tsx', import.meta.url), 'utf8');
+  const de = JSON.parse(
+    await readFile(new URL('../apps/web/src/locales/de.json', import.meta.url), 'utf8')
+  ).research;
 
-  assert.match(germanResearchSource, /Forschungswerkstatt/);
-  assert.match(germanResearchSource, /AI_RESEARCH_ENABLED/);
-  assert.match(germanResearchSource, /Forschungspipeline ist deaktiviert/);
-  assert.match(germanResearchSource, /Signalanzahl/);
-  assert.match(germanResearchSource, /Entscheidungsnotiz/);
-  assert.match(germanResearchSource, /de\/sources\?filter=review/);
-  assert.match(germanResearchSource, /de\/reports/);
-  assert.match(germanResearchSource, /de\/admin/);
+  assert.match(de.title, /Forschungswerkstatt/);
+  assert.match(de.pipeline.disabled.detail, /Forschungspipeline ist deaktiviert/);
+  assert.match(de.metrics.signal_count, /Signalanzahl/);
+  assert.match(de.panels.decision.title, /Entscheidungsnotiz/);
+  assert.equal(de.actions.find((action) => action.id === 'reports')?.nav_id, 'reports');
+  assert.equal(de.actions.find((action) => action.id === 'sources')?.suffix, '?filter=review');
+  assert.equal(de.actions.find((action) => action.id === 'admin')?.nav_id, 'admin');
+  assert.ok(!de.actions.some((action) => action.id === 'tipping_point'));
+  assert.match(page, /AI_RESEARCH_ENABLED/);
+  assert.match(page, /NAV_ENTRIES/);
+  assert.match(dePage, /locale="de"/);
+  assert.match(dePage, /Forschungswerkstatt/);
+
   assert.doesNotMatch(
-    germanResearchSource,
+    JSON.stringify(de),
     /研究工作台|开启研究流水线|信号总数|复核来源|正向|负向|中性|暂无|使用动作/
   );
   assert.doesNotMatch(
-    germanResearchSource,
+    JSON.stringify(de),
     /Research Workbench|Enable research pipeline|Signal count|Decision brief|Evidence actions|No research signals/
   );
-  assert.doesNotMatch(germanResearchSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+  assert.doesNotMatch(page, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+  assert.doesNotMatch(dePage, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
 });
 
 test('dashboard and admin avoid leaking raw implementation labels into UI copy', async () => {

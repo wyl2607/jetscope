@@ -107,17 +107,47 @@ async function read(path) {
 }
 
 /**
- * Thin locale wrappers render a shared view (`<FaqPage />`,
- * `<GermanyJetFuelPage />`). The template contract lives there, not in the
- * three route files.
+ * Thin locale wrappers render a shared view (`<FaqPage locale="…" />`,
+ * `<GermanyJetFuelPage locale="…" />`, …). The template contract lives in that
+ * shared view, not in the three route files, so a wrapper has to be resolved to
+ * its implementation before anything is asserted about it.
+ *
+ * One row per converted view: how to recognise the route, the component the
+ * wrapper renders, the file that component lives in, and the locale-dictionary
+ * key holding its copy. Converting a page is adding a row — this used to be a
+ * chain of ternaries, which meant every page landing in parallel rewrote the
+ * same three lines and collided with the others.
  */
+const SHARED_VIEWS = [
+  {
+    route: /\/faq\/page\.tsx$/,
+    component: 'FaqPage',
+    source: 'apps/web/components/faq-page.tsx',
+    i18nKey: 'faq',
+  },
+  {
+    route: /\/prices\/germany-jet-fuel\/page\.tsx$/,
+    component: 'GermanyJetFuelPage',
+    source: 'apps/web/components/germany-jet-fuel-page.tsx',
+    i18nKey: 'prices',
+  },
+  {
+    route: /\/research\/page\.tsx$/,
+    component: 'ResearchPage',
+    source: 'apps/web/components/research-page.tsx',
+    i18nKey: 'research',
+  },
+];
+
+function sharedViewFor(path) {
+  return SHARED_VIEWS.find((view) => view.route.test(path)) ?? null;
+}
+
 async function implementationOf(path) {
   const source = await read(path);
-  if (/\/faq\/page\.tsx$/.test(path) && source.includes('<FaqPage')) {
-    return read('apps/web/components/faq-page.tsx');
-  }
-  if (/prices\/germany-jet-fuel\/page\.tsx$/.test(path) && source.includes('<GermanyJetFuelPage')) {
-    return read('apps/web/components/germany-jet-fuel-page.tsx');
+  const view = sharedViewFor(path);
+  if (view && source.includes(`<${view.component}`)) {
+    return read(view.source);
   }
   return source;
 }
@@ -134,11 +164,7 @@ test('every converted page states the decision question it answers', async () =>
   for (const path of CONVERTED_PAGES) {
     const source = await implementationOf(path);
 
-    const i18nKey = /\/faq\/page\.tsx$/.test(path)
-      ? 'faq'
-      : /prices\/germany-jet-fuel\/page\.tsx$/.test(path)
-        ? 'prices'
-        : null;
+    const i18nKey = sharedViewFor(path)?.i18nKey ?? null;
     if (i18nKey) {
       assert.match(
         source,
