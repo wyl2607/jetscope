@@ -22,20 +22,39 @@ export type Locale = (typeof LOCALES)[number];
 
 /**
  * Widen JSON string literals so `de` / `en` can be checked against the `zh`
- * shape without requiring the same words.
+ * shape without requiring the same words. Booleans are widened too: locale
+ * flags such as `home.show_transition_ladder` must be allowed to differ.
  */
 type WidenStrings<T> = T extends string
   ? string
-  : T extends readonly (infer U)[]
-    ? WidenStrings<U>[]
-    : T extends object
-      ? { [K in keyof T]: WidenStrings<T[K]> }
-      : T;
+  : T extends boolean
+    ? boolean
+    : T extends number
+      ? number
+      : T extends readonly (infer U)[]
+        ? [U] extends [never]
+          ? string[]
+          : WidenStrings<U>[]
+        : T extends object
+          ? { [K in keyof T]: WidenStrings<T[K]> }
+          : T;
 
 /** The reference shape. Adding a key here obliges `de.json` and `en.json`. */
 export type Messages = WidenStrings<typeof zh>;
 
 export type FaqMessages = Messages['faq'];
+export type ReportsMessages = Messages['reports'];
+
+export type ResearchMessages = Messages['research'];
+export type AdminMessages = Messages['admin'];
+export type SourcesMessages = Messages['sources'];
+
+export type HomeMessages = Messages['home'];
+export type DashboardMessages = Messages['dashboard'];
+
+export type ScenariosMessages = Messages['scenarios'];
+export type CrisisMessages = Messages['crisis'];
+export type TippingPointReportMessages = Messages['tipping_point_report'];
 
 const catalog: Record<Locale, Messages> = { zh, de, en };
 

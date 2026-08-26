@@ -10,6 +10,7 @@ import {
 
 const ADMIN_UI_FILES = [
   new URL('../apps/web/app/admin/page.tsx', import.meta.url),
+  new URL('../apps/web/components/admin-page.tsx', import.meta.url),
   new URL('../apps/web/components/admin-data-ops.tsx', import.meta.url),
   new URL('../apps/web/components/cards.tsx', import.meta.url)
 ];
@@ -155,17 +156,22 @@ test('admin UI keeps a light operations theme', async () => {
 test('admin market refresh shows database persistence evidence', async () => {
   const adminSource = await readFile(new URL('../apps/web/components/admin-data-ops.tsx', import.meta.url), 'utf8');
   const adminPageSource = await readFile(new URL('../apps/web/app/admin/page.tsx', import.meta.url), 'utf8');
+  const adminViewSource = await readFile(new URL('../apps/web/components/admin-page.tsx', import.meta.url), 'utf8');
+  const zhAdmin = JSON.parse(
+    await readFile(new URL('../apps/web/src/locales/zh.json', import.meta.url), 'utf8')
+  ).admin;
   const marketSchema = await readFile(new URL('../apps/api/app/schemas/market.py', import.meta.url), 'utf8');
   const marketRoute = await readFile(new URL('../apps/api/app/api/routes/market.py', import.meta.url), 'utf8');
 
-  assert.match(adminPageSource, /getLaunchReadinessReadModel/);
+  assert.match(adminViewSource, /getLaunchReadinessReadModel/);
   assert.match(adminPageSource, /上线前置状态/);
-  assert.match(adminPageSource, /readiness\.checks\.map/);
-  assert.match(adminPageSource, /check\.actionHref/);
-  assert.match(adminPageSource, /check\.blocking/);
-  assert.match(adminPageSource, /check\.configKeys/);
-  assert.match(adminPageSource, /阻塞上线/);
-  assert.match(adminPageSource, /相关配置/);
+  assert.match(adminViewSource, /readiness\.checks\.map/);
+  assert.match(adminViewSource, /check\.actionHref/);
+  assert.match(adminViewSource, /check\.blocking/);
+  assert.match(adminViewSource, /check\.configKeys/);
+  assert.match(zhAdmin.impact_blocking, /阻塞上线/);
+  assert.match(zhAdmin.config_keys_label, /相关配置/);
+  assert.equal(zhAdmin.show_admin_ops, true);
   assert.match(adminSource, /refreshEvidence/);
   assert.match(adminSource, /Promise<unknown>/);
   assert.match(adminSource, /return await response\.json\(\)/);
