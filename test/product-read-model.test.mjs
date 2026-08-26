@@ -462,31 +462,50 @@ test('getGermanyJetFuelReadModel falls back from EU proxy history to global jet 
 });
 
 test('English Germany jet fuel price page exposes localized market review without Chinese or German copy', async () => {
-  const englishPriceSource = await readFile(
+  const page = await readFile(
+    new URL('../apps/web/components/germany-jet-fuel-page.tsx', import.meta.url),
+    'utf8'
+  );
+  const enPage = await readFile(
     new URL('../apps/web/app/en/prices/germany-jet-fuel/page.tsx', import.meta.url),
     'utf8'
   );
+  const en = JSON.parse(
+    await readFile(new URL('../apps/web/src/locales/en.json', import.meta.url), 'utf8')
+  ).prices;
 
-  assert.match(englishPriceSource, /Germany Jet-Fuel Price Monitor/);
-  assert.match(englishPriceSource, /getGermanyJetFuelReadModel\('en'\)/);
-  assert.match(englishPriceSource, /en\/sources\?focus=jet_eu_proxy_usd_per_l/);
-  assert.match(englishPriceSource, /Decision support, not a trading feed/);
-  assert.match(englishPriceSource, /Source Review/);
+  assert.match(en.title, /Germany Jet-Fuel Price Monitor/);
+  assert.match(en.limitations.join(' '), /Decision support, not a trading feed/);
+  assert.match(en.source_read_model, /Source Review/);
+  assert.equal(en.show_trend_chart, false);
+  assert.match(enPage, /locale="en"/);
+  assert.match(page, /getGermanyJetFuelReadModel\(locale\)/);
+  assert.match(page, /sourcesHref\(locale, key\)/);
   assert.doesNotMatch(
-    englishPriceSource,
-    /德国航油价格|价格 · 德国|来源状态|风险说明|Deutschland|Risikohinweis|Quellen/
+    JSON.stringify(en),
+    /德国航油价格|价格 · 德国|来源状态|风险说明|Deutschland|Risikohinweis|Quellenstatus/
   );
-  assert.doesNotMatch(englishPriceSource, /text-white|text-slate-300|bg-slate-900|border-slate-800/);
+  assert.doesNotMatch(page, /text-white|text-slate-300|bg-slate-900|border-slate-800/);
 });
 
 test('German Germany jet fuel price page keeps source review in the German locale', async () => {
-  const germanPriceSource = await readFile(
+  const page = await readFile(
+    new URL('../apps/web/components/germany-jet-fuel-page.tsx', import.meta.url),
+    'utf8'
+  );
+  const dePage = await readFile(
     new URL('../apps/web/app/de/prices/germany-jet-fuel/page.tsx', import.meta.url),
     'utf8'
   );
+  const de = JSON.parse(
+    await readFile(new URL('../apps/web/src/locales/de.json', import.meta.url), 'utf8')
+  ).prices;
 
-  assert.match(germanPriceSource, /de\/sources\?focus=jet_eu_proxy_usd_per_l/);
-  assert.doesNotMatch(germanPriceSource, /href: '\/sources\?focus=/);
+  assert.match(dePage, /locale="de"/);
+  assert.match(de.source_jet_eu, /EU-Jet-Proxy-Quellenstatus/);
+  assert.equal(de.show_trend_chart, false);
+  assert.match(page, /id === 'sources'/);
+  assert.doesNotMatch(page, /href: '\/sources\?focus=/);
 });
 
 test('English Lufthansa SAF analysis page is a localized light review surface', async () => {

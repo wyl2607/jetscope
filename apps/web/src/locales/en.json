@@ -96,5 +96,48 @@
       "These answers describe the current deployment design intent and do not change with live data; use the Admin page for the environment’s actual readiness.",
       "The FAQ does not replace the current states and limitations on the Sources, Research, or Scenarios pages."
     ]
+  },
+  "prices": {
+    "meta_title": "Germany Jet-Fuel Price Monitor",
+    "meta_description": "English Germany jet-fuel market view for Brent, global jet fuel, EU jet proxy, carbon proxy, and 1d/7d/30d source-backed changes.",
+    "eyebrow": "Prices · Germany",
+    "title": "Germany Jet-Fuel Price Monitor",
+    "question": "Has Germany's current jet-fuel price moved far enough to revisit the contract or hedging decision?",
+    "signal_label": "Germany jet-fuel decision signals",
+    "decision_label": "Decision pressure",
+    "decision_review_source": "Review source first",
+    "decision_revisit": "Revisit contract/hedge",
+    "decision_review": "Review needed",
+    "decision_hold": "No trigger yet",
+    "decision_hint": "EU jet proxy {value} · {window30} {change} · Status {status}",
+    "decision_missing": "The EU jet proxy has no current value.",
+    "window_1d": "1d",
+    "window_7d": "7d",
+    "window_30d": "30d",
+    "na": "n/a",
+    "status_live": "live",
+    "status_proxy": "proxy",
+    "status_degraded": "degraded",
+    "status_fallback": "unknown",
+    "use_status_fallback": false,
+    "show_trend_chart": false,
+    "trend_title": "Price trend",
+    "trend_why": "A single print is one point. Only the 1d, 7d, and 30d windows show whether the move is large enough to revisit a contract or hedge.",
+    "source_read_model": "Source Review: Germany jet-fuel read model (Brent, global jet fuel, EU jet proxy, and carbon proxy)",
+    "source_read_model_fallback": "Germany jet-fuel read model unavailable; fallback estimates are in use ({error})",
+    "source_unknown_error": "unknown reason",
+    "source_brent": "Brent source status",
+    "source_jet": "Global jet-fuel source status",
+    "source_jet_eu": "EU jet proxy source status",
+    "source_carbon": "Carbon proxy source status",
+    "source_trend": "Price-trend history read model (1d, 7d, 30d windows)",
+    "source_trend_fallback": "Price-trend history unavailable ({error})",
+    "method_label": "Source and price-movement method",
+    "limitations": [
+      "Jet-fuel prices are proxies and may differ from airport-specific or contract-settled prices in Germany.",
+      "The EU jet proxy can temporarily fall back to the global jet-fuel series when regional data is unavailable; a fallback is not a measurement.",
+      "The carbon proxy reflects policy-cost pressure and should be read with route and blend assumptions.",
+      "Decision support, not a trading feed. Compare procurement action with supplier quotes and internal contract terms."
+    ]
   }
 }
