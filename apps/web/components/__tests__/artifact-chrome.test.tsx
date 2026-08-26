@@ -579,11 +579,7 @@ describe('an artifact whose container carries state keeps it', () => {
   });
 });
 
-const ADMIN_PAGES = [
-  '../../app/admin/page.tsx',
-  '../../app/de/admin/page.tsx',
-  '../../app/en/admin/page.tsx'
-] as const;
+const ADMIN_IMPLEMENTATION = '../admin-page.tsx';
 
 function helperBody(source: string, name: string): string {
   const start = source.indexOf(`function ${name}(`);
@@ -595,17 +591,15 @@ function helperBody(source: string, name: string): string {
 }
 
 describe('admin readiness tones fail safely', () => {
-  for (const path of ADMIN_PAGES) {
-    it(`${path} keeps unrecognized check states out of success`, async () => {
-      const source = await readFile(new URL(path, import.meta.url), 'utf8');
-      const readinessTone = helperBody(source, 'readinessToneClass');
-      const launchImpact = helperBody(source, 'launchImpactClass');
+  it('keeps unrecognized check states out of success in the shared admin implementation', async () => {
+    const source = await readFile(new URL(ADMIN_IMPLEMENTATION, import.meta.url), 'utf8');
+    const readinessTone = helperBody(source, 'readinessToneClass');
+    const launchImpact = helperBody(source, 'launchImpactClass');
 
-      expect(readinessTone).toMatch(/tone === 'ok' && check\.status === 'ok'.*border-success/);
-      expect(readinessTone.slice(readinessTone.lastIndexOf('return'))).toMatch(/warning/);
-      expect(readinessTone.slice(readinessTone.lastIndexOf('return'))).not.toMatch(/success/);
-      expect(launchImpact.slice(launchImpact.lastIndexOf('return'))).toMatch(/warning/);
-      expect(launchImpact.slice(launchImpact.lastIndexOf('return'))).not.toMatch(/success/);
-    });
-  }
+    expect(readinessTone).toMatch(/tone === 'ok' && check\.status === 'ok'.*border-success/);
+    expect(readinessTone.slice(readinessTone.lastIndexOf('return'))).toMatch(/warning/);
+    expect(readinessTone.slice(readinessTone.lastIndexOf('return'))).not.toMatch(/success/);
+    expect(launchImpact.slice(launchImpact.lastIndexOf('return'))).toMatch(/warning/);
+    expect(launchImpact.slice(launchImpact.lastIndexOf('return'))).not.toMatch(/success/);
+  });
 });
