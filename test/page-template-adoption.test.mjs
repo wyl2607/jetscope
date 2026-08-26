@@ -173,6 +173,12 @@ const SHARED_VIEWS = [
     source: 'apps/web/components/scenarios-page.tsx',
     i18nKey: 'scenarios',
   },
+  {
+    route: /\/crisis\/page\.tsx$/,
+    component: 'CrisisPage',
+    source: 'apps/web/components/crisis-page.tsx',
+    i18nKey: 'crisis',
+  },
 ];
 
 function sharedViewFor(path) {
@@ -350,7 +356,7 @@ test('a page on fallback data never stamps it with a fresh timestamp', async () 
 
 test('a crisis-brief page on fallback data never stamps it with a fresh timestamp', async () => {
   for (const path of CRISIS_BRIEF_PAGES) {
-    const source = await read(path);
+    const source = await implementationOf(path);
     assert.match(
       source,
       /readModel\.error\s*\?\s*null\s*:/,
@@ -393,7 +399,7 @@ test('a reserve reading is labelled by how it was produced, not assumed observed
   // the failure this contract exists to prevent, so every crisis page has to
   // route source_type through a basis mapping rather than hardcoding observed.
   for (const path of ['apps/web/app/crisis/page.tsx', ...CRISIS_BRIEF_PAGES]) {
-    const source = await read(path);
+    const source = await implementationOf(path);
     assert.match(source, /function reserveBasis\(/, `${path} must map reserve source_type to a basis`);
     assert.match(source, /return 'assumption'/, `${path} must fall back to assumption, not to observed`);
   }

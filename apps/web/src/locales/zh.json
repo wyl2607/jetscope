@@ -1123,5 +1123,174 @@
       "任一接口回退或不可用时，页面会继续提供可编辑工作区，但对应数字没有有效的实测 as-of；旧版“数据真实性”说明已并入这里。",
       "页面职责是产品分工说明，是否保留该说明由产品负责人决定。"
     ]
+  },
+  "crisis": {
+    "show_price_chart": true,
+    "show_reserves_strip": true,
+    "show_event_timeline": true,
+    "show_simulator": true,
+    "show_research_brief": true,
+    "show_zh_subpage_links": true,
+    "meta_title": "危机监测",
+    "meta_description": "在一个运营危机监测视图中跟踪储备覆盖、临界事件与 SAF 经济性跨越。",
+    "eyebrow": "危机简报",
+    "title": "EU 航油风险简报",
+    "question": "现在的储备压力和数据可信度，够不够支撑改变采购动作？",
+    "signals_label": "危机信号",
+    "na": "n/a",
+    "stress": {
+      "critical": "紧急",
+      "elevated": "偏高",
+      "guarded": "警戒",
+      "normal": "平稳",
+      "unknown": "回退模式"
+    },
+    "source_type": {
+      "official": "官方来源",
+      "manual": "人工估算",
+      "derived": "模型推导",
+      "unknown": "情景基线"
+    },
+    "confidence": {
+      "missing": "暂无置信度",
+      "high": "高置信",
+      "medium_high": "中高置信",
+      "medium": "中等置信",
+      "unavailable": "暂不可用"
+    },
+    "signal": {
+      "saf_cost_advantaged": "SAF 成本占优",
+      "switch_window_opening": "切换窗口正在打开",
+      "fossil_still_advantaged": "化石航油仍占优",
+      "unknown": "情景基线"
+    },
+    "source_status": {
+      "ok": "健康",
+      "degraded": "降级",
+      "offline": "离线",
+      "unknown": "未知"
+    },
+    "research_posture": {
+      "disabled": "未启用边界",
+      "empty": "等待信号",
+      "backed": "已有信号支撑"
+    },
+    "monitor": {
+      "decision_label": "决策信号",
+      "decision_hint": "{status} · 化石航油基线 ${price}/L",
+      "reserve_connected": "储备数据已连接",
+      "reserve_baseline": "正在使用情景基线",
+      "coverage_label": "储备覆盖",
+      "coverage_weeks": "{weeks} 周",
+      "coverage_missing": "需重新连接",
+      "coverage_hint": "压力等级：{stress} · {source}",
+      "coverage_source_missing": "未连接实时储备源",
+      "reserve_confidence_label": "储备数据置信度",
+      "reserve_confidence_hint": "{confidence} · 来源类型：{source_type}",
+      "market_confidence_label": "市场数据置信度",
+      "market_confidence_hint": "市场快照的整体可信度，决定下面的价格阶梯能不能直接引用",
+      "actions_title": "下一步动作",
+      "actions_why": "建议路径是先确认储备可信度，再测试 SAF 经济性——不要跳过第一步直接改采购。",
+      "reserves_panel_title": "欧盟航煤储备覆盖",
+      "reserves_panel_why": "储备周数是危机叙事的底座。跌破警戒线时，价格反应和政策反应会同时加速。",
+      "timeline_title": "SAF 交叉时间线",
+      "timeline_why": "记录 SAF 有效成本真的越过化石航油的时刻，而不是模型预测它会越过。",
+      "research_title": "研究决策层",
+      "research_why": "解释上面这些数字为什么在动。信号本身不是结论，是结论的理由。",
+      "chart_title": "航油与 SAF 价格阶梯",
+      "chart_why": "化石航油基准、碳调整后的有效成本，以及各路径的净成本区间——要看的是差距，不是绝对值。",
+      "simulator_title": "拐点模拟器",
+      "simulator_why": "综合燃油价格、碳价、储备压力与路径经济性的 API 模型；用来试探结论在什么条件下翻转。",
+      "methods": {
+        "fossil_fallback": "crisis page fossil-jet fallback or missing source timestamp",
+        "effective_fossil": "effective fossil jet = spot fossil jet + carbon price pressure at selected blend rate, minus subsidy (tipping-point model)",
+        "reserve_derived": "derived reserve coverage from {name}",
+        "reserve_named": "reserve coverage from {name} ({type})",
+        "reserve_dashboard": "dashboard reserve coverage without connected reserve source metadata",
+        "reserve_baseline": "情景基线 3.0 周；实时储备未连接"
+      }
+    },
+    "zh_links": {
+      "reserves": {
+        "title": "打开储备详情",
+        "description": "先检查覆盖周数、来源类型、置信度和供应缺口，再调整采购判断。",
+        "eyebrow": "储备"
+      },
+      "workbench": {
+        "title": "打开 SAF 工作台",
+        "description": "带入当前燃油、碳价和储备读数，直接测试 SAF 路径敏感性。",
+        "eyebrow": "模拟"
+      },
+      "sources": {
+        "title": "复核数据来源",
+        "description": "查看需要复核的市场输入，确认实时、代理、回退和降级状态。",
+        "eyebrow": "来源"
+      }
+    },
+    "brief": {
+      "stress_label": "储备压力",
+      "stress_weeks": "{weeks} 周",
+      "stress_hint": "欧盟储备态势：{stress} | {source}",
+      "fallback_source": "情景基线回退",
+      "source_label": "来源置信度",
+      "source_hint": "市场状态 {status} | 储备置信度 {reserve}",
+      "events_label": "临界事件",
+      "events_hint": "{type} | {pathway} | {when}",
+      "events_empty": "当前复核窗口内没有事件。",
+      "research_label": "研究姿态",
+      "research_hint": "有 {count} 条研究信号可供复核。",
+      "research_hint_empty": "页面展示研究边界，而不是编造证据。",
+      "readout_title": "运营读数",
+      "readout_why": "上面这些数字合在一起是什么意思，以及如何判断它们来自实时证据还是回退状态。",
+      "readout_p1_lead": "当前化石航油成本锚点为",
+      "readout_p1_tail": "。JetScope 把它和欧盟储备覆盖、来源置信度放在一起，方便复核人员在改采购或 SAF 假设之前，把实时证据和回退状态分开。",
+      "readout_p2": "危机简报来自 FastAPI crisis-brief 合同，所以页面能给出一份连贯的运营读数，而不在展示层重复储备、来源、临界事件和研究聚合。",
+      "evidence_title": "证据纪律",
+      "evidence_why": "这四项读数决定这份简报能不能当作决策证据，还是必须先过来源复核。",
+      "freshness_label": "市场新鲜度",
+      "freshness_minutes": "{minutes} 分钟",
+      "freshness_review": "待复核",
+      "fallback_rate_label": "回退率",
+      "reserve_timestamp_label": "储备时间戳",
+      "as_of_unavailable": "暂不可用",
+      "contract_label": "合同状态",
+      "contract_fallback": "回退",
+      "contract_connected": "已连接",
+      "actions_title": "下一步",
+      "actions_why": "只展示数字的危机简报什么也改不了。这里的每个入口都通向可核查的东西。"
+    },
+    "recovery": {
+      "review_sources": {
+        "title": "复核来源证据",
+        "description": "在把危机信号当作运营证据之前，先检查回退、代理、降级和波动行。"
+      },
+      "open_report": {
+        "title": "打开本地化报告",
+        "description": "从简报进入有来源支撑的临界点报告，阅读更长的复核叙事。"
+      },
+      "review_scenarios": {
+        "title": "复核情景",
+        "description": "在改计划之前，把已保存假设对照当前储备压力和市场置信度。"
+      }
+    },
+    "footer": {
+      "reserve_connected": "EU 航油储备覆盖，来自{type}（{name}）",
+      "reserve_missing": "储备服务未连接，覆盖读数使用情景基线",
+      "market_snapshot": "市场快照（化石航油基线 ${price}/L、碳价代理 €{carbon}/t）",
+      "tipping_events": "复核窗口内观察到的 {count} 个 SAF 交叉事件",
+      "tipping_model": "决策信号与路径净成本由拐点模型推导，不是上游直接给出的读数",
+      "brief_error": "Crisis-Brief-API 不可达；正在使用内部回退值（{error}）",
+      "brief_ok": "Crisis-Brief-API（储备、来源状态、临界事件、研究姿态）",
+      "reserve_via": "欧盟储备态势，来源 {name}",
+      "events_observed": "复核窗口内观察到 {count} 个 SAF 临界事件",
+      "fossil_anchor": "化石成本锚点 {price}，由市场快照推导",
+      "method_label": "口径与来源清单"
+    },
+    "limitations": [
+      "本页描述的是区域层面的储备压力，不是某一家航司的供应状况——航司自有合同和库存不在其中。",
+      "交叉事件只统计复核窗口内的观察值。没有事件不等于没有风险，只表示这个窗口内没观察到跨越。",
+      "储备来源若是人工估算，上方会标成“情景假设”，不能当作官方实时报价引用。",
+      "模拟器用于试探敏感性，它的输出是情景推演，不构成采购建议。"
+    ]
   }
 }

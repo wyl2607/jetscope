@@ -230,6 +230,13 @@ is locked in.
    readiness dashboard; de/en stay read-only review surfaces. No middleware and
    no `/[locale]`.
 
+   **Crisis index copy, safe reland (after #321).** User-facing crisis-index
+   strings now live under `crisis` in the same locale files. `/crisis`,
+   `/de/crisis` and `/en/crisis` remain real page files that render one shared
+   `CrisisPage` with an explicit `locale`. zh stays the full monitor; de/en stay
+   the slimmer brief. The `crisis/eu-jet-reserves` and `crisis/saf-tipping-point`
+   subpages remain zh-only. Middleware and `/[locale]` rewrites stay forbidden.
+
 ### Known debts, none urgent
 
 - `apps/web/lib/research-signals-read-model.ts` stamps a signal with the current

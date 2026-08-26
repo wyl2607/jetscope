@@ -586,6 +586,7 @@ test('localized FAQ pages explain launch boundaries without write controls', asy
 test('crisis page uses light semantic data cards instead of gray dark boxes', async () => {
   const files = [
     'apps/web/app/crisis/page.tsx',
+    'apps/web/components/crisis-page.tsx',
     'apps/web/components/reserves-coverage-strip.tsx',
     'apps/web/components/tipping-event-timeline.tsx',
     'apps/web/components/research-decision-brief.tsx'
@@ -600,13 +601,15 @@ test('crisis page uses light semantic data cards instead of gray dark boxes', as
     );
   }
 
-  const crisisSource = await readFile(new URL('../apps/web/app/crisis/page.tsx', import.meta.url), 'utf8');
+  const crisisSource = await readFile(new URL('../apps/web/components/crisis-page.tsx', import.meta.url), 'utf8');
+  const zhCrisisPage = await readFile(new URL('../apps/web/app/crisis/page.tsx', import.meta.url), 'utf8');
+  assert.match(zhCrisisPage, /<CrisisPage locale="zh"/);
   assert.match(crisisSource, /sourceTypeLabel/);
   assert.match(crisisSource, /confidenceTextTone/);
   assert.match(crisisSource, /marketConfidence/);
   assert.match(crisisSource, /buildSafWorkbenchHref/);
   assert.match(crisisSource, /reviewSourcesHref/);
-  assert.match(crisisSource, /sources\?filter=review/);
+  assert.match(crisisSource, /sources', '\?filter=review/);
   assert.match(crisisSource, /fuel: fallbackFossil\.toFixed\(3\)/);
   assert.match(crisisSource, /reserve: reserveWeeks\?\.toFixed\(2\)/);
   // Asserted through the design tokens rather than palette literals, which any
@@ -669,41 +672,60 @@ test('crisis page uses light semantic data cards instead of gray dark boxes', as
 });
 
 test('localized crisis pages are source-backed and stay in their locale', async () => {
+  const page = await readFile(new URL('../apps/web/components/crisis-page.tsx', import.meta.url), 'utf8');
   const englishCrisisSource = await readFile(new URL('../apps/web/app/en/crisis/page.tsx', import.meta.url), 'utf8');
   const germanCrisisSource = await readFile(new URL('../apps/web/app/de/crisis/page.tsx', import.meta.url), 'utf8');
   const shellSource = await readFile(new URL('../apps/web/components/shell.tsx', import.meta.url), 'utf8');
+  const dictionary = async (locale) =>
+    JSON.parse(
+      await readFile(new URL(`../apps/web/src/locales/${locale}.json`, import.meta.url), 'utf8')
+    ).crisis;
+  const zh = await dictionary('zh');
+  const en = await dictionary('en');
+  const de = await dictionary('de');
 
   assert.match(englishCrisisSource, /Fuel Stress Brief/);
-  assert.match(englishCrisisSource, /getCrisisBriefReadModel\('en'\)/);
-  assert.match(englishCrisisSource, /FastAPI crisis-brief contract/);
-  assert.match(englishCrisisSource, /Reserve stress/);
-  assert.match(englishCrisisSource, /Source confidence/);
-  assert.match(englishCrisisSource, /Tipping events/);
-  assert.match(englishCrisisSource, /Research posture/);
-  assert.match(englishCrisisSource, /en\/sources\?filter=review/);
-  assert.match(englishCrisisSource, /en\/reports\/tipping-point-analysis/);
-  assert.match(englishCrisisSource, /en\/scenarios/);
+  assert.match(englishCrisisSource, /locale="en"/);
+  assert.match(en.title, /Fuel Stress Brief/);
+  assert.match(en.brief.readout_p2, /FastAPI crisis-brief contract/);
+  assert.match(en.brief.stress_label, /Reserve stress/);
+  assert.match(en.brief.source_label, /Source confidence/);
+  assert.match(en.brief.events_label, /Tipping events/);
+  assert.match(en.brief.research_label, /Research posture/);
+  assert.equal(en.show_simulator, false);
+  assert.equal(en.show_zh_subpage_links, false);
   assert.doesNotMatch(englishCrisisSource, /getDashboardReadModel|getEuReserveCoverage|getTippingPointEvents|getResearchSignals/);
   assert.doesNotMatch(
-    englishCrisisSource,
+    JSON.stringify(en),
     /危机监测|储备压力|来源可信度|研究姿态|Krisenbrief|Reservestress|Quellenvertrauen|Forschungsstatus/
   );
 
   assert.match(germanCrisisSource, /Krisenbrief/);
-  assert.match(germanCrisisSource, /getCrisisBriefReadModel\('de'\)/);
-  assert.match(germanCrisisSource, /FastAPI-Crisis-Brief-Vertrag/);
-  assert.match(germanCrisisSource, /Reservestress/);
-  assert.match(germanCrisisSource, /Quellenvertrauen/);
-  assert.match(germanCrisisSource, /Kippereignisse/);
-  assert.match(germanCrisisSource, /Forschungsstatus/);
-  assert.match(germanCrisisSource, /de\/sources\?filter=review/);
-  assert.match(germanCrisisSource, /de\/reports\/tipping-point-analysis/);
-  assert.match(germanCrisisSource, /de\/scenarios/);
+  assert.match(germanCrisisSource, /locale="de"/);
+  assert.match(de.title, /Krisenbrief/);
+  assert.match(de.brief.readout_p2, /FastAPI-Crisis-Brief-Vertrag/);
+  assert.match(de.brief.stress_label, /Reservestress/);
+  assert.match(de.brief.source_label, /Quellenvertrauen/);
+  assert.match(de.brief.events_label, /Kippereignisse/);
+  assert.match(de.brief.research_label, /Forschungsstatus/);
+  assert.equal(de.show_simulator, false);
+  assert.equal(de.show_zh_subpage_links, false);
   assert.doesNotMatch(germanCrisisSource, /getDashboardReadModel|getEuReserveCoverage|getTippingPointEvents|getResearchSignals/);
   assert.doesNotMatch(
-    germanCrisisSource,
+    JSON.stringify(de),
     /危机监测|储备压力|来源可信度|研究姿态|Fuel Stress Brief|Reserve stress|Source confidence|Research posture/
   );
+
+  assert.equal(zh.show_simulator, true);
+  assert.equal(zh.show_zh_subpage_links, true);
+  assert.match(page, /getCrisisBriefReadModel\(locale\)/);
+  assert.match(page, /NAV_ENTRIES/);
+  assert.match(page, /sources', '\?filter=review/);
+  assert.match(page, /reports', '\/tipping-point-analysis/);
+  assert.doesNotMatch(page, /['"`]\/de\//);
+  assert.doesNotMatch(page, /['"`]\/en\//);
+  assert.doesNotMatch(page, /\bmiddleware\b/);
+  assert.doesNotMatch(page, /\/\[locale\]/);
 
   // Navigation moved to a single source of truth (docs/UI_CONTRACT.md section 4).
   // The shell must no longer carry literal routes; navigation.ts owns them.
@@ -716,7 +738,7 @@ test('localized crisis pages are source-backed and stay in their locale', async 
   assert.doesNotMatch(shellSource, /'\/(de|en)\//);
   assert.match(shellSource, /navigationFor\(locale\)/);
   assert.doesNotMatch(
-    `${englishCrisisSource}\n${germanCrisisSource}`,
+    `${page}\n${englishCrisisSource}\n${germanCrisisSource}`,
     /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/
   );
 

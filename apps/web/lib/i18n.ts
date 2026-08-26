@@ -53,6 +53,7 @@ export type HomeMessages = Messages['home'];
 export type DashboardMessages = Messages['dashboard'];
 
 export type ScenariosMessages = Messages['scenarios'];
+export type CrisisMessages = Messages['crisis'];
 
 const catalog: Record<Locale, Messages> = { zh, de, en };
 
