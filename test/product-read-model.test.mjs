@@ -777,7 +777,11 @@ test('scenarios workbench exposes a global language switch and stays product-fac
     new URL('../apps/web/components/language-switcher.tsx', import.meta.url),
     'utf8'
   );
-  const scenariosSource = await readFile(new URL('../apps/web/app/scenarios/page.tsx', import.meta.url), 'utf8');
+  const scenariosSource = await readFile(new URL('../apps/web/components/scenarios-page.tsx', import.meta.url), 'utf8');
+  const zhPage = await readFile(new URL('../apps/web/app/scenarios/page.tsx', import.meta.url), 'utf8');
+  const zhCopy = JSON.parse(
+    await readFile(new URL('../apps/web/src/locales/zh.json', import.meta.url), 'utf8')
+  ).scenarios;
   const registrySource = await readFile(new URL('../apps/web/components/scenario-registry.tsx', import.meta.url), 'utf8');
   const readinessSource = await readFile(
     new URL('../apps/web/components/transition-readiness-dashboard.tsx', import.meta.url),
@@ -791,10 +795,14 @@ test('scenarios workbench exposes a global language switch and stays product-fac
   assert.match(languageSwitcherSource, /Deutsch/);
   assert.match(languageSwitcherSource, /English/);
   assert.match(languageSwitcherSource, /usePathname/);
-  assert.match(scenariosSource, /页面职责/);
-  assert.match(scenariosSource, /实时价格在决策驾驶舱/);
-  assert.match(scenariosSource, /来源复核在数据来源/);
-  assert.match(scenariosSource, /情景工作区/);
+  assert.match(zhPage, /情景工作区/);
+  assert.match(zhPage, /locale="zh"/);
+  assert.match(zhCopy.duties_panel.title, /页面职责/);
+  assert.match(zhCopy.duties.join('\n'), /实时价格在决策驾驶舱/);
+  assert.match(zhCopy.duties.join('\n'), /来源复核在数据来源/);
+  assert.match(zhCopy.eyebrow, /情景工作区/);
+  assert.match(scenariosSource, /show_scenario_registry:\s*true/);
+  assert.match(scenariosSource, /show_transition_readiness:\s*true/);
   assert.match(registrySource, /高级 JSON 设置/);
   assert.match(registrySource, /SCENARIO_NAME_MAX_LENGTH = 120/);
   assert.match(registrySource, /scenario-name-limit/);
@@ -969,20 +977,28 @@ test('English admin page exposes launch readiness without protected write contro
 
 test('English scenarios page reviews saved assumptions without Chinese editor UI', async () => {
   const englishScenariosSource = await readFile(new URL('../apps/web/app/en/scenarios/page.tsx', import.meta.url), 'utf8');
+  const sharedSource = await readFile(new URL('../apps/web/components/scenarios-page.tsx', import.meta.url), 'utf8');
+  const enCopy = JSON.parse(
+    await readFile(new URL('../apps/web/src/locales/en.json', import.meta.url), 'utf8')
+  ).scenarios;
 
   assert.match(englishScenariosSource, /Scenario Workbench/);
-  assert.match(englishScenariosSource, /getDashboardReadModel\('en'\)/);
-  assert.match(englishScenariosSource, /Saved scenarios/);
-  assert.match(englishScenariosSource, /Scenario assumptions/);
-  assert.match(englishScenariosSource, /Protected write boundary/);
-  assert.match(englishScenariosSource, /en\/dashboard/);
-  assert.match(englishScenariosSource, /en\/sources\?filter=review/);
+  assert.match(englishScenariosSource, /locale="en"/);
+  assert.match(sharedSource, /getDashboardReadModel\(locale\)/);
+  assert.match(enCopy.saved_scenarios.label, /Saved scenarios/);
+  assert.match(enCopy.assumptions_panel.title, /Scenario assumptions/);
+  assert.match(enCopy.write_boundary_label, /Protected write boundary/);
+  assert.match(sharedSource, /navId: 'dashboard'/);
+  assert.match(sharedSource, /navId: 'sources'/);
+  assert.match(sharedSource, /\?filter=review/);
+  assert.match(sharedSource, /show_scenario_registry:\s*false/);
   assert.doesNotMatch(englishScenariosSource, /ScenarioRegistry/);
   assert.doesNotMatch(
-    englishScenariosSource,
+    JSON.stringify(enCopy),
     /情景工作区|情景管理|保存假设|管理令牌|创建|更新|删除|高级 JSON 设置|暂无/
   );
   assert.doesNotMatch(englishScenariosSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+  assert.doesNotMatch(sharedSource, /middleware|app\/\[locale\]/);
 });
 
 test('German sources page exposes source review without Chinese UI copy', async () => {
@@ -1081,25 +1097,33 @@ test('localized dashboard pages share one view without middleware', async () => 
 
 test('German scenarios page reviews saved assumptions without Chinese editor UI', async () => {
   const germanScenariosSource = await readFile(new URL('../apps/web/app/de/scenarios/page.tsx', import.meta.url), 'utf8');
+  const sharedSource = await readFile(new URL('../apps/web/components/scenarios-page.tsx', import.meta.url), 'utf8');
+  const deCopy = JSON.parse(
+    await readFile(new URL('../apps/web/src/locales/de.json', import.meta.url), 'utf8')
+  ).scenarios;
 
   assert.match(germanScenariosSource, /Szenario-Workbench/);
-  assert.match(germanScenariosSource, /getDashboardReadModel\('de'\)/);
-  assert.match(germanScenariosSource, /Gespeicherte Szenarien/);
-  assert.match(germanScenariosSource, /Szenarioannahmen/);
-  assert.match(germanScenariosSource, /Geschützte Schreibgrenze/);
-  assert.match(germanScenariosSource, /de\/dashboard/);
-  assert.match(germanScenariosSource, /de\/sources\?filter=review/);
-  assert.match(germanScenariosSource, /de\/admin/);
+  assert.match(germanScenariosSource, /locale="de"/);
+  assert.match(sharedSource, /getDashboardReadModel\(locale\)/);
+  assert.match(deCopy.saved_scenarios.label, /Gespeicherte Szenarien/);
+  assert.match(deCopy.assumptions_panel.title, /Szenarioannahmen/);
+  assert.match(deCopy.write_boundary_label, /Geschützte Schreibgrenze/);
+  assert.match(sharedSource, /navId: 'dashboard'/);
+  assert.match(sharedSource, /navId: 'sources'/);
+  assert.match(sharedSource, /navId: 'admin'/);
+  assert.match(sharedSource, /\?filter=review/);
+  assert.match(sharedSource, /show_scenario_registry:\s*false/);
   assert.doesNotMatch(germanScenariosSource, /ScenarioRegistry|<input|type="password"/);
   assert.doesNotMatch(
-    germanScenariosSource,
+    JSON.stringify(deCopy),
     /情景工作区|情景管理|保存假设|管理令牌|创建|更新|删除|高级 JSON 设置|暂无/
   );
   assert.doesNotMatch(
-    germanScenariosSource,
+    JSON.stringify(deCopy),
     /Scenario Workbench|Saved scenarios|Scenario assumptions|Protected write boundary|No saved assumptions/
   );
   assert.doesNotMatch(germanScenariosSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+  assert.doesNotMatch(sharedSource, /middleware|app\/\[locale\]/);
 });
 
 test('German admin page exposes launch readiness without protected write controls', async () => {

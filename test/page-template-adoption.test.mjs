@@ -167,6 +167,12 @@ const SHARED_VIEWS = [
     source: 'apps/web/components/dashboard-page.tsx',
     i18nKey: 'dashboard',
   },
+  {
+    route: /\/scenarios\/page\.tsx$/,
+    component: 'ScenariosPage',
+    source: 'apps/web/components/scenarios-page.tsx',
+    i18nKey: 'scenarios',
+  },
 ];
 
 function sharedViewFor(path) {
@@ -359,10 +365,10 @@ test('a crisis-brief page on fallback data never stamps it with a fresh timestam
 });
 
 test('scenario pages never stamp default analysis timestamps as fresh data', async () => {
-  const primarySource = await read('apps/web/app/scenarios/page.tsx');
+  const primarySource = await implementationOf('apps/web/app/scenarios/page.tsx');
   assert.match(
     primarySource,
-    /const\s+asOf\s*=\s*usingDefaultTippingPoint\s*\?\s*null\s*:\s*tippingPoint\.generated_at/,
+    /usingDefaultTippingPoint\s*\?\s*null\s*:\s*tippingPoint\.generated_at/,
     'apps/web/app/scenarios/page.tsx must suppress the default tipping-point timestamp'
   );
   assert.match(

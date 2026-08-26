@@ -27,7 +27,11 @@
     "entry_layout": "portfolio",
     "chinese_workspace_cta": "",
     "chinese_workspace_href": "/dashboard",
-    "thesis_ctas": ["primary", "scenario", "sources"],
+    "thesis_ctas": [
+      "primary",
+      "scenario",
+      "sources"
+    ],
     "signals": {
       "label": "产品入口与当前信号",
       "recommended_label": "推荐起点",
@@ -149,7 +153,12 @@
     "na": "n/a",
     "unknown_cause": "未知原因",
     "signal_row_label": "决策信号",
-    "signal_order": ["decision", "delivery", "risk", "market"],
+    "signal_order": [
+      "decision",
+      "delivery",
+      "risk",
+      "market"
+    ],
     "source_ok": "正常",
     "source_degraded": "降级",
     "source_offline": "离线",
@@ -933,5 +942,186 @@
         "回退读模型的生成时间是抓取失败后的本地时间，因此本页不会把它显示为数据时间。"
       ]
     }
+  },
+  "scenarios": {
+    "meta_title": "情景工作区",
+    "meta_description": "管理 SAF 转型情景、比较政策路径，并通过持久化情景库工作流监测就绪度信号。",
+    "eyebrow": "情景工作区",
+    "title": "情景管理与转型监测",
+    "question": "这些保存下来的假设，还能不能代表当前市场？",
+    "signal_row_label": "情景结论信号",
+    "policy_target_methods": {
+      "saf": "RefuelEU 法定 SAF 掺混目标（法定要求，不是情景假设）",
+      "synthetic": "RefuelEU 法定合成航空燃料掺混目标（法定要求，不是情景假设）"
+    },
+    "transition_signal": {
+      "label": "转型信号",
+      "hint": "当前临界点模型对 SAF 成本相对化石航油的判断。",
+      "hint_fallback": "临界点接口没有返回结果，当前结论来自内置假设。",
+      "saf_advantaged": "SAF 已占优",
+      "switch_window": "切换窗口开启",
+      "fossil_advantaged": "SAF 仍不经济",
+      "needs_review": "需复核"
+    },
+    "data_posture": {
+      "label": "数据姿态",
+      "connected": "数据已接入",
+      "partial": "部分假设",
+      "assumed": "内置假设",
+      "hint": "{count} 个关键输入使用了假设或不可用数据。",
+      "hint_fallback": "市场快照接口处于回退；页面上的数字不能当作刚刚观测到的市场事实。"
+    },
+    "airline_signal": {
+      "label": "航司决策信号",
+      "hint": "把储备、碳价和航油输入映射为可讨论的航司动作概率。",
+      "switch_window": "切换窗口开启",
+      "capacity_stress": "运力压力主导",
+      "incremental": "渐进调整",
+      "needs_review": "需复核"
+    },
+    "reserve": {
+      "label": "储备覆盖",
+      "weeks": "{weeks} 周",
+      "needs_review": "需复核",
+      "hint": "来源 {source} · 置信度 {confidence}%",
+      "hint_fallback": "实时储备数据不可用；当前周数只是可编辑情景假设。"
+    },
+    "assumption_posture": {
+      "label": "假设状态",
+      "unreliable": "不可靠",
+      "reassess": "需重估",
+      "review": "先复核",
+      "usable": "可用",
+      "hint_fallback": "市场读模型回退本身，并不能让已保存假设自动变得可靠。",
+      "hint_review": "来源姿态、风险或缺失情景要求在沿用假设前先复核。",
+      "hint_ok": "当前来源姿态和风险窗口没有立即触发复核。"
+    },
+    "saved_scenarios": {
+      "label": "已保存情景",
+      "hint": "工作区假设已可用于比较和复核。",
+      "hint_empty": "还没有已保存情景；请在主情景工作区新建。"
+    },
+    "market_context": {
+      "label": "市场上下文",
+      "value": "{brent} 美元/桶",
+      "hint": "航煤 {jet} 美元/升 · 欧盟航煤代理 {eu} 美元/升 · 碳价 {carbon} 美元/吨CO2"
+    },
+    "risk_signal": {
+      "label": "最高风险信号",
+      "none": "无异常",
+      "none_hint": "市场历史窗口尚未产生可排序的警报。",
+      "hint": "{level} · 样本 {samples} · 截至 {asOf}",
+      "level_normal": "正常",
+      "level_watch": "观察",
+      "level_alert": "警报"
+    },
+    "source_status": {
+      "ok": "健康",
+      "degraded": "降级",
+      "offline": "离线",
+      "unknown": "未知"
+    },
+    "unknown_cause": "未知原因",
+    "not_available": "暂无",
+    "readiness_panel": {
+      "title": "转型监测",
+      "why": "把燃油价格、碳价、储备压力和政策目标放在同一个工作区，判断哪些 SAF 路径接近可执行区间。"
+    },
+    "registry_panel": {
+      "title": "情景管理",
+      "why": "保存和复核团队确认过的转型假设；受保护的写操作仍留在这个主工作区。"
+    },
+    "capabilities_panel": {
+      "title": "工作区能力",
+      "why": "这些能力说明读者可以怎样使用情景，不把工作流描述误读成市场结论。"
+    },
+    "capabilities": [
+      {
+        "title": "保存假设",
+        "body": "把油价、碳价、补贴和航线成本保存成可复用的决策版本。"
+      },
+      {
+        "title": "比较压力",
+        "body": "对照当前市场、储备压力和政策目标，判断哪条路径最先变得可行。"
+      },
+      {
+        "title": "敏感性扫描",
+        "body": "围绕燃油、碳价和补贴做范围扫描，找到最影响结论的输入。"
+      }
+    ],
+    "duties_panel": {
+      "title": "页面职责",
+      "why": "帮助读者把情景页的选择问题与驾驶舱、危机监测和来源复核页面分开。"
+    },
+    "duties": [
+      "实时价格在决策驾驶舱，负责回答“现在发生了什么”。",
+      "危机监测解释压力来源，负责回答“为什么需要行动”。",
+      "情景工作区保存假设和比较结果，负责回答“下一步怎么选择”。",
+      "来源复核在数据来源页，负责回答“这些数字的证据链是否足够可靠”。"
+    ],
+    "assumptions_panel": {
+      "title": "情景假设",
+      "why": "已保存的工作区记录显示哪些假设可用于比较和复核。",
+      "empty": "还没有已保存假设。请使用主情景编辑器，为价格、储备、航线和政策讨论建立可复核案例。"
+    },
+    "scenario_name_placeholder": "已保存情景 {index}",
+    "context_panel": {
+      "title": "决策上下文",
+      "why": "情景只有配合当前证据才有决策意义；回退和缺失信号必须保持可见。"
+    },
+    "context_paragraphs": [
+      "情景是供复核和团队讨论的证据记录；它们不能替代采购批准、来源核验或受保护的管理配置。",
+      "比较假设前，先确认来源覆盖和上线前置状态没有把回退或停用边界藏起来。"
+    ],
+    "delivery_fallback": "本地 API 回退已启用：{error}。使用前请以来源证据核对假设。",
+    "delivery_live": "来源状态：{status} · 新鲜度 {minutes} 分钟",
+    "review_panel": {
+      "title": "复核流程",
+      "why": "下一步从已保存假设回到证据、上线前置状态和受保护写边界。"
+    },
+    "write_boundary_label": "受保护写边界",
+    "write_boundary_body": "创建、更新和删除仍留在主情景工作区。",
+    "actions": [
+      {
+        "id": "primary_editor",
+        "label": "打开主情景编辑器",
+        "description": "在已有管理令牌保护的主工作区创建、更新或删除情景。"
+      },
+      {
+        "id": "sources",
+        "label": "复核来源证据",
+        "description": "在把已保存假设用于决策前，检查回退、代理、降级和波动行。"
+      },
+      {
+        "id": "dashboard",
+        "label": "打开决策驾驶舱",
+        "description": "回到实时市场快照、来源姿态和最高风险信号。"
+      },
+      {
+        "id": "admin",
+        "label": "查看上线前置状态",
+        "description": "确认受保护写入、来源覆盖和研究前置项是否就绪。"
+      }
+    ],
+    "source_dashboard_fallback": "市场快照接口无响应，当前为内置兜底值（{error}）",
+    "source_dashboard_live": "市场快照接口（市场读数、来源状态和储备输入）",
+    "source_tipping_fallback": "临界点分析无响应，当前使用内置情景假设",
+    "source_tipping_live": "临界点分析接口（由市场输入推导 SAF 成本信号）",
+    "source_airline_fallback": "航司决策分析无响应，当前使用内置情景假设",
+    "source_airline_live": "航司决策分析接口（由市场和储备输入推导动作概率）",
+    "source_reserve_live": "储备信号（{source}）",
+    "source_reserve_fallback": "储备信号不可用，当前使用可编辑周数假设",
+    "source_store": "本地情景库（保存的是团队假设，不是市场实测）",
+    "source_store_count": "本地情景库（{count} 个已保存情景）",
+    "source_policy_live": "RefuelEU 政策目标接口（法定强制掺混目标）",
+    "source_policy_empty": "RefuelEU 政策目标暂未返回",
+    "source_risk": "风险信号由市场历史窗口中的变动推导，不是上游直接提供",
+    "method_label": "口径与来源清单",
+    "limitations": [
+      "情景库是保存的假设；即使记录确实存在，里面的价格、碳价和路线数字也不能自动视为实测。",
+      "临界点和航司决策信号是由输入推导的分析结果，不是对未来采购结果的保证。",
+      "任一接口回退或不可用时，页面会继续提供可编辑工作区，但对应数字没有有效的实测 as-of；旧版“数据真实性”说明已并入这里。",
+      "页面职责是产品分工说明，是否保留该说明由产品负责人决定。"
+    ]
   }
 }

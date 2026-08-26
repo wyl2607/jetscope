@@ -52,6 +52,8 @@ export type SourcesMessages = Messages['sources'];
 export type HomeMessages = Messages['home'];
 export type DashboardMessages = Messages['dashboard'];
 
+export type ScenariosMessages = Messages['scenarios'];
+
 const catalog: Record<Locale, Messages> = { zh, de, en };
 
 export function messagesFor(locale: Locale): Messages {

@@ -105,7 +105,7 @@ is locked in.
    | collapse the three directories into `/[locale]` | mechanical, touches every page |
    | **7 routes exist in some locales and not others** | rule 2 — a product call, not a refactor |
    | **~1,320 lines of copy are hardcoded in `.tsx`** | rule 3 — 846 in the zh pages, 474 in shared components |
-   | **i18n mechanism** | `lib/i18n.ts` now loads the locale files; FAQ is the first consumer. Other routes still hardcode copy. |
+   | **i18n mechanism** | `lib/i18n.ts` now loads the locale files; FAQ and scenarios consume them. Other routes still hardcode copy. |
 
    The asymmetry, precisely: `analysis` and its two articles, `crisis/eu-jet-reserves`,
    `crisis/saf-tipping-point`, `grid` and `heat` exist only in zh;
@@ -222,6 +222,13 @@ is locked in.
    shared `DashboardPage` with an explicit `locale`. Locale-specific panels stay
    behind booleans that default to false. Middleware and `/[locale]` rewrites
    stay forbidden.
+
+   **Scenarios copy, safe reland.** User-facing scenarios strings now live under
+   `scenarios` in the same locale files. `/scenarios`, `/de/scenarios` and
+   `/en/scenarios` stay real page files that render one shared `ScenariosPage`
+   with an explicit `locale`. zh still mounts the write registry and transition
+   readiness dashboard; de/en stay read-only review surfaces. No middleware and
+   no `/[locale]`.
 
 ### Known debts, none urgent
 
