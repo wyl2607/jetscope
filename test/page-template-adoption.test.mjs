@@ -149,6 +149,12 @@ const SHARED_VIEWS = [
     source: 'apps/web/components/admin-page.tsx',
     i18nKey: 'admin',
   },
+  {
+    route: /\/sources\/page\.tsx$/,
+    component: 'SourcesPage',
+    source: 'apps/web/components/sources-page.tsx',
+    i18nKey: 'sources',
+  },
 ];
 
 function sharedViewFor(path) {

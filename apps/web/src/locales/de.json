@@ -485,5 +485,216 @@
         "target_locale": ""
       }
     }
+  },
+  "sources": {
+    "meta_title": "Quellenprüfung",
+    "meta_description": "Deutsche JetScope-Ansicht zur Prüfung von Marktdatenquellen, Fallback-Status, Vertrauen, Verzögerung und Wiederherstellungsaktionen.",
+    "eyebrow": "Quellenprüfung",
+    "title": "Quellenprüfung",
+    "question": "Welche Markteingaben können aktuell noch nicht direkt als Entscheidungsgrundlage verwendet werden?",
+    "signal_row_label": "Vertrauenssignale",
+    "metrics": {
+      "needs_review": {
+        "label": "Prüfzeilen",
+        "hint_open": "{fallback} Fallback-, {degraded} eingeschränkte oder proxy-/volatilitätsmarkierte Zeilen.",
+        "hint_clear": "Keine Zeile braucht aktuell zusätzliche Prüfung."
+      },
+      "trust_posture": {
+        "label": "Vertrauenshaltung"
+      },
+      "average_confidence": {
+        "label": "Durchschnittliche Konfidenz",
+        "hint": "Abdeckung {completeness} · {freshness}"
+      },
+      "input_mix": {
+        "label": "Input-Struktur",
+        "value": "{live} live",
+        "hint": "Proxy {proxy} · Fallback {fallback} · eingeschränkt {degraded}"
+      }
+    },
+    "trust_posture": {
+      "review": "Degradierung prüfen",
+      "proxy": "Mit Proxy-Quellen",
+      "ready": "Live-Quellen bereit"
+    },
+    "trust_hint": {
+      "review": "Entscheidungsunterstützung: Degradierung prüfen",
+      "proxy": "Entscheidungsunterstützung: mit Proxy-Quellen",
+      "ready": "Entscheidungsunterstützung: Live-Quellen bereit"
+    },
+    "freshness": {
+      "unknown": "Aktualität unbekannt",
+      "latest": "Neueste Quelle {lag}"
+    },
+    "filters": {
+      "all": {
+        "label": "Alle",
+        "hint": "Vollständige Quellenmatrix"
+      },
+      "review": {
+        "label": "Prüfen",
+        "hint": "Fallback, eingeschränkte, Proxy- oder Volatilitätszeilen"
+      },
+      "fallback": {
+        "label": "Fallback",
+        "hint": "Zeilen mit Fallback- oder Seed-Werten"
+      },
+      "proxy": {
+        "label": "Proxy",
+        "hint": "Abgeleitete oder proxybasierte Schätzungen"
+      },
+      "live": {
+        "label": "Live",
+        "hint": "Primäre oder offizielle Live-Quellen"
+      }
+    },
+    "surfaces": {
+      "brent_usd_per_bbl": "Brent",
+      "jet_usd_per_l": "Jet Fuel",
+      "carbon_proxy_usd_per_t": "Carbon-Proxy",
+      "jet_eu_proxy_usd_per_l": "EU-Jet-Proxy",
+      "rotterdam_jet_fuel_usd_per_l": "Rotterdam Jet Fuel",
+      "eu_ets_price_eur_per_t": "EU ETS",
+      "germany_premium_pct": "Deutschland-Premium"
+    },
+    "trust": {
+      "live": "Live",
+      "proxy": "Proxy",
+      "fallback": "Fallback",
+      "degraded": "Eingeschränkt"
+    },
+    "status": {
+      "ok": "Gesund",
+      "seed": "Seed-Fallback",
+      "fallback": "Fallback",
+      "error": "Fehler",
+      "unknown": "Unbekannt"
+    },
+    "alert": {
+      "alert": "Alarm",
+      "watch": "Beobachtung",
+      "normal": "Normal"
+    },
+    "source_type": {
+      "live": "Primär oder offiziell",
+      "proxy": "Proxy oder abgeleitet",
+      "fallback": "Fallback-Pfad",
+      "degraded": "Untersuchung nötig"
+    },
+    "read_model_literals": {
+      "无数据": "Keine Daten",
+      "覆盖不可用": "Abdeckung nicht verfügbar",
+      "Brent 派生回退": "Brent-abgeleiteter Fallback"
+    },
+    "read_model_fallbacks": {
+      "no_data": "Keine Daten",
+      "coverage_unavailable": "Abdeckung nicht verfügbar"
+    },
+    "read_model_replacements": {
+      "派生回退": "abgeleiteter Fallback",
+      "回退": "Fallback"
+    },
+    "panels": {
+      "provenance": {
+        "title": "Quellenherkunft",
+        "why": "Wie viel der aktuellen Momentaufnahme gemessen, Proxy oder Fallback ist, entscheidet, ob eine Zeile direkt zitiert werden kann."
+      },
+      "coverage": {
+        "title": "Quellenabdeckung",
+        "why": "Der Abdeckungsstatus zeigt, welche kanonischen Kennzahlen nachvollziehbare Eingaben haben, damit eine Lücke nicht als vollständige Marktsicht gelesen wird."
+      },
+      "market_health": {
+        "title": "Market-Refresh-Gesundheit",
+        "why": "Die Gesundheit der Aktualisierungsschleife entscheidet, ob die Quellentabelle ein aktueller Snapshot ist oder vom erwarteten Rhythmus abgewichen ist."
+      },
+      "recovery": {
+        "title": "Wiederherstellungsaktionen",
+        "why": "Eingeschränkte Zeilen werden zu einer operativen Checkliste, damit eine Datenlücke nicht nur als Label stehen bleibt."
+      },
+      "matrix": {
+        "title": "Quellenmatrix",
+        "why": "Jede Zeile verbindet Quelle, Zeit, Verzögerung, Wert und Aktion, damit Markteingaben vor ihrer Verwendung prüfbar bleiben."
+      }
+    },
+    "market_health": {
+      "line1": "Intervall {interval}s · Alter {age} · nächstes ETA {eta} · Status",
+      "line2": "Läufe {ok}/{total}",
+      "success": " · Erfolg {rate}%",
+      "unavailable": "/v1/market/health konnte nicht geladen werden. Bitte prüfen, ob die API läuft und einen Refresh-Lauf hat."
+    },
+    "recovery": {
+      "review_badge": "Prüfzeilen {count}",
+      "priority_badge": "Priorisierte Zeilen {count}",
+      "open_admin": "Admin-Aktualisierung öffnen",
+      "show_review": "Prüfzeilen anzeigen",
+      "back_dashboard": "Zurück zum Dashboard",
+      "open_action": "Aktion öffnen",
+      "empty": "Keine Fallback- oder Degradierungszeile ist aktuell kritisch. Proxy-Zeilen sollten vor größeren Preis-, Einkaufs- oder Offenlegungsentscheidungen trotzdem manuell geprüft werden."
+    },
+    "review_actions": {
+      "critical": {
+        "label": "Aktualisieren und verifizieren",
+        "detail": "Nach konfiguriertem Admin-Token den Aktualisierungspfad auslösen und hier prüfen, ob die Kennzahl den Fallback- oder Fehlerzustand verlässt."
+      },
+      "review": {
+        "label": "Proxy-Annahmen prüfen",
+        "detail": "Vor relevanten Preis-, Einkaufs- oder Offenlegungsentscheidungen Originalnotierung, Policy-Basis und Berichtstext gegenprüfen."
+      },
+      "normal": {
+        "label": "Snapshot-Nachweis sichern",
+        "detail": "Generierungszeit, Vertrauen und Quellenzustand dokumentieren, bevor diese Kennzahl in eine wesentliche Entscheidung einfließt."
+      }
+    },
+    "reasons": {
+      "fallback": "Live-Abdeckung ist nicht verfügbar oder ein Fallback wurde genutzt.",
+      "status": "Quellenstatus ist {status}.",
+      "proxy": "Proxy oder abgeleitete Kennzahl; Annahmen vor wesentlicher Nutzung prüfen.",
+      "alert": "Jüngste Volatilität ist als {alert} markiert.",
+      "ok": "Primäre oder offizielle Quelle ohne Degradierungsmarkierung."
+    },
+    "table": {
+      "surface": "Kennzahl",
+      "source": "Quelle",
+      "trust": "Vertrauen",
+      "scope": "Geltung",
+      "confidence": "Konfidenz",
+      "as_of": "Stand",
+      "lag": "Verzögerung",
+      "status": "Status",
+      "fallback": "Fallback",
+      "value": "Wert",
+      "change_1d": "1T",
+      "change_7d": "7T",
+      "change_30d": "30T",
+      "volatility": "Volatilität",
+      "trend": "Trend",
+      "action": "Aktion",
+      "reason": "Begründung",
+      "empty": "Keine Quellenzeilen passen zu diesem Filter.",
+      "focus": "Fokussieren",
+      "record": "Dokumentieren",
+      "handle": "Bearbeiten",
+      "trend_alt": "{surface} Trend",
+      "na": "n/a",
+      "showing": "Anzeige {visible} / {total}",
+      "generated": "Generiert am {when}",
+      "no_stamp": "Generierungszeit ist kein Datenstand",
+      "fallback_note": " | zeigt Fallback-Schätzungen, weil Live-Abdeckung nicht verfügbar ist",
+      "focus_banner": "Fokus von einer anderen Ansicht:",
+      "clear_focus": "Zurücksetzen"
+    },
+    "footer": {
+      "source_ok": "Quellen-Read-Model (Abdeckung, Konfidenz, Verzögerung, Fallback- und Prüfstatus)",
+      "source_fallback": "Quellen-Read-Model nicht verfügbar; Fallback-Schätzungen werden verwendet ({error})",
+      "health_ok": "Market-Refresh-Health-API",
+      "health_unavailable": "Market-Refresh-Health-API ist derzeit nicht verfügbar",
+      "unknown_error": "unbekannter Grund",
+      "method_label": "Methode der Quellenabdeckung und Prüfung",
+      "limitations": [
+        "Der Quellenstatus beschreibt die Qualität der Eingabe, nicht die Gültigkeit jedes Werts für jeden Flughafen, Vertrag oder Trade.",
+        "Proxy-, abgeleitete, Fallback- und eingeschränkte Zeilen müssen vor wesentlichen Preis-, Einkaufs- oder Offenlegungsentscheidungen manuell geprüft werden.",
+        "Die Fallback-Generierungszeit ist keine Beobachtungszeit; deshalb wird sie nicht als Datenstand ausgegeben."
+      ]
+    }
   }
 }

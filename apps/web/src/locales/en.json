@@ -485,5 +485,216 @@
         "target_locale": "zh"
       }
     }
+  },
+  "sources": {
+    "meta_title": "Source Review",
+    "meta_description": "English JetScope source review surface for market provenance, fallback state, confidence, lag, and recovery actions.",
+    "eyebrow": "Source review",
+    "title": "Source Review",
+    "question": "Which market inputs are not ready to use directly in a decision right now?",
+    "signal_row_label": "Source trust signals",
+    "metrics": {
+      "needs_review": {
+        "label": "Needs review",
+        "hint_open": "{fallback} fallback, {degraded} degraded, proxy, or volatility-marked rows.",
+        "hint_clear": "No source row currently needs additional review."
+      },
+      "trust_posture": {
+        "label": "Trust posture"
+      },
+      "average_confidence": {
+        "label": "Average confidence",
+        "hint": "Coverage {completeness} · {freshness}"
+      },
+      "input_mix": {
+        "label": "Input mix",
+        "value": "{live} live",
+        "hint": "Proxy {proxy} · fallback {fallback} · degraded {degraded}"
+      }
+    },
+    "trust_posture": {
+      "review": "Review degradation",
+      "proxy": "Proxy sources present",
+      "ready": "Live sources ready"
+    },
+    "trust_hint": {
+      "review": "Decision support: review degraded inputs",
+      "proxy": "Decision support: proxy sources present",
+      "ready": "Decision support: live sources ready"
+    },
+    "freshness": {
+      "unknown": "Freshness unknown",
+      "latest": "Newest source {lag}"
+    },
+    "filters": {
+      "all": {
+        "label": "All",
+        "hint": "Complete source matrix"
+      },
+      "review": {
+        "label": "Needs review",
+        "hint": "Fallback, degraded, proxy, or volatility watch rows"
+      },
+      "fallback": {
+        "label": "Fallback",
+        "hint": "Rows currently using fallback or seed values"
+      },
+      "proxy": {
+        "label": "Proxy",
+        "hint": "Derived or proxy estimates"
+      },
+      "live": {
+        "label": "Live",
+        "hint": "Primary or official live sources"
+      }
+    },
+    "surfaces": {
+      "brent_usd_per_bbl": "Brent",
+      "jet_usd_per_l": "Jet fuel",
+      "carbon_proxy_usd_per_t": "Carbon proxy",
+      "jet_eu_proxy_usd_per_l": "EU jet proxy",
+      "rotterdam_jet_fuel_usd_per_l": "Rotterdam jet fuel",
+      "eu_ets_price_eur_per_t": "EU ETS",
+      "germany_premium_pct": "Germany premium"
+    },
+    "trust": {
+      "live": "Live",
+      "proxy": "Proxy",
+      "fallback": "Fallback",
+      "degraded": "Degraded"
+    },
+    "status": {
+      "ok": "Healthy",
+      "seed": "Seed fallback",
+      "fallback": "Fallback",
+      "error": "Error",
+      "unknown": "Unknown"
+    },
+    "alert": {
+      "alert": "Alert",
+      "watch": "Watch",
+      "normal": "Normal"
+    },
+    "source_type": {
+      "live": "Primary or official",
+      "proxy": "Proxy or derived",
+      "fallback": "Fallback path",
+      "degraded": "Needs investigation"
+    },
+    "read_model_literals": {
+      "无数据": "No data",
+      "覆盖不可用": "Coverage unavailable",
+      "Brent 派生回退": "Brent-derived fallback"
+    },
+    "read_model_fallbacks": {
+      "no_data": "No data",
+      "coverage_unavailable": "Coverage unavailable"
+    },
+    "read_model_replacements": {
+      "派生回退": "derived fallback",
+      "回退": "fallback"
+    },
+    "panels": {
+      "provenance": {
+        "title": "Source provenance",
+        "why": "How much of the current snapshot is observed, proxy, or fallback decides whether a row can be cited directly."
+      },
+      "coverage": {
+        "title": "Source coverage",
+        "why": "Coverage status shows which canonical metrics have traceable inputs, so a gap is not read as a complete market view."
+      },
+      "market_health": {
+        "title": "Market refresh health",
+        "why": "Refresh-loop health decides whether the source table is a recent snapshot or has drifted from its expected cadence."
+      },
+      "recovery": {
+        "title": "Recovery actions",
+        "why": "Turning degraded rows into an operator checklist keeps a data-quality problem from ending as a passive status label."
+      },
+      "matrix": {
+        "title": "Market input matrix",
+        "why": "Each row connects source, time, lag, value, and action so market inputs remain reviewable before use."
+      }
+    },
+    "market_health": {
+      "line1": "interval {interval}s · age {age} · next ETA {eta} · status",
+      "line2": "runs {ok}/{total}",
+      "success": " · success {rate}%",
+      "unavailable": "Unable to load /v1/market/health. Confirm the API is running and has a refresh run."
+    },
+    "recovery": {
+      "review_badge": "Needs review {count}",
+      "priority_badge": "Priority rows {count}",
+      "open_admin": "Open Admin refresh",
+      "show_review": "Show review rows",
+      "back_dashboard": "Back to dashboard",
+      "open_action": "Open action",
+      "empty": "No fallback or degraded row is currently critical. Proxy rows still deserve manual review before major pricing, purchasing, or disclosure decisions."
+    },
+    "review_actions": {
+      "critical": {
+        "label": "Refresh and verify",
+        "detail": "Use the admin refresh path after configuring an admin token, then return here to confirm this metric leaves fallback or error state."
+      },
+      "review": {
+        "label": "Review proxy assumptions",
+        "detail": "Before high-risk pricing, purchasing, or disclosure use, cross-check the original quote, policy basis, and report wording."
+      },
+      "normal": {
+        "label": "Keep snapshot evidence",
+        "detail": "Record generated time, confidence, and source state before using this metric in a material decision."
+      }
+    },
+    "reasons": {
+      "fallback": "Live coverage is unavailable or fallback was used.",
+      "status": "Source status is {status}.",
+      "proxy": "Proxy or derived metric; review assumptions before material use.",
+      "alert": "Recent volatility is marked {alert}.",
+      "ok": "Primary or official source with no degradation flag."
+    },
+    "table": {
+      "surface": "Metric",
+      "source": "Source",
+      "trust": "Trust",
+      "scope": "Scope",
+      "confidence": "Confidence",
+      "as_of": "As of",
+      "lag": "Lag",
+      "status": "Status",
+      "fallback": "Fallback",
+      "value": "Value",
+      "change_1d": "1d",
+      "change_7d": "7d",
+      "change_30d": "30d",
+      "volatility": "Volatility",
+      "trend": "Trend",
+      "action": "Action",
+      "reason": "Reason",
+      "empty": "No source rows match this filter.",
+      "focus": "Focus",
+      "record": "Record",
+      "handle": "Handle",
+      "trend_alt": "{surface} trend",
+      "na": "n/a",
+      "showing": "Showing {visible} / {total}",
+      "generated": "Generated at {when}",
+      "no_stamp": "Generation time is not a data timestamp",
+      "fallback_note": " | showing fallback estimates because live coverage is unavailable",
+      "focus_banner": "Focused from another surface:",
+      "clear_focus": "Clear"
+    },
+    "footer": {
+      "source_ok": "Source read model (coverage, confidence, lag, fallback, and review state)",
+      "source_fallback": "Source read model unavailable; fallback estimates are in use ({error})",
+      "health_ok": "Market refresh health API",
+      "health_unavailable": "Market refresh health API is currently unavailable",
+      "unknown_error": "unknown reason",
+      "method_label": "Source coverage and review method",
+      "limitations": [
+        "Source status describes input quality; it does not prove that each value applies to every airport, contract, or trade.",
+        "Proxy, derived, fallback, and degraded rows require human review before material pricing, purchasing, or disclosure decisions.",
+        "A fallback generation time is not an observation time, so it is not shown as the data timestamp."
+      ]
+    }
   }
 }

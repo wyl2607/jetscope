@@ -203,6 +203,13 @@ is locked in.
    `AdminDataOps`); de/en stay read-only launch-readiness surfaces. Middleware
    and `/[locale]` rewrites stay forbidden.
 
+   **Sources copy, safe reland.** The string-compare bug on `en/sources` and
+   `de/sources` (`if (value === '覆盖不可用')`) is closed. Filter, surface,
+   trust, and status labels live under `sources` in the locale files. The three
+   routes stay real page files that render one shared `SourcesPage`; zh keeps
+   the richer Trust Center, de/en stay the slimmer review surface. No
+   middleware and no `/[locale]`.
+
 ### Known debts, none urgent
 
 - `apps/web/lib/research-signals-read-model.ts` stamps a signal with the current

@@ -44,6 +44,7 @@ export type ReportsMessages = Messages['reports'];
 
 export type ResearchMessages = Messages['research'];
 export type AdminMessages = Messages['admin'];
+export type SourcesMessages = Messages['sources'];
 
 const catalog: Record<Locale, Messages> = { zh, de, en };
 
