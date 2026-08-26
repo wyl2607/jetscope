@@ -210,6 +210,12 @@ is locked in.
    the richer Trust Center, de/en stay the slimmer review surface. No
    middleware and no `/[locale]`.
 
+   **Home copy, safe reland.** User-facing home strings now live under `home` in
+   the same locale files. `/`, `/de` and `/en` remain real page files that render
+   one shared `HomePage` with an explicit `locale`. Locale differences stay as
+   data — zh keeps the transition ladder, research brief, and zh-only cards;
+   de/en stay slimmer indexes. Middleware and `/[locale]` stay forbidden.
+
 ### Known debts, none urgent
 
 - `apps/web/lib/research-signals-read-model.ts` stamps a signal with the current

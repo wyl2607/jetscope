@@ -15,7 +15,133 @@
     "description": "Ein Fünf-Minuten-Überblick über europäische Jet-A-Stresssignale, SAF-Kipppunkt-Ereignisse, EU-ETS-Kosteneffekte und KI-gestützte Research-Workflows.",
     "primary_cta": "Entscheidungscockpit öffnen",
     "scenario_cta": "Szenario testen",
-    "sources_cta": "Quellenqualität prüfen"
+    "sources_cta": "Quellenqualität prüfen",
+    "page_title": "JetScope Deutschland",
+    "eyebrow": "Startseite · Deutsch",
+    "question": "Kann JetScope meine Frage beantworten, und auf welcher Seite sollte ich beginnen?",
+    "show_transition_ladder": false,
+    "show_research_brief": false,
+    "show_thesis": false,
+    "show_dual_domain": false,
+    "swap_research_limitation": false,
+    "entry_layout": "index",
+    "chinese_workspace_cta": "",
+    "chinese_workspace_href": "/dashboard",
+    "thesis_ctas": [],
+    "signals": {
+      "label": "Einstieg und aktuelle Signale",
+      "recommended_label": "Empfohlener Einstieg",
+      "recommended_value": "Dashboard",
+      "recommended_hint": "Mit dem Gesamtbild beginnen und danach in die passende Prüfung wechseln.",
+      "reserve_label": "Reserveabdeckung",
+      "reserve_unavailable": "Nicht verfügbar",
+      "reserve_unit": "Wochen",
+      "reserve_hint": "EU-Reservehaltung · /v1/reserves/eu",
+      "reserve_hint_unavailable": "EU-Reservehaltung · /v1/reserves/eu",
+      "event_label": "Letztes Kippereignis",
+      "event_empty": "Kein Ereignis",
+      "event_hint": "{count} Ereignisse im 42-Tage-Fenster · /v1/analysis/tipping-point/events",
+      "event_hint_empty": "{count} Ereignisse im 42-Tage-Fenster · /v1/analysis/tipping-point/events",
+      "research_label": "Forschungssignale",
+      "research_not_found": "Nicht bereitgestellt",
+      "research_error": "Fehler",
+      "research_count": "{count} Signale",
+      "research_hint": "/v1/research/signals · gleiche Statuslogik wie die Forschungsseite"
+    },
+    "thesis": {
+      "title": "Produktthese",
+      "why": "Zuerst klären, ob JetScope den relevanten Entscheidungsraum abdeckt.",
+      "headline": "Wann wird SAF eine Betriebsentscheidung und nicht nur eine Compliance-Kostenposition?",
+      "body": "JetScope verbindet Marktbilder, Reservestress, Politikdruck und Forschungssignale zu einem prüfbaren Ablauf."
+    },
+    "dual_domain": {
+      "title": "Zwei Problemräume",
+      "why": "Derselbe CO2-Preis verbindet Luftfahrt und Strom, bestimmt aber getrennte Prüfpfade.",
+      "body": "Der EU-ETS-Preis wirkt gleichzeitig auf den SAF-Kipppunkt und auf Netzparität.",
+      "grid_cta": "Netzparität öffnen",
+      "saf_cta": "SAF-Kipppunkt öffnen"
+    },
+    "transition": {
+      "title": "Dekarbonisierungsleiter",
+      "why": "Technologien auf derselben Kohlenstoffpreisachse vergleichen.",
+      "error_detail": "Die Transformationszusammenfassung ist vorübergehend nicht verfügbar.",
+      "empty_detail": "Die Schnittstelle hat geantwortet, aber es gibt keine darstellbare Zusammenfassung."
+    },
+    "research_brief": {
+      "title": "Forschungsentscheidung",
+      "why": "Forschungssignale erklären, in welche Richtung die Marktzahlen laufen."
+    },
+    "entries": {
+      "title": "Deutsche Einstiegspunkte",
+      "why": "Jeder Einstieg beantwortet eine andere Prüfaufgabe; die bestehenden deutschen Inhalte und Routen bleiben getrennt erhalten.",
+      "eyebrow_label": "",
+      "open_label": "Ansicht öffnen"
+    },
+    "entry_cards": [
+      {
+        "title": "Dashboard (DE)",
+        "description": "Live-Marktstatus, Szenario-Registry und Risikosignale für operative Entscheidungen.",
+        "navId": "dashboard",
+        "suffix": ""
+      },
+      {
+        "title": "Deutschland Jet-Fuel Preise",
+        "description": "Serverseitige Preisbeobachtung für Brent, Jet global, EU-Jet-Proxy und Carbon-Proxy.",
+        "navId": "prices",
+        "suffix": ""
+      },
+      {
+        "title": "Quellenprüfung",
+        "description": "Zeilenbasierte Prüfung von Live-, Proxy- und Fallback-Quellen.",
+        "navId": "sources",
+        "suffix": ""
+      },
+      {
+        "title": "Szenario-Workbench",
+        "description": "Lesende Prüfung gespeicherter SAF-Annahmen mit Marktkontext.",
+        "navId": "scenarios",
+        "suffix": ""
+      },
+      {
+        "title": "Berichtswerkstatt",
+        "description": "Deutsche Startprüfung für Quellenstatus, Szenarien und Berichtseinstiege.",
+        "navId": "reports",
+        "suffix": ""
+      },
+      {
+        "title": "Forschungswerkstatt",
+        "description": "Prüfung der AI-Research-Pipeline mit ehrlicher Leer- oder Fehlerlage.",
+        "navId": "research",
+        "suffix": ""
+      },
+      {
+        "title": "Startbereitschaft",
+        "description": "Lesende Prüfung von Datenbank, Quellenabdeckung und Backend-Bereitschaft.",
+        "navId": "admin",
+        "suffix": ""
+      },
+      {
+        "title": "Lufthansa-Analyse (DE)",
+        "description": "Tiefenanalyse der Lufthansa-Flugkürzungen 2026 und des SAF-Wendepunkts.",
+        "navId": "analysis",
+        "suffix": ""
+      }
+    ],
+    "sources": {
+      "reserve_label": "EU-Reserveabdeckung über {source_name}",
+      "reserve_unavailable": "nicht verfügbare Quelle",
+      "events_label": "SAF-Kipppunktereignisse ({count})",
+      "events_nav_id": "reports",
+      "events_suffix": "/tipping-point-analysis",
+      "research_label": "Abgeleitete Forschungssignale ({count})",
+      "method_label": "Quellen- und Methodenliste"
+    },
+    "limitations": [
+      "Die Startseite ist eine Zusammenfassung und Navigation; vollständige Definitionen stehen auf den jeweiligen Detailseiten.",
+      "Ein leeres Ereignisfenster bedeutet nicht, dass kein Risiko besteht."
+    ],
+    "limitation_research_enabled": "Forschungssignale sind abgeleitete Evidenz und keine direkte Marktbeobachtung.",
+    "limitation_research_disabled": "Forschungssignale sind abgeleitete Evidenz und keine direkte Marktbeobachtung."
   },
   "dashboard": {
     "market_price": "Marktpreis",

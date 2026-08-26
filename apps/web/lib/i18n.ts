@@ -22,7 +22,8 @@ export type Locale = (typeof LOCALES)[number];
 
 /**
  * Widen JSON string literals so `de` / `en` can be checked against the `zh`
- * shape without requiring the same words.
+ * shape without requiring the same words. Booleans are widened too: locale
+ * flags such as `home.show_transition_ladder` must be allowed to differ.
  */
 type WidenStrings<T> = T extends string
   ? string
@@ -45,6 +46,8 @@ export type ReportsMessages = Messages['reports'];
 export type ResearchMessages = Messages['research'];
 export type AdminMessages = Messages['admin'];
 export type SourcesMessages = Messages['sources'];
+
+export type HomeMessages = Messages['home'];
 
 const catalog: Record<Locale, Messages> = { zh, de, en };
 

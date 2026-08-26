@@ -155,6 +155,12 @@ const SHARED_VIEWS = [
     source: 'apps/web/components/sources-page.tsx',
     i18nKey: 'sources',
   },
+  {
+    route: /^apps\/web\/app\/(?:de\/|en\/)?page\.tsx$/,
+    component: 'HomePage',
+    source: 'apps/web/components/home-page.tsx',
+    i18nKey: 'home',
+  },
 ];
 
 function sharedViewFor(path) {
@@ -366,7 +372,7 @@ test('a reserve reading is labelled by how it was produced, not assumed observed
 
 test('home-page event tone fallbacks remain semantic problem states', async () => {
   function assertSemanticFallback(source, path) {
-    const mapping = source.match(/function eventTone\([^)]*\)[^{]*\{([\s\S]*?)\n\}/);
+    const mapping = source.match(/function eventTone\([^)]*\)[^{]*\{([\s\S]*?)\r?\n\}/);
     assert.ok(mapping, `${path} must keep eventTone as an explicit status mapping`);
     const returns = [...mapping[1].matchAll(/return\s+'([^']+)'/g)].map((match) => match[1]);
     const fallback = returns.at(-1);
@@ -378,18 +384,22 @@ test('home-page event tone fallbacks remain semantic problem states', async () =
     );
   }
 
-  for (const path of HOME_PAGES) {
-    const source = await read(path);
-    assertSemanticFallback(source, path);
+  const path = 'apps/web/components/home-page.tsx';
+  const source = await read(path);
+  assertSemanticFallback(source, path);
 
-    // Mutation check: prove this guard fails for the historical regression,
-    // rather than merely matching the current implementation by accident.
-    const regressed = source.replace(/(function eventTone\([^)]*\)[^{]*\{[\s\S]*?)return 'text-warning';\r?\n\}/, "$1return 'text-muted';\n}");
-    assert.throws(
-      () => assertSemanticFallback(regressed, `${path} (mutated)`),
-      /must not wash an unknown event type/
-    );
-  }
+  // Mutation check: prove this guard fails for the historical regression,
+  // rather than merely matching the current implementation by accident.
+  // `\r?` keeps the mutation live on a Windows working tree without
+  // changing the LF source CI reads.
+  const regressed = source.replace(
+    /(function eventTone\([^)]*\)[^{]*\{[\s\S]*?)return 'text-warning';\r?\n\}/,
+    "$1return 'text-muted';\n}"
+  );
+  assert.throws(
+    () => assertSemanticFallback(regressed, `${path} (mutated)`),
+    /must not wash an unknown event type/
+  );
 });
 
 test('tipping-point reports never label an assumed fossil anchor as observed', async () => {
@@ -410,7 +420,7 @@ test('tipping-point reports never label an assumed fossil anchor as observed', a
 
 test('home pages derive as-of from source timestamps, never the current clock', async () => {
   for (const path of HOME_PAGES) {
-    const source = await read(path);
+    const source = await implementationOf(path);
     const assignment = source.match(/const asOf\s*=\s*([^;]+);/);
     assert.ok(assignment, `${path} must derive a page-level asOf`);
     assert.doesNotMatch(assignment[1], /new Date\s*\(/, `${path} must not stamp the home page with the current clock`);
