@@ -349,5 +349,141 @@
         "Gespeicherte Szenarien sind lokale Annahmen für Prüfung und Diskussion; sie ersetzen keine Beschaffungsfreigabe."
       ]
     }
+  },
+  "admin": {
+    "show_admin_ops": false,
+    "eyebrow": "Startbetrieb",
+    "title": "Startbereitschaft",
+    "question": "Kann dieses Backend jetzt sicher schreiben und in Betrieb gehen?",
+    "signals_label": "Signale zur Startentscheidung",
+    "decision_label": "Startentscheidung",
+    "decision_hint_error": "Readiness-API nicht verfügbar: {error}",
+    "decision_hint_ready": "Keine Voraussetzung blockiert den Start.",
+    "decision_hint_blocked": "Blocker vor Schreibvorgängen oder Start beheben.",
+    "blocking_label": "Blocker",
+    "blocking_hint": "Jeder Blocker verhindert einen sicheren Start.",
+    "review_label": "Prüfpunkte",
+    "review_hint": "Nicht zwingend blockierend, aber vor dem Start zu bestätigen.",
+    "environment_label": "Umgebungskontext",
+    "environment_hint": "Schema {mode}; die Aussage gilt nur für diese Umgebung.",
+    "scope_title": "Geschützte Operationen",
+    "scope_why": "Diese Grenzen zeigen, welche Aktionen hier nur geprüft und welche ausschließlich in der primären Konsole ausgeführt werden.",
+    "scope_items": [
+      "Geschützte Schreibvorgänge, Aktualisierungen und Parameteränderungen bleiben in der primären Admin-Konsole.",
+      "Diese deutsche Ansicht ist nur lesend und zeigt keine geheimen Werte an.",
+      "Die Prüfungen zeigen, ob Quellen-, Forschungs-, Token- oder Datenbankarbeit vor dem Start noch offen ist."
+    ],
+    "scope_bullet": "",
+    "contract_title": "Backend-Vertrag",
+    "contract_why": "Der Readiness-Vertrag legt fest, welche Voraussetzungen geprüft werden, ohne geheime Werte offenzulegen.",
+    "contract_items": [
+      {
+        "code": "",
+        "text": "Datenbank-Bootstrap, Markt-Snapshot, Quellenabdeckung, Admin-Token-Konfiguration und Forschungssignal-Status kommen aus dem API-Readiness-Vertrag."
+      },
+      {
+        "code": "",
+        "text": "Geheime Werte werden von Readiness nicht zurückgegeben und von dieser deutschen Seite nicht abgefragt."
+      },
+      {
+        "code": "",
+        "text": "Parameterbearbeitung, manuelle Aktualisierung und Token-Eingabe bleiben in der primären Admin-Konsole."
+      }
+    ],
+    "checks_title": "Startbereitschaftsprüfungen",
+    "checks_why": "Die Einzelprüfungen zeigen, welche Voraussetzung den Start blockiert oder vorab bestätigt werden muss.",
+    "badge_ready": "Bereit",
+    "badge_not_ready": "Nicht bereit",
+    "badge_degraded": "Eingeschränkt",
+    "env_badge": "{environment} | {apiPrefix} | Schema {schemaBootstrapMode}",
+    "error_banner": "Readiness-API ist nicht verfügbar: {error}",
+    "config_keys_label": "Relevante Konfiguration:",
+    "ops_title": "Schreibarbeitsbereich bleibt in der primären Konsole.",
+    "ops_why": "Diese deutsche Ansicht ist nur lesend; Parameter, Aktualisierung und Token bleiben in der primären Admin-Konsole.",
+    "source_unavailable": "Readiness-API derzeit nicht verfügbar",
+    "source_available": "Serverseitig berechnete Readiness-API-Prüfungen",
+    "source_contract": "Backend-Datenvertrag: route_catalog / policy_parameters / market_snapshots / scenarios",
+    "method_label": "Quellen und Datenkonventionen öffnen",
+    "limitations": [
+      "Diese Seite zeigt die Bereitschaft der aktuellen Deployment-Umgebung, nicht die Obergrenze der Produktfähigkeiten.",
+      "Die Prüfungen werden serverseitig aus Konfiguration und Datenverträgen abgeleitet; geschützte Schreibvorgänge benötigen weiterhin eine gültige Admin-Berechtigung."
+    ],
+    "readiness_status": {
+      "ready": "Startkandidat",
+      "degraded": "Lauffähig, Prüfung nötig",
+      "not_ready": "Nicht bereit"
+    },
+    "readiness_status_unknown": "Nicht erkannter Status: {status}",
+    "check_status": {
+      "ok": "Gesund",
+      "degraded": "Eingeschränkt",
+      "missing": "Konfiguration fehlt",
+      "disabled": "Deaktiviert",
+      "missing_credentials": "Zugangsdaten fehlen",
+      "mock": "Mock-Modus",
+      "seed": "Seed-Daten",
+      "error": "Fehler"
+    },
+    "check_status_unknown": "Nicht erkannt: {status}",
+    "check_labels": {
+      "database": "Datenbank",
+      "market_snapshot": "Markt-Snapshot",
+      "source_coverage": "Quellenabdeckung",
+      "admin_token": "Admin-Token",
+      "ai_research_pipeline": "AI-Research-Pipeline"
+    },
+    "impact_blocking": "Blockiert Start",
+    "impact_review": "Prüfung nötig",
+    "impact_ok": "Startbereit",
+    "impact_unknown": "Nicht erkannter Status",
+    "detail_cjk_fallback": "Diese Voraussetzung in der primären Admin-Konsole prüfen.",
+    "detail_empty": "Die API meldet keine weiteren Details für diese Prüfung.",
+    "detail_market_count": "{count} Marktmesswerte verfügbar.",
+    "detail_source_completeness": "Vollständigkeit ",
+    "detail_source_metrics": "Messwerte ",
+    "detail_by_key": {
+      "database": "Datenbankprüfung ohne zusätzliche Hinweise.",
+      "market_snapshot": "Markt-Snapshot prüfen und bei Bedarf aktualisieren.",
+      "source_coverage": "",
+      "admin_token": "JETSCOPE_ADMIN_TOKEN ist nicht konfiguriert; geschützte Schreibvorgänge und Marktaktualisierung bleiben gesperrt.",
+      "ai_research_pipeline": "JETSCOPE_AI_RESEARCH_ENABLED ist false; Erzeugung von Forschungssignalen ist deaktiviert."
+    },
+    "actions": {
+      "source_coverage": {
+        "label_ok": "Quellen öffnen",
+        "label_fix": "Quellen beheben",
+        "nav_id": "sources",
+        "query": "?filter=review",
+        "target_locale": ""
+      },
+      "market_snapshot": {
+        "label_ok": "Marktquellen öffnen",
+        "label_fix": "Marktquellen öffnen",
+        "nav_id": "sources",
+        "query": "",
+        "target_locale": ""
+      },
+      "admin_token": {
+        "label_ok": "Primäre Admin-Konsole öffnen",
+        "label_fix": "Primäre Admin-Konsole öffnen",
+        "nav_id": "admin",
+        "query": "",
+        "target_locale": "zh"
+      },
+      "ai_research_pipeline": {
+        "label_ok": "Forschungspfad prüfen",
+        "label_fix": "Forschungspfad prüfen",
+        "nav_id": "admin",
+        "query": "",
+        "target_locale": "zh"
+      },
+      "default": {
+        "label_ok": "Zur Übersicht",
+        "label_fix": "Zur Übersicht",
+        "nav_id": "dashboard",
+        "query": "",
+        "target_locale": ""
+      }
+    }
   }
 }

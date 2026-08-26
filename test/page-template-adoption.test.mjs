@@ -143,6 +143,12 @@ const SHARED_VIEWS = [
     source: 'apps/web/components/reports-page.tsx',
     i18nKey: 'reports',
   },
+  {
+    route: /\/admin\/page\.tsx$/,
+    component: 'AdminPage',
+    source: 'apps/web/components/admin-page.tsx',
+    i18nKey: 'admin',
+  },
 ];
 
 function sharedViewFor(path) {
@@ -203,6 +209,16 @@ test('every converted page ends with its sources', async () => {
     assert.match(source, /<SourceFooter/, `${path} must close with SourceFooter (contract section 2 rule 4)`);
     assert.match(source, /limitations=\{/, `${path} must state its limitations, not imply completeness`);
   }
+});
+
+test('admin pages never invent a data timestamp', async () => {
+  const source = await read('apps/web/components/admin-page.tsx');
+  assert.match(
+    source,
+    /readiness\.error \? null : readiness\.generatedAt/,
+    'admin must suppress the timestamp when readiness is on fallback'
+  );
+  assert.doesNotMatch(source, /new Date\(/, 'admin must not turn fetch or render time into an as-of stamp');
 });
 
 test('static FAQ pages never invent a data timestamp', async () => {
@@ -362,7 +378,7 @@ test('home-page event tone fallbacks remain semantic problem states', async () =
 
     // Mutation check: prove this guard fails for the historical regression,
     // rather than merely matching the current implementation by accident.
-    const regressed = source.replace(/(function eventTone\([^)]*\)[^{]*\{[\s\S]*?)return 'text-warning';\n\}/, "$1return 'text-muted';\n}");
+    const regressed = source.replace(/(function eventTone\([^)]*\)[^{]*\{[\s\S]*?)return 'text-warning';\r?\n\}/, "$1return 'text-muted';\n}");
     assert.throws(
       () => assertSemanticFallback(regressed, `${path} (mutated)`),
       /must not wash an unknown event type/

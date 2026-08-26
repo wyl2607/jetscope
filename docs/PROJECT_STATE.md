@@ -196,6 +196,13 @@ is locked in.
    match the reader become a numbered placeholder. Middleware and `/[locale]`
    rewrites stay forbidden. Remaining routes are unchanged.
 
+   **Admin copy, safe reland (after #321).** User-facing admin strings now live
+   under `admin` in the same locale files. `/admin`, `/de/admin` and `/en/admin`
+   remain real page files that render one shared `AdminPage` with an explicit
+   `locale`. zh stays the write console (`show_admin_ops: true` mounts
+   `AdminDataOps`); de/en stay read-only launch-readiness surfaces. Middleware
+   and `/[locale]` rewrites stay forbidden.
+
 ### Known debts, none urgent
 
 - `apps/web/lib/research-signals-read-model.ts` stamps a signal with the current

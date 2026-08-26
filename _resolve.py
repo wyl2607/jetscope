@@ -83,6 +83,94 @@ CONFLICT = re.compile(
     re.MULTILINE | re.DOTALL,
 )
 
+# In implementationOf(), git cleanly appends each branch's own special case
+# instead of conflicting on it. Those belong in SHARED_VIEWS, not as a tail of
+# if-statements, so they get lifted into a row.
+STRAY_CASE = re.compile(
+    r"\n  if \((?P<route>/[^)]+?/)\.test\(path\) && source\.includes\('<(?P<component>\w+)'\)\) \{\n"
+    r"    return read\('(?P<source>[^']+)'\);\n  \}\n"
+)
+
+
+def resolve_i18n_types(path: str) -> None:
+    """apps/web/lib/i18n.ts: both sides only add `export type XMessages = ...`."""
+    text = Path(path).read_text(encoding="utf-8")
+    n = 0
+
+    def both(m: re.Match) -> str:
+        nonlocal n
+        n += 1
+        for side in (m.group("ours"), m.group("theirs")):
+            for line in side.splitlines():
+                if line.strip() and not line.startswith("export type "):
+                    raise SystemExit(
+                        f"{path} hunk {n} is not a pure type-alias addition:\n  {line!r}\n"
+                        "Read it by hand."
+                    )
+        return m.group("ours") + m.group("theirs")
+
+    out = CONFLICT.sub(both, text)
+    if "<<<<<<<" in out:
+        raise SystemExit(f"{path}: unresolved markers remain")
+    print(f"  {path}: {n} type-alias hunk(s) unioned")
+    Path(path).write_text(out, encoding="utf-8", newline="\n")
+
+
+def resolve_page_template(path: str) -> None:
+    """test/page-template-adoption.test.mjs: keep the SHARED_VIEWS table, lift
+    the incoming branch's special case into a row."""
+    text = Path(path).read_text(encoding="utf-8")
+    n = 0
+
+    def ours_only(m: re.Match) -> str:
+        nonlocal n
+        n += 1
+        return m.group("ours")
+
+    # The incoming side names each route's dictionary key explicitly, in its
+    # ternary chain. Read the keys off it rather than guessing them from the
+    # path — `/prices/germany-jet-fuel/` -> `prices` happens to be right, but
+    # nothing guarantees the next page follows that shape.
+    keys: dict[str, str] = {}
+    for m in CONFLICT.finditer(text):
+        for route, key in re.findall(
+            r"(/[^\s]+?/)\.test\(path\)\s*\n?\s*\?\s*'(\w+)'", m.group("theirs")
+        ):
+            keys[route] = key
+        for route, key in re.findall(
+            r":\s*(/[^\s]+?/)\.test\(path\)\s*\n?\s*\?\s*'(\w+)'", m.group("theirs")
+        ):
+            keys[route] = key
+
+    text = CONFLICT.sub(ours_only, text)
+    if "<<<<<<<" in text:
+        raise SystemExit(f"{path}: unresolved markers remain")
+
+    rows = 0
+    while (m := STRAY_CASE.search(text)) is not None:
+        route = m.group("route")
+        if route not in keys:
+            raise SystemExit(
+                f"{path}: the incoming side never names a dictionary key for {route}.\n"
+                f"  keys it did name: {keys or '(none)'}\n"
+                "Read this one by hand."
+            )
+        row = (
+            "  {\n"
+            f"    route: {route},\n"
+            f"    component: '{m.group('component')}',\n"
+            f"    source: '{m.group('source')}',\n"
+            f"    i18nKey: '{keys[route]}',\n"
+            "  },\n"
+        )
+        text = text[: m.start()] + "\n" + text[m.end():]
+        text = text.replace("];\n\nfunction sharedViewFor", row + "];\n\nfunction sharedViewFor", 1)
+        rows += 1
+        print(f"    lifted {m.group('component')} -> SHARED_VIEWS row (i18nKey '{keys[route]}')")
+
+    print(f"  {path}: {n} hunk(s) kept ours, {rows} row(s) lifted")
+    Path(path).write_text(text, encoding="utf-8", newline="\n")
+
 
 def resolve_union(path: str) -> None:
     text = Path(path).read_text(encoding="utf-8")
@@ -114,11 +202,20 @@ def main() -> None:
     if not conflicted:
         print("no conflicts")
         return
-    manual = [p for p in conflicted if not p.endswith(".json")]
+    handlers = {
+        "apps/web/lib/i18n.ts": resolve_i18n_types,
+        "test/page-template-adoption.test.mjs": resolve_page_template,
+    }
+    manual = [
+        p for p in conflicted if not p.endswith(".json") and p not in handlers
+    ]
     for path in conflicted:
-        if not path.endswith(".json"):
+        if path.endswith(".json"):
+            resolve_json(path)
+        elif path in handlers:
+            handlers[path](path)
+        else:
             continue
-        resolve_json(path)
         subprocess.run(["git", "add", path], check=True)
     # Nothing may be claimed resolved that still parses badly.
     for path in conflicted:

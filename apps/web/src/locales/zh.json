@@ -342,5 +342,147 @@
         "情景库是本地保存的假设，用于复盘和讨论，不替代真实采购审批。"
       ]
     }
+  },
+  "admin": {
+    "show_admin_ops": true,
+    "eyebrow": "管理台",
+    "title": "假设与数据接入管理",
+    "question": "这套后台现在能不能安全地写入和上线？",
+    "signals_label": "上线结论信号",
+    "decision_label": "能否上线",
+    "decision_hint_error": "Readiness API 暂不可用：{error}",
+    "decision_hint_ready": "当前没有阻塞上线的前置项。",
+    "decision_hint_blocked": "先处理阻塞项，再执行写入或上线。",
+    "blocking_label": "阻塞项",
+    "blocking_hint": "任何一项都会阻止安全上线。",
+    "review_label": "需复核项",
+    "review_hint": "不一定阻塞，但上线前需要确认适用边界。",
+    "environment_label": "环境上下文",
+    "environment_hint": "schema {mode}；结论只适用于这个部署环境。",
+    "scope_title": "当前可操作范围",
+    "scope_why": "明确哪些动作会写入真实 API，避免把管理台误当成演示界面。",
+    "scope_items": [
+      "手动编辑各路线成本区间与减排参数",
+      "维护政策参数和时间表",
+      "触发市场数据刷新并读回快照",
+      "查看写入本地数据库的刷新证据",
+      "确认前端读取的是 API 返回的最新状态"
+    ],
+    "scope_bullet": "• ",
+    "contract_title": "后端数据合同",
+    "contract_why": "这些表决定写入落在哪里，以及刷新结果能否被后续页面读回。",
+    "contract_items": [
+      {
+        "code": "route_catalog",
+        "text": "维护默认路线定义"
+      },
+      {
+        "code": "policy_parameters",
+        "text": "维护政策、补贴与 mandate 参数"
+      },
+      {
+        "code": "market_snapshots",
+        "text": "保存定时任务抓取结果"
+      },
+      {
+        "code": "scenarios",
+        "text": "版本化假设，支持对比与导出"
+      }
+    ],
+    "checks_title": "上线前置状态",
+    "checks_why": "逐项定位阻塞、复核和健康状态，决定当前环境还缺哪一步。",
+    "badge_ready": "Ready",
+    "badge_not_ready": "Not ready",
+    "badge_degraded": "Degraded",
+    "env_badge": "{environment} · {apiPrefix} · schema {schemaBootstrapMode}",
+    "error_banner": "Readiness API 暂不可用：{error}",
+    "config_keys_label": "相关配置：",
+    "ops_title": "数据与假设写入工作区",
+    "ops_why": "只有在前置状态允许时，才在这里修改参数、刷新数据并核对写入证据。",
+    "source_unavailable": "Readiness API 当前不可用",
+    "source_available": "Readiness API 服务端检查结果",
+    "source_contract": "后端数据合同表：route_catalog / policy_parameters / market_snapshots / scenarios",
+    "method_label": "查看来源与数据口径",
+    "limitations": [
+      "本页反映当前部署环境的就绪状态，不代表 JetScope 的产品能力上限。",
+      "就绪检查是服务端根据当前配置和数据合同推导的结果；受保护写入仍需有效管理令牌。"
+    ],
+    "readiness_status": {
+      "ready": "可上线候选",
+      "degraded": "可运行，需复核",
+      "not_ready": "未就绪"
+    },
+    "readiness_status_unknown": "{status}",
+    "check_status": {
+      "ok": "正常",
+      "degraded": "降级",
+      "missing": "缺少配置",
+      "disabled": "未启用",
+      "missing_credentials": "缺少凭证",
+      "mock": "Mock 模式",
+      "seed": "种子数据",
+      "error": "错误"
+    },
+    "check_status_unknown": "{status}",
+    "check_labels": {
+      "database": "数据库",
+      "market_snapshot": "市场快照",
+      "source_coverage": "来源覆盖",
+      "admin_token": "管理令牌",
+      "ai_research_pipeline": "AI 研究流水线"
+    },
+    "impact_blocking": "阻塞上线",
+    "impact_review": "需复核",
+    "impact_ok": "可用",
+    "impact_unknown": "未识别的状态",
+    "detail_cjk_fallback": "",
+    "detail_empty": "无详情",
+    "detail_market_count": "",
+    "detail_source_completeness": "",
+    "detail_source_metrics": "",
+    "detail_by_key": {
+      "database": "",
+      "market_snapshot": "",
+      "source_coverage": "",
+      "admin_token": "",
+      "ai_research_pipeline": ""
+    },
+    "actions": {
+      "source_coverage": {
+        "label_ok": "查看来源",
+        "label_fix": "修复来源",
+        "nav_id": "sources",
+        "query": "?filter=review",
+        "target_locale": ""
+      },
+      "market_snapshot": {
+        "label_ok": "查看市场",
+        "label_fix": "查看市场",
+        "nav_id": "sources",
+        "query": "",
+        "target_locale": ""
+      },
+      "admin_token": {
+        "label_ok": "配置管理令牌",
+        "label_fix": "配置管理令牌",
+        "nav_id": "admin",
+        "query": "",
+        "target_locale": ""
+      },
+      "ai_research_pipeline": {
+        "label_ok": "打开研究工作台",
+        "label_fix": "打开研究工作台",
+        "nav_id": "research",
+        "query": "",
+        "target_locale": ""
+      },
+      "default": {
+        "label_ok": "查看 Admin",
+        "label_fix": "查看 Admin",
+        "nav_id": "admin",
+        "query": "",
+        "target_locale": ""
+      }
+    }
   }
 }
