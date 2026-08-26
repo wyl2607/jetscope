@@ -216,6 +216,13 @@ is locked in.
    data — zh keeps the transition ladder, research brief, and zh-only cards;
    de/en stay slimmer indexes. Middleware and `/[locale]` stay forbidden.
 
+   **Dashboard copy, safe reland (after #321).** User-facing dashboard strings now
+   live under `dashboard` in `apps/web/src/locales/{zh,de,en}.json`. `/dashboard`,
+   `/de/dashboard` and `/en/dashboard` remain real page files that render one
+   shared `DashboardPage` with an explicit `locale`. Locale-specific panels stay
+   behind booleans that default to false. Middleware and `/[locale]` rewrites
+   stay forbidden.
+
 ### Known debts, none urgent
 
 - `apps/web/lib/research-signals-read-model.ts` stamps a signal with the current

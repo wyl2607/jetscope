@@ -32,7 +32,9 @@ type WidenStrings<T> = T extends string
     : T extends number
       ? number
       : T extends readonly (infer U)[]
-        ? WidenStrings<U>[]
+        ? [U] extends [never]
+          ? string[]
+          : WidenStrings<U>[]
         : T extends object
           ? { [K in keyof T]: WidenStrings<T[K]> }
           : T;
@@ -48,6 +50,7 @@ export type AdminMessages = Messages['admin'];
 export type SourcesMessages = Messages['sources'];
 
 export type HomeMessages = Messages['home'];
+export type DashboardMessages = Messages['dashboard'];
 
 const catalog: Record<Locale, Messages> = { zh, de, en };
 

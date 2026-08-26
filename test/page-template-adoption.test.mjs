@@ -161,6 +161,12 @@ const SHARED_VIEWS = [
     source: 'apps/web/components/home-page.tsx',
     i18nKey: 'home',
   },
+  {
+    route: /\/dashboard\/page\.tsx$/,
+    component: 'DashboardPage',
+    source: 'apps/web/components/dashboard-page.tsx',
+    i18nKey: 'dashboard',
+  },
 ];
 
 function sharedViewFor(path) {
@@ -201,6 +207,23 @@ test('every converted page states the decision question it answers', async () =>
         assert.ok(
           typeof question === 'string' && question.trim().length > 10,
           `${locale}.json ${i18nKey}.question must be a real sentence, got: ${question}`
+        );
+      }
+      continue;
+    }
+
+    if (/\/dashboard\/page\.tsx$/.test(path)) {
+      assert.match(
+        source,
+        /question=\{copy\.question\}/,
+        `${path} must pass a question to PageTemplate`
+      );
+      for (const locale of ['zh', 'de', 'en']) {
+        const dictionary = JSON.parse(await read(`apps/web/src/locales/${locale}.json`));
+        const question = dictionary.dashboard?.question;
+        assert.ok(
+          typeof question === 'string' && question.trim().length > 10,
+          `${locale}.json dashboard.question must be a real sentence, got: ${question}`
         );
       }
       continue;
