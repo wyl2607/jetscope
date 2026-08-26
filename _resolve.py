@@ -11,9 +11,14 @@ This does it structurally instead:
   *.json  -> parse git stages 1/2/3, three-way merge the dicts, and fail loudly
              on a real semantic conflict (same key, changed differently on both
              sides). Formatting is re-emitted to the repo's 2-space style.
-  *.mjs   -> union of both hunks, ours first, markers dropped.
 
-Usage: python _resolve.py            (resolves every conflicted path)
+Anything else is left alone with its markers intact, deliberately. The first
+version of this unioned code hunks too, which produced a file that did not
+parse: in test/page-template-adoption.test.mjs the two sides are not additions
+to a list, they are competing implementations of the same lookup. Those get
+read and resolved by hand.
+
+Usage: python _resolve.py            (resolves the conflicted JSON only)
 """
 from __future__ import annotations
 
@@ -109,17 +114,21 @@ def main() -> None:
     if not conflicted:
         print("no conflicts")
         return
+    manual = [p for p in conflicted if not p.endswith(".json")]
     for path in conflicted:
-        if path.endswith(".json"):
-            resolve_json(path)
-        else:
-            resolve_union(path)
+        if not path.endswith(".json"):
+            continue
+        resolve_json(path)
         subprocess.run(["git", "add", path], check=True)
     # Nothing may be claimed resolved that still parses badly.
     for path in conflicted:
         if path.endswith(".json"):
             json.loads(Path(path).read_text(encoding="utf-8"))
-    print("resolved:", len(conflicted), "file(s)")
+    print("resolved:", len(conflicted) - len(manual), "JSON file(s)")
+    if manual:
+        print("LEFT FOR YOU (markers intact):")
+        for path in manual:
+            print("  ", path)
 
 
 if __name__ == "__main__":

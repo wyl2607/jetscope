@@ -806,35 +806,49 @@ test('scenarios workbench exposes a global language switch and stays product-fac
 });
 
 test('reports landing page is a live report workbench instead of a static index', async () => {
-  const reportsSource = await readFile(new URL('../apps/web/app/reports/page.tsx', import.meta.url), 'utf8');
+  const page = await readFile(new URL('../apps/web/components/reports-page.tsx', import.meta.url), 'utf8');
+  const zhPage = await readFile(new URL('../apps/web/app/reports/page.tsx', import.meta.url), 'utf8');
+  const zh = JSON.parse(
+    await readFile(new URL('../apps/web/src/locales/zh.json', import.meta.url), 'utf8')
+  ).reports;
 
-  assert.match(reportsSource, /getDashboardReadModel/);
-  assert.match(reportsSource, /dynamic = 'force-dynamic'/);
-  assert.match(reportsSource, /报告工作台/);
-  assert.match(reportsSource, /来源状态/);
-  assert.match(reportsSource, /情景数量/);
-  assert.match(reportsSource, /复核来源/);
-  assert.match(reportsSource, /topRiskSignal/);
-  assert.match(reportsSource, /reports\/tipping-point-analysis/);
-  assert.doesNotMatch(reportsSource, /bg-slate-900|border-slate-800|text-white|text-slate-300/);
+  assert.match(zh.title, /报告工作台/);
+  assert.match(zh.source.label, /来源状态/);
+  assert.match(zh.scenarios.label, /情景数量/);
+  assert.match(zh.actions.review_sources.label, /复核来源/);
+  assert.match(zhPage, /dynamic = 'force-dynamic'/);
+  assert.match(zhPage, /报告工作台/);
+  assert.match(zhPage, /locale="zh"/);
+  assert.match(page, /getDashboardReadModel\(locale\)/);
+  assert.match(page, /topRiskSignal/);
+  assert.match(page, /tipping-point-analysis/);
+  assert.doesNotMatch(page, /bg-slate-900|border-slate-800|text-white|text-slate-300/);
 });
 
 test('English reports page exposes report readiness without Chinese UI copy', async () => {
-  const englishReportsSource = await readFile(new URL('../apps/web/app/en/reports/page.tsx', import.meta.url), 'utf8');
+  const page = await readFile(new URL('../apps/web/components/reports-page.tsx', import.meta.url), 'utf8');
+  const enPage = await readFile(new URL('../apps/web/app/en/reports/page.tsx', import.meta.url), 'utf8');
+  const en = JSON.parse(
+    await readFile(new URL('../apps/web/src/locales/en.json', import.meta.url), 'utf8')
+  ).reports;
 
-  assert.match(englishReportsSource, /Report Workbench/);
-  assert.match(englishReportsSource, /getDashboardReadModel\('en'\)/);
-  assert.match(englishReportsSource, /Source status/);
-  assert.match(englishReportsSource, /Scenario count/);
-  assert.match(englishReportsSource, /Launch posture/);
-  assert.match(englishReportsSource, /en\/reports\/tipping-point-analysis/);
-  assert.match(englishReportsSource, /en\/sources\?filter=review/);
-  assert.match(englishReportsSource, /en\/dashboard/);
+  assert.match(en.title, /Report Workbench/);
+  assert.match(en.source.label, /Source status/);
+  assert.match(en.scenarios.label, /Scenario count/);
+  assert.match(en.readiness.label, /Launch posture/);
+  assert.match(enPage, /Report Workbench/);
+  assert.match(enPage, /locale="en"/);
+  assert.match(page, /getDashboardReadModel\(locale\)/);
+  assert.match(page, /navId: 'research'/);
+  assert.match(page, /navId: 'dashboard'/);
+  assert.match(page, /\?filter=review/);
+  assert.match(page, /tipping-point-analysis/);
+  assert.doesNotMatch(page, /['"`]\/en\//);
   assert.doesNotMatch(
-    englishReportsSource,
+    JSON.stringify(en),
     /报告工作台|来源状态|情景数量|上线姿态|复核来源|暂无|需复核|可发布候选/
   );
-  assert.doesNotMatch(englishReportsSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+  assert.doesNotMatch(page, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
 });
 
 test('English tipping-point report detail stays localized and source-backed', async () => {
@@ -862,26 +876,34 @@ test('English tipping-point report detail stays localized and source-backed', as
 });
 
 test('German reports page exposes report readiness without Chinese or English report copy', async () => {
-  const germanReportsSource = await readFile(new URL('../apps/web/app/de/reports/page.tsx', import.meta.url), 'utf8');
+  const page = await readFile(new URL('../apps/web/components/reports-page.tsx', import.meta.url), 'utf8');
+  const dePage = await readFile(new URL('../apps/web/app/de/reports/page.tsx', import.meta.url), 'utf8');
+  const de = JSON.parse(
+    await readFile(new URL('../apps/web/src/locales/de.json', import.meta.url), 'utf8')
+  ).reports;
 
-  assert.match(germanReportsSource, /Berichtswerkstatt/);
-  assert.match(germanReportsSource, /getDashboardReadModel\('de'\)/);
-  assert.match(germanReportsSource, /Quellenstatus/);
-  assert.match(germanReportsSource, /Berichtskatalog/);
-  assert.match(germanReportsSource, /Vor dem Start/);
-  assert.match(germanReportsSource, /de\/reports\/tipping-point-analysis/);
-  assert.match(germanReportsSource, /de\/sources\?filter=review/);
-  assert.match(germanReportsSource, /de\/dashboard/);
-  assert.match(germanReportsSource, /de\/admin/);
+  assert.match(de.title, /Berichtswerkstatt/);
+  assert.match(de.source.label, /Quellenstatus/);
+  assert.match(de.catalog.title, /Berichtskatalog/);
+  assert.match(de.actions.title, /Vor dem Start/);
+  assert.match(dePage, /Berichtswerkstatt/);
+  assert.match(dePage, /locale="de"/);
+  assert.match(page, /getDashboardReadModel\(locale\)/);
+  assert.match(page, /navId: 'admin'/);
+  assert.match(page, /navId: 'dashboard'/);
+  assert.match(page, /navId: 'sources'/);
+  assert.match(page, /\?filter=review/);
+  assert.match(page, /tipping-point-analysis/);
+  assert.doesNotMatch(page, /['"`]\/de\//);
   assert.doesNotMatch(
-    germanReportsSource,
+    JSON.stringify(de),
     /报告工作台|来源状态|情景数量|上线姿态|复核来源|暂无|需复核|可发布候选/
   );
   assert.doesNotMatch(
-    germanReportsSource,
+    JSON.stringify(de),
     /Report Workbench|Report catalog|Pre-launch actions|Review source evidence|Publish candidate|Review needed/
   );
-  assert.doesNotMatch(germanReportsSource, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
+  assert.doesNotMatch(page, /bg-slate-900|border-slate-800|text-white|text-slate-300|text-slate-200/);
 });
 
 test('German tipping-point report detail stays localized and source-backed', async () => {

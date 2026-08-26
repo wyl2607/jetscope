@@ -188,6 +188,14 @@ is locked in.
    Middleware and `/[locale]` rewrites stay forbidden. Remaining routes are
    unchanged.
 
+   **Reports copy, safe reland (after #321).** User-facing reports strings now live
+   under `reports` in the same locale files. `/reports`, `/de/reports` and
+   `/en/reports` remain real page files that render one shared `ReportsPage` with
+   an explicit `locale`. Next-action sets stay distinct by locale; the four
+   signal cards keep one order everywhere. Scenario names whose script does not
+   match the reader become a numbered placeholder. Middleware and `/[locale]`
+   rewrites stay forbidden. Remaining routes are unchanged.
+
 ### Known debts, none urgent
 
 - `apps/web/lib/research-signals-read-model.ts` stamps a signal with the current
