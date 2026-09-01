@@ -241,12 +241,18 @@ one reaches the screen, and it re-checks the invariants at the render boundary.
 1. Navigation is defined **once**, in `apps/web/lib/navigation.ts`, as a single
    route list with per-locale labels. Literal nav arrays in `shell.tsx` are a
    contract violation.
-2. Every route exists in every supported locale, or in none. Locale-specific
-   *content* is fine; locale-specific *routes* are not.
+2. Route availability is product data, encoded explicitly in `navigation.ts`.
+   Existing locale-specific routes stay asymmetric until a separate product
+   decision changes them. Do not invent translated routes or remove a valid
+   locale-only route merely to make the directory trees look alike.
 3. User-facing copy lives in `apps/web/src/locales/{zh,de,en}.json`. Hardcoded
    strings in `.tsx` are a violation (proper nouns and units excepted).
-4. Routes are `/[locale]/<section>`, with `zh` served at `/`. Legacy paths keep
-   permanent redirects, guarded by `test/routing.test.mjs`.
+4. Public URLs are served by concrete route files under `app/`, `app/de/`, and
+   `app/en/`. When locales share an implementation, all existing route files
+   remain as thin wrappers and pass `locale` explicitly. Do not add
+   `middleware.ts`, an `app/[locale]` tree, or locale rewrites: #321 proved that
+   route collapsing can make the default-language pages fail in production.
+   Public URLs remain stable and are guarded by `test/routing.test.mjs`.
 
 ---
 
@@ -297,12 +303,16 @@ after a 2,000-line unreviewable diff.
 | --- | --- | --- |
 | **P0** | Tailwind ↔ token wiring · migrate 11 dark-class files · delete the legacy override block · `design-token-lint` in the gate | writing a raw color turns CI red |
 | **P1** | `PageTemplate` / `SignalRow` / `Panel` / `DataTable` / `SourceNote`; convert all pages | every page shares one skeleton |
-| **P2** | `navigation.ts`; collapse `/`, `/de`, `/en` into `/[locale]`; copy from locale files | three locales, one IA |
+| **P2** | `navigation.ts`; locale catalogs; shared implementations behind concrete locale route wrappers | existing URLs and product asymmetry stay intact without middleware or locale rewrites |
 | **P3** | `Figure` contract through the read-model layer; `figure-contract-lint` | `figure-contract-baseline.json` reaches zero |
 | **P4** | Web production container + nginx on the VPS | frontend reachable in public |
 
-Phases run **strictly in order**, one branch at a time. Two contributors never
-edit the same file set concurrently.
+Phases run **strictly in order**. Routing-contract corrections must land on
+`main` before any P2 route slice advances toward integration or merge. P2 route
+slices may be developed independently
+only when their feature files do not overlap, but shared locale catalogs, state
+docs, and source-scanning tests are integrated sequentially in one preview
+stack. The stacked result is revalidated before any slice advances to `main`.
 
 ---
 
@@ -314,6 +324,7 @@ edit the same file set concurrently.
 - [ ] Every figure carries value · unit · as-of · source · basis
 - [ ] Assumptions visibly marked; nulls render "—" with a reason
 - [ ] Empty / loading / error states present
-- [ ] Strings from locale files; route exists in all locales
+- [ ] Strings from locale files; existing route availability and public URLs preserved
+- [ ] Concrete locale route wrappers pass `locale` explicitly; no middleware, `app/[locale]`, or locale rewrite
 - [ ] Keyboard reachable, focus visible, contrast checked
 - [ ] `npm run web:gate` passes locally
