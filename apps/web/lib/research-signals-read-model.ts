@@ -73,6 +73,14 @@ function clampConfidence(value: unknown): number {
   return Math.max(0, Math.min(1, numeric));
 }
 
+function normalizePublishedAt(value: unknown): string | null {
+  // created_at and generated_at describe ingestion/pipeline timing, not the
+  // source publication time that the product presents as evidence.
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  return normalized || null;
+}
+
 function publishedAtTime(value: string | null): number {
   if (value == null) return Number.NEGATIVE_INFINITY;
   const timestamp = Date.parse(value);
@@ -91,9 +99,7 @@ function normalizeSignal(raw: Record<string, unknown>, index: number): ResearchS
     confidence: clampConfidence(raw.confidence ?? raw.confidence_score),
     summary_cn: String(raw.summary_cn ?? raw.summary_zh ?? raw.summary ?? '暂无中文摘要。'),
     summary_en: String(raw.summary_en ?? raw.summary ?? '暂无英文摘要。'),
-    published_at: raw.published_at ?? raw.created_at ?? raw.generated_at
-      ? String(raw.published_at ?? raw.created_at ?? raw.generated_at)
-      : null
+    published_at: normalizePublishedAt(raw.published_at)
   };
 }
 
