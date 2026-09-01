@@ -331,4 +331,12 @@ Specific to the machine this was developed on, and worth re-verifying elsewhere:
   dry run's whitespace check. Use binary mode. Check `git diff --numstat` before
   pushing: the line counts should match the size of the edit.
 - Three to six tests in `test/release-approval-contract.test.mjs` fail locally on
-  Windows and pass in CI. No other test file is expected to fail locally.
+  Windows and pass in CI.
+- Local preflight on Windows used to break for POSIX assumptions (GBK
+  `read_text()`, path separators in assertions/regex, `spawn('npm')` without
+  `npm.cmd` + shell for `.cmd` shims, package scripts hard-coding
+  `.venv/bin/python`, and shell harnesses hitting WSL bash or host
+  `git.exe`/`curl.exe` instead of stubs). Those are fixed in the Windows
+  preflight compat path; re-run `npm run preflight` after pulling that work.
+  Shell script unit tests need Git for Windows (`bash.exe`); they prefer it over
+  WSL. Linux CI remains authoritative for merge gates.

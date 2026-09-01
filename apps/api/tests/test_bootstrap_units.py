@@ -83,8 +83,10 @@ def test_alembic_config_sets_expected_paths_and_database_url(monkeypatch: pytest
 
     config = bootstrap._alembic_config()
 
-    assert config.config_file_name.endswith("apps/api/alembic.ini")
-    assert config.get_main_option("script_location").endswith("apps/api/migrations")
+    assert Path(config.config_file_name).as_posix().endswith("apps/api/alembic.ini")
+    assert Path(config.get_main_option("script_location")).as_posix().endswith(
+        "apps/api/migrations"
+    )
     assert config.get_main_option("sqlalchemy.url") == "sqlite:///./tmp/bootstrap-test.db"
 
 

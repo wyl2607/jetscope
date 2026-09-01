@@ -9,6 +9,12 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(scriptDir, '..');
 const adminToken = 'smoke-admin-token';
 const maxAttempts = 2;
+// Execute the npm CLI through Node so Windows never needs a shell for npm.
+const npmCliPath = process.env.npm_execpath
+  ?? join(dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js');
+const npmUsesNodeCli = process.platform === 'win32' || Boolean(process.env.npm_execpath);
+const npmCommand = npmUsesNodeCli ? process.execPath : 'npm';
+const npmArgs = (args) => npmUsesNodeCli ? [npmCliPath, ...args] : args;
 const apiPython = process.env.JETSCOPE_PYTHON_BIN
   ?? process.env.PYTHON_BIN
   ?? (existsSync(join(rootDir, 'apps/api/.venv/Scripts/python.exe'))
@@ -57,7 +63,9 @@ function startProcess(name, command, args, options = {}) {
   const child = spawn(command, args, {
     cwd: options.cwd ?? rootDir,
     env: options.env ?? process.env,
-    stdio: ['ignore', 'pipe', 'pipe']
+    stdio: ['ignore', 'pipe', 'pipe'],
+    shell: false,
+    windowsHide: true
   });
 
   const logs = [];
@@ -444,8 +452,8 @@ async function runAttempt(attempt) {
 
     webProc = startProcess(
       'web',
-      'npm',
-      ['--prefix', 'apps/web', 'run', 'start', '--', '--hostname', '127.0.0.1', '--port', String(webPort)],
+      npmCommand,
+      npmArgs(['--prefix', 'apps/web', 'run', 'start', '--', '--hostname', '127.0.0.1', '--port', String(webPort)]),
       {
         cwd: rootDir,
         env: {

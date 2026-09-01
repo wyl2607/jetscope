@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 
 const source = readFileSync(join(process.cwd(), 'scripts/preflight-ui-e2e.mjs'), 'utf8');
+const productSource = readFileSync(join(process.cwd(), 'scripts/preflight-product-smoke.mjs'), 'utf8');
 
 function assertContains(snippet, message) {
   assert.ok(source.includes(snippet), message);
@@ -67,4 +68,16 @@ test('UI preflight keeps isolated test database and disabled background refresh'
     "JETSCOPE_MARKET_SOURCE_TIMEOUT_SECONDS: '0.25'",
     'UI preflight must bound API market source latency for release-gate stability'
   );
+});
+
+test('both preflight harnesses execute npm through Node without a shell', () => {
+  for (const [name, harness] of [
+    ['product smoke', productSource],
+    ['UI E2E', source]
+  ]) {
+    assert.match(harness, /process\.env\.npm_execpath/, `${name} must prefer npm_execpath`);
+    assert.match(harness, /process\.execPath/, `${name} must execute the npm CLI through Node`);
+    assert.match(harness, /shell: false/, `${name} must keep child process shell execution disabled`);
+    assert.doesNotMatch(harness, /shell:\s*true|useShell/, `${name} must not reintroduce shell switching`);
+  }
 });

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import sys
 import types
 from importlib.util import find_spec
@@ -110,7 +111,10 @@ def test_archive_sqlite_copies_database_into_timestamped_backup_dir(
 def test_archive_sqlite_raises_when_source_database_is_missing(tmp_path: Path) -> None:
     missing_path = tmp_path / "missing.db"
 
-    with pytest.raises(FileNotFoundError, match=f"SQLite DB not found: {missing_path}"):
+    with pytest.raises(
+        FileNotFoundError,
+        match=re.escape(f"SQLite DB not found: {missing_path}"),
+    ):
         migration.archive_sqlite(str(missing_path))
 
 
