@@ -40,8 +40,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
-    "concurrently": "^10.0.4",
-    "undici": "^8.10.0"
+    "concurrently": "^10.0.5",
+    "undici": "^8.10.1"
   },
   "engines": {
     "node": ">=22.0.0",
