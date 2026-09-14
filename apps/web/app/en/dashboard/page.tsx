@@ -28,7 +28,8 @@ const priorities = [
   'Launch posture: admin and research prerequisites are handled in the operations console.'
 ];
 
-function formatNumber(value: number, digits = 2): string {
+function formatNumber(value: number | null | undefined, digits = 2): string {
+  if (!Number.isFinite(value ?? NaN)) return 'n/a';
   return Number(value).toLocaleString('en-US', {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits

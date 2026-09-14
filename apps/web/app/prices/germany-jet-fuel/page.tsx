@@ -1,8 +1,6 @@
-import { MetricCard } from '@/components/cards';
-import { PageTemplate, SignalRow } from '@/components/page-template';
-import { Panel } from '@/components/panel';
-import { PriceTrendsChart } from '@/components/price-trends-chart';
-import { SourceFooter, type SourceRef } from '@/components/source-footer';
+import { GermanyJetFuelMonitor, type GermanyJetFuelCopy } from '@/components/germany-jet-fuel-monitor';
+import { PageTemplate } from '@/components/page-template';
+import { SourceFooter } from '@/components/source-footer';
 import { getGermanyJetFuelReadModel } from '@/lib/germany-jet-fuel-read-model';
 import { getPriceTrendChartReadModel } from '@/lib/price-trend-chart-read-model';
 import type { Metadata } from 'next';
@@ -17,51 +15,6 @@ export const metadata: Metadata = buildPageMetadata({
   path: '/prices/germany-jet-fuel'
 });
 
-function formatMetricValue(value: number | null, digits: number, unit: string): string {
-  if (!Number.isFinite(value ?? NaN)) return `n/a ${unit}`;
-  return `${Number(value).toLocaleString('en-US', {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits
-  })} ${unit}`;
-}
-
-function formatChange(value: number | null): string {
-  if (!Number.isFinite(value ?? NaN)) return 'n/a';
-  const numeric = Number(value);
-  const sign = numeric > 0 ? '+' : '';
-  return `${sign}${numeric.toFixed(2)}%`;
-}
-
-function changeClass(value: number | null): string {
-  if (!Number.isFinite(value ?? NaN)) return 'text-warning';
-  const magnitude = Math.abs(Number(value));
-  if (magnitude >= 20) return 'text-danger';
-  if (magnitude >= 10) return 'text-warning';
-  return 'text-success';
-}
-
-function statusLabel(status: string): string {
-  if (status === 'live') return '实时来源';
-  if (status === 'proxy') return '代理来源';
-  if (status === 'degraded') return '回退估算';
-  return '来源状态待确认';
-}
-
-function metricDisplayLabel(label: string): string {
-  if (label === 'Brent') return 'Brent 原油';
-  if (label === 'Jet fuel') return '全球航油';
-  if (label === 'Jet fuel (EU proxy)') return 'EU 航油代理价';
-  if (label === 'Carbon proxy') return '碳价代理';
-  return label;
-}
-
-function metricNoteLabel(note: string): string {
-  return note
-    .replace('Fallback from Jet fuel', '从全球航油回退')
-    .replace('Fallback from Brent', '从 Brent 回退')
-    .replace('Fallback from Carbon proxy', '从碳价代理回退');
-}
-
 const sourceLinks = [
   { href: '/sources?focus=brent_usd_per_bbl', label: 'Brent 来源状态', key: 'brent_usd_per_bbl' },
   { href: '/sources?focus=jet_usd_per_l', label: '全球航油来源状态', key: 'jet_usd_per_l' },
@@ -73,44 +26,50 @@ const sourceLinks = [
   { href: '/sources?focus=carbon_proxy_usd_per_t', label: '碳价代理来源状态', key: 'carbon_proxy_usd_per_t' }
 ] as const;
 
-function decisionLabel(change: number | null, isFallback: boolean): string {
-  if (isFallback || !Number.isFinite(change ?? NaN)) return '先复核来源';
-  const magnitude = Math.abs(Number(change));
-  if (magnitude >= 20) return '重看合同/套保';
-  if (magnitude >= 10) return '需要复核';
-  return '暂不需要重看';
-}
-
-function decisionTone(change: number | null, isFallback: boolean): string {
-  if (isFallback || !Number.isFinite(change ?? NaN)) return 'text-danger';
-  const magnitude = Math.abs(Number(change));
-  if (magnitude >= 20) return 'text-danger';
-  if (magnitude >= 10) return 'text-warning';
-  return 'text-success';
-}
-
-function sourceBasis(sourceKey: string, isFallback: boolean): SourceRef['basis'] {
-  if (isFallback) return 'assumption';
-  // The price read model does not expose source_type. Proxy keys are explicit;
-  // every other unmapped source follows the contract's assumption default.
-  return sourceKey.includes('proxy') ? 'derived' : 'assumption';
-}
+const copy: GermanyJetFuelCopy = {
+  signalLabel: '德国航油决策信号',
+  decisionLabel: '德国航油决策压力',
+  decisions: {
+    insufficient: '历史不足',
+    revisit: '重看合同/套保',
+    review: '需要复核',
+    stable: '暂不需要重看'
+  },
+  historyMissing: '历史不足',
+  quoteDate: '行情日期',
+  lastCheck: '上次检查',
+  staleKeep: '刷新失败，保留上次有效行情',
+  costTitle: '市场联动成本估算',
+  costWhy: '在没有机场到机价和航班账单时，只估算燃油及合规成本如何随公开行情变动。',
+  estimateBanner: '这是市场联动成本估算，不是航空公司真实账单。',
+  airportLabel: '航线预设',
+  fuelKgLabel: '耗油 kg',
+  paxLabel: '旅客数',
+  blendLabel: 'SAF 掺混 %',
+  airportDiffLabel: '机场差额 EUR/t（待提供）',
+  taxUseLabel: '税务用途',
+  taxCommercial: '商业航空（默认免税）',
+  taxPrivate: '私人用途（能源税情景）',
+  perFlight: '每班燃油及合规',
+  perPax: '每旅客',
+  delivered: '到机估算',
+  noAirportQuote: '德国机场价差待提供，当前未输出机场实测价。',
+  methodLabel: '来源与价格趋势方法',
+  limitations: [
+    '航油价格是代理指标，可能与德国具体机场的合约结算价存在差异。',
+    '区域数据源不可用时，EU 航油代理价可能临时回退到全球航油序列；回退值不能当作实测。',
+    '碳价代理跟踪政策成本压力，应结合航线与掺混假设解读。',
+    '本页用于决策支持，不用于交易执行；采购决策仍需与合约供应商报价交叉核验。',
+    '未覆盖机组、维修、起降费等非燃油成本，故不显示航班总运营成本。'
+  ]
+};
 
 export default async function GermanyJetFuelPricePage() {
   const [readModel, priceChartData] = await Promise.all([
     getGermanyJetFuelReadModel(),
     getPriceTrendChartReadModel()
   ]);
-  const euJetMetric = readModel.metrics.find((metric) => metric.metricKey === 'jet_eu_proxy_usd_per_l') ?? readModel.metrics[0];
-  // Verdict + 3 keeps the signal row within the 2-4 the contract allows. The
-  // metric config is exactly four, so nothing is dropped today - a fifth one
-  // would need a home rather than silently falling off the end.
-  const signalMetrics = readModel.metrics.filter((metric) => metric.metricKey !== euJetMetric?.metricKey).slice(0, 3);
-  const observedAsOf = readModel.metrics
-    .map((metric) => metric.latestAsOf)
-    .filter((value): value is string => value !== null && !Number.isNaN(new Date(value).getTime()))
-    .sort((left, right) => new Date(left).getTime() - new Date(right).getTime())
-    .pop() ?? readModel.generatedAt;
+  const observedAsOf = readModel.quoteAsOf ?? readModel.generatedAt;
   const asOf = readModel.isFallback ? null : observedAsOf;
 
   return (
@@ -120,37 +79,7 @@ export default async function GermanyJetFuelPricePage() {
       question="德国航油当前价，是不是已经偏离到需要重新看合同或套保的程度？"
       asOf={asOf}
     >
-      <SignalRow label="德国航油决策信号">
-        <MetricCard
-          label="德国航油决策压力"
-          value={decisionLabel(euJetMetric?.changePct30d ?? null, readModel.isFallback)}
-          valueClassName={decisionTone(euJetMetric?.changePct30d ?? null, readModel.isFallback)}
-          hint={euJetMetric
-            ? `EU 航油代理 ${formatMetricValue(euJetMetric.value, euJetMetric.digits, euJetMetric.unit)} · 30d ${formatChange(euJetMetric.changePct30d)} · ${statusLabel(readModel.overallStatus)}`
-            : 'EU 航油代理当前没有可用读数。'}
-        />
-        {signalMetrics.map((metric) => (
-          <MetricCard
-            key={metric.metricKey}
-            label={metricDisplayLabel(metric.label)}
-            value={formatMetricValue(metric.value, metric.digits, metric.unit)}
-            valueClassName={readModel.isFallback ? 'text-warning' : changeClass(metric.changePct30d)}
-            hint={`1d ${formatChange(metric.changePct1d)} · 7d ${formatChange(metric.changePct7d)} · 30d ${formatChange(metric.changePct30d)}${metric.note ? ` · ${metricNoteLabel(metric.note)}` : ''}`}
-          />
-        ))}
-      </SignalRow>
-
-      <Panel
-        title="价格趋势"
-        why="当前价只是一个点；只有把它放进 1d、7d、30d 窗口，才能判断偏离是否足以触发合同或套保复核。"
-      >
-        <PriceTrendsChart
-          metrics={priceChartData.metrics}
-          isLoading={false}
-          error={priceChartData.error}
-        />
-      </Panel>
-
+      <GermanyJetFuelMonitor locale="zh" copy={copy} initialReadModel={readModel} initialChart={priceChartData} />
       <SourceFooter
         sources={[
           {
@@ -159,7 +88,7 @@ export default async function GermanyJetFuelPricePage() {
               ? `德国航油价格读模型不可用，当前为回退估算（${readModel.error ?? '未知原因'}）`
               : '德国航油价格读模型（Brent、全球航油、EU 航油代理与碳价代理）',
             asOf,
-            basis: readModel.isFallback ? 'assumption' : 'observed'
+            basis: readModel.isFallback ? 'assumption' : ('derived' as const)
           },
           ...sourceLinks.map((source) => ({
             id: source.key,
@@ -167,8 +96,8 @@ export default async function GermanyJetFuelPricePage() {
             href: source.href,
             asOf: readModel.isFallback
               ? null
-              : readModel.metrics.find((metric) => metric.metricKey === source.key)?.latestAsOf ?? null,
-            basis: sourceBasis(source.key, readModel.isFallback)
+              : readModel.metrics.find((metric) => metric.metricKey === source.key)?.observedAt ?? null,
+            basis: readModel.isFallback ? ('assumption' as const) : ('derived' as const)
           })),
           {
             id: 'price-trend-read-model',
@@ -176,17 +105,12 @@ export default async function GermanyJetFuelPricePage() {
               ? `价格趋势历史不可用（${priceChartData.error ?? '未知原因'}）`
               : '价格趋势历史读模型（1d、7d、30d 窗口）',
             asOf: priceChartData.isFallback ? null : priceChartData.generatedAt,
-            basis: priceChartData.isFallback ? 'assumption' : 'observed'
+            basis: priceChartData.isFallback ? ('assumption' as const) : ('derived' as const)
           }
         ]}
         methodHref="/sources"
         methodLabel="来源与价格趋势方法"
-        limitations={[
-          '航油价格是代理指标，可能与德国具体机场的合约结算价存在差异。',
-          '区域数据源不可用时，EU 航油代理价可能临时回退到全球航油序列；回退值不能当作实测。',
-          '碳价代理跟踪政策成本压力，应结合航线与掺混假设解读。',
-          '本页用于决策支持，不用于交易执行；采购决策仍需与合约供应商报价交叉核验。'
-        ]}
+        limitations={copy.limitations}
       />
     </PageTemplate>
   );

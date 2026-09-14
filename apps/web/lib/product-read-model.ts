@@ -2,16 +2,34 @@ import { buildApiUrl } from '@/lib/api-config';
 
 const DEFAULT_FETCH_TIMEOUT_MS = 2000;
 
+export type MarketSourceDetail = {
+  source: string;
+  status: string;
+  value?: number | null;
+  quality?: string | null;
+  quote_kind?: string | null;
+  product_id?: string | null;
+  observed_at?: string | null;
+  published_at?: string | null;
+  fetched_at?: string | null;
+  fallback_used?: boolean | null;
+  note?: string | null;
+};
+
 export type MarketSnapshot = {
   generated_at: string | null;
+  fetched_at?: string | null;
   source_status: {
     overall: string;
     confidence?: number | null;
     freshness_minutes?: number | null;
     fallback_rate?: number | null;
     is_fallback?: boolean | null;
+    quote_coverage_rate?: number | null;
+    fetched_at?: string | null;
   };
-  values: Record<string, number>;
+  values: Record<string, number | null | undefined>;
+  source_details?: Record<string, MarketSourceDetail>;
   derived?: Record<string, number | string>;
 };
 
@@ -108,12 +126,13 @@ export type AirlineDecisionResponse = {
 export type MarketHistoryMetric = {
   metric_key: string;
   unit: string;
-  latest_value?: number;
-  latest_as_of?: string;
+  latest_value?: number | null;
+  latest_as_of?: string | null;
   change_pct_1d?: number | null;
   change_pct_7d?: number | null;
   change_pct_30d?: number | null;
-  points?: Array<{ as_of: string; value: number }>;
+  quality?: string | null;
+  points?: Array<{ as_of: string; value: number; quality?: string | null; source?: string | null }>;
 };
 
 export type MarketHistory = {
@@ -173,12 +192,15 @@ export function metricLabel(metric: string, locale: DisplayLocale = 'zh'): strin
 }
 
 export function finiteNumberOrNull(value: unknown): number | null {
-  const numeric = Number(value);
+  if (value == null) return null;
+  if (typeof value === 'string' && value.trim() === '') return null;
+  if (typeof value === 'boolean') return null;
+  const numeric = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(numeric) ? numeric : null;
 }
 
 export function resolveSnapshotMetric(
-  values: Record<string, number>,
+  values: Record<string, number | null | undefined>,
   key: string,
   fallbackKey?: string
 ): {

@@ -347,6 +347,6 @@ def test_source_coverage_route_marks_seed_only_catalog_as_degraded(client: TestC
 
     assert payload["degraded"] is True
     assert payload["completeness"] == 0.0
-    assert len(payload["metrics"]) == 7
+    assert len(payload["metrics"]) == 8
     assert all(metric["fallback_used"] is True for metric in payload["metrics"])
     assert all(metric["status"] == "seed" for metric in payload["metrics"])

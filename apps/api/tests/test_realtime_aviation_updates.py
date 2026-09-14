@@ -66,16 +66,18 @@ def test_market_snapshot_includes_derived_decomposition(client: TestClient):
     assert "values" in payload
     assert "derived" in payload
     derived = payload["derived"]
-    assert "brent_usd_per_l" in derived
-    assert "jet_vs_brent_spread_usd_per_l" in derived
-    assert "jet_vs_brent_multiplier" in derived
-    # Derived must match arithmetic on returned values.
-    brent = payload["values"]["brent_usd_per_bbl"]
-    jet_key = derived["jet_source"]
-    jet = payload["values"][jet_key]
-    expected = compute_jet_brent_decomposition(brent, jet, jet_source=jet_key)
-    assert derived["jet_vs_brent_spread_usd_per_l"] == expected["jet_vs_brent_spread_usd_per_l"]
-    assert derived["jet_vs_brent_multiplier"] == expected["jet_vs_brent_multiplier"]
+    assert "jet_source" in derived
+    assert "usable_for_signal" in derived
+    if derived.get("usable_for_signal"):
+        assert "brent_usd_per_l" in derived
+        brent = payload["values"]["brent_usd_per_bbl"]
+        jet_key = derived["jet_source"]
+        jet = payload["values"][jet_key]
+        expected = compute_jet_brent_decomposition(brent, jet, jet_source=jet_key)
+        assert derived["jet_vs_brent_spread_usd_per_l"] == expected["jet_vs_brent_spread_usd_per_l"]
+        assert derived["jet_vs_brent_multiplier"] == expected["jet_vs_brent_multiplier"]
+    else:
+        assert derived.get("method") == "suppressed"
 
 
 def test_reserve_source_name_is_honest(monkeypatch: pytest.MonkeyPatch):

@@ -36,7 +36,7 @@ export async function getPriceTrendChartReadModel(): Promise<PriceTrendChartRead
       metrics[key] = {
         metric_key: key,
         unit: metric.unit,
-        latest_value: metric.latest_value ?? 0,
+        latest_value: finiteChangeOrNull(metric.latest_value) ?? 0,
         latest_as_of: metric.latest_as_of ?? null,
         change_pct_1d: finiteChangeOrNull(metric.change_pct_1d),
         change_pct_7d: finiteChangeOrNull(metric.change_pct_7d),

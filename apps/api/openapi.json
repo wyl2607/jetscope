@@ -1356,6 +1356,19 @@
             "title": "Note",
             "type": "string"
           },
+          "quote_coverage_rate": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quote Coverage Rate"
+          },
           "recent_runs": {
             "items": {
               "$ref": "#/components/schemas/MarketRefreshRunSummary"
@@ -1447,6 +1460,28 @@
             "title": "As Of",
             "type": "string"
           },
+          "quality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
           "value": {
             "title": "Value",
             "type": "number"
@@ -1523,13 +1558,27 @@
             "title": "Change Pct 7D"
           },
           "latest_as_of": {
-            "format": "date-time",
-            "title": "Latest As Of",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest As Of"
           },
           "latest_value": {
-            "title": "Latest Value",
-            "type": "number"
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Value"
           },
           "metric_key": {
             "title": "Metric Key",
@@ -1542,6 +1591,17 @@
             "title": "Points",
             "type": "array"
           },
+          "quality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality"
+          },
           "unit": {
             "title": "Unit",
             "type": "string"
@@ -1549,9 +1609,7 @@
         },
         "required": [
           "metric_key",
-          "unit",
-          "latest_value",
-          "latest_as_of"
+          "unit"
         ],
         "title": "MarketMetricHistory",
         "type": "object"
@@ -1663,11 +1721,29 @@
                 },
                 {
                   "type": "string"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
                 }
               ]
             },
             "title": "Derived",
             "type": "object"
+          },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At"
           },
           "generated_at": {
             "format": "date-time",
@@ -1686,7 +1762,14 @@
           },
           "values": {
             "additionalProperties": {
-              "type": "number"
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "title": "Values",
             "type": "object"
@@ -1735,6 +1818,18 @@
             "title": "Fallback Used",
             "type": "boolean"
           },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At"
+          },
           "lag_minutes": {
             "anyOf": [
               {
@@ -1760,6 +1855,63 @@
               }
             ],
             "title": "Note"
+          },
+          "observed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed At"
+          },
+          "product_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Id"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality"
+          },
+          "quote_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quote Kind"
           },
           "raw_eur_per_t": {
             "anyOf": [
@@ -2998,6 +3150,18 @@
             ],
             "title": "Fallback Rate"
           },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At"
+          },
           "freshness_minutes": {
             "anyOf": [
               {
@@ -3023,6 +3187,19 @@
           "overall": {
             "title": "Overall",
             "type": "string"
+          },
+          "quote_coverage_rate": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quote Coverage Rate"
           }
         },
         "required": [
@@ -3257,13 +3434,6 @@
       },
       "ValidationError": {
         "properties": {
-          "ctx": {
-            "title": "Context",
-            "type": "object"
-          },
-          "input": {
-            "title": "Input"
-          },
           "loc": {
             "items": {
               "anyOf": [
@@ -4177,6 +4347,56 @@
     "/v1/market/history": {
       "get": {
         "operationId": "get_market_history_v1_market_history_get",
+        "parameters": [
+          {
+            "description": "Inclusive lookback window in days",
+            "in": "query",
+            "name": "window_days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "description": "Inclusive lookback window in days",
+              "maximum": 365,
+              "minimum": 1,
+              "title": "Window Days",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Start"
+            }
+          },
+          {
+            "in": "query",
+            "name": "end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -4187,6 +4407,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Get Market History",

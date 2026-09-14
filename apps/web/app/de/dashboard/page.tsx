@@ -23,7 +23,8 @@ export const metadata: Metadata = buildPageMetadata({
   path: '/de/dashboard'
 });
 
-function formatNumber(value: number, digits = 2) {
+function formatNumber(value: number | null | undefined, digits = 2) {
+  if (!Number.isFinite(value ?? NaN)) return 'n/a';
   return Number(value).toLocaleString('de-DE', {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits

@@ -35,7 +35,8 @@ export const metadata: Metadata = buildPageMetadata({
   path: '/dashboard'
 });
 
-function formatNumber(value: number, digits = 2) {
+function formatNumber(value: number | null | undefined, digits = 2) {
+  if (!Number.isFinite(value ?? NaN)) return 'n/a';
   return Number(value).toLocaleString('en-US', {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits
@@ -150,7 +151,9 @@ export default async function DashboardPage() {
   try {
     pathwayComparison = await loadPathwayComparison({
       fossilJetUsdPerL: analysis?.fossilJetUsdPerL ?? market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l ?? 0.9,
-      carbonPriceEurPerT: Number(((market.carbon_proxy_usd_per_t ?? 0) / 1.08).toFixed(2)),
+      carbonPriceEurPerT: Number(
+        ((market.carbon_proxy_usd_per_t ?? 0) / (market.usd_per_eur && market.usd_per_eur > 0 ? market.usd_per_eur : 1.1435)).toFixed(2)
+      ),
       subsidyUsdPerL: 0,
       blendRatePct: 6
     });

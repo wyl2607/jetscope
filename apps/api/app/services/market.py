@@ -20,6 +20,14 @@ from app.schemas.market import (
 )
 from app.services.analysis.jet_decomposition import compute_jet_brent_decomposition
 from app.services.bootstrap import utcnow
+from app.services.market_quality import (
+    isoformat_z,
+    parse_iso_datetime,
+    quality_from_detail,
+    same_quality_class,
+    select_fossil_jet_benchmark,
+    should_persist_snapshot,
+)
 
 MARKET_SOURCE_URLS = {
     "brent_fred": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DCOILBRENTEU",
@@ -98,7 +106,24 @@ DEFAULT_MARKET_METRICS = (
         "value": 2.5,
         "unit": "%",
     },
+    {
+        "source_key": "ecb_eur_usd",
+        "metric_key": "usd_per_eur",
+        "value": DEFAULT_EUR_USD,
+        "unit": "USD/EUR",
+    },
 )
+
+SOURCE_DETAIL_TO_METRIC_KEY = {
+    "brent": "brent_usd_per_bbl",
+    "jet": "jet_usd_per_l",
+    "carbon": "carbon_proxy_usd_per_t",
+    "jet_eu_proxy": "jet_eu_proxy_usd_per_l",
+    "rotterdam_jet_fuel": "rotterdam_jet_fuel_usd_per_l",
+    "eu_ets": "eu_ets_price_eur_per_t",
+    "germany_premium": "germany_premium_pct",
+    "ecb": "usd_per_eur",
+}
 
 MARKET_REFRESH_LOCK_KEY = 24041801
 DEFAULT_MARKET_SOURCE_TIMEOUT_SECONDS = 12.0
@@ -128,10 +153,10 @@ SOURCE_CONTEXT: dict[str, dict[str, object]] = {
     },
     "ara-rotterdam-public": {
         "region": "eu",
-        "market_scope": "physical_spot_ara_rotterdam_proxy",
+        "market_scope": "ice_jet_cif_nwe_futures",
         "lag_minutes": 1440,
         "confidence_score": 0.76,
-        "note": "Public ARA/Rotterdam-aligned quote (CIF NWE), converted from USD/metric ton to USD/L.",
+        "note": "Public ICE Jet CIF NWE futures HTML, converted from USD/metric ton to USD/L with 0.8 kg/L reference density.",
     },
     "brent-derived": {
         "region": "eu",
@@ -142,10 +167,10 @@ SOURCE_CONTEXT: dict[str, dict[str, object]] = {
     },
     "rotterdam-jet-direct": {
         "region": "eu",
-        "market_scope": "physical_spot_rotterdam",
+        "market_scope": "ice_jet_cif_nwe_futures",
         "lag_minutes": 240,
         "confidence_score": 0.82,
-        "note": "Direct Rotterdam/ARA Jet Fuel CIF NWE futures quote.",
+        "note": "ICE Jet CIF NWE cargoes future (public HTML). Futures, not a German airport into-plane spot.",
     },
     "eex-eu-ets": {
         "region": "eu",
@@ -158,8 +183,29 @@ SOURCE_CONTEXT: dict[str, dict[str, object]] = {
         "region": "de",
         "market_scope": "regional_tax_premium",
         "lag_minutes": 1440,
-        "confidence_score": 0.75,
-        "note": "German aviation fuel tax premium; static configuration per regulatory tax band.",
+        "confidence_score": 0.0,
+        "note": "Deprecated tax-ratio model; not a German airport quote.",
+    },
+    "airport-differential-pending": {
+        "region": "de",
+        "market_scope": "airport_differential_missing",
+        "lag_minutes": None,
+        "confidence_score": 0.0,
+        "note": "No sourced German airport into-plane differential. Commercial aviation fuel is generally energy-tax exempt under EnergiestG §27(2).",
+    },
+    "ecb": {
+        "region": "eu",
+        "market_scope": "fx_reference",
+        "lag_minutes": 1440,
+        "confidence_score": 0.9,
+        "note": "ECB euro reference rate, daily, not a tradable quote.",
+    },
+    "eua+ecb": {
+        "region": "eu",
+        "market_scope": "carbon_ets_fx_converted",
+        "lag_minutes": 1440,
+        "confidence_score": 0.7,
+        "note": "EUA (EUR/t) converted with ECB USD/EUR. Not a CBAM certificate price.",
     },
     "seed-baseline": {
         "region": "eu",
@@ -329,6 +375,28 @@ def _fetch_yahoo_chart_history(symbol: str, *, days: int) -> list[tuple[datetime
 
 
 def _parse_eia_brent(html: str) -> float | None:
+    quote = _parse_eia_brent_quote(html)
+    return None if quote is None else quote[0]
+
+
+def _parse_eia_header_dates(html: str) -> list[datetime]:
+    import re
+
+    dates: list[datetime] = []
+    for match in re.finditer(r'<td class="d1">\s*([0-9]{1,2}/[0-9]{1,2}/[0-9]{2,4})\s*<', html):
+        raw = match.group(1)
+        for fmt in ("%m/%d/%Y", "%m/%d/%y"):
+            try:
+                dates.append(datetime.strptime(raw, fmt).replace(tzinfo=timezone.utc))
+                break
+            except ValueError:
+                continue
+        if dates:
+            break
+    return dates
+
+
+def _parse_eia_brent_quote(html: str) -> tuple[float, datetime | None] | None:
     normalized = " ".join(html.split())
     marker = '<td class="s2">Brent</td>'
     marker_index = normalized.find(marker)
@@ -344,9 +412,11 @@ def _parse_eia_brent(html: str) -> float | None:
     if end < 0:
         return None
     try:
-        return float(tail[start:end])
+        value = float(tail[start:end])
     except ValueError:
         return None
+    header_dates = _parse_eia_header_dates(html)
+    return value, header_dates[0] if header_dates else None
 
 
 def _parse_cbam_eur_per_tonne(html: str) -> float:
@@ -364,12 +434,22 @@ def _parse_cbam_eur_per_tonne(html: str) -> float:
 
 
 def _parse_ecb_usd_per_eur(xml: str) -> float:
+    rate, _observed = _parse_ecb_quote(xml)
+    return rate
+
+
+def _parse_ecb_quote(xml: str) -> tuple[float, datetime | None]:
     import re
 
     match = re.search(r'<Cube\s+currency=["\']USD["\']\s+rate=["\']([^"\']+)["\']', xml, re.IGNORECASE)
     if not match:
         raise ValueError("ECB USD reference rate not found")
-    return float(match.group(1))
+    rate = float(match.group(1))
+    time_match = re.search(r'<Cube\s+time=["\'](\d{4}-\d{2}-\d{2})["\']', xml, re.IGNORECASE)
+    observed = (
+        datetime.fromisoformat(time_match.group(1)).replace(tzinfo=timezone.utc) if time_match else None
+    )
+    return rate, observed
 
 
 def _parse_decimal_number(raw: str) -> float:
@@ -429,6 +509,20 @@ def _set_source_detail(
         # distinguish live public quotes from derived or deterministic proxies.
         "fallback_used": status in {"fallback", "seed"},
         "note": context["note"],
+        "fetched_at": isoformat_z(utcnow()),
+        "quality": (
+            "seed"
+            if status in {"seed"} or source == "seed-baseline"
+            else "derived"
+            if status == "fallback" and ("derived" in source or source in {"brent-derived", "cbam+ecb", "eua+ecb"})
+            else "missing"
+            if status in {"missing", "error"}
+            else "observed"
+            if status == "ok"
+            else "seed"
+            if status == "fallback"
+            else "missing"
+        ),
     }
     if value is not None:
         source_detail["value"] = value
@@ -453,18 +547,45 @@ def _ingest_brent_market_value(details: dict[str, object]) -> float | None:
     brent_value = None
     try:
         eia_html = _fetch_text(MARKET_SOURCE_URLS["brent_eia"])
-        parsed_eia = _parse_eia_brent(eia_html)
+        parsed_eia = _parse_eia_brent_quote(eia_html)
         if parsed_eia is None:
             raise ValueError("Brent value not found on EIA page")
-        brent_value = _round(parsed_eia, 2)
-        _set_source_detail(details, "brent", source="eia", status="ok", value=brent_value)
+        raw_value, observed_at = parsed_eia
+        brent_value = _round(raw_value, 2)
+        _set_source_detail(
+            details,
+            "brent",
+            source="eia",
+            status="ok",
+            value=brent_value,
+            extra={
+                "quality": "observed",
+                "quote_kind": "spot",
+                "product_id": "EIA Europe Brent Spot",
+                "observed_at": isoformat_z(observed_at) if observed_at else None,
+                "published_at": isoformat_z(observed_at) if observed_at else None,
+            },
+        )
     except Exception as error:
         _set_source_detail(details, "brent", source="eia", status="error", error=str(error))
         try:
             brent_csv = _fetch_text(MARKET_SOURCE_URLS["brent_fred"])
-            _, brent_fred = _parse_fred_csv(brent_csv)
+            as_of_str, brent_fred = _parse_fred_csv(brent_csv)
             brent_value = _round(brent_fred, 2)
-            _set_source_detail(details, "brent", source="fred", status="ok", value=brent_value)
+            observed_at = datetime.fromisoformat(as_of_str).replace(tzinfo=timezone.utc)
+            _set_source_detail(
+                details,
+                "brent",
+                source="fred",
+                status="ok",
+                value=brent_value,
+                extra={
+                    "quality": "observed",
+                    "quote_kind": "spot",
+                    "product_id": "FRED DCOILBRENTEU",
+                    "observed_at": isoformat_z(observed_at),
+                },
+            )
         except Exception as fallback_error:
             _set_source_detail(
                 details,
@@ -480,33 +601,104 @@ def _ingest_jet_market_value(details: dict[str, object]) -> float | None:
     jet_value = None
     try:
         jet_csv = _fetch_text(MARKET_SOURCE_URLS["jet_fred"])
-        _, jet_usd_per_gal = _parse_fred_csv(jet_csv)
+        as_of_str, jet_usd_per_gal = _parse_fred_csv(jet_csv)
         jet_value = _round(_to_usd_per_l_from_usd_per_gal(jet_usd_per_gal), 3)
-        _set_source_detail(details, "jet", source="fred", status="ok", value=jet_value)
+        observed_at = datetime.fromisoformat(as_of_str).replace(tzinfo=timezone.utc)
+        _set_source_detail(
+            details,
+            "jet",
+            source="fred",
+            status="ok",
+            value=jet_value,
+            extra={
+                "quality": "observed",
+                "quote_kind": "spot",
+                "product_id": "FRED DJFUELUSGULF",
+                "observed_at": isoformat_z(observed_at),
+            },
+        )
     except Exception as error:
         _set_source_detail(details, "jet", source="fred", status="error", error=str(error))
     return jet_value
 
 
-def _ingest_carbon_market_value(details: dict[str, object]) -> float | None:
-    carbon_value = None
+def _ingest_ecb_usd_per_eur(details: dict[str, object]) -> float | None:
+    try:
+        ecb_xml = _fetch_text(MARKET_SOURCE_URLS["ecb_eur_usd"])
+        usd_per_eur, observed_at = _parse_ecb_quote(ecb_xml)
+        rate = _round(usd_per_eur, 4)
+        _set_source_detail(
+            details,
+            "ecb",
+            source="ecb",
+            status="ok",
+            value=rate,
+            extra={
+                "quality": "observed",
+                "quote_kind": "reference",
+                "product_id": "ECB EUR/USD reference",
+                "observed_at": isoformat_z(observed_at) if observed_at else None,
+                "usd_per_eur": rate,
+            },
+        )
+        return rate
+    except Exception as error:
+        _set_source_detail(details, "ecb", source="ecb", status="error", error=str(error))
+        return None
+
+
+def _ingest_carbon_market_value(
+    details: dict[str, object],
+    *,
+    eu_ets_eur: float | None = None,
+    usd_per_eur: float | None = None,
+) -> float | None:
+    if eu_ets_eur is not None and usd_per_eur is not None:
+        carbon_value = _round(eu_ets_eur * usd_per_eur, 2)
+        _set_source_detail(
+            details,
+            "carbon",
+            source="eua+ecb",
+            status="ok",
+            value=carbon_value,
+            extra={
+                "quality": "derived",
+                "quote_kind": "proxy",
+                "product_id": "EUA converted with ECB FX",
+                "raw_eur_per_t": eu_ets_eur,
+                "usd_per_eur": usd_per_eur,
+                "note": "Aviation-relevant EUA converted to USD. Not a CBAM certificate price.",
+            },
+        )
+        return carbon_value
     try:
         cbam_html = _fetch_text(MARKET_SOURCE_URLS["cbam_price"])
         cbam_eur = _parse_cbam_eur_per_tonne(cbam_html)
-        ecb_xml = _fetch_text(MARKET_SOURCE_URLS["ecb_eur_usd"])
-        usd_per_eur = _parse_ecb_usd_per_eur(ecb_xml)
-        carbon_value = _round(cbam_eur * usd_per_eur, 2)
+        rate = usd_per_eur
+        if rate is None:
+            ecb_xml = _fetch_text(MARKET_SOURCE_URLS["ecb_eur_usd"])
+            rate, _observed = _parse_ecb_quote(ecb_xml)
+        carbon_value = _round(cbam_eur * rate, 2)
         _set_source_detail(
             details,
             "carbon",
             source="cbam+ecb",
-            status="ok",
+            status="fallback",
             value=carbon_value,
-            extra={"cbam_eur": _round(cbam_eur, 2), "usd_per_eur": _round(usd_per_eur, 4)},
+            extra={
+                "quality": "derived",
+                "quote_kind": "proxy",
+                "product_id": "CBAM certificate proxy",
+                "cbam_eur": _round(cbam_eur, 2),
+                "usd_per_eur": _round(rate, 4),
+                "note": "CBAM certificate proxy, not an aviation EUA settlement.",
+                "fallback_used": True,
+            },
         )
+        return carbon_value
     except Exception as error:
         _set_source_detail(details, "carbon", source="cbam+ecb", status="error", error=str(error))
-    return carbon_value
+        return None
 
 
 def _ingest_jet_eu_market_value(
@@ -526,7 +718,11 @@ def _ingest_jet_eu_market_value(
             status="ok",
             value=jet_eu_value,
             extra={
-                "note": f"ARA/Rotterdam quote {_round(ara_usd_per_metric_ton, 2)} USD/metric ton converted with 0.8 kg/L reference density.",
+                "quality": "observed",
+                "quote_kind": "futures",
+                "product_id": "ICE Jet CIF NWE Cargoes Future",
+                "raw_usd_per_metric_ton": ara_usd_per_metric_ton,
+                "note": f"ICE Jet CIF NWE futures {_round(ara_usd_per_metric_ton, 2)} USD/metric ton converted with 0.8 kg/L reference density. Not a German airport into-plane spot.",
             },
         )
         return jet_eu_value
@@ -541,6 +737,9 @@ def _ingest_jet_eu_market_value(
                 status="fallback",
                 value=derived_value,
                 extra={
+                    "quality": "derived",
+                    "quote_kind": "proxy",
+                    "product_id": "Brent-derived EU jet proxy",
                     "note": "ARA/Rotterdam public quote unavailable; fell back to Brent-derived EU proxy.",
                     "primary_error": primary_error_text,
                     "fallback_used": True,
@@ -556,6 +755,9 @@ def _ingest_jet_eu_market_value(
             status="fallback",
             value=seed_value,
             extra={
+                "quality": "seed",
+                "quote_kind": "assumption",
+                "product_id": "seed EU jet proxy",
                 "note": "ARA/Rotterdam and Brent unavailable; fell back to seeded EU proxy baseline.",
                 "primary_error": primary_error_text,
                 "confidence_score": DETERMINISTIC_FALLBACK_CONFIDENCE,
@@ -569,8 +771,8 @@ def _ingest_rotterdam_jet_fuel_value(
     details: dict[str, object],
     *,
     seed_by_key: dict[str, float],
-) -> float:
-    """Direct Rotterdam/ARA Jet Fuel CIF NWE price, independent from general EU proxy."""
+) -> float | None:
+    """ICE Jet CIF NWE futures quote. Failure must not mint a fresh seed observation."""
     try:
         ara_html = _fetch_text(MARKET_SOURCE_URLS["jet_ara_rotterdam"])
         ara_usd_per_metric_ton = _parse_ara_rotterdam_jet_usd_per_metric_ton(ara_html)
@@ -582,55 +784,49 @@ def _ingest_rotterdam_jet_fuel_value(
             status="ok",
             value=rotterdam_value,
             extra={
+                "quality": "observed",
+                "quote_kind": "futures",
+                "product_id": "ICE Jet CIF NWE Cargoes Future",
                 "raw_usd_per_metric_ton": ara_usd_per_metric_ton,
-                "note": f"ARA/Rotterdam Jet Fuel CIF NWE: {_round(ara_usd_per_metric_ton, 2)} USD/metric ton.",
+                "note": f"ICE Jet CIF NWE futures {_round(ara_usd_per_metric_ton, 2)} USD/metric ton. Not a German airport into-plane spot.",
             },
         )
         return rotterdam_value
     except Exception as error:
-        seed_value = float(seed_by_key["rotterdam_jet_fuel_usd_per_l"])
         _set_source_detail(
             details,
             "rotterdam_jet_fuel",
             source="rotterdam-jet-direct",
-            status="fallback",
-            value=seed_value,
+            status="error",
             error=str(error),
+            extra={
+                "quality": "missing",
+                "quote_kind": "futures",
+                "product_id": "ICE Jet CIF NWE Cargoes Future",
+                "note": "Public ICE Jet CIF NWE HTML unavailable. Last good observation is retained; seed is not a new quote.",
+            },
         )
-        return seed_value
+        return None
 
 
 def _parse_eu_ets_price_eur(html: str) -> float:
-    """Parse EEX EU ETS spot price from HTML payload (EUR/tCO2)."""
+    """Parse EEX EU ETS spot only when the payload identifies EUA / EU ETS."""
     import re
-    
+
+    if not re.search(r"\b(?:EUA|EU ETS|European Emission)\b", html, re.IGNORECASE):
+        raise ValueError("EEX payload missing EU ETS product identity")
     normalized = " ".join(html.replace("&nbsp;", " ").replace("&#160;", " ").split())
     patterns = (
-        # JSON-LD / meta tag patterns
-        r'(?:price|spot|close)["\']?\s*:\s*["\']?([0-9]{1,4}(?:[.,][0-9]+)?)',
-        r'(?:value|last)["\']?\s*:\s*["\']?([0-9]{1,4}(?:[.,][0-9]+)?)',
-        # Inline text patterns
+        r'(?:EUA|EU ETS)[^0-9]{0,80}([0-9]{2,3}(?:[.,][0-9]+)?)\s*(?:EUR|€)',
         r'(\d+(?:[.,]\d+)?)\s*EUR(?:\s*/)?(?:t|tonne|tCO2)',
-        r'(\d+(?:[.,]\d+)?)\s*€(?:\s*/)?(?:t|tonne)',
-        # DOM data-test patterns
-        r'data-test="[^"]*price[^"]*"[^>]*>\s*([0-9][0-9.,]*)\s*<',
-        r'data-test="[^"]*last[^"]*"[^>]*>\s*([0-9][0-9.,]*)\s*<',
-        # Table cell patterns
-        r'<td[^>]*>\s*([0-9]{2,4}(?:[.,][0-9]+)?)\s*</td>\s*<td[^>]*>\s*EUR',
-        r'<td[^>]*>\s*EUR\s*</td>\s*<td[^>]*>\s*([0-9]{2,4}(?:[.,][0-9]+)?)\s*</td>',
-        # Script/json embedded
-        r'"price"\s*:\s*"?([0-9]{2,4}(?:[.,][0-9]+))"?',
-        r'"lastPrice"\s*:\s*"?([0-9]{2,4}(?:[.,][0-9]+))"?',
+        r'data-test="[^"]*(?:eua|ets)[^"]*price[^"]*"[^>]*>\s*([0-9][0-9.,]*)\s*<',
     )
-    
     for pattern in patterns:
         match = re.search(pattern, normalized, re.IGNORECASE)
         if match:
             parsed = _parse_decimal_number(match.group(1))
-            # Sanity check: EU ETS historically trades €30-€200/tCO2
             if 10 <= parsed <= 500:
                 return parsed
-    
     raise ValueError("EU ETS price not found in EEX payload")
 
 
@@ -639,18 +835,23 @@ def _ingest_eu_ets_price(
     *,
     ecb_usd_per_eur: float | None = None,
     seed_by_key: dict[str, float],
-) -> float:
-    """EU ETS spot price from EEX; return EUR/tCO2."""
+) -> float | None:
+    """EU ETS spot price from EEX; return EUR/tCO2. Failure does not mint a seed quote."""
     try:
         ets_html = _fetch_text(MARKET_SOURCE_URLS["eu_ets_eex"])
         eu_ets_eur = _parse_eu_ets_price_eur(ets_html)
         ets_value = _round(eu_ets_eur, 2)
-        
-        extra_dict: dict[str, object] = {"raw_eur_per_t": ets_value}
+
+        extra_dict: dict[str, object] = {
+            "raw_eur_per_t": ets_value,
+            "quality": "observed",
+            "quote_kind": "spot",
+            "product_id": "EEX EUA",
+        }
         if ecb_usd_per_eur is not None:
-            usd_value = _round(ets_value * ecb_usd_per_eur, 2)
-            extra_dict["usd_per_t"] = usd_value
-        
+            extra_dict["usd_per_t"] = _round(ets_value * ecb_usd_per_eur, 2)
+            extra_dict["usd_per_eur"] = ecb_usd_per_eur
+
         _set_source_detail(
             details,
             "eu_ets",
@@ -661,16 +862,20 @@ def _ingest_eu_ets_price(
         )
         return ets_value
     except Exception as error:
-        seed_value = float(seed_by_key["eu_ets_price_eur_per_t"])
         _set_source_detail(
             details,
             "eu_ets",
             source="eex-eu-ets",
-            status="fallback",
-            value=seed_value,
+            status="error",
             error=str(error),
+            extra={
+                "quality": "missing",
+                "quote_kind": "spot",
+                "product_id": "EEX EUA",
+                "note": "EEX EUA parse failed or product identity missing. Last good observation is retained.",
+            },
         )
-        return seed_value
+        return None
 
 
 def _ingest_germany_premium(
@@ -678,67 +883,31 @@ def _ingest_germany_premium(
     *,
     seed_by_key: dict[str, float],
     jet_eu_proxy_usd_per_l: float | None = None,
-) -> float:
-    """German aviation fuel tax premium as percentage.
-    
-    Dynamically calculated from German energy tax rates:
-    - German aviation energy tax: €0.6545/L (2024 rate, adjusted annually)
-    - Plus VAT (19%) on the tax itself for non-commercial
-    - Effective premium depends on ARA jet price + EU ETS
+) -> float | None:
+    """German airport differential is not a public quote.
+
+    EnergiestG §27(2) generally exempts commercial non-private aviation fuel
+    from energy tax. A clamped tax/price ratio is not a market premium.
     """
-    try:
-        # Base German aviation fuel tax (Energiesteuer) per liter
-        DE_AVG_TAX_EUR_PER_L = 0.6545
-        VAT_RATE = 0.19
-        
-        # Use ECB rate if available to convert to USD context
-        usd_per_eur = DEFAULT_EUR_USD
-        try:
-            ecb_xml = _fetch_text(MARKET_SOURCE_URLS["ecb_eur_usd"])
-            usd_per_eur = _parse_ecb_usd_per_eur(ecb_xml)
-        except Exception:
-            pass
-        
-        tax_usd_per_l = DE_AVG_TAX_EUR_PER_L * usd_per_eur
-        
-        # Premium = (tax / jet_price) * 100
-        # If jet price unavailable, use default proxy
-        base_jet_price = (
-            jet_eu_proxy_usd_per_l if jet_eu_proxy_usd_per_l else DEFAULT_JET_EU_PROXY_USD_PER_L
-        )
-        if base_jet_price < 0.1:
-            base_jet_price = DEFAULT_JET_EU_PROXY_USD_PER_L
-            
-        germany_premium_pct = _round((tax_usd_per_l / base_jet_price) * 100, 2)
-        
-        # Clamp to reasonable range (1% - 8% historically)
-        germany_premium_pct = max(1.0, min(8.0, germany_premium_pct))
-        
-        _set_source_detail(
-            details,
-            "germany_premium",
-            source="germany-premium-db",
-            status="ok",
-            value=germany_premium_pct,
-            extra={
-                "note": f"German aviation energy tax €{DE_AVG_TAX_EUR_PER_L}/L + VAT {VAT_RATE*100}% vs ARA jet ${base_jet_price:.3f}/L. EUR/USD={usd_per_eur:.4f}",
-                "tax_usd_per_l": tax_usd_per_l,
-                "base_jet_price": base_jet_price,
-                "usd_per_eur": usd_per_eur,
-            },
-        )
-        return germany_premium_pct
-    except Exception as error:
-        seed_value = float(seed_by_key["germany_premium_pct"])
-        _set_source_detail(
-            details,
-            "germany_premium",
-            source="germany-premium-db",
-            status="fallback",
-            value=seed_value,
-            error=str(error),
-        )
-        return seed_value
+    _set_source_detail(
+        details,
+        "germany_premium",
+        source="airport-differential-pending",
+        status="missing",
+        extra={
+            "quality": "missing",
+            "quote_kind": "assumption",
+            "product_id": "DE airport into-plane differential",
+            "confidence_score": 0.0,
+            "fallback_used": False,
+            "note": (
+                "German airport into-plane differential pending a sourced quote. "
+                "Commercial non-private aviation fuel is generally energy-tax exempt "
+                "under EnergiestG §27(2). Do not treat a clamped 8% tax ratio as a market premium."
+            ),
+        },
+    )
+    return None
 
 
 def _market_overall_status(details: dict[str, object]) -> str:
@@ -750,56 +919,46 @@ def _market_overall_status(details: dict[str, object]) -> str:
     return "error"
 
 
-def _ingest_live_market_values() -> tuple[dict[str, float], str, dict[str, object]]:
+def _ingest_live_market_values() -> tuple[dict[str, float | None], str, dict[str, object]]:
     details: dict[str, object] = {"sources": {}}
+    seed_by_key = {item["metric_key"]: item["value"] for item in DEFAULT_MARKET_METRICS}
+    ecb_usd_per_eur = _ingest_ecb_usd_per_eur(details)
     brent_value = _ingest_brent_market_value(details)
     jet_value = _ingest_jet_market_value(details)
-    carbon_value = _ingest_carbon_market_value(details)
-
-    seed_by_key = {item["metric_key"]: item["value"] for item in DEFAULT_MARKET_METRICS}
     jet_eu_proxy_value = _ingest_jet_eu_market_value(
         details,
         brent_value=brent_value,
         seed_by_key=seed_by_key,
     )
-    
-    # Lane 2: New data sources
     rotterdam_value = _ingest_rotterdam_jet_fuel_value(
         details,
         seed_by_key=seed_by_key,
     )
-    
-    # Fetch ECB exchange rate if carbon was successful for EU ETS USD conversion
-    ecb_usd_per_eur = None
-    if carbon_value is not None:
-        try:
-            ecb_xml = _fetch_text(MARKET_SOURCE_URLS["ecb_eur_usd"])
-            ecb_usd_per_eur = _parse_ecb_usd_per_eur(ecb_xml)
-        except Exception:
-            pass
-    
     eu_ets_value = _ingest_eu_ets_price(
         details,
         ecb_usd_per_eur=ecb_usd_per_eur,
         seed_by_key=seed_by_key,
     )
-    
+    carbon_value = _ingest_carbon_market_value(
+        details,
+        eu_ets_eur=eu_ets_value,
+        usd_per_eur=ecb_usd_per_eur,
+    )
     germany_premium = _ingest_germany_premium(
         details,
         seed_by_key=seed_by_key,
         jet_eu_proxy_usd_per_l=jet_eu_proxy_value,
     )
 
-    values = {
-        "brent_usd_per_bbl": brent_value if brent_value is not None else float(seed_by_key["brent_usd_per_bbl"]),
-        "jet_usd_per_l": jet_value if jet_value is not None else float(seed_by_key["jet_usd_per_l"]),
-        "carbon_proxy_usd_per_t": carbon_value
-        if carbon_value is not None
-        else float(seed_by_key["carbon_proxy_usd_per_t"]),
+    values: dict[str, float | None] = {
+        "brent_usd_per_bbl": brent_value,
+        "jet_usd_per_l": jet_value,
+        "carbon_proxy_usd_per_t": carbon_value,
         "jet_eu_proxy_usd_per_l": jet_eu_proxy_value,
         "rotterdam_jet_fuel_usd_per_l": rotterdam_value,
         "eu_ets_price_eur_per_t": eu_ets_value,
         "germany_premium_pct": germany_premium,
+        "usd_per_eur": ecb_usd_per_eur,
     }
 
     if brent_value is None and "brent" in details["sources"]:
@@ -819,17 +978,36 @@ def _ingest_live_market_values() -> tuple[dict[str, float], str, dict[str, objec
     return values, overall, details
 
 
+def _metric_meta_from_sources(sources: dict[str, object] | None) -> dict[str, dict[str, object]]:
+    meta: dict[str, dict[str, object]] = {}
+    for source_key, raw in (sources or {}).items():
+        if not isinstance(raw, dict):
+            continue
+        metric_key = SOURCE_DETAIL_TO_METRIC_KEY.get(source_key)
+        if not metric_key:
+            continue
+        meta[metric_key] = {
+            "quality": raw.get("quality") or quality_from_detail(raw),
+            "observed_at": raw.get("observed_at"),
+            "published_at": raw.get("published_at"),
+            "quote_kind": raw.get("quote_kind"),
+            "product_id": raw.get("product_id"),
+        }
+    return meta
+
+
 def _persist_market_snapshot_set(
     db: Session,
-    values: dict[str, float],
+    values: dict[str, float | None],
     *,
     as_of: datetime | None = None,
     source_status: str,
     sources: dict[str, object] | None = None,
     ingest: str,
     payload: dict[str, object] | None = None,
+    metric_meta: dict[str, dict[str, object]] | None = None,
 ) -> datetime:
-    snapshot_time = as_of or utcnow()
+    snapshot_time = _ensure_utc_datetime(as_of or utcnow())
     payload_blob = payload or {}
     metric_defaults = {item["metric_key"]: item for item in DEFAULT_MARKET_METRICS}
     run = MarketRefreshRun(
@@ -841,16 +1019,48 @@ def _persist_market_snapshot_set(
     db.add(run)
     db.flush()
 
+    merged_meta = _metric_meta_from_sources(sources)
+    if metric_meta:
+        for key, extra in metric_meta.items():
+            merged_meta[key] = {**merged_meta.get(key, {}), **extra}
+
     for metric_key, value in values.items():
-        defaults = metric_defaults[metric_key]
+        defaults = metric_defaults.get(metric_key)
+        if defaults is None or value is None:
+            continue
+        meta = merged_meta.get(metric_key, {})
+        quality = str(meta.get("quality") or ("seed" if ingest == "seed" else "observed"))
+        has_prior = (
+            db.scalar(
+                select(MarketSnapshot.id).where(MarketSnapshot.metric_key == metric_key).limit(1)
+            )
+            is not None
+        )
+        if not should_persist_snapshot(quality=quality, value=float(value), has_prior=has_prior):
+            continue
+        observed_at = parse_iso_datetime(meta.get("observed_at"))
+        if observed_at is None:
+            if quality == "seed":
+                observed_at = datetime.fromisoformat(DEFAULT_MARKET_SEED_AS_OF).replace(tzinfo=timezone.utc)
+            else:
+                observed_at = snapshot_time
         db.add(
             MarketSnapshot(
                 source_key=defaults["source_key"],
                 metric_key=metric_key,
                 value=float(value),
                 unit=defaults["unit"],
-                as_of=snapshot_time,
-                payload={**payload_blob, "refresh_run_id": run.id},
+                as_of=observed_at,
+                payload={
+                    **payload_blob,
+                    "refresh_run_id": run.id,
+                    "quality": quality,
+                    "fetched_at": isoformat_z(snapshot_time),
+                    "observed_at": isoformat_z(observed_at),
+                    "published_at": meta.get("published_at"),
+                    "quote_kind": meta.get("quote_kind"),
+                    "product_id": meta.get("product_id"),
+                },
             )
         )
 
@@ -876,7 +1086,7 @@ def _latest_market_snapshots_by_metric(db: Session) -> dict[str, MarketSnapshot]
 
 def _latest_market_values_by_metric(db: Session) -> dict[str, float]:
     latest_by_metric = _latest_market_snapshots_by_metric(db)
-    if len(latest_by_metric) < len(DEFAULT_MARKET_METRICS):
+    if any(key not in latest_by_metric for key in _required_snapshot_metric_keys()):
         seed_market_snapshot_set(db)
         return _latest_market_values_by_metric(db)
     return {metric_key: float(row.value) for metric_key, row in latest_by_metric.items()}
@@ -1064,12 +1274,23 @@ def backfill_market_history_from_public_sources(db: Session, *, days: int = 30) 
 
 def seed_market_snapshot_set(db: Session, as_of: datetime | None = None) -> datetime:
     seed_values = {metric["metric_key"]: float(metric["value"]) for metric in DEFAULT_MARKET_METRICS}
+    seed_sources = {
+        detail_key: {
+            "source": "seed-baseline",
+            "status": "seed",
+            "quality": "seed",
+            "fallback_used": True,
+            "value": seed_values[metric_key],
+        }
+        for detail_key, metric_key in SOURCE_DETAIL_TO_METRIC_KEY.items()
+        if metric_key in seed_values
+    }
     return _persist_market_snapshot_set(
         db,
         seed_values,
-        as_of=as_of,
+        as_of=as_of or datetime.fromisoformat(DEFAULT_MARKET_SEED_AS_OF).replace(tzinfo=timezone.utc),
         source_status="seed",
-        sources={},
+        sources=seed_sources,
         ingest="seed",
         payload={"seed": "b5-vertical-slice"},
     )
@@ -1116,20 +1337,29 @@ def refresh_market_snapshot_set(db: Session) -> tuple[datetime, str]:
                 pass
 
 
+def _required_snapshot_metric_keys() -> list[str]:
+    return [
+        str(metric["metric_key"])
+        for metric in DEFAULT_MARKET_METRICS
+        if metric["metric_key"] != "germany_premium_pct"
+    ]
+
+
 def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
     latest_by_metric = _latest_market_snapshots_by_metric(db)
 
-    if len(latest_by_metric) < len(DEFAULT_MARKET_METRICS):
+    if any(key not in latest_by_metric for key in _required_snapshot_metric_keys()):
         seeded_at = seed_market_snapshot_set(db)
         latest_by_metric = _latest_market_snapshots_by_metric(db)
         generated_at = seeded_at
     else:
         generated_at = max(row.as_of for row in latest_by_metric.values())
 
-    values: dict[str, float] = {}
+    values: dict[str, float | None] = {}
     for metric in DEFAULT_MARKET_METRICS:
         key = metric["metric_key"]
-        values[key] = float(latest_by_metric[key].value)
+        row = latest_by_metric.get(key)
+        values[key] = float(row.value) if row is not None else None
 
     latest_run = db.scalar(
         select(MarketRefreshRun).order_by(MarketRefreshRun.refreshed_at.desc()).limit(1)
@@ -1177,7 +1407,16 @@ def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
             fallback_used=bool(raw.get("fallback_used", False)),
             cbam_eur=float(raw["cbam_eur"]) if raw.get("cbam_eur") is not None else None,
             usd_per_eur=float(raw["usd_per_eur"]) if raw.get("usd_per_eur") is not None else None,
-            )
+            raw_usd_per_metric_ton=float(raw["raw_usd_per_metric_ton"]) if raw.get("raw_usd_per_metric_ton") is not None else None,
+            raw_eur_per_t=float(raw["raw_eur_per_t"]) if raw.get("raw_eur_per_t") is not None else None,
+            usd_per_t=float(raw["usd_per_t"]) if raw.get("usd_per_t") is not None else None,
+            quality=str(raw.get("quality") or quality_from_detail(raw)),
+            quote_kind=str(raw["quote_kind"]) if raw.get("quote_kind") is not None else None,
+            product_id=str(raw["product_id"]) if raw.get("product_id") is not None else None,
+            observed_at=parse_iso_datetime(raw.get("observed_at")),
+            published_at=parse_iso_datetime(raw.get("published_at")),
+            fetched_at=parse_iso_datetime(raw.get("fetched_at")) or _ensure_utc_datetime(refreshed_at),
+        )
 
     freshness_minutes = max(
         0,
@@ -1207,35 +1446,58 @@ def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
     confidence = _round(sum(confidence_values) / len(confidence_values), 3) if confidence_values else 1.0
     fallback_rate = _round((fallback_count / len(typed_source_details)) * 100.0, 2) if typed_source_details else 0.0
 
-    derived: dict[str, float | str] = {}
+    germany_detail = typed_source_details.get("germany_premium")
+    if germany_detail is not None and (
+        germany_detail.quality == "missing" or germany_detail.status == "missing"
+    ):
+        values["germany_premium_pct"] = None
+
+    detail_map = {key: detail.model_dump() for key, detail in typed_source_details.items()}
+    selected_jet = select_fossil_jet_benchmark(values, detail_map)
+    derived: dict[str, float | str | bool | None] = {
+        "jet_source": selected_jet["metric_key"],
+        "quality": selected_jet["quality"],
+        "usable_for_signal": selected_jet["usable_for_signal"],
+    }
     brent_for_decomp = values.get("brent_usd_per_bbl")
-    jet_for_decomp = values.get("rotterdam_jet_fuel_usd_per_l") or values.get("jet_eu_proxy_usd_per_l")
-    jet_source_label = (
-        "rotterdam_jet_fuel_usd_per_l"
-        if values.get("rotterdam_jet_fuel_usd_per_l")
-        else "jet_eu_proxy_usd_per_l"
-    )
-    if not jet_for_decomp:
-        jet_for_decomp = values.get("jet_usd_per_l")
-        jet_source_label = "jet_usd_per_l"
-    if brent_for_decomp and jet_for_decomp and brent_for_decomp > 0 and jet_for_decomp > 0:
+    jet_for_decomp = selected_jet["value"]
+    brent_quality = quality_from_detail(detail_map.get("brent"))
+    if (
+        selected_jet["usable_for_signal"]
+        and brent_for_decomp
+        and jet_for_decomp
+        and brent_for_decomp > 0
+        and jet_for_decomp > 0
+        and brent_quality != "seed"
+    ):
         try:
-            derived = compute_jet_brent_decomposition(
-                float(brent_for_decomp),
-                float(jet_for_decomp),
-                jet_source=jet_source_label,
+            derived.update(
+                compute_jet_brent_decomposition(
+                    float(brent_for_decomp),
+                    float(jet_for_decomp),
+                    jet_source=str(selected_jet["metric_key"]),
+                )
             )
         except ValueError:
-            derived = {}
+            derived["method"] = "suppressed"
+    else:
+        derived["method"] = "suppressed"
+
+    quote_qualities = [quality_from_detail(detail.model_dump()) for detail in typed_source_details.values()]
+    observed_count = sum(1 for quality in quote_qualities if quality in {"observed", "stale"})
+    quote_coverage_rate = _round(observed_count / len(quote_qualities), 3) if quote_qualities else None
 
     return MarketSnapshotResponse(
-        generated_at=generated_at,
+        generated_at=_ensure_utc_datetime(generated_at),
+        fetched_at=_ensure_utc_datetime(refreshed_at),
         source_status=SourceStatus(
             overall=str(overall_status),
             confidence=confidence,
             freshness_minutes=freshness_minutes,
             fallback_rate=fallback_rate,
             is_fallback=fallback_count > 0,
+            quote_coverage_rate=quote_coverage_rate,
+            fetched_at=_ensure_utc_datetime(refreshed_at),
         ),
         values=values,
         source_details=typed_source_details,
@@ -1285,6 +1547,18 @@ def build_market_health_response(db: Session, *, runs_window: int = 10) -> Marke
     total = len(summaries)
     success_rate = (ok_count / total) if total else None
 
+    quote_coverage_rate: float | None = None
+    if runs:
+        latest_sources = runs[0].sources if isinstance(runs[0].sources, dict) else {}
+        qualities = [
+            quality_from_detail(raw)
+            for raw in latest_sources.values()
+            if isinstance(raw, dict)
+        ]
+        if qualities:
+            observed_count = sum(1 for quality in qualities if quality in {"observed", "stale"})
+            quote_coverage_rate = round(observed_count / len(qualities), 3)
+
     if latest is None:
         healthy = False
         note = "No market refresh runs recorded yet. Start API with refresh loop or POST /v1/market/refresh."
@@ -1296,7 +1570,11 @@ def build_market_health_response(db: Session, *, runs_window: int = 10) -> Marke
         note = f"Latest refresh is stale (age {age_seconds}s > 2× interval {interval}s)."
     else:
         healthy = True
-        note = "Refresh loop and/or manual refreshes are producing usable snapshots."
+        coverage_pct = f"{quote_coverage_rate:.0%}" if quote_coverage_rate is not None else "n/a"
+        note = (
+            "Refresh loop is producing snapshots. "
+            f"Task success is not quote coverage (latest quote coverage {coverage_pct})."
+        )
 
     return MarketHealthResponse(
         generated_at=now,
@@ -1310,6 +1588,7 @@ def build_market_health_response(db: Session, *, runs_window: int = 10) -> Marke
         runs_total=total,
         runs_ok=ok_count,
         success_rate=round(success_rate, 3) if success_rate is not None else None,
+        quote_coverage_rate=quote_coverage_rate,
         healthy=healthy,
         note=note,
         recent_runs=summaries,
@@ -1324,101 +1603,176 @@ def _pct_change(latest: float, baseline: float | None) -> float | None:
     return _round(((latest - baseline) / baseline) * 100.0, 3)
 
 
+def _snapshot_quality(payload: object) -> str:
+    if not isinstance(payload, dict):
+        return "observed"
+    if payload.get("seed"):
+        return str(payload.get("quality") or "seed")
+    return str(payload.get("quality") or "observed")
+
+
+def _daily_aggregate(
+    rows: list[tuple[datetime, float, str, str, str | None]],
+) -> list[tuple[datetime, float, str, str, str | None]]:
+    by_day: dict[str, tuple[datetime, float, str, str, str | None]] = {}
+    for as_of, value, unit, quality, source in rows:
+        day_key = _ensure_utc_datetime(as_of).date().isoformat()
+        by_day[day_key] = (_ensure_utc_datetime(as_of), value, unit, quality, source)
+    return [by_day[key] for key in sorted(by_day)]
+
+
 def build_market_history_response(
     db: Session,
     *,
     points_limit_per_metric: int = 120,
+    window_days: int = 30,
+    start: datetime | None = None,
+    end: datetime | None = None,
 ) -> MarketHistoryResponse:
-    """Build history with a bounded point window and indexed baseline seeks."""
+    """Build history by observation date, not by the last N refresh heartbeats."""
     expected_metrics = [str(metric["metric_key"]) for metric in DEFAULT_MARKET_METRICS]
+    window = max(1, min(365, int(window_days)))
+    range_end = _ensure_utc_datetime(end) if end is not None else None
+    range_start = (
+        _ensure_utc_datetime(start) if start is not None else utcnow() - timedelta(days=window)
+    )
 
-    def _load_metric_rows(
-        metric_key: str,
-        *,
-        live_only: bool,
-    ) -> list[tuple[datetime, float, str]]:
-        statement = (
-            select(MarketSnapshot.as_of, MarketSnapshot.value, MarketSnapshot.unit)
-            .where(MarketSnapshot.metric_key == metric_key)
-            .order_by(MarketSnapshot.as_of.desc())
-            .limit(points_limit_per_metric)
-        )
-        if live_only:
-            statement = statement.where(MarketSnapshot.payload["seed"].as_string().is_(None))
-        return [
-            (as_of, float(value), str(unit))
-            for as_of, value, unit in db.execute(statement).all()
+    def _load_metric_rows(metric_key: str) -> list[tuple[datetime, float, str, str, str | None]]:
+        filters = [
+            MarketSnapshot.metric_key == metric_key,
+            MarketSnapshot.as_of >= range_start,
         ]
+        if range_end is not None:
+            filters.append(MarketSnapshot.as_of <= range_end)
+        statement = (
+            select(
+                MarketSnapshot.as_of,
+                MarketSnapshot.value,
+                MarketSnapshot.unit,
+                MarketSnapshot.payload,
+                MarketSnapshot.source_key,
+            )
+            .where(*filters)
+            .order_by(MarketSnapshot.as_of.asc())
+        )
+        rows: list[tuple[datetime, float, str, str, str | None]] = []
+        for as_of, value, unit, payload, source_key in db.execute(statement).all():
+            rows.append(
+                (
+                    _ensure_utc_datetime(as_of),
+                    float(value),
+                    str(unit),
+                    _snapshot_quality(payload),
+                    str(source_key) if source_key else None,
+                )
+            )
+        aggregated = _daily_aggregate(rows)
+        non_seed = [row for row in aggregated if row[3] != "seed"]
+        return non_seed or aggregated
 
-    def _load_history_rows() -> dict[str, list[tuple[datetime, float, str]]]:
-        grouped: dict[str, list[tuple[datetime, float, str]]] = {}
+    def _load_latest_row(metric_key: str) -> tuple[datetime, float, str, str, str | None] | None:
+        row = db.scalar(
+            select(MarketSnapshot)
+            .where(MarketSnapshot.metric_key == metric_key)
+            .order_by(MarketSnapshot.as_of.desc(), MarketSnapshot.id.desc())
+            .limit(1)
+        )
+        if row is None:
+            return None
+        return (
+            _ensure_utc_datetime(row.as_of),
+            float(row.value),
+            str(row.unit),
+            _snapshot_quality(row.payload),
+            str(row.source_key) if row.source_key else None,
+        )
+
+    def _load_history_rows() -> dict[str, list[tuple[datetime, float, str, str, str | None]]]:
+        grouped: dict[str, list[tuple[datetime, float, str, str, str | None]]] = {}
         for metric_key in expected_metrics:
-            rows = _load_metric_rows(metric_key, live_only=True)
-            if not rows:
-                rows = _load_metric_rows(metric_key, live_only=False)
+            rows = _load_metric_rows(metric_key)
             if rows:
                 grouped[metric_key] = rows
         return grouped
 
-    rows_by_metric = _load_history_rows()
-    if not set(expected_metrics).issubset(rows_by_metric):
+    latest_by_metric = {key: _load_latest_row(key) for key in expected_metrics}
+    if any(latest_by_metric[key] is None for key in _required_snapshot_metric_keys()):
         seed_market_snapshot_set(db)
-        rows_by_metric = _load_history_rows()
+        latest_by_metric = {key: _load_latest_row(key) for key in expected_metrics}
 
-    if not rows_by_metric:
-        return MarketHistoryResponse(generated_at=utcnow(), metrics={})
+    rows_by_metric = _load_history_rows()
+    if not any(latest_by_metric.values()):
+        return MarketHistoryResponse(generated_at=_ensure_utc_datetime(utcnow()), metrics={})
 
-    def _nearest_live_baseline(metric_key: str, target_time: datetime) -> float | None:
-        row = db.execute(
-            select(MarketSnapshot.as_of, MarketSnapshot.value)
-            .where(
-                (MarketSnapshot.metric_key == metric_key)
-                & (MarketSnapshot.payload["seed"].as_string().is_(None))
-                & (MarketSnapshot.as_of <= target_time)
-            )
-            .order_by(MarketSnapshot.as_of.desc())
-            .limit(1)
-        ).first()
-        return float(row.value) if row is not None else None
+    def _baseline_same_quality(
+        rows: list[tuple[datetime, float, str, str, str | None]],
+        *,
+        latest_as_of: datetime,
+        latest_quality: str,
+        days: int,
+    ) -> float | None:
+        target = latest_as_of - timedelta(days=days)
+        candidates = [
+            row
+            for row in rows
+            if row[0] <= target and same_quality_class(row[3], latest_quality)
+        ]
+        if not candidates:
+            return None
+        return float(candidates[-1][1])
 
-    generated_at = max(row[0] for metric_rows in rows_by_metric.values() for row in metric_rows)
+    generated_at = max(
+        row[0]
+        for row in list(latest_by_metric.values()) + [item for rows in rows_by_metric.values() for item in rows]
+        if row is not None
+    )
     windows = [1, 7, 30]
 
     metrics: dict[str, MarketMetricHistory] = {}
-    for metric_key, metric_rows in rows_by_metric.items():
-        latest_as_of, latest_value, latest_unit = metric_rows[0]
-
+    for metric_key, latest_row in latest_by_metric.items():
+        if latest_row is None:
+            continue
+        metric_rows = rows_by_metric.get(metric_key) or []
+        latest_as_of, latest_value, latest_unit, latest_quality, _source = latest_row
+        if metric_rows:
+            latest_as_of, latest_value, latest_unit, latest_quality, _source = metric_rows[-1]
         change_1d = _pct_change(
             latest_value,
-            _nearest_live_baseline(metric_key, latest_as_of - timedelta(days=1)),
+            _baseline_same_quality(metric_rows, latest_as_of=latest_as_of, latest_quality=latest_quality, days=1),
         )
         change_7d = _pct_change(
             latest_value,
-            _nearest_live_baseline(metric_key, latest_as_of - timedelta(days=7)),
+            _baseline_same_quality(metric_rows, latest_as_of=latest_as_of, latest_quality=latest_quality, days=7),
         )
         change_30d = _pct_change(
             latest_value,
-            _nearest_live_baseline(metric_key, latest_as_of - timedelta(days=30)),
+            _baseline_same_quality(metric_rows, latest_as_of=latest_as_of, latest_quality=latest_quality, days=30),
         )
 
         points = [
-            MarketHistoryPoint(as_of=as_of, value=float(value))
-            for as_of, value, _unit in reversed(metric_rows)
+            MarketHistoryPoint(
+                as_of=_ensure_utc_datetime(as_of),
+                value=float(value),
+                quality=quality,
+                source=source,
+            )
+            for as_of, value, _unit, quality, source in metric_rows[-points_limit_per_metric:]
         ]
 
         metrics[metric_key] = MarketMetricHistory(
             metric_key=metric_key,
             unit=latest_unit,
             latest_value=latest_value,
-            latest_as_of=latest_as_of,
+            latest_as_of=_ensure_utc_datetime(latest_as_of),
             change_pct_1d=change_1d,
             change_pct_7d=change_7d,
             change_pct_30d=change_30d,
             points=points,
+            quality=latest_quality,
         )
 
     return MarketHistoryResponse(
-        generated_at=generated_at,
+        generated_at=_ensure_utc_datetime(generated_at),
         windows_days=windows,
         metrics=metrics,
     )

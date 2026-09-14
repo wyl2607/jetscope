@@ -164,7 +164,13 @@ export default async function CrisisPage() {
   const marketConfidenceText = typeof marketConfidence === 'number'
     ? `${Math.round(marketConfidence * 100)}%`
     : '暂不可用';
-  const carbonPriceEurPerT = Number(((dashboardReadModel.market.values.carbon_proxy_usd_per_t ?? 102.6) / 1.08).toFixed(2));
+  const usdPerEur = dashboardReadModel.market.values.usd_per_eur;
+  const carbonPriceEurPerT = Number(
+    (
+      (dashboardReadModel.market.values.carbon_proxy_usd_per_t ?? 102.6) /
+      (typeof usdPerEur === 'number' && usdPerEur > 0 ? usdPerEur : 1.1435)
+    ).toFixed(2)
+  );
   const safWorkbenchHref = buildSafWorkbenchHref({
     fallbackFossil,
     carbonPriceEurPerT,

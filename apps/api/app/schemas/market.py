@@ -9,6 +9,8 @@ class SourceStatus(BaseModel):
     freshness_minutes: int | None = None
     fallback_rate: float | None = Field(default=None, ge=0.0, le=100.0)
     is_fallback: bool | None = None
+    quote_coverage_rate: float | None = Field(default=None, ge=0.0, le=1.0)
+    fetched_at: datetime | None = None
 
 
 class MarketSourceDetail(BaseModel):
@@ -27,31 +29,41 @@ class MarketSourceDetail(BaseModel):
     raw_usd_per_metric_ton: float | None = None
     raw_eur_per_t: float | None = None
     usd_per_t: float | None = None
+    quality: str | None = None
+    quote_kind: str | None = None
+    product_id: str | None = None
+    observed_at: datetime | None = None
+    published_at: datetime | None = None
+    fetched_at: datetime | None = None
 
 
 class MarketSnapshotResponse(BaseModel):
     generated_at: datetime
     source_status: SourceStatus
-    values: dict[str, float]
+    values: dict[str, float | None]
     source_details: dict[str, MarketSourceDetail] = Field(default_factory=dict)
     # Pure arithmetic from values already in the snapshot; never invents prices.
-    derived: dict[str, float | str] = Field(default_factory=dict)
+    derived: dict[str, float | str | bool | None] = Field(default_factory=dict)
+    fetched_at: datetime | None = None
 
 
 class MarketHistoryPoint(BaseModel):
     as_of: datetime
     value: float
+    quality: str | None = None
+    source: str | None = None
 
 
 class MarketMetricHistory(BaseModel):
     metric_key: str
     unit: str
-    latest_value: float
-    latest_as_of: datetime
+    latest_value: float | None = None
+    latest_as_of: datetime | None = None
     change_pct_1d: float | None = None
     change_pct_7d: float | None = None
     change_pct_30d: float | None = None
     points: list[MarketHistoryPoint] = Field(default_factory=list)
+    quality: str | None = None
 
 
 class MarketHistoryResponse(BaseModel):
@@ -97,6 +109,7 @@ class MarketHealthResponse(BaseModel):
     runs_total: int = 0
     runs_ok: int = 0
     success_rate: float | None = Field(default=None, ge=0.0, le=1.0)
+    quote_coverage_rate: float | None = Field(default=None, ge=0.0, le=1.0)
     healthy: bool
     note: str
     recent_runs: list[MarketRefreshRunSummary] = Field(default_factory=list)

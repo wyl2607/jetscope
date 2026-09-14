@@ -108,7 +108,7 @@ export default async function SafTippingPointPage() {
   try {
     pathwayComparison = await loadPathwayComparison({
       fossilJetUsdPerL: liveFuel,
-      carbonPriceEurPerT: Number((liveCarbonUsd / 1.08).toFixed(2)),
+      carbonPriceEurPerT: Number((liveCarbonUsd / 1.1435).toFixed(2)),
       subsidyUsdPerL: 0,
       blendRatePct: 6
     });
@@ -201,7 +201,7 @@ export default async function SafTippingPointPage() {
           reserveIsScenarioDefault={!readModel.reserve}
           liveDefaults={{
             fossilJetUsdPerL: liveFuel,
-            carbonPriceEurPerT: Number((liveCarbonUsd / 1.08).toFixed(2)),
+            carbonPriceEurPerT: Number((liveCarbonUsd / 1.1435).toFixed(2)),
             subsidyUsdPerL: 0,
             blendRatePct: 6,
             reserveWeeks: readModel.reserve?.coverage_weeks ?? 3.0,

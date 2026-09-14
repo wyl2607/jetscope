@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.models.tables import MarketSnapshot, TippingEvent
 from app.services.analysis.breakeven import compute_breakeven_oil_price
 from app.services.analysis.pathway_costs import effective_saf_cost
+from app.services.market_quality import SIGNAL_QUALITIES
 
 TippingEventType = Literal["CRITICAL", "ALERT", "CROSSOVER"]
 
@@ -81,16 +82,27 @@ class TippingPointEngine:
         return list(db.scalars(query).all())
 
     def _latest_fossil_price(self, db: Session) -> float | None:
-        for metric_key in self.FOSSIL_METRIC_PRIORITY:
+        ranked: list[tuple[int, float]] = []
+        for index, metric_key in enumerate(self.FOSSIL_METRIC_PRIORITY):
             latest = db.scalar(
                 select(MarketSnapshot)
                 .where(MarketSnapshot.metric_key == metric_key)
                 .order_by(MarketSnapshot.as_of.desc())
                 .limit(1)
             )
-            if latest is not None:
-                return float(latest.value)
-        return None
+            if latest is None or float(latest.value) <= 0:
+                continue
+            payload = getattr(latest, "payload", None)
+            if not isinstance(payload, dict):
+                payload = {}
+            quality = str(payload.get("quality") or ("seed" if payload.get("seed") else "observed"))
+            if quality not in SIGNAL_QUALITIES:
+                continue
+            ranked.append((index if quality == "observed" else 10 + index, float(latest.value)))
+        if not ranked:
+            return None
+        ranked.sort()
+        return ranked[0][1]
 
     def _seen_recent_event(
         self,

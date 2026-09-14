@@ -46,7 +46,8 @@ const actionLinks: Array<{ label: string; href: Route; description: string }> = 
   }
 ];
 
-function formatNumber(value: number, digits = 2): string {
+function formatNumber(value: number | null | undefined, digits = 2): string {
+  if (!Number.isFinite(value ?? NaN)) return 'n/a';
   return Number(value).toLocaleString('de-DE', {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits
