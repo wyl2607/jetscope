@@ -29,6 +29,8 @@ def test_select_jet_prefers_derived_eu_proxy_over_seed_rotterdam() -> None:
             "status": "fallback",
             "fallback_used": True,
             "quality": "derived",
+            "observed_at": "2026-09-14T00:00:00Z",
+            "lag_minutes": 1440,
         },
         "jet": {
             "source": "fred",
@@ -38,7 +40,11 @@ def test_select_jet_prefers_derived_eu_proxy_over_seed_rotterdam() -> None:
         },
     }
 
-    selected = select_fossil_jet_benchmark(values, details)
+    selected = select_fossil_jet_benchmark(
+        values,
+        details,
+        now=datetime(2026, 9, 14, tzinfo=timezone.utc),
+    )
 
     assert selected["metric_key"] == "jet_eu_proxy_usd_per_l"
     assert selected["value"] == 0.913
@@ -93,10 +99,20 @@ def test_missing_or_zero_values_are_skipped() -> None:
 
 
 def test_seed_does_not_overwrite_prior_observation() -> None:
+    observed_at = datetime(2026, 9, 10, tzinfo=timezone.utc)
     assert should_persist_snapshot(quality="seed", value=0.657, has_prior=True) is False
     assert should_persist_snapshot(quality="seed", value=0.657, has_prior=False) is True
     assert should_persist_snapshot(quality="missing", value=None, has_prior=True) is False
-    assert should_persist_snapshot(quality="observed", value=120.98, has_prior=True) is True
+    assert should_persist_snapshot(quality="observed", value=120.98, has_prior=True) is False
+    assert (
+        should_persist_snapshot(
+            quality="observed",
+            value=120.98,
+            has_prior=True,
+            observed_at=observed_at,
+        )
+        is True
+    )
 
 
 def test_isoformat_z_normalizes_naive_and_offset_datetimes() -> None:
@@ -125,3 +141,168 @@ def test_same_quality_class_allows_stale_with_observed() -> None:
     assert same_quality_class("observed", "stale") is True
     assert same_quality_class("observed", "derived") is False
     assert same_quality_class("seed", "derived") is False
+
+
+def test_missing_quality_is_unknown_not_observed() -> None:
+    assert quality_from_detail({"source": "rotterdam-jet-direct", "status": "ok"}) in {
+        "observed",
+        "unknown",
+    }
+    from app.services.market_quality import snapshot_quality
+
+    assert snapshot_quality({"refresh_run_id": "abc"}) in {"unknown", "legacy", "unverified"}
+    assert snapshot_quality({}) != "observed"
+    assert snapshot_quality(None) != "observed"
+
+
+def test_comparable_series_requires_product_and_quote_kind() -> None:
+    from app.services.market_quality import same_comparable_series
+
+    spot = {"quality": "observed", "quote_kind": "spot", "product_id": "EIA Brent", "unit": "USD/bbl", "source": "eia"}
+    futures = {
+        "quality": "observed",
+        "quote_kind": "futures",
+        "product_id": "ICE Jet CIF NWE",
+        "unit": "USD/L",
+        "source": "rotterdam-jet-direct",
+    }
+    assert same_comparable_series(spot, {**spot, "quality": "stale"}) is True
+    assert same_comparable_series(spot, futures) is False
+
+
+def test_stale_uses_observation_age_not_fetch_time() -> None:
+    from datetime import datetime, timedelta, timezone
+
+    from app.services.market_quality import classify_quote_freshness
+
+    now = datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc)
+    observed = now - timedelta(days=3)
+    fetched = now
+    quality = classify_quote_freshness(
+        quality="observed",
+        observed_at=observed,
+        fetched_at=fetched,
+        lag_minutes=1440,
+        now=now,
+    )
+    assert quality == "stale"
+    expired = classify_quote_freshness(
+        quality="observed",
+        observed_at=now - timedelta(days=40),
+        fetched_at=fetched,
+        lag_minutes=1440,
+        now=now,
+    )
+    assert expired not in {"observed", "stale"} or expired == "missing"
+
+
+def test_derived_quote_from_2020_stays_derived_but_is_not_usable() -> None:
+    now = datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc)
+    from app.services.market_quality import classify_quote_freshness
+
+    quality = classify_quote_freshness(
+        quality="derived",
+        observed_at=datetime(2020, 1, 2, tzinfo=timezone.utc),
+        fetched_at=now,
+        lag_minutes=1440,
+        now=now,
+    )
+    selected = select_fossil_jet_benchmark(
+        {"jet_eu_proxy_usd_per_l": 0.913},
+        {
+            "jet_eu_proxy": {
+                "source": "brent-derived",
+                "status": "fallback",
+                "fallback_used": True,
+                "quality": "derived",
+                "observed_at": "2020-01-02T00:00:00Z",
+                "input_observed_at": {"brent": "2020-01-02T00:00:00Z"},
+                "lag_minutes": 1440,
+            }
+        },
+        now=now,
+    )
+    assert quality == "derived"
+    assert selected["quality"] == "derived"
+    assert selected["freshness"] == "expired"
+    assert selected["usable_for_signal"] is False
+
+
+def test_derived_without_verifiable_date_is_not_usable() -> None:
+    now = datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc)
+    selected = select_fossil_jet_benchmark(
+        {"jet_eu_proxy_usd_per_l": 0.913},
+        {
+            "jet_eu_proxy": {
+                "source": "brent-derived",
+                "status": "fallback",
+                "fallback_used": True,
+                "quality": "derived",
+            }
+        },
+        now=now,
+    )
+    assert selected["quality"] == "derived"
+    assert selected["freshness"] == "unverifiable"
+    assert selected["usable_for_signal"] is False
+
+
+def test_expired_rotterdam_does_not_block_fresh_eu_proxy() -> None:
+    now = datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc)
+    selected = select_fossil_jet_benchmark(
+        {
+            "rotterdam_jet_fuel_usd_per_l": 0.657,
+            "jet_eu_proxy_usd_per_l": 0.913,
+        },
+        {
+            "rotterdam_jet_fuel": {
+                "source": "rotterdam-jet-direct",
+                "status": "ok",
+                "quality": "derived",
+                "observed_at": "2020-01-02T00:00:00Z",
+                "lag_minutes": 1440,
+            },
+            "jet_eu_proxy": {
+                "source": "brent-derived",
+                "status": "fallback",
+                "fallback_used": True,
+                "quality": "derived",
+                "observed_at": "2026-09-14T00:00:00Z",
+                "lag_minutes": 1440,
+            },
+        },
+        now=now,
+    )
+    assert selected["metric_key"] == "jet_eu_proxy_usd_per_l"
+    assert selected["value"] == 0.913
+    assert selected["usable_for_signal"] is True
+
+
+def test_only_expired_quotes_reports_unusable() -> None:
+    now = datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc)
+    selected = select_fossil_jet_benchmark(
+        {
+            "rotterdam_jet_fuel_usd_per_l": 0.657,
+            "jet_eu_proxy_usd_per_l": 0.913,
+        },
+        {
+            "rotterdam_jet_fuel": {
+                "source": "rotterdam-jet-direct",
+                "status": "ok",
+                "quality": "derived",
+                "observed_at": "2020-01-02T00:00:00Z",
+                "lag_minutes": 1440,
+            },
+            "jet_eu_proxy": {
+                "source": "brent-derived",
+                "status": "fallback",
+                "fallback_used": True,
+                "quality": "derived",
+                "observed_at": "2020-01-03T00:00:00Z",
+                "lag_minutes": 1440,
+            },
+        },
+        now=now,
+    )
+    assert selected["usable_for_signal"] is False
+    assert selected["freshness"] == "expired"

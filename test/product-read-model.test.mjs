@@ -548,17 +548,95 @@ test('getGermanyJetFuelReadModel falls back from EU proxy history to global jet 
   assert.equal(euProxyMetric?.note, 'Fallback von Jet-Fuel');
 });
 
+test('Germany jet-fuel read model uses Rotterdam when it differs from the EU proxy', async () => {
+  const { buildGermanyJetFuelReadModelFromPayload } = await importWebLib(
+    'apps/web/lib/germany-jet-fuel-read-model.ts'
+  );
+  const readModel = buildGermanyJetFuelReadModelFromPayload(
+    {
+      generated_at: '2026-09-14T09:00:00Z',
+      fetched_at: '2026-09-14T09:00:00Z',
+      source_status: { overall: 'ok', is_fallback: false },
+      values: {
+        brent_usd_per_bbl: 87.01,
+        jet_usd_per_l: 0.64,
+        jet_eu_proxy_usd_per_l: 1.2,
+        rotterdam_jet_fuel_usd_per_l: 0.88,
+        carbon_proxy_usd_per_t: 91.91,
+        usd_per_eur: 1.25,
+        eu_ets_price_eur_per_t: 80
+      },
+      source_details: {
+        rotterdam_jet_fuel: {
+          source: 'rotterdam-jet-direct',
+          status: 'ok',
+          quality: 'observed',
+          observed_at: '2026-09-10T00:00:00Z',
+          fetched_at: '2026-09-14T09:00:00Z',
+          lag_minutes: 1440
+        },
+        jet_eu_proxy: {
+          source: 'brent-derived',
+          status: 'fallback',
+          fallback_used: true,
+          quality: 'derived',
+          observed_at: '2026-09-13T00:00:00Z',
+          fetched_at: '2026-09-14T09:00:00Z',
+          lag_minutes: 1440
+        },
+        ecb: { source: 'ecb', status: 'ok', quality: 'observed', observed_at: '2026-09-14T00:00:00Z' },
+        eu_ets: { source: 'eex-eu-ets', status: 'ok', quality: 'observed', observed_at: '2026-09-14T00:00:00Z' }
+      }
+    },
+    {
+      metrics: {
+        rotterdam_jet_fuel_usd_per_l: {
+          metric_key: 'rotterdam_jet_fuel_usd_per_l',
+          unit: 'USD/L',
+          latest_value: 0.88,
+          latest_as_of: '2026-09-10T00:00:00Z',
+          change_pct_30d: 4,
+          quality: 'observed'
+        },
+        jet_eu_proxy_usd_per_l: {
+          metric_key: 'jet_eu_proxy_usd_per_l',
+          unit: 'USD/L',
+          latest_value: 1.2,
+          latest_as_of: '2026-09-13T00:00:00Z',
+          change_pct_30d: 18,
+          quality: 'derived'
+        }
+      }
+    },
+    'en'
+  );
+
+  const rotterdam = readModel.metrics.find((metric) => metric.metricKey === 'rotterdam_jet_fuel_usd_per_l');
+  const euProxy = readModel.metrics.find((metric) => metric.metricKey === 'jet_eu_proxy_usd_per_l');
+  assert.notEqual(rotterdam?.value, euProxy?.value);
+  assert.equal(readModel.selectedJetMetricKey, 'rotterdam_jet_fuel_usd_per_l');
+  assert.equal(readModel.selectedJetUsable, true);
+  assert.equal(rotterdam?.value, 0.88);
+  assert.equal(rotterdam?.quality, 'observed');
+  assert.equal(readModel.quoteAsOf, '2026-09-10T00:00:00Z');
+  assert.notEqual(readModel.quoteAsOf, euProxy?.observedAt);
+  assert.equal(readModel.decision, 'stable');
+});
+
 test('English Germany jet fuel price page exposes localized market review without Chinese or German copy', async () => {
   const englishPriceSource = await readFile(
     new URL('../apps/web/app/en/prices/germany-jet-fuel/page.tsx', import.meta.url),
     'utf8'
   );
+  const copySource = await readFile(
+    new URL('../apps/web/lib/germany-jet-fuel-copy.ts', import.meta.url),
+    'utf8'
+  );
 
   assert.match(englishPriceSource, /Germany Jet-Fuel Price Monitor/);
   assert.match(englishPriceSource, /getGermanyJetFuelReadModel\('en'\)/);
-  assert.match(englishPriceSource, /en\/sources\?focus=jet_eu_proxy_usd_per_l/);
-  assert.match(englishPriceSource, /Decision support, not a trading feed/);
-  assert.match(englishPriceSource, /Source Review/);
+  assert.match(copySource, /en\/sources\?focus=jet_eu_proxy_usd_per_l/);
+  assert.match(copySource, /Decision support, not a trading feed/);
   assert.doesNotMatch(
     englishPriceSource,
     /德国航油价格|价格 · 德国|来源状态|风险说明|Deutschland|Risikohinweis|Quellen/
@@ -571,8 +649,12 @@ test('German Germany jet fuel price page keeps source review in the German local
     new URL('../apps/web/app/de/prices/germany-jet-fuel/page.tsx', import.meta.url),
     'utf8'
   );
+  const copySource = await readFile(
+    new URL('../apps/web/lib/germany-jet-fuel-copy.ts', import.meta.url),
+    'utf8'
+  );
 
-  assert.match(germanPriceSource, /de\/sources\?focus=jet_eu_proxy_usd_per_l/);
+  assert.match(copySource, /de\/sources\?focus=jet_eu_proxy_usd_per_l/);
   assert.doesNotMatch(germanPriceSource, /href: '\/sources\?focus=/);
 });
 
@@ -1138,4 +1220,72 @@ test('dashboard and admin avoid leaking raw implementation labels into UI copy',
   assert.doesNotMatch(dashboardSource, /新鲜度=\$\{readModel\.freshnessSignal\.level\}/);
   assert.match(adminSource, /<code className=/);
   assert.doesNotMatch(adminSource, /<p>`route_catalog`/);
+});
+
+test('Germany jet-fuel read model falls back to fresh EU proxy when Rotterdam is expired', async () => {
+  const { buildGermanyJetFuelReadModelFromPayload } = await importWebLib(
+    'apps/web/lib/germany-jet-fuel-read-model.ts'
+  );
+  const readModel = buildGermanyJetFuelReadModelFromPayload(
+    {
+      generated_at: '2026-09-14T09:00:00Z',
+      fetched_at: '2026-09-14T09:00:00Z',
+      source_status: { overall: 'ok', is_fallback: false },
+      values: {
+        brent_usd_per_bbl: 87.01,
+        jet_usd_per_l: 0.64,
+        jet_eu_proxy_usd_per_l: 0.913,
+        rotterdam_jet_fuel_usd_per_l: 0.657,
+        carbon_proxy_usd_per_t: 91.91,
+        usd_per_eur: 1.25,
+        eu_ets_price_eur_per_t: 80
+      },
+      source_details: {
+        rotterdam_jet_fuel: {
+          source: 'rotterdam-jet-direct',
+          status: 'ok',
+          quality: 'derived',
+          observed_at: '2020-01-02T00:00:00Z',
+          fetched_at: '2026-09-14T09:00:00Z',
+          lag_minutes: 1440
+        },
+        jet_eu_proxy: {
+          source: 'brent-derived',
+          status: 'fallback',
+          fallback_used: true,
+          quality: 'derived',
+          observed_at: '2026-09-14T00:00:00Z',
+          fetched_at: '2026-09-14T09:00:00Z',
+          lag_minutes: 1440
+        },
+        ecb: { source: 'ecb', status: 'ok', quality: 'observed', observed_at: '2026-09-14T00:00:00Z' },
+        eu_ets: { source: 'eex-eu-ets', status: 'ok', quality: 'observed', observed_at: '2026-09-14T00:00:00Z' }
+      }
+    },
+    {
+      metrics: {
+        rotterdam_jet_fuel_usd_per_l: {
+          metric_key: 'rotterdam_jet_fuel_usd_per_l',
+          unit: 'USD/L',
+          latest_value: 0.657,
+          latest_as_of: '2020-01-02T00:00:00Z',
+          change_pct_30d: 4,
+          quality: 'derived'
+        },
+        jet_eu_proxy_usd_per_l: {
+          metric_key: 'jet_eu_proxy_usd_per_l',
+          unit: 'USD/L',
+          latest_value: 0.913,
+          latest_as_of: '2026-09-14T00:00:00Z',
+          change_pct_30d: 18,
+          quality: 'derived'
+        }
+      }
+    },
+    'en'
+  );
+
+  assert.equal(readModel.selectedJetMetricKey, 'jet_eu_proxy_usd_per_l');
+  assert.equal(readModel.selectedJetUsable, true);
+  assert.equal(readModel.quoteAsOf, '2026-09-14T00:00:00Z');
 });

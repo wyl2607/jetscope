@@ -21,12 +21,20 @@ from app.schemas.market import (
 from app.services.analysis.jet_decomposition import compute_jet_brent_decomposition
 from app.services.bootstrap import utcnow
 from app.services.market_quality import (
+    METRIC_KEY_TO_DETAIL_KEY,
+    QUALITY_RANK,
+    SIGNAL_QUALITIES,
+    UNKNOWN_QUALITIES,
+    classify_quote_freshness,
+    earliest_datetime,
     isoformat_z,
     parse_iso_datetime,
     quality_from_detail,
-    same_quality_class,
+    quote_freshness,
+    same_comparable_series,
     select_fossil_jet_benchmark,
     should_persist_snapshot,
+    snapshot_quality,
 )
 
 MARKET_SOURCE_URLS = {
@@ -462,6 +470,11 @@ def _parse_decimal_number(raw: str) -> float:
 
 
 def _parse_ara_rotterdam_jet_usd_per_metric_ton(html: str) -> float:
+    value, _observed = _parse_ara_rotterdam_quote(html)
+    return value
+
+
+def _parse_ara_rotterdam_quote(html: str) -> tuple[float, datetime | None]:
     import re
 
     normalized = " ".join(html.replace("&nbsp;", " ").replace("&#160;", " ").split())
@@ -471,11 +484,35 @@ def _parse_ara_rotterdam_jet_usd_per_metric_ton(html: str) -> float:
         r'"last_price"\s*:\s*"([0-9][0-9.,]*)"',
         r'last_last[^>]*>\s*([0-9][0-9.,]*)\s*<',
     )
+    value: float | None = None
     for pattern in patterns:
         match = re.search(pattern, normalized, re.IGNORECASE)
         if match:
-            return _parse_decimal_number(match.group(1))
-    raise ValueError("ARA/Rotterdam jet quote not found in public payload")
+            value = _parse_decimal_number(match.group(1))
+            break
+    if value is None:
+        raise ValueError("ARA/Rotterdam jet quote not found in public payload")
+
+    observed: datetime | None = None
+    unix_match = re.search(
+        r'"(?:last_timestamp|last_time|timestamp|utctime)"\s*:\s*"?(\d{10,13})"?',
+        html,
+        re.IGNORECASE,
+    )
+    if unix_match:
+        raw = int(unix_match.group(1))
+        if raw > 10_000_000_000:
+            raw = raw // 1000
+        observed = datetime.fromtimestamp(raw, tz=timezone.utc)
+    if observed is None:
+        iso_match = re.search(
+            r'data-test="instrument-price-last-time"[^>]*>\s*([^<]+)',
+            html,
+            re.IGNORECASE,
+        )
+        if iso_match:
+            observed = parse_iso_datetime(iso_match.group(1).strip())
+    return value, observed
 
 
 def _set_source_detail(
@@ -655,6 +692,10 @@ def _ingest_carbon_market_value(
 ) -> float | None:
     if eu_ets_eur is not None and usd_per_eur is not None:
         carbon_value = _round(eu_ets_eur * usd_per_eur, 2)
+        sources = details.get("sources", {}) if isinstance(details.get("sources"), dict) else {}
+        eua_detail = sources.get("eu_ets", {}) if isinstance(sources.get("eu_ets"), dict) else {}
+        ecb_detail = sources.get("ecb", {}) if isinstance(sources.get("ecb"), dict) else {}
+        derived_at = earliest_datetime(eua_detail.get("observed_at"), ecb_detail.get("observed_at"))
         _set_source_detail(
             details,
             "carbon",
@@ -667,6 +708,12 @@ def _ingest_carbon_market_value(
                 "product_id": "EUA converted with ECB FX",
                 "raw_eur_per_t": eu_ets_eur,
                 "usd_per_eur": usd_per_eur,
+                "observed_at": isoformat_z(derived_at) if derived_at else None,
+                "published_at": isoformat_z(derived_at) if derived_at else None,
+                "input_observed_at": {
+                    "eu_ets": eua_detail.get("observed_at"),
+                    "ecb": ecb_detail.get("observed_at"),
+                },
                 "note": "Aviation-relevant EUA converted to USD. Not a CBAM certificate price.",
             },
         )
@@ -709,7 +756,7 @@ def _ingest_jet_eu_market_value(
 ) -> float:
     try:
         ara_html = _fetch_text(MARKET_SOURCE_URLS["jet_ara_rotterdam"])
-        ara_usd_per_metric_ton = _parse_ara_rotterdam_jet_usd_per_metric_ton(ara_html)
+        ara_usd_per_metric_ton, ara_observed = _parse_ara_rotterdam_quote(ara_html)
         jet_eu_value = _round(_to_usd_per_l_from_usd_per_metric_ton(ara_usd_per_metric_ton), 3)
         _set_source_detail(
             details,
@@ -722,6 +769,8 @@ def _ingest_jet_eu_market_value(
                 "quote_kind": "futures",
                 "product_id": "ICE Jet CIF NWE Cargoes Future",
                 "raw_usd_per_metric_ton": ara_usd_per_metric_ton,
+                "observed_at": isoformat_z(ara_observed) if ara_observed else None,
+                "published_at": isoformat_z(ara_observed) if ara_observed else None,
                 "note": f"ICE Jet CIF NWE futures {_round(ara_usd_per_metric_ton, 2)} USD/metric ton converted with 0.8 kg/L reference density. Not a German airport into-plane spot.",
             },
         )
@@ -730,6 +779,9 @@ def _ingest_jet_eu_market_value(
         primary_error_text = str(primary_error)
         if brent_value is not None:
             derived_value = _round(_derive_jet_eu_proxy_usd_per_l_from_brent(brent_value), 3)
+            brent_detail = details.get("sources", {}).get("brent", {}) if isinstance(details.get("sources"), dict) else {}
+            brent_observed = brent_detail.get("observed_at") if isinstance(brent_detail, dict) else None
+            brent_published = brent_detail.get("published_at") if isinstance(brent_detail, dict) else brent_observed
             _set_source_detail(
                 details,
                 "jet_eu_proxy",
@@ -740,6 +792,9 @@ def _ingest_jet_eu_market_value(
                     "quality": "derived",
                     "quote_kind": "proxy",
                     "product_id": "Brent-derived EU jet proxy",
+                    "observed_at": brent_observed,
+                    "published_at": brent_published,
+                    "input_observed_at": {"brent": brent_observed},
                     "note": "ARA/Rotterdam public quote unavailable; fell back to Brent-derived EU proxy.",
                     "primary_error": primary_error_text,
                     "fallback_used": True,
@@ -775,7 +830,7 @@ def _ingest_rotterdam_jet_fuel_value(
     """ICE Jet CIF NWE futures quote. Failure must not mint a fresh seed observation."""
     try:
         ara_html = _fetch_text(MARKET_SOURCE_URLS["jet_ara_rotterdam"])
-        ara_usd_per_metric_ton = _parse_ara_rotterdam_jet_usd_per_metric_ton(ara_html)
+        ara_usd_per_metric_ton, ara_observed = _parse_ara_rotterdam_quote(ara_html)
         rotterdam_value = _round(_to_usd_per_l_from_usd_per_metric_ton(ara_usd_per_metric_ton), 3)
         _set_source_detail(
             details,
@@ -788,6 +843,8 @@ def _ingest_rotterdam_jet_fuel_value(
                 "quote_kind": "futures",
                 "product_id": "ICE Jet CIF NWE Cargoes Future",
                 "raw_usd_per_metric_ton": ara_usd_per_metric_ton,
+                "observed_at": isoformat_z(ara_observed) if ara_observed else None,
+                "published_at": isoformat_z(ara_observed) if ara_observed else None,
                 "note": f"ICE Jet CIF NWE futures {_round(ara_usd_per_metric_ton, 2)} USD/metric ton. Not a German airport into-plane spot.",
             },
         )
@@ -992,6 +1049,8 @@ def _metric_meta_from_sources(sources: dict[str, object] | None) -> dict[str, di
             "published_at": raw.get("published_at"),
             "quote_kind": raw.get("quote_kind"),
             "product_id": raw.get("product_id"),
+            "source": raw.get("source"),
+            "input_observed_at": raw.get("input_observed_at"),
         }
     return meta
 
@@ -1029,21 +1088,29 @@ def _persist_market_snapshot_set(
         if defaults is None or value is None:
             continue
         meta = merged_meta.get(metric_key, {})
-        quality = str(meta.get("quality") or ("seed" if ingest == "seed" else "observed"))
-        has_prior = (
-            db.scalar(
-                select(MarketSnapshot.id).where(MarketSnapshot.metric_key == metric_key).limit(1)
-            )
-            is not None
+        quality = str(meta.get("quality") or ("seed" if ingest == "seed" else "unknown"))
+        prior_row = db.scalar(
+            select(MarketSnapshot)
+            .where(MarketSnapshot.metric_key == metric_key)
+            .order_by(MarketSnapshot.as_of.desc(), MarketSnapshot.id.desc())
+            .limit(1)
         )
-        if not should_persist_snapshot(quality=quality, value=float(value), has_prior=has_prior):
+        has_prior = prior_row is not None
+        prior_payload = prior_row.payload if prior_row is not None and isinstance(prior_row.payload, dict) else {}
+        observed_at = parse_iso_datetime(meta.get("observed_at")) or parse_iso_datetime(meta.get("published_at"))
+        if observed_at is None and quality == "seed":
+            observed_at = datetime.fromisoformat(DEFAULT_MARKET_SEED_AS_OF).replace(tzinfo=timezone.utc)
+        if not should_persist_snapshot(
+            quality=quality,
+            value=float(value),
+            has_prior=has_prior,
+            observed_at=observed_at,
+            prior_value=float(prior_row.value) if prior_row is not None else None,
+            prior_observed_at=parse_iso_datetime(prior_payload.get("observed_at"))
+            or (_ensure_utc_datetime(prior_row.as_of) if prior_row is not None else None),
+            prior_quality=snapshot_quality(prior_payload) if prior_row is not None else None,
+        ):
             continue
-        observed_at = parse_iso_datetime(meta.get("observed_at"))
-        if observed_at is None:
-            if quality == "seed":
-                observed_at = datetime.fromisoformat(DEFAULT_MARKET_SEED_AS_OF).replace(tzinfo=timezone.utc)
-            else:
-                observed_at = snapshot_time
         db.add(
             MarketSnapshot(
                 source_key=defaults["source_key"],
@@ -1056,10 +1123,12 @@ def _persist_market_snapshot_set(
                     "refresh_run_id": run.id,
                     "quality": quality,
                     "fetched_at": isoformat_z(snapshot_time),
-                    "observed_at": isoformat_z(observed_at),
+                    "observed_at": isoformat_z(observed_at) if observed_at is not None else None,
                     "published_at": meta.get("published_at"),
                     "quote_kind": meta.get("quote_kind"),
                     "product_id": meta.get("product_id"),
+                    "source": meta.get("source"),
+                    "input_observed_at": meta.get("input_observed_at"),
                 },
             )
         )
@@ -1069,18 +1138,31 @@ def _persist_market_snapshot_set(
 
 
 def _latest_market_snapshots_by_metric(db: Session) -> dict[str, MarketSnapshot]:
-    """Load the newest snapshot row for each expected metric with indexed seeks."""
+    """Load the best snapshot per metric: quality first, then observation date.
+
+    Fetch-time fallback rows must not outrank a dated observed quote.
+    """
     latest_by_metric: dict[str, MarketSnapshot] = {}
     for metric in DEFAULT_MARKET_METRICS:
         metric_key = str(metric["metric_key"])
-        row = db.scalar(
-            select(MarketSnapshot)
-            .where(MarketSnapshot.metric_key == metric_key)
-            .order_by(MarketSnapshot.as_of.desc(), MarketSnapshot.id.desc())
-            .limit(1)
+        rows = list(
+            db.scalars(
+                select(MarketSnapshot)
+                .where(MarketSnapshot.metric_key == metric_key)
+                .order_by(MarketSnapshot.as_of.desc(), MarketSnapshot.id.desc())
+                .limit(50)
+            ).all()
         )
-        if row is not None:
-            latest_by_metric[metric_key] = row
+        if not rows:
+            continue
+
+        def _rank(row: MarketSnapshot) -> tuple[int, float]:
+            payload = row.payload if isinstance(row.payload, dict) else {}
+            quality = snapshot_quality(payload)
+            as_of = _ensure_utc_datetime(row.as_of)
+            return (QUALITY_RANK.get(quality, 99), -as_of.timestamp())
+
+        latest_by_metric[metric_key] = sorted(rows, key=_rank)[0]
     return latest_by_metric
 
 
@@ -1177,6 +1259,9 @@ def backfill_market_history_from_public_sources(db: Session, *, days: int = 30) 
         brent_rows,
         payload={
             "history_backfill": True,
+            "quality": "derived",
+            "quote_kind": "futures",
+            "product_id": "Yahoo BZ=F",
             "source": "yahoo:BZ=F",
             "source_url": "https://finance.yahoo.com/quote/BZ=F/",
             "note": "Brent futures daily close from Yahoo chart endpoint.",
@@ -1188,6 +1273,9 @@ def backfill_market_history_from_public_sources(db: Session, *, days: int = 30) 
         jet_rows,
         payload={
             "history_backfill": True,
+            "quality": "derived",
+            "quote_kind": "spot",
+            "product_id": "FRED DJFUELUSGULF",
             "source": "fred:DJFUELUSGULF",
             "source_url": "https://fred.stlouisfed.org/series/DJFUELUSGULF",
             "note": "U.S. Gulf Coast kerosene-type jet fuel converted from USD/gal to USD/L.",
@@ -1210,6 +1298,9 @@ def backfill_market_history_from_public_sources(db: Session, *, days: int = 30) 
             _scale_history_to_latest(brent_rows, latest_value=latest_values[metric_key]),
             payload={
                 "history_backfill": True,
+                "quality": "derived",
+                "quote_kind": "proxy",
+                "product_id": "Brent-scaled EU jet proxy",
                 "source": "proxy:yahoo:BZ=F",
                 "source_url": "https://finance.yahoo.com/quote/BZ=F/",
                 "note": note,
@@ -1232,6 +1323,9 @@ def backfill_market_history_from_public_sources(db: Session, *, days: int = 30) 
             _scale_history_to_latest(carbon_proxy_rows, latest_value=latest_values[metric_key]),
             payload={
                 "history_backfill": True,
+                "quality": "derived",
+                "quote_kind": "proxy",
+                "product_id": "Yahoo CO2.L scaled EUA proxy",
                 "source": "proxy:yahoo:CO2.L",
                 "source_url": "https://finance.yahoo.com/quote/CO2.L/",
                 "note": note,
@@ -1248,6 +1342,9 @@ def backfill_market_history_from_public_sources(db: Session, *, days: int = 30) 
         ),
         payload={
             "history_backfill": True,
+            "quality": "derived",
+            "quote_kind": "proxy",
+            "product_id": "Brent-inverse Germany premium proxy",
             "source": "proxy:yahoo:BZ=F:inverse",
             "source_url": "https://finance.yahoo.com/quote/BZ=F/",
             "note": "Germany premium proxy moves inversely to Brent-derived jet cost and is scaled to the latest local premium value.",
@@ -1417,6 +1514,60 @@ def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
             published_at=parse_iso_datetime(raw.get("published_at")),
             fetched_at=parse_iso_datetime(raw.get("fetched_at")) or _ensure_utc_datetime(refreshed_at),
         )
+
+    for metric_key, row in latest_by_metric.items():
+        detail_key = METRIC_KEY_TO_DETAIL_KEY.get(metric_key)
+        if not detail_key:
+            continue
+        payload = row.payload if isinstance(row.payload, dict) else {}
+        payload_quality = snapshot_quality(payload)
+        payload_observed = parse_iso_datetime(payload.get("observed_at")) or parse_iso_datetime(
+            payload.get("published_at")
+        )
+        if payload_quality == "seed" and payload_observed is None:
+            payload_observed = _ensure_utc_datetime(row.as_of)
+        elif payload_quality in UNKNOWN_QUALITIES:
+            payload_observed = parse_iso_datetime(payload.get("observed_at"))
+        overlay = {
+            "value": float(row.value),
+            "quality": payload_quality,
+            "observed_at": payload_observed,
+            "published_at": parse_iso_datetime(payload.get("published_at")),
+            "quote_kind": payload.get("quote_kind"),
+            "product_id": payload.get("product_id"),
+        }
+        existing = typed_source_details.get(detail_key)
+        if existing is not None:
+            typed_source_details[detail_key] = existing.model_copy(
+                update={
+                    key: value
+                    for key, value in overlay.items()
+                    if value is not None or key in {"value", "quality", "observed_at"}
+                }
+            )
+
+    classified_details: dict[str, MarketSourceDetail] = {}
+    for key, detail in typed_source_details.items():
+        classified = classify_quote_freshness(
+            quality=str(detail.quality or "unknown"),
+            observed_at=detail.observed_at,
+            fetched_at=detail.fetched_at,
+            lag_minutes=detail.lag_minutes,
+            now=utcnow(),
+        )
+        freshness = quote_freshness(
+            quality=classified,
+            observed_at=detail.observed_at,
+            lag_minutes=detail.lag_minutes,
+            now=utcnow(),
+        )
+        updates = {}
+        if classified != detail.quality:
+            updates["quality"] = classified
+        if getattr(detail, "freshness", None) != freshness:
+            updates["freshness"] = freshness
+        classified_details[key] = detail.model_copy(update=updates) if updates else detail
+    typed_source_details = classified_details
 
     freshness_minutes = max(
         0,
@@ -1604,20 +1755,36 @@ def _pct_change(latest: float, baseline: float | None) -> float | None:
 
 
 def _snapshot_quality(payload: object) -> str:
-    if not isinstance(payload, dict):
-        return "observed"
-    if payload.get("seed"):
-        return str(payload.get("quality") or "seed")
-    return str(payload.get("quality") or "observed")
+    return snapshot_quality(payload if isinstance(payload, dict) else None)
 
 
-def _daily_aggregate(
-    rows: list[tuple[datetime, float, str, str, str | None]],
-) -> list[tuple[datetime, float, str, str, str | None]]:
-    by_day: dict[str, tuple[datetime, float, str, str, str | None]] = {}
-    for as_of, value, unit, quality, source in rows:
+def _series_fields(payload: object, source_key: str | None, unit: str) -> dict[str, str | None]:
+    body = payload if isinstance(payload, dict) else {}
+    return {
+        "quality": _snapshot_quality(body),
+        "source": str(body.get("source") or source_key or "") or None,
+        "quote_kind": str(body["quote_kind"]) if body.get("quote_kind") else None,
+        "product_id": str(body["product_id"]) if body.get("product_id") else None,
+        "unit": unit,
+    }
+
+
+HistoryRow = tuple[datetime, float, str, str, str | None, str | None, str | None]
+
+
+def _daily_aggregate(rows: list[HistoryRow]) -> list[HistoryRow]:
+    by_day: dict[str, HistoryRow] = {}
+    for as_of, value, unit, quality, source, quote_kind, product_id in rows:
         day_key = _ensure_utc_datetime(as_of).date().isoformat()
-        by_day[day_key] = (_ensure_utc_datetime(as_of), value, unit, quality, source)
+        by_day[day_key] = (
+            _ensure_utc_datetime(as_of),
+            value,
+            unit,
+            quality,
+            source,
+            quote_kind,
+            product_id,
+        )
     return [by_day[key] for key in sorted(by_day)]
 
 
@@ -1637,7 +1804,7 @@ def build_market_history_response(
         _ensure_utc_datetime(start) if start is not None else utcnow() - timedelta(days=window)
     )
 
-    def _load_metric_rows(metric_key: str) -> list[tuple[datetime, float, str, str, str | None]]:
+    def _load_metric_rows(metric_key: str) -> list[HistoryRow]:
         filters = [
             MarketSnapshot.metric_key == metric_key,
             MarketSnapshot.as_of >= range_start,
@@ -1655,22 +1822,25 @@ def build_market_history_response(
             .where(*filters)
             .order_by(MarketSnapshot.as_of.asc())
         )
-        rows: list[tuple[datetime, float, str, str, str | None]] = []
+        rows: list[HistoryRow] = []
         for as_of, value, unit, payload, source_key in db.execute(statement).all():
+            fields = _series_fields(payload, source_key, str(unit))
             rows.append(
                 (
                     _ensure_utc_datetime(as_of),
                     float(value),
                     str(unit),
-                    _snapshot_quality(payload),
-                    str(source_key) if source_key else None,
+                    str(fields["quality"] or "unknown"),
+                    fields["source"],
+                    fields["quote_kind"],
+                    fields["product_id"],
                 )
             )
         aggregated = _daily_aggregate(rows)
         non_seed = [row for row in aggregated if row[3] != "seed"]
         return non_seed or aggregated
 
-    def _load_latest_row(metric_key: str) -> tuple[datetime, float, str, str, str | None] | None:
+    def _load_latest_row(metric_key: str) -> HistoryRow | None:
         row = db.scalar(
             select(MarketSnapshot)
             .where(MarketSnapshot.metric_key == metric_key)
@@ -1679,16 +1849,19 @@ def build_market_history_response(
         )
         if row is None:
             return None
+        fields = _series_fields(row.payload, row.source_key, str(row.unit))
         return (
             _ensure_utc_datetime(row.as_of),
             float(row.value),
             str(row.unit),
-            _snapshot_quality(row.payload),
-            str(row.source_key) if row.source_key else None,
+            str(fields["quality"] or "unknown"),
+            fields["source"],
+            fields["quote_kind"],
+            fields["product_id"],
         )
 
-    def _load_history_rows() -> dict[str, list[tuple[datetime, float, str, str, str | None]]]:
-        grouped: dict[str, list[tuple[datetime, float, str, str, str | None]]] = {}
+    def _load_history_rows() -> dict[str, list[HistoryRow]]:
+        grouped: dict[str, list[HistoryRow]] = {}
         for metric_key in expected_metrics:
             rows = _load_metric_rows(metric_key)
             if rows:
@@ -1701,52 +1874,71 @@ def build_market_history_response(
         latest_by_metric = {key: _load_latest_row(key) for key in expected_metrics}
 
     rows_by_metric = _load_history_rows()
-    if not any(latest_by_metric.values()):
+    if not any(latest_by_metric.values()) and not rows_by_metric:
         return MarketHistoryResponse(generated_at=_ensure_utc_datetime(utcnow()), metrics={})
 
-    def _baseline_same_quality(
-        rows: list[tuple[datetime, float, str, str, str | None]],
+    def _row_series(row: HistoryRow) -> dict[str, str | None]:
+        return {
+            "quality": row[3],
+            "source": row[4],
+            "unit": row[2],
+            "quote_kind": row[5],
+            "product_id": row[6],
+        }
+
+    def _baseline_same_series(
+        rows: list[HistoryRow],
         *,
         latest_as_of: datetime,
-        latest_quality: str,
+        latest_row: HistoryRow,
         days: int,
     ) -> float | None:
         target = latest_as_of - timedelta(days=days)
+        latest_series = _row_series(latest_row)
         candidates = [
             row
             for row in rows
-            if row[0] <= target and same_quality_class(row[3], latest_quality)
+            if row[0] <= target and same_comparable_series(_row_series(row), latest_series)
         ]
         if not candidates:
             return None
         return float(candidates[-1][1])
 
-    generated_at = max(
-        row[0]
-        for row in list(latest_by_metric.values()) + [item for rows in rows_by_metric.values() for item in rows]
-        if row is not None
-    )
+    dated_rows = [row for row in list(latest_by_metric.values()) + [item for rows in rows_by_metric.values() for item in rows] if row is not None]
+    generated_at = max(row[0] for row in dated_rows) if dated_rows else _ensure_utc_datetime(utcnow())
     windows = [1, 7, 30]
 
     metrics: dict[str, MarketMetricHistory] = {}
     for metric_key, latest_row in latest_by_metric.items():
-        if latest_row is None:
-            continue
         metric_rows = rows_by_metric.get(metric_key) or []
-        latest_as_of, latest_value, latest_unit, latest_quality, _source = latest_row
-        if metric_rows:
-            latest_as_of, latest_value, latest_unit, latest_quality, _source = metric_rows[-1]
+        if not metric_rows:
+            unit = latest_row[2] if latest_row is not None else "unknown"
+            metrics[metric_key] = MarketMetricHistory(
+                metric_key=metric_key,
+                unit=unit,
+                latest_value=None,
+                latest_as_of=None,
+                change_pct_1d=None,
+                change_pct_7d=None,
+                change_pct_30d=None,
+                points=[],
+                quality=latest_row[3] if latest_row is not None else None,
+            )
+            continue
+        series_rows = [row for row in metric_rows if row[3] in SIGNAL_QUALITIES]
+        window_latest = series_rows[-1] if series_rows else metric_rows[-1]
+        latest_as_of, latest_value, latest_unit, latest_quality, source, quote_kind, product_id = window_latest
         change_1d = _pct_change(
             latest_value,
-            _baseline_same_quality(metric_rows, latest_as_of=latest_as_of, latest_quality=latest_quality, days=1),
+            _baseline_same_series(metric_rows, latest_as_of=latest_as_of, latest_row=window_latest, days=1),
         )
         change_7d = _pct_change(
             latest_value,
-            _baseline_same_quality(metric_rows, latest_as_of=latest_as_of, latest_quality=latest_quality, days=7),
+            _baseline_same_series(metric_rows, latest_as_of=latest_as_of, latest_row=window_latest, days=7),
         )
         change_30d = _pct_change(
             latest_value,
-            _baseline_same_quality(metric_rows, latest_as_of=latest_as_of, latest_quality=latest_quality, days=30),
+            _baseline_same_series(metric_rows, latest_as_of=latest_as_of, latest_row=window_latest, days=30),
         )
 
         points = [
@@ -1754,9 +1946,11 @@ def build_market_history_response(
                 as_of=_ensure_utc_datetime(as_of),
                 value=float(value),
                 quality=quality,
-                source=source,
+                source=point_source,
+                quote_kind=point_kind,
+                product_id=point_product,
             )
-            for as_of, value, _unit, quality, source in metric_rows[-points_limit_per_metric:]
+            for as_of, value, _unit, quality, point_source, point_kind, point_product in metric_rows[-points_limit_per_metric:]
         ]
 
         metrics[metric_key] = MarketMetricHistory(

@@ -291,9 +291,16 @@
             "type": "array"
           },
           "fossil_jet_usd_per_l": {
-            "exclusiveMinimum": 0.0,
-            "title": "Fossil Jet Usd Per L",
-            "type": "number"
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fossil Jet Usd Per L"
           },
           "generated_at": {
             "format": "date-time",
@@ -325,7 +332,6 @@
         "required": [
           "generated_at",
           "market_generated_at",
-          "fossil_jet_usd_per_l",
           "source_status",
           "reserve",
           "research"
@@ -1460,6 +1466,17 @@
             "title": "As Of",
             "type": "string"
           },
+          "product_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Id"
+          },
           "quality": {
             "anyOf": [
               {
@@ -1470,6 +1487,17 @@
               }
             ],
             "title": "Quality"
+          },
+          "quote_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quote Kind"
           },
           "source": {
             "anyOf": [
@@ -1829,6 +1857,17 @@
               }
             ],
             "title": "Fetched At"
+          },
+          "freshness": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Freshness"
           },
           "lag_minutes": {
             "anyOf": [

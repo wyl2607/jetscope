@@ -98,10 +98,6 @@ def _resolve_fossil_jet_usd_per_l(values: dict[str, float], source_details: dict
     selected = select_fossil_jet_benchmark(values, source_details or {})
     if selected["value"] is not None and selected["usable_for_signal"]:
         return float(selected["value"])
-    for key in ("rotterdam_jet_fuel_usd_per_l", "jet_eu_proxy_usd_per_l", "jet_usd_per_l"):
-        value = values.get(key)
-        if isinstance(value, int | float) and value > 0:
-            return float(value)
     raise ValueError("No usable fossil jet benchmark")
 
 
@@ -162,13 +158,18 @@ def get_crisis_brief(
     event_since = since or (datetime.now(timezone.utc) - timedelta(days=42))
     events = engine.fetch_events(db, since=event_since, limit=limit)
 
+    try:
+        fossil_jet = _resolve_fossil_jet_usd_per_l(
+            market.values,
+            {key: detail.model_dump() for key, detail in market.source_details.items()},
+        )
+    except ValueError:
+        fossil_jet = None
+
     return CrisisBriefResponse(
         generated_at=utcnow(),
         market_generated_at=market.generated_at,
-        fossil_jet_usd_per_l=_resolve_fossil_jet_usd_per_l(
-            market.values,
-            {key: detail.model_dump() for key, detail in market.source_details.items()},
-        ),
+        fossil_jet_usd_per_l=fossil_jet,
         source_status=market.source_status,
         reserve=reserve,
         tipping_events=[

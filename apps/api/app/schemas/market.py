@@ -30,6 +30,7 @@ class MarketSourceDetail(BaseModel):
     raw_eur_per_t: float | None = None
     usd_per_t: float | None = None
     quality: str | None = None
+    freshness: str | None = None
     quote_kind: str | None = None
     product_id: str | None = None
     observed_at: datetime | None = None
@@ -52,6 +53,8 @@ class MarketHistoryPoint(BaseModel):
     value: float
     quality: str | None = None
     source: str | None = None
+    quote_kind: str | None = None
+    product_id: str | None = None
 
 
 class MarketMetricHistory(BaseModel):

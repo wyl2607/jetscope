@@ -16,11 +16,12 @@ type MarketEvent = {
 type PriceTrendData = {
   metric_key: string;
   unit: string;
-  latest_value: number;
+  latest_value: number | null;
   latest_as_of: string | null;
   change_pct_1d: number | null;
   change_pct_7d: number | null;
   change_pct_30d: number | null;
+  quality?: string | null;
   points: PricePoint[];
 };
 
@@ -489,10 +490,13 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
       <div className="grid gap-4 md:grid-cols-4">
         <div className="rounded-lg border border-line bg-surface p-4">
           <p className="text-sm text-muted">最新值</p>
-          <p className="mt-2 text-2xl font-semibold text-ink">
-            {data.latest_value?.toFixed(2) ?? '无数据'} {data.unit}
+          <p className="mt-2 text-2xl font-semibold text-ink" data-testid="price-trend-latest">
+            {data.latest_value == null ? 'n/a' : data.latest_value.toFixed(2)} {data.unit}
           </p>
-          <p className="mt-1 text-xs text-muted">截至 {data.latest_as_of ? new Date(data.latest_as_of).toLocaleString('zh-CN') : '暂无数据'}</p>
+          <p className="mt-1 text-xs text-muted">
+            截至 {data.latest_as_of ? new Date(data.latest_as_of).toLocaleString('zh-CN') : '暂无数据'}
+            {data.quality ? ` · ${data.quality}` : ''}
+          </p>
         </div>
 
         <div className="rounded-lg border border-line bg-surface p-4">

@@ -7,12 +7,15 @@ export type MarketSourceDetail = {
   status: string;
   value?: number | null;
   quality?: string | null;
+  freshness?: string | null;
   quote_kind?: string | null;
   product_id?: string | null;
   observed_at?: string | null;
   published_at?: string | null;
   fetched_at?: string | null;
   fallback_used?: boolean | null;
+  lag_minutes?: number | null;
+  input_observed_at?: Record<string, string | null | undefined> | null;
   note?: string | null;
 };
 
@@ -144,6 +147,7 @@ export type MarketHistory = {
 export const FALLBACK_VALUES = {
   brent_usd_per_bbl: 87.01,
   jet_usd_per_l: 0.64,
+  rotterdam_jet_fuel_usd_per_l: 0.657,
   jet_eu_proxy_usd_per_l: 0.657,
   carbon_proxy_usd_per_t: 91.91
 } as const;
@@ -177,6 +181,11 @@ export function metricLabel(metric: string, locale: DisplayLocale = 'zh'): strin
     if (locale === 'de') return 'Jet-Fuel';
     if (locale === 'en') return 'Jet fuel';
     return '航煤';
+  }
+  if (metric === 'rotterdam_jet_fuel_usd_per_l') {
+    if (locale === 'de') return 'Rotterdam Jet';
+    if (locale === 'en') return 'Rotterdam jet';
+    return '鹿特丹航煤';
   }
   if (metric === 'jet_eu_proxy_usd_per_l') {
     if (locale === 'de') return 'EU-Jet-Proxy';

@@ -1,4 +1,5 @@
 import { buildApiUrl } from '@/lib/api-config';
+import { selectFossilJetBenchmark, selectQualifiedInput } from '@/lib/market-quality';
 import {
   FALLBACK_VALUES,
   finiteChangeOrNull,
@@ -18,6 +19,7 @@ const DEFAULT_FETCH_TIMEOUT_MS = 2000;
 export type GermanyJetFuelMetricKey =
   | 'brent_usd_per_bbl'
   | 'jet_usd_per_l'
+  | 'rotterdam_jet_fuel_usd_per_l'
   | 'jet_eu_proxy_usd_per_l'
   | 'carbon_proxy_usd_per_t';
 
@@ -50,7 +52,11 @@ export type GermanyJetFuelReadModel = {
   isFallback: boolean;
   decision: GermanyDecisionKind;
   usdPerEur: number | null;
+  usdPerEurQuality: string;
   euaEurPerT: number | null;
+  euaQuality: string;
+  selectedJetMetricKey: string | null;
+  selectedJetUsable: boolean;
   germanyPremiumPct: number | null;
   germanyPremiumNote: string | null;
   error: string | null;
@@ -67,6 +73,7 @@ type GermanyMetricConfig = {
 const GERMANY_METRIC_CONFIGS: GermanyMetricConfig[] = [
   { metricKey: 'brent_usd_per_bbl', unit: 'USD/bbl', digits: 2, detailKey: 'brent' },
   { metricKey: 'jet_usd_per_l', unit: 'USD/L', digits: 3, detailKey: 'jet' },
+  { metricKey: 'rotterdam_jet_fuel_usd_per_l', unit: 'USD/L', digits: 3, detailKey: 'rotterdam_jet_fuel' },
   {
     metricKey: 'jet_eu_proxy_usd_per_l',
     unit: 'USD/L',
@@ -143,7 +150,7 @@ function buildGermanyMetric(
   const { metricKey } = config;
   const sourceMetricKey = history.metric ? history.sourceMetricKey : snapshot.sourceMetricKey;
   const usedFallback = snapshot.usedFallback || history.usedFallback || Boolean(detail?.fallback_used);
-  const quality = detail?.quality || history.metric?.quality || (usedFallback ? 'derived' : 'observed');
+  const quality = detail?.quality || history.metric?.quality || (usedFallback ? 'derived' : 'unknown');
   const note =
     usedFallback && sourceMetricKey !== metricKey
       ? fallbackNote(sourceMetricKey, locale)
@@ -199,7 +206,11 @@ function fallbackGermanyJetFuelReadModel(error: unknown, locale: DisplayLocale):
     isFallback: true,
     decision: 'insufficient',
     usdPerEur: null,
+    usdPerEurQuality: 'missing',
     euaEurPerT: null,
+    euaQuality: 'missing',
+    selectedJetMetricKey: null,
+    selectedJetUsable: false,
     germanyPremiumPct: null,
     germanyPremiumNote: null,
     error: error instanceof Error ? error.message : 'unknown error'
@@ -221,13 +232,14 @@ export function buildGermanyJetFuelReadModelFromPayload(
     )
   );
   const isFallback = Boolean(market.source_status?.is_fallback);
-  const euJet = metrics.find((metric) => metric.metricKey === 'jet_eu_proxy_usd_per_l') ?? metrics[0];
-  const quoteAsOf =
-    metrics
-      .map((metric) => metric.observedAt)
-      .filter((value): value is string => typeof value === 'string' && !Number.isNaN(Date.parse(value)))
-      .sort((left, right) => Date.parse(left) - Date.parse(right))
-      .pop() ?? null;
+  const clockRaw = market.fetched_at ?? market.generated_at;
+  const clock = clockRaw && !Number.isNaN(Date.parse(clockRaw)) ? new Date(clockRaw) : undefined;
+  const selectedJet = selectFossilJetBenchmark(market.values, market.source_details ?? {}, clock);
+  const fx = selectQualifiedInput(market.values.usd_per_eur, market.source_details?.ecb, clock);
+  const eua = selectQualifiedInput(market.values.eu_ets_price_eur_per_t, market.source_details?.eu_ets, clock);
+  const selectedMetric = metrics.find((metric) => metric.metricKey === selectedJet.metricKey) ?? null;
+  const quoteAsOf = selectedMetric?.observedAt ?? null;
+  const decisionQuality = selectedJet.usableForSignal ? selectedJet.quality : 'seed';
 
   return {
     generatedAt: market.generated_at,
@@ -236,9 +248,17 @@ export function buildGermanyJetFuelReadModelFromPayload(
     overallStatus: market.source_status?.overall ?? 'unknown',
     metrics,
     isFallback,
-    decision: decisionFromChange(euJet?.changePct30d ?? null, euJet?.quality ?? 'missing', isFallback),
-    usdPerEur: finiteNumberOrNull(market.values.usd_per_eur),
-    euaEurPerT: finiteNumberOrNull(market.values.eu_ets_price_eur_per_t),
+    decision: decisionFromChange(
+      selectedMetric?.changePct30d ?? null,
+      decisionQuality,
+      isFallback || !selectedJet.usableForSignal
+    ),
+    usdPerEur: fx.value,
+    usdPerEurQuality: fx.quality,
+    euaEurPerT: eua.value,
+    euaQuality: eua.quality,
+    selectedJetMetricKey: selectedJet.metricKey,
+    selectedJetUsable: selectedJet.usableForSignal,
     germanyPremiumPct: finiteNumberOrNull(market.values.germany_premium_pct),
     germanyPremiumNote: market.source_details?.germany_premium?.note ?? null,
     error: null

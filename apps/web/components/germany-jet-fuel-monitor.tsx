@@ -5,44 +5,28 @@ import { MetricCard } from '@/components/cards';
 import { Panel } from '@/components/panel';
 import { PriceTrendsChart } from '@/components/price-trends-chart';
 import { SignalRow } from '@/components/page-template';
+import { SourceFooter } from '@/components/source-footer';
 import {
+  AviationCostError,
+  computeCostChange,
   computeMarketLinkedFlightCost,
-  kgToMetricTons
+  energyTaxEurPerTFromEurPerL,
+  kgToMetricTons,
+  PRIVATE_JET_ENERGY_TAX_EUR_PER_L_ASSUMPTION
 } from '@/lib/aviation-cost';
+import type { GermanyJetFuelCopy } from '@/lib/germany-jet-fuel-copy';
 import {
   buildGermanyJetFuelReadModelFromPayload,
   type GermanyDecisionKind,
   type GermanyJetFuelReadModel
 } from '@/lib/germany-jet-fuel-read-model';
 import type { DisplayLocale, MarketHistory, MarketSnapshot } from '@/lib/product-read-model';
-import type { PriceTrendChartReadModel } from '@/lib/price-trend-chart-read-model';
+import {
+  buildPriceTrendChartReadModelFromHistory,
+  type PriceTrendChartReadModel
+} from '@/lib/price-trend-chart-read-model';
 
-export type GermanyJetFuelCopy = {
-  signalLabel: string;
-  decisionLabel: string;
-  decisions: Record<GermanyDecisionKind, string>;
-  historyMissing: string;
-  quoteDate: string;
-  lastCheck: string;
-  staleKeep: string;
-  costTitle: string;
-  costWhy: string;
-  estimateBanner: string;
-  airportLabel: string;
-  fuelKgLabel: string;
-  paxLabel: string;
-  blendLabel: string;
-  airportDiffLabel: string;
-  taxUseLabel: string;
-  taxCommercial: string;
-  taxPrivate: string;
-  perFlight: string;
-  perPax: string;
-  delivered: string;
-  noAirportQuote: string;
-  methodLabel: string;
-  limitations: string[];
-};
+export type { GermanyJetFuelCopy };
 
 const ROUTE_PRESETS = [
   { id: 'fra-jfk', label: 'FRA–JFK A350', airport: 'FRA', fuelKg: 70000, pax: 280 },
@@ -85,8 +69,17 @@ function decisionTone(kind: GermanyDecisionKind): string {
   return 'text-success';
 }
 
-async function fetchJson<T>(path: string): Promise<T> {
-  const response = await fetch(path, { cache: 'no-store' });
+function formatMoney(value: number | null, unit: string): string { // figure-contract-lint-ignore: display helper
+  if (value == null || !Number.isFinite(value)) return 'n/a';
+  return `${value.toFixed(value >= 100 ? 0 : 2)} ${unit}`;
+}
+
+function selectedJetMetric(readModel: GermanyJetFuelReadModel) {
+  return readModel.metrics.find((metric) => metric.metricKey === readModel.selectedJetMetricKey) ?? null;
+}
+
+async function fetchJson<T>(path: string, signal: AbortSignal): Promise<T> {
+  const response = await fetch(path, { cache: 'no-store', signal });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return (await response.json()) as T;
 }
@@ -108,10 +101,18 @@ export function GermanyJetFuelMonitor({
   const [presetId, setPresetId] = useState<(typeof ROUTE_PRESETS)[number]['id']>('fra-jfk');
   const [fuelKg, setFuelKg] = useState(70000);
   const [passengers, setPassengers] = useState(280);
-  const [blendPct, setBlendPct] = useState(2);
+  const [blendPct, setBlendPct] = useState(0);
+  const [safUsdPerL, setSafUsdPerL] = useState('');
   const [airportDiff, setAirportDiff] = useState('');
   const [taxUse, setTaxUse] = useState<'commercial' | 'private'>('commercial');
   const delayRef = useRef(60_000);
+  const initialSelected = selectedJetMetric(initialReadModel);
+  const baselineRef = useRef({
+    fossilJetUsdPerL: initialSelected?.value ?? null,
+    usdPerEur: initialReadModel.usdPerEur,
+    euaEurPerT: initialReadModel.euaEurPerT,
+    quality: initialSelected?.quality ?? 'missing'
+  });
 
   useEffect(() => {
     const preset = ROUTE_PRESETS.find((item) => item.id === presetId);
@@ -125,13 +126,16 @@ export function GermanyJetFuelMonitor({
     let timer: number | undefined;
 
     const poll = async () => {
+      const nextController = new AbortController();
+      const timeout = window.setTimeout(() => nextController.abort(), 15_000);
       try {
         const [snapshot, history] = await Promise.all([
-          fetchJson<MarketSnapshot>('/api/market'),
-          fetchJson<MarketHistory>('/api/market/history?window_days=90')
+          fetchJson<MarketSnapshot>('/api/market', nextController.signal),
+          fetchJson<MarketHistory>('/api/market/history?window_days=90', nextController.signal)
         ]);
         if (cancelled) return;
         setReadModel(buildGermanyJetFuelReadModelFromPayload(snapshot, history, locale));
+        setChart(buildPriceTrendChartReadModelFromHistory(history));
         setPollError(null);
         delayRef.current = 60_000;
       } catch (error) {
@@ -139,6 +143,7 @@ export function GermanyJetFuelMonitor({
         setPollError(error instanceof Error ? error.message : 'refresh failed');
         delayRef.current = Math.min(delayRef.current * 2, 10 * 60_000);
       } finally {
+        window.clearTimeout(timeout);
         if (!cancelled) {
           timer = window.setTimeout(poll, delayRef.current);
         }
@@ -152,51 +157,144 @@ export function GermanyJetFuelMonitor({
     };
   }, [locale]);
 
-  const euJet = readModel.metrics.find((metric) => metric.metricKey === 'jet_eu_proxy_usd_per_l') ?? readModel.metrics[0];
-  const signalMetrics = readModel.metrics.filter((metric) => metric.metricKey !== euJet?.metricKey).slice(0, 3);
+  const selectedJet = selectedJetMetric(readModel);
+  const signalMetrics = readModel.metrics.filter((metric) => metric.metricKey !== selectedJet?.metricKey).slice(0, 3);
   const airportQuote = airportDiff.trim() !== '' && Number.isFinite(Number(airportDiff));
+  const parsedSaf = safUsdPerL.trim() === '' ? null : Number(safUsdPerL);
+  const taxEurPerT =
+    taxUse === 'private' ? energyTaxEurPerTFromEurPerL(PRIVATE_JET_ENERGY_TAX_EUR_PER_L_ASSUMPTION) : 0;
+
   const cost = useMemo(() => {
-    if (!euJet?.value || !readModel.usdPerEur) return null;
+    if (!selectedJet?.value || !readModel.usdPerEur || !readModel.selectedJetUsable) {
+      return { result: null as ReturnType<typeof computeMarketLinkedFlightCost> | null, error: null as string | null };
+    }
     try {
-      return computeMarketLinkedFlightCost({
-        fossilJetUsdPerL: euJet.value,
+      const result = computeMarketLinkedFlightCost({
+        fossilJetUsdPerL: selectedJet.value,
         usdPerEur: readModel.usdPerEur,
         fuelBurnT: kgToMetricTons(fuelKg),
         passengers,
         blendShare: blendPct / 100,
+        safUsdPerL: parsedSaf,
         airportDiffEurPerT: airportQuote ? Number(airportDiff) : 0,
-        applicableTaxEurPerT: taxUse === 'private' ? 654.5 : 0,
+        applicableTaxEurPerT: taxEurPerT,
         euaEurPerT: readModel.euaEurPerT,
+        etsApplicable: true,
         airportQuoteAvailable: airportQuote,
-        quality: euJet.quality
+        quality: selectedJet.quality
       });
+      return { result, error: result.missingInputs.length ? result.missingInputs.join(',') : null };
+    } catch (error) {
+      return {
+        result: null,
+        error: error instanceof AviationCostError ? error.message : copy.invalidInput
+      };
+    }
+  }, [
+    airportDiff,
+    airportQuote,
+    blendPct,
+    copy.invalidInput,
+    fuelKg,
+    parsedSaf,
+    passengers,
+    readModel.euaEurPerT,
+    readModel.selectedJetUsable,
+    readModel.usdPerEur,
+    selectedJet,
+    taxEurPerT
+  ]);
+
+  const delta = useMemo(() => {
+    const baselineJet = baselineRef.current.fossilJetUsdPerL;
+    const baselineFx = baselineRef.current.usdPerEur;
+    if (
+      !cost.result?.computable ||
+      baselineJet == null ||
+      baselineFx == null ||
+      !selectedJet?.value ||
+      !readModel.usdPerEur
+    ) {
+      return null;
+    }
+    try {
+      return computeCostChange(
+        {
+          fossilJetUsdPerL: baselineJet,
+          usdPerEur: baselineFx,
+          euaEurPerT: baselineRef.current.euaEurPerT,
+          fuelBurnT: kgToMetricTons(fuelKg),
+          passengers,
+          blendShare: blendPct / 100,
+          safUsdPerL: parsedSaf,
+          airportDiffEurPerT: airportQuote ? Number(airportDiff) : 0,
+          applicableTaxEurPerT: taxEurPerT,
+          quality: baselineRef.current.quality,
+          etsApplicable: true
+        },
+        {
+          fossilJetUsdPerL: selectedJet.value,
+          usdPerEur: readModel.usdPerEur,
+          euaEurPerT: readModel.euaEurPerT,
+          fuelBurnT: kgToMetricTons(fuelKg),
+          passengers,
+          blendShare: blendPct / 100,
+          safUsdPerL: parsedSaf,
+          airportDiffEurPerT: airportQuote ? Number(airportDiff) : 0,
+          applicableTaxEurPerT: taxEurPerT,
+          quality: selectedJet.quality,
+          etsApplicable: true
+        }
+      );
     } catch {
       return null;
     }
-  }, [airportDiff, airportQuote, blendPct, euJet, fuelKg, passengers, readModel.euaEurPerT, readModel.usdPerEur, taxUse]);
+  }, [
+    airportDiff,
+    airportQuote,
+    blendPct,
+    cost.result,
+    fuelKg,
+    parsedSaf,
+    passengers,
+    readModel.euaEurPerT,
+    readModel.usdPerEur,
+    selectedJet,
+    taxEurPerT
+  ]);
+
+  const asOf = readModel.isFallback ? null : (readModel.quoteAsOf ?? readModel.generatedAt);
 
   return (
     <>
       <p className="mb-4 text-xs text-subtle" data-testid="quote-and-fetch">
         <span className="uppercase tracking-[0.18em]">{copy.quoteDate}</span>{' '}
-        <time className="tabular-nums">{readModel.quoteAsOf ?? 'n/a'}</time>
+        <time className="tabular-nums" data-testid="selected-quote-date">
+          {readModel.quoteAsOf ?? 'n/a'}
+        </time>
         {' · '}
         <span className="uppercase tracking-[0.18em]">{copy.lastCheck}</span>{' '}
         <time className="tabular-nums">{readModel.fetchedAt ?? 'n/a'}</time>
-        {pollError ? <span className="ml-2 text-warning">{copy.staleKeep}</span> : null}
+        {pollError ? (
+          <span className="ml-2 text-warning" data-testid="poll-error">
+            {copy.staleKeep}
+          </span>
+        ) : null}
       </p>
 
       <SignalRow label={copy.signalLabel}>
-        <MetricCard
-          label={copy.decisionLabel}
-          value={copy.decisions[readModel.decision]}
-          valueClassName={decisionTone(readModel.decision)}
-          hint={
-            euJet
-              ? `EU jet ${formatMetricValue(euJet.value, euJet.digits, euJet.unit, locale)} · 30d ${formatChange(euJet.changePct30d, copy.historyMissing)} · ${euJet.quality}`
-              : copy.historyMissing
-          }
-        />
+        <div data-testid="selected-jet-signal">
+          <MetricCard
+            label={copy.decisionLabel}
+            value={copy.decisions[readModel.decision]}
+            valueClassName={decisionTone(readModel.decision)}
+            hint={
+              selectedJet
+                ? `${selectedJet.label} ${formatMetricValue(selectedJet.value, selectedJet.digits, selectedJet.unit, locale)} · 30d ${formatChange(selectedJet.changePct30d, copy.historyMissing)} · ${selectedJet.quality}`
+                : copy.historyMissing
+            }
+          />
+        </div>
         {signalMetrics.map((metric) => (
           <MetricCard
             key={metric.metricKey}
@@ -243,6 +341,7 @@ export function GermanyJetFuelMonitor({
               className="mt-1 w-full border border-line bg-surface px-3 py-2 text-ink hover:border-line-strong"
               type="number"
               min={1}
+              step={1}
               value={passengers}
               onChange={(event) => setPassengers(Number(event.target.value))}
             />
@@ -256,6 +355,17 @@ export function GermanyJetFuelMonitor({
               max={100}
               value={blendPct}
               onChange={(event) => setBlendPct(Number(event.target.value))}
+            />
+          </label>
+          <label className="text-sm text-muted">
+            {copy.safPriceLabel}
+            <input
+              className="mt-1 w-full border border-line bg-surface px-3 py-2 text-ink hover:border-line-strong"
+              type="number"
+              min={0}
+              value={safUsdPerL}
+              placeholder="n/a"
+              onChange={(event) => setSafUsdPerL(event.target.value)}
             />
           </label>
           <label className="text-sm text-muted">
@@ -284,23 +394,60 @@ export function GermanyJetFuelMonitor({
           <div>
             <dt className="text-xs uppercase tracking-[0.18em] text-subtle">{copy.delivered}</dt>
             <dd className="js-metric-value tabular-nums" data-testid="delivered-eur-per-t">
-              {cost ? `${cost.deliveredEurPerT.toFixed(2)} EUR/t` : 'n/a'}
+              {formatMoney(cost.result?.deliveredEurPerT ?? null, 'EUR/t')}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-[0.18em] text-subtle">{copy.fuelOnly}</dt>
+            <dd className="js-metric-value tabular-nums" data-testid="fuel-cost-eur">
+              {formatMoney(cost.result?.fuelCostEur ?? null, 'EUR')}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-[0.18em] text-subtle">{copy.carbonOnly}</dt>
+            <dd className="js-metric-value tabular-nums" data-testid="carbon-cost-eur">
+              {formatMoney(cost.result?.carbonCostEur ?? null, 'EUR')}
             </dd>
           </div>
           <div>
             <dt className="text-xs uppercase tracking-[0.18em] text-subtle">{copy.perFlight}</dt>
             <dd className="js-metric-value tabular-nums" data-testid="fuel-compliance-eur">
-              {cost ? `${cost.fuelAndComplianceEur.toFixed(0)} EUR` : 'n/a'}
+              {formatMoney(cost.result?.fuelAndComplianceEur ?? null, 'EUR')}
             </dd>
           </div>
           <div>
             <dt className="text-xs uppercase tracking-[0.18em] text-subtle">{copy.perPax}</dt>
             <dd className="js-metric-value tabular-nums" data-testid="cost-per-pax">
-              {cost ? `${cost.perPassengerEur.toFixed(2)} EUR` : 'n/a'}
+              {formatMoney(cost.result?.perPassengerEur ?? null, 'EUR')}
             </dd>
           </div>
         </dl>
+        {taxUse === 'private' ? <p className="mt-3 text-sm text-warning">{copy.taxAssumption}</p> : null}
         {!airportQuote ? <p className="mt-3 text-sm text-warning">{copy.noAirportQuote}</p> : null}
+        {cost.error?.includes('saf') || cost.result?.missingInputs.includes('saf_usd_per_l') ? (
+          <p className="mt-3 text-sm text-danger" data-testid="missing-saf">
+            {copy.missingSaf}
+          </p>
+        ) : null}
+        {cost.result?.missingInputs.includes('eua_eur_per_t') ? (
+          <p className="mt-3 text-sm text-warning" data-testid="missing-carbon">
+            {copy.missingCarbon}
+          </p>
+        ) : null}
+        {cost.error && !cost.result ? (
+          <p className="mt-3 text-sm text-danger" data-testid="invalid-cost-input">
+            {copy.invalidInput}
+          </p>
+        ) : null}
+        {delta?.fuelAndComplianceDeltaEur != null ? (
+          <div className="mt-6 border-t border-line pt-4" data-testid="cost-change">
+            <p className="text-sm font-medium text-ink">{copy.costChangeTitle}</p>
+            <p className="mt-2 text-sm text-muted">
+              {copy.deltaFlight}: {delta.fuelAndComplianceDeltaEur.toFixed(0)} EUR · {copy.deltaPax}:{' '}
+              {delta.perPassengerDeltaEur?.toFixed(2)} EUR
+            </p>
+          </div>
+        ) : null}
       </Panel>
 
       <Panel
@@ -317,6 +464,55 @@ export function GermanyJetFuelMonitor({
         <PriceTrendsChart metrics={chart.metrics} isLoading={false} error={chart.error} />
       </Panel>
 
+      <SourceFooter
+        sources={[
+          {
+            id: 'germany-jet-fuel-read-model',
+            label: readModel.isFallback
+              ? locale === 'en'
+                ? `Germany jet-fuel read model unavailable (${readModel.error ?? 'unknown'})`
+                : locale === 'de'
+                  ? `Deutschland-Jet-Read-Model nicht verfügbar (${readModel.error ?? 'unbekannt'})`
+                  : `德国航油价格读模型不可用，当前为回退估算（${readModel.error ?? '未知原因'}）`
+              : locale === 'en'
+                ? 'Germany jet-fuel read model (Brent, global jet, EU jet, carbon)'
+                : locale === 'de'
+                  ? 'Deutschland-Jet-Read-Model (Brent, globales Jet, EU-Jet, Carbon)'
+                  : '德国航油价格读模型（Brent、全球航油、EU 航油代理与碳价代理）',
+            asOf,
+            basis: readModel.isFallback ? 'assumption' : ('derived' as const)
+          },
+          ...copy.sourceLinks.map((source) => ({
+            id: source.key,
+            label: source.label,
+            href: source.href,
+            asOf: readModel.isFallback
+              ? null
+              : readModel.metrics.find((metric) => metric.metricKey === source.key)?.observedAt ?? null,
+            basis: readModel.isFallback ? ('assumption' as const) : ('derived' as const)
+          })),
+          {
+            id: 'price-trend-read-model',
+            label: chart.isFallback
+              ? locale === 'en'
+                ? `Price trend history unavailable (${chart.error ?? 'unknown'})`
+                : locale === 'de'
+                  ? `Preistrend nicht verfügbar (${chart.error ?? 'unbekannt'})`
+                  : `价格趋势历史不可用（${chart.error ?? '未知原因'}）`
+              : locale === 'en'
+                ? 'Price trend history (1d, 7d, 30d)'
+                : locale === 'de'
+                  ? 'Preistrendhistorie (1d, 7d, 30d)'
+                  : '价格趋势历史读模型（1d、7d、30d 窗口）',
+            asOf: chart.isFallback ? null : chart.generatedAt,
+            basis: chart.isFallback ? ('assumption' as const) : ('derived' as const)
+          }
+        ]}
+        methodHref="/sources"
+        methodLabel={copy.methodLabel}
+        limitations={copy.limitations}
+        locale={locale}
+      />
     </>
   );
 }

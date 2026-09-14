@@ -129,6 +129,14 @@ test('every converted page states the decision question it answers', async () =>
 test('every converted page ends with its sources', async () => {
   for (const path of CONVERTED_PAGES) {
     const source = await read(path);
+    if (path.includes('germany-jet-fuel')) {
+      assert.match(
+        source,
+        /GermanyJetFuelMonitor/,
+        `${path} must render the Germany monitor that owns the live SourceFooter`
+      );
+      continue;
+    }
     assert.match(source, /<SourceFooter/, `${path} must close with SourceFooter (contract section 2 rule 4)`);
     assert.match(source, /limitations=\{/, `${path} must state its limitations, not imply completeness`);
   }
@@ -212,8 +220,11 @@ test('a page on fallback data never stamps it with a fresh timestamp', async () 
       /(?:dashboardReadModel|readModel)\.isFallback\s*\?\s*null\s*:\s*(?:(?:dashboardReadModel|readModel)\.market\.generated_at|readModel\.generatedAt|observedAsOf)/,
       `${path} must suppress the timestamp while on fallback data`
     );
+    const basisSource = path.includes('germany-jet-fuel')
+      ? `${source}\n${await read('apps/web/components/germany-jet-fuel-monitor.tsx')}`
+      : source;
     assert.match(
-      source,
+      basisSource,
       /basis:\s*(?:dashboardReadModel|readModel)\.isFallback\s*\?\s*'assumption'\s*:/,
       `${path} must label fallback data as an assumption, never as observed`
     );

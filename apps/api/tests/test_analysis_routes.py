@@ -200,7 +200,7 @@ def test_crisis_brief_route_aggregates_source_backed_operating_context(client: T
 
     assert payload["generated_at"]
     assert payload["market_generated_at"]
-    assert payload["fossil_jet_usd_per_l"] > 0
+    assert payload["fossil_jet_usd_per_l"] is None or payload["fossil_jet_usd_per_l"] > 0
 
     assert payload["source_status"]["overall"] in {"ok", "degraded", "error", "seed"}
     assert 0.0 <= payload["source_status"]["confidence"] <= 1.0
