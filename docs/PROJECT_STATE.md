@@ -245,13 +245,15 @@ is locked in.
    are locale flags that default false. Middleware and `/[locale]` stay
    forbidden.
 
-### Known debts, none urgent
+### Data provenance note
 
-- `apps/web/lib/research-signals-read-model.ts` stamps a signal with the current
-  time when the upstream record has no `published_at`. It is recorded in the
-  figure-contract baseline; clearing it means deciding what an undated signal
-  should show instead. The other #304 items (nested Lufthansa cards, watch
-  reserve using accent, GridHistoryChart hex) are closed.
+- Resolved 2026-09-01: `apps/web/lib/research-signals-read-model.ts` now uses
+  only an upstream `published_at` as the signal's evidence time. `created_at`
+  and `generated_at` are ingestion/pipeline timestamps and are intentionally
+  ignored for publication display; signals without `published_at` remain
+  undated instead of appearing freshly sourced. The other #304 items (nested
+  Lufthansa cards, watch reserve using accent, GridHistoryChart hex) are
+  closed.
 
 ## How the work gets delegated
 
