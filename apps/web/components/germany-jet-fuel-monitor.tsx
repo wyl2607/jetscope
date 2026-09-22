@@ -17,6 +17,7 @@ import {
 import type { GermanyJetFuelCopy } from '@/lib/germany-jet-fuel-copy';
 import {
   buildGermanyJetFuelReadModelFromPayload,
+  decisionFromChange,
   type GermanyDecisionKind,
   type GermanyJetFuelReadModel
 } from '@/lib/germany-jet-fuel-read-model';
@@ -75,8 +76,29 @@ function formatMoney(value: number | null, unit: string): string { // figure-con
 }
 
 function selectedJetMetric(readModel: GermanyJetFuelReadModel) {
-  return readModel.metrics.find((metric) => metric.metricKey === readModel.selectedJetMetricKey) ?? null;
+  return (
+    readModel.metrics.find((metric) => metric.metricKey === readModel.selectedJetMetricKey) ??
+    readModel.metrics.find((metric) => metric.metricKey === 'jet_eu_proxy_usd_per_l') ??
+    null
+  );
 }
+
+function displayedDecision(readModel: GermanyJetFuelReadModel): GermanyDecisionKind {
+  if (readModel.decision) return readModel.decision;
+  const selected = selectedJetMetric(readModel);
+  return decisionFromChange(
+    selected?.changePct30d ?? null,
+    selected?.quality || 'unknown',
+    readModel.isFallback
+  );
+}
+
+const EMPTY_CHART: PriceTrendChartReadModel = {
+  metrics: {},
+  generatedAt: null,
+  isFallback: true,
+  error: null
+};
 
 async function fetchJson<T>(path: string, signal: AbortSignal): Promise<T> {
   const response = await fetch(path, { cache: 'no-store', signal });
@@ -88,15 +110,26 @@ export function GermanyJetFuelMonitor({
   locale,
   copy,
   initialReadModel,
-  initialChart
+  initialChart,
+  pageDecision,
+  showChart = true,
+  showFooter = true
 }: {
   locale: DisplayLocale;
   copy: GermanyJetFuelCopy;
   initialReadModel: GermanyJetFuelReadModel;
-  initialChart: PriceTrendChartReadModel;
+  initialChart: PriceTrendChartReadModel | null;
+  pageDecision?: {
+    hold: string;
+    review: string;
+    revisit: string;
+    insufficient: string;
+  };
+  showChart?: boolean;
+  showFooter?: boolean;
 }) {
   const [readModel, setReadModel] = useState(initialReadModel);
-  const [chart, setChart] = useState(initialChart);
+  const [chart, setChart] = useState(initialChart ?? EMPTY_CHART);
   const [pollError, setPollError] = useState<string | null>(null);
   const [presetId, setPresetId] = useState<(typeof ROUTE_PRESETS)[number]['id']>('fra-jfk');
   const [fuelKg, setFuelKg] = useState(70000);
@@ -158,6 +191,16 @@ export function GermanyJetFuelMonitor({
   }, [locale]);
 
   const selectedJet = selectedJetMetric(readModel);
+  const decision = displayedDecision(readModel);
+  const decisionText = pageDecision
+    ? decision === 'stable'
+      ? pageDecision.hold
+      : decision === 'review'
+        ? pageDecision.review
+        : decision === 'revisit'
+          ? pageDecision.revisit
+          : pageDecision.insufficient
+    : copy.decisions[decision];
   const signalMetrics = readModel.metrics.filter((metric) => metric.metricKey !== selectedJet?.metricKey).slice(0, 3);
   const airportQuote = airportDiff.trim() !== '' && Number.isFinite(Number(airportDiff));
   const parsedSaf = safUsdPerL.trim() === '' ? null : Number(safUsdPerL);
@@ -286,11 +329,11 @@ export function GermanyJetFuelMonitor({
         <div data-testid="selected-jet-signal">
           <MetricCard
             label={copy.decisionLabel}
-            value={copy.decisions[readModel.decision]}
-            valueClassName={decisionTone(readModel.decision)}
+            value={decisionText}
+            valueClassName={decisionTone(decision)}
             hint={
               selectedJet
-                ? `${selectedJet.label} ${formatMetricValue(selectedJet.value, selectedJet.digits, selectedJet.unit, locale)} · 30d ${formatChange(selectedJet.changePct30d, copy.historyMissing)} · ${selectedJet.quality}`
+                ? `${selectedJet.label} ${formatMetricValue(selectedJet.value, selectedJet.digits, selectedJet.unit, locale)} · 30d ${formatChange(selectedJet.changePct30d, copy.historyMissing)}${selectedJet.quality ? ` · ${selectedJet.quality}` : ''}`
                 : copy.historyMissing
             }
           />
@@ -450,20 +493,23 @@ export function GermanyJetFuelMonitor({
         ) : null}
       </Panel>
 
-      <Panel
-        title={locale === 'de' ? 'Preistrend' : locale === 'en' ? 'Price trend' : '价格趋势'}
-        why={
-          locale === 'de'
-            ? 'Ohne 1d/7d/30d-Fenster ist eine einzelne Zahl kein Entscheidungssignal.'
-            : locale === 'en'
-              ? 'A single print is not a decision until it sits in a 1d/7d/30d window.'
-              : '当前价只是一个点；只有把它放进 1d、7d、30d 窗口，才能判断偏离是否足以触发合同或套保复核。'
-        }
-        locale={locale}
-      >
-        <PriceTrendsChart metrics={chart.metrics} isLoading={false} error={chart.error} />
-      </Panel>
+      {showChart ? (
+        <Panel
+          title={locale === 'de' ? 'Preistrend' : locale === 'en' ? 'Price trend' : '价格趋势'}
+          why={
+            locale === 'de'
+              ? 'Ohne 1d/7d/30d-Fenster ist eine einzelne Zahl kein Entscheidungssignal.'
+              : locale === 'en'
+                ? 'A single print is not a decision until it sits in a 1d/7d/30d window.'
+                : '当前价只是一个点；只有把它放进 1d、7d、30d 窗口，才能判断偏离是否足以触发合同或套保复核。'
+          }
+          locale={locale}
+        >
+          <PriceTrendsChart metrics={chart.metrics} isLoading={false} error={chart.error} />
+        </Panel>
+      ) : null}
 
+      {showFooter ? (
       <SourceFooter
         sources={[
           {
@@ -513,6 +559,7 @@ export function GermanyJetFuelMonitor({
         limitations={copy.limitations}
         locale={locale}
       />
+      ) : null}
     </>
   );
 }

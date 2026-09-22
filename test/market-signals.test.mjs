@@ -36,7 +36,11 @@ test('market signal helpers centralize dashboard, reserve, and signal semantics'
 
   assert.equal(getReserveSeverity(1.8).level, 'critical');
   assert.equal(getReserveSeverity(3.5).level, 'elevated');
-  assert.equal(getReserveSeverity(5.5).level, 'watch');
+  const watch = getReserveSeverity(5.5);
+  assert.equal(watch.level, 'watch');
+  assert.equal(watch.color, 'text-warning');
+  assert.equal(watch.barColor, 'bg-warning');
+  assert.equal(watch.tone, 'amber');
   assert.equal(getReserveSeverity(7).level, 'normal');
 
   assert.deepEqual(getTippingPointSignalMeta('saf_cost_advantaged', 'zh'), {

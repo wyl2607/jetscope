@@ -55,7 +55,7 @@ function readModel(value: number): GermanyJetFuelReadModel {
 }
 
 function chart(value: number): PriceTrendChartReadModel {
-  return {
+  return buildPriceTrendChartReadModelFromHistory({
     metrics: {
       jet_eu_proxy_usd_per_l: {
         metric_key: 'jet_eu_proxy_usd_per_l',
@@ -68,11 +68,8 @@ function chart(value: number): PriceTrendChartReadModel {
         quality: 'derived',
         points: [{ as_of: '2026-09-10T00:00:00Z', value, quality: 'derived', source: 'brent-derived' }]
       }
-    },
-    generatedAt: '2026-09-10T00:00:00Z',
-    isFallback: false,
-    error: null
-  };
+    }
+  });
 }
 
 describe('GermanyJetFuelMonitor', () => {

@@ -108,9 +108,9 @@ export function getReserveSeverity(weeks: number): ReserveSeverity {
     return {
       level: 'watch',
       label: 'WATCH — Monitor closely',
-      color: 'text-accent',
-      barColor: 'bg-accent',
-      tone: 'blue'
+      color: 'text-warning',
+      barColor: 'bg-warning',
+      tone: 'amber'
     };
   }
   return {

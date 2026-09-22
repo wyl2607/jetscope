@@ -1,8 +1,4 @@
-import { GermanyJetFuelMonitor } from '@/components/germany-jet-fuel-monitor';
-import { PageTemplate } from '@/components/page-template';
-import { germanyJetFuelCopy } from '@/lib/germany-jet-fuel-copy';
-import { getGermanyJetFuelReadModel } from '@/lib/germany-jet-fuel-read-model';
-import { getPriceTrendChartReadModel } from '@/lib/price-trend-chart-read-model';
+import { GermanyJetFuelPage } from '@/components/germany-jet-fuel-page';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
 
@@ -20,24 +16,6 @@ export const metadata: Metadata = buildPageMetadata({
   }
 });
 
-export default async function EnglishGermanyJetFuelPricePage() {
-  const [readModel, priceChartData] = await Promise.all([
-    getGermanyJetFuelReadModel('en'),
-    getPriceTrendChartReadModel()
-  ]);
-  const observedAsOf = readModel.quoteAsOf ?? readModel.generatedAt;
-  const asOf = readModel.isFallback ? null : observedAsOf;
-  const copy = germanyJetFuelCopy.en;
-
-  return (
-    <PageTemplate
-      locale="en"
-      eyebrow="Prices · Germany"
-      title="Germany Jet-Fuel Price Monitor"
-      question="Has Germany's current jet-fuel price moved far enough to revisit the contract or hedging decision?"
-      asOf={asOf}
-    >
-      <GermanyJetFuelMonitor locale="en" copy={copy} initialReadModel={readModel} initialChart={priceChartData} />
-    </PageTemplate>
-  );
+export default function EnglishGermanyJetFuelPricePage() {
+  return <GermanyJetFuelPage locale="en" />;
 }

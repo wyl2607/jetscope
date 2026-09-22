@@ -21,11 +21,8 @@ export default function ClientBreakevenCalculator() {
   const premiumVsJet = ((blendedCost / totalJet) - 1) * 100;
 
   return (
-    <section className="rounded-lg border border-success bg-surface p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-success">SAF Breakeven-Rechner</h2>
-        <span className="text-xs text-muted">Interaktiv: Parameter anpassen</span>
-      </div>
+    <section className="space-y-6">
+      <p className="text-right text-xs text-muted">Interaktiv: Parameter anpassen</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <SliderControl

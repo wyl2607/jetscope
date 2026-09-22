@@ -1,12 +1,14 @@
 'use client';
 
+import { FigureValue } from '@/components/figure-value';
 import { getPathwayStatusLabel } from '@/lib/market-signals';
+import { formatFigure, type Figure } from '@/lib/figure';
 import type { DecisionReadModel, TippingPointReadModel } from '@/lib/product-read-model';
 
 type Props = {
   tippingPoint: TippingPointReadModel | null;
   decision: DecisionReadModel | null;
-  reserveWeeks: number;
+  reserveWeeks: Figure;
 };
 
 function probabilityLabel(value: number): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
@@ -23,60 +25,59 @@ export function TippingPointSimulator({ tippingPoint, decision, reserveWeeks }: 
   ];
 
   const leadPathway = tippingPoint?.pathways?.[0] ?? null;
-  const tippingRows = leadPathway ? [
-    {
-      key: 'net_saf_low',
-      label: `${leadPathway.display_name} 低位`,
-      value: leadPathway.net_cost_low_usd_per_l,
-      format: (v: number) => `$${v.toFixed(2)}/L` // figure-contract-lint-ignore: slider label formatter, not a prop
-    },
-    {
-      key: 'net_saf_high',
-      label: `${leadPathway.display_name} 高位`,
-      value: leadPathway.net_cost_high_usd_per_l,
-      format: (v: number) => `$${v.toFixed(2)}/L` // figure-contract-lint-ignore: slider label formatter, not a prop
-    },
-    {
-      key: 'spread_band',
-      label: '价差区间',
-      value: 0,
-      format: () => `${leadPathway.spread_low_pct.toFixed(1)}% 至 ${leadPathway.spread_high_pct.toFixed(1)}%`
-    },
-    {
-      key: 'status',
-      label: '状态',
-      value: 0,
-      format: () => getPathwayStatusLabel(leadPathway.status ?? '')
-    }
-  ] : [];
+  // Display via formatFigure so null renders "—", never laundered to 0.
+  const tippingRows = leadPathway
+    ? [
+        {
+          key: 'net_saf_low',
+          label: `${leadPathway.display_name} 低位`,
+          display: formatFigure(leadPathway.netCostLow)
+        },
+        {
+          key: 'net_saf_high',
+          label: `${leadPathway.display_name} 高位`,
+          display: formatFigure(leadPathway.netCostHigh)
+        },
+        {
+          key: 'spread_band',
+          label: '价差区间',
+          display: `${formatFigure(leadPathway.spreadLow)} 至 ${formatFigure(leadPathway.spreadHigh)}`
+        },
+        {
+          key: 'status',
+          label: '状态',
+          display: getPathwayStatusLabel(leadPathway.status ?? '')
+        }
+      ]
+    : [];
 
   return (
     // Bare artifact: card, title and why-line come from the wrapping Panel.
     <div>
       <div className="mb-6 flex justify-end text-right">
         <div>
-          <p className="text-xs uppercase tracking-wider text-slate-500">储备</p>
-          <p className="text-sm font-semibold text-slate-800">{reserveWeeks.toFixed(1)}w</p>
+          <p className="text-xs uppercase tracking-wider text-muted">储备</p>
+          <p className="text-sm font-semibold text-ink">
+            <FigureValue figure={reserveWeeks} locale="zh" size="inline" showTimestamp={false} />
+          </p>
         </div>
       </div>
 
       {tippingRows.length > 0 && (
         <div className="mb-6 overflow-x-auto">
-          <h4 className="mb-2 text-sm font-medium text-slate-700 uppercase tracking-wider">SAF 路径状态</h4>
-          <table className="w-full text-sm text-slate-700">
+          <h4 className="mb-2 text-sm font-medium text-ink uppercase tracking-wider">SAF 路径状态</h4>
+          <table className="w-full text-sm text-ink">
             <thead>
-              <tr className="border-b border-slate-300">
+              <tr className="border-b border-line-strong">
                 <th className="py-2 pr-4 text-left">指标</th>
                 <th className="py-2 pr-4 text-right">数值</th>
               </tr>
             </thead>
             <tbody>
               {tippingRows.map((row) => (
-                <tr key={row.key} className="border-b border-slate-200">
+                <tr key={row.key} className="border-b border-line">
                   <td className="py-2 pr-4">{row.label}</td>
-                  <td className="py-2 pr-4 text-right font-mono">
-                    {row.format ? row.format(row.value) : row.value}
-                  </td>
+                  <td className="py-2 pr-4 text-right font-mono">{row.display}</td>
                 </tr>
               ))}
             </tbody>
@@ -85,12 +86,12 @@ export function TippingPointSimulator({ tippingPoint, decision, reserveWeeks }: 
       )}
 
       <div>
-        <h4 className="mb-2 text-sm font-medium text-slate-700 uppercase tracking-wider">航司响应概率</h4>
+        <h4 className="mb-2 text-sm font-medium text-ink uppercase tracking-wider">航司响应概率</h4>
         <div className="grid grid-cols-2 gap-3">
           {rows.map((row) => (
-            <div key={row.key} className="rounded-lg border border-slate-300 bg-white p-3">
-              <p className="text-xs text-slate-500 uppercase tracking-wider">{row.label}</p>
-              <p className="mt-1 text-lg font-semibold text-slate-950">{probabilityLabel(row.value)}</p>
+            <div key={row.key} className="rounded-lg border border-line-strong bg-surface p-3">
+              <p className="text-xs text-muted uppercase tracking-wider">{row.label}</p>
+              <p className="mt-1 text-lg font-semibold text-ink">{probabilityLabel(row.value)}</p>
             </div>
           ))}
         </div>

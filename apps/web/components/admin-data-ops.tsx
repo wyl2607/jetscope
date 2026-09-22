@@ -51,16 +51,16 @@ function finiteDraftNumber(value: string, field: string): number {
 type RefreshEvidence = {
   refreshedAt: string;
   sourceStatus: string;
-  persistedMetricCount: number;
+  persistedMetricCount: number; // figure-contract-lint-ignore: 任务运行计数，不是测量值
   snapshotGeneratedAt: string;
   snapshotOverall: string;
 };
 
 type ResearchRefreshEvidence = {
-  fetched: number;
-  extracted: number;
-  persisted: number;
-  skippedBudget: number;
+  fetched: number; // figure-contract-lint-ignore: 任务运行计数，不是测量值
+  extracted: number; // figure-contract-lint-ignore: 任务运行计数，不是测量值
+  persisted: number; // figure-contract-lint-ignore: 任务运行计数，不是测量值
+  skippedBudget: number; // figure-contract-lint-ignore: 任务运行计数，不是测量值
   message: string;
 };
 

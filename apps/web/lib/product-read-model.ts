@@ -1,4 +1,5 @@
 import { buildApiUrl } from '@/lib/api-config';
+import { toPathwayCostRow, type PathwayCostRow } from '@/lib/pathways-read-model';
 
 const DEFAULT_FETCH_TIMEOUT_MS = 2000;
 
@@ -48,6 +49,7 @@ export type ReserveSignal = {
   confidence_score: number;
 };
 
+/** Wire shape from `/analysis/tipping-point` JSON — bare numbers, not Figures. */
 export type TippingPointPathway = {
   pathway_key: string;
   display_name: string;
@@ -68,7 +70,7 @@ export type TippingPointReadModel = {
     subsidyUsdPerL: number;
     blendRatePct: number;
   };
-  pathways: TippingPointPathway[];
+  pathways: PathwayCostRow[];
 };
 
 export type ReadinessTippingPointResponse = TippingPointResponse;
@@ -264,6 +266,14 @@ export function toTippingPointReadModel(
   response: TippingPointResponse | null
 ): TippingPointReadModel | null {
   if (!response) return null;
+  const asOf = response.generated_at ?? null;
+  const pathwayOpts = asOf
+    ? ({ asOf, basis: 'observed' as const })
+    : ({
+        asOf: null,
+        basis: 'assumption' as const,
+        method: 'tipping-point pathway cost without source timestamp'
+      });
   return {
     generatedAt: response.generated_at,
     effectiveFossilJetUsdPerL: response.effective_fossil_jet_usd_per_l ?? 0,
@@ -274,7 +284,7 @@ export function toTippingPointReadModel(
       subsidyUsdPerL: response.inputs?.subsidy_usd_per_l ?? 0,
       blendRatePct: response.inputs?.blend_rate_pct ?? 0,
     },
-    pathways: response.pathways ?? [],
+    pathways: (response.pathways ?? []).map((row) => toPathwayCostRow(row, pathwayOpts)),
   };
 }
 

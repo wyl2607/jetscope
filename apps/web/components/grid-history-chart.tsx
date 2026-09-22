@@ -10,6 +10,12 @@ const WIDTH = 560;
 const HEIGHT = 220;
 const PAD = { top: 16, right: 48, bottom: 28, left: 44 };
 
+const GRID = 'var(--js-line)';
+const AXIS = 'var(--js-muted)';
+const SERIES_FOSSIL = 'var(--color-series-1)';
+const SERIES_SOLAR = 'var(--color-series-2)';
+const SERIES_CARBON = 'var(--color-series-3)';
+
 function buildLine(
   points: Point[],
   value: (p: Point) => number,
@@ -61,10 +67,10 @@ export function GridHistoryChart({ points }: Props) {
               y1={yCost(v)}
               x2={WIDTH - PAD.right}
               y2={yCost(v)}
-              stroke="#e2e8f0"
+              stroke={GRID}
               strokeWidth={1}
             />
-            <text x={PAD.left - 6} y={yCost(v) + 3} textAnchor="end" fontSize={9} fill="#94a3b8">
+            <text x={PAD.left - 6} y={yCost(v) + 3} textAnchor="end" fontSize={9} fill={AXIS}>
               €{v.toFixed(0)}
             </text>
           </g>
@@ -77,40 +83,40 @@ export function GridHistoryChart({ points }: Props) {
             y={HEIGHT - 8}
             textAnchor="middle"
             fontSize={9}
-            fill="#94a3b8"
+            fill={AXIS}
           >
             {p.year}
           </text>
         ))}
 
-        <path d={carbonLine} fill="none" stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.8} />
-        <path d={fossilLine} fill="none" stroke="#64748b" strokeWidth={2} />
-        <path d={solarLine} fill="none" stroke="#059669" strokeWidth={2} />
+        <path d={carbonLine} fill="none" stroke={SERIES_CARBON} strokeWidth={1.5} strokeDasharray="4 3" opacity={0.8} />
+        <path d={fossilLine} fill="none" stroke={SERIES_FOSSIL} strokeWidth={2} />
+        <path d={solarLine} fill="none" stroke={SERIES_SOLAR} strokeWidth={2} />
 
         {points.map((p, i) =>
           p.solar_gap_eur_per_mwh <= 0 ? (
-            <circle key={`win-${p.year}`} cx={x(i)} cy={yCost(p.solar_lcoe_eur_per_mwh)} r={3} fill="#059669" />
+            <circle key={`win-${p.year}`} cx={x(i)} cy={yCost(p.solar_lcoe_eur_per_mwh)} r={3} fill={SERIES_SOLAR} />
           ) : null
         )}
 
-        <text x={WIDTH - PAD.right + 6} y={PAD.top + 4} fontSize={9} fill="#d97706">
+        <text x={WIDTH - PAD.right + 6} y={PAD.top + 4} fontSize={9} fill={SERIES_CARBON}>
           €{carbonMax.toFixed(0)}/t
         </text>
-        <text x={WIDTH - PAD.right + 6} y={PAD.top + innerH} fontSize={9} fill="#d97706">
+        <text x={WIDTH - PAD.right + 6} y={PAD.top + innerH} fontSize={9} fill={SERIES_CARBON}>
           €0/t
         </text>
       </svg>
       <figcaption className="mt-2 flex flex-wrap items-center gap-4 text-xs text-subtle">
         <span className="flex items-center gap-1">
-          <span className="inline-block h-0.5 w-4" style={{ backgroundColor: '#64748b' }} aria-hidden="true" />
+          <span className="inline-block h-0.5 w-4 bg-series-1" aria-hidden="true" />
           化石边际成本
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-0.5 w-4" style={{ backgroundColor: '#059669' }} aria-hidden="true" />
+          <span className="inline-block h-0.5 w-4 bg-series-2" aria-hidden="true" />
           光伏 LCOE
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-0.5 w-4 border-b border-dashed" style={{ borderColor: '#f59e0b' }} aria-hidden="true" />
+          <span className="inline-block h-0.5 w-4 border-b border-dashed border-series-3" aria-hidden="true" />
           碳价（右轴）
         </span>
         <span>● 标记＝光伏已更便宜</span>

@@ -25,10 +25,10 @@ and P3 at the number level.
 | Phase | Scope | State |
 | --- | --- | --- |
 | **P0** | tokens, ratchet gate, single navigation source | done |
-| **P1** | palette migration | 318 violations across 12 files remain, ratcheted |
+| **P1** | palette migration | **done — 0 violations, compatibility layer deleted** (#316) |
 | **P1.5** | page template on every page | **done — 42 of 42** |
-| **P2** | collapse `/`, `/de`, `/en` into `/[locale]` | about 10 percent, only `navigation.ts` |
-| **P3** | `Figure` contract through the read models | contract and gate landed; 104 violations across 31 files to clear |
+| **P2** | collapse `/`, `/de`, `/en` into `/[locale]` | about 10 percent, only `navigation.ts` — and larger than it looks, see below |
+| **P3** | `Figure` contract through the read models | **done — 0 violations** (#314) |
 | **P4** | web container and nginx on the VPS | see the correction below — the site is live, but not from a container |
 
 Both ratchets only turn one way and both run in `npm run web:gate`:
@@ -54,12 +54,13 @@ is locked in.
    | the site | live and public |
    | the frontend process | **systemd**, `jetscope-web.service` on `127.0.0.1:3000` — not a container |
    | the edge | **host** nginx on `:80`/`:443`, named vhost |
-   | the build being served | **older than P1.5** — `/sources` renders its title but not its decision question |
+   | the build being served | `4cc37d22`, deployed 2026-08-08 — P1.5 and P3 are live |
 
-   So the reader-visible half of this program — 42 pages on one template, the
-   decision questions, the honest timestamps — **is not on the internet.** It is
-   only on `main`. Deploying is now the single highest-value action available,
-   and it is one command from an environment with `rsync` (WSL, not Git Bash):
+   That deploy closed the gap this entry was written about: the 42 pages on one
+   template, the decision questions and the honest timestamps are on the
+   internet. **P1 (#316) is not** — the palette work landed after it, so the
+   public site is one phase behind `main` again. Deploying is one command from
+   an environment with `rsync` (WSL, not Git Bash):
 
    ```bash
    bash scripts/deploy-usa-vps.sh --rebuild
@@ -87,36 +88,172 @@ is locked in.
    stopping host nginx, and mounting the existing certificates into the nginx
    container — a deliberate operation with a rollback path, not a flag on a
    routine deploy. See `docs/DEPLOY_WEB_VPS.md`.
-3. **P3 cleanup, the remaining figure violations.** The headline number used to
-   be 104, and 104 was never 104 real violations: the lint matches any
-   `foo: number` in a component, which caught SVG widths, colour-ramp stops and
-   `lerp` parameters alongside actual measurements. Those are annotated now
-   under the contract's own escape hatch, each with a reason, and the
-   self-stamping fallbacks are fixed. What is left is measurements, which is
-   what the number should have meant all along.
+3. **P3 is done** (#314). The headline number used to be 104, and 104 was never
+   104 real violations: the lint matches any `foo: number` in a component, which
+   caught SVG widths, colour-ramp stops and `lerp` parameters alongside actual
+   measurements. Those are annotated under the contract's own escape hatch, each
+   with a reason; the self-stamping fallbacks are fixed; the rest were converted.
+   `figure-contract-lint` reports zero.
 
-   The rest is the real conversion: read models and display components carrying
-   `Figure` instead of bare `number`, which is what makes requirement 3 above
-   true per number rather than per page. Mechanical and delegable, in batches
-   grouped so a component and its read model move together.
+4. **P2, the route merge.** This entry used to read "internal tidiness, changes
+   nothing a reader sees, which is why it ranks last." That was wrong, and
+   measuring it is what showed the error. P2 as section 4 of the contract defines
+   it is four jobs, and only the first is internal:
 
-4. **P2, the route merge.** Internal tidiness. It changes nothing a reader sees,
-   which is why it ranks last.
+   | | |
+   | --- | --- |
+   | collapse the three directories into `/[locale]` | mechanical, touches every page |
+   | **7 routes exist in some locales and not others** | rule 2 — a product call, not a refactor |
+   | **~1,320 lines of copy are hardcoded in `.tsx`** | rule 3 — 846 in the zh pages, 474 in shared components |
+   | **i18n mechanism** | `lib/i18n.ts` now loads the locale files; FAQ and scenarios consume them. Other routes still hardcode copy. |
 
-### Known debts, none urgent
+   The asymmetry, precisely: `analysis` and its two articles, `crisis/eu-jet-reserves`,
+   `crisis/saf-tipping-point`, `grid` and `heat` exist only in zh;
+   `lufthansa-saf-2026` exists only in de and en. `navigation.ts` already encodes
+   this as `null` paths, which is the right shape — but closing those nulls means
+   either writing German and English versions of six zh-only pages or removing
+   them, and that is a decision about what the site publishes.
 
-- `apps/web/app/de/lufthansa-saf-2026/` uses `ClientMarketData` and
-  `ClientBreakevenCalculator`, which still draw their own card chrome and
-  therefore nest a card inside the wrapping `Panel`. Contract section 2 rule 3.
-- `getReserveSeverity` in `apps/web/lib/market-signals.ts` returns `text-accent`
-  for the 4-to-6-week watch level. Accent is the product colour, not a severity;
-  a watch state should read as a warning.
-- `GridHistoryChart` contains literal SVG colours. The design lint does not scan
-  SVG attributes, so this is invisible to the gate.
-- `apps/web/lib/research-signals-read-model.ts` stamps a signal with the current
-  time when the upstream record has no `published_at`. It is recorded in the
-  figure-contract baseline; clearing it means deciding what an undated signal
-  should show instead.
+   One symptom of the missing mechanism is worth naming, because it is a live
+   bug rather than untidiness: `app/en/sources/page.tsx` translates the read
+   model's **Chinese** output by string comparison
+   (`if (value === '覆盖不可用') return 'Coverage unavailable'`) and falls
+   through with `return value`. Any rewording on the zh side silently ships
+   Chinese text to English readers. Copy in locale files instead of in
+   components is what makes that class of bug impossible, which is why rule 3
+   exists.
+
+   **#318 proved the mechanism on `faq`, then #321 reverted the middleware.**
+   FAQ copy is re-landed without rewrite (see below). What the remaining ten
+   routes cost was then measured rather than estimated — strip every string
+   literal and comment from each page, diff the code skeleton against its `de`
+   and `en` siblings, and count the lines that differ:
+
+   | route | zh lines | differing vs de + en |
+   | --- | ---: | ---: |
+   | `reports` | 172 | 112 |
+   | `prices/germany-jet-fuel` | 169 | 121 |
+   | `research` | 213 | 239 |
+   | `admin` | 181 | 284 |
+   | `/` (home) | 204 | 311 |
+   | `sources` | 160 | 347 |
+   | `reports/tipping-point-analysis` | 235 | 504 |
+   | `dashboard` | 410 | 618 |
+   | `scenarios` | 259 | 720 |
+   | `crisis` | 363 | 884 |
+
+   `faq` differed by 14 lines, which is why it was the right first proof and why
+   it is not representative. **The three locale trees are not one app rendered in
+   three languages; they are three separately evolved implementations of the same
+   idea.** Merging them is a reconciliation per route, not a refactor.
+
+   `reports` shows the shape at its mildest. Its three pages offer three
+   different sets of next actions — zh alone links to the tipping-point report,
+   de alone links to launch readiness, en alone links to the research workbench —
+   so a merge has to decide, per route, whether those sets converge or stay
+   distinct. The current ruling is that they stay distinct and become data.
+
+   One convergence was allowed deliberately when `reports` merged. The four
+   signal cards ran readiness/source/**risk**/scenarios in zh and
+   readiness/source/**scenarios**/risk in de and en; the merged page uses one
+   order everywhere. Every locale already had all four cards, so nothing appears
+   or disappears — and an order that differs by language is precisely the "nine
+   accumulated systems" problem this program exists to remove. Which *panels* a
+   locale renders is still left exactly as it was; only this ordering converged.
+
+   And the same page carries a fix in one language that the others never got:
+   `de/reports` replaces a saved scenario's name with a placeholder when the name
+   contains Chinese characters, `en/reports` joins the names raw. **English
+   readers can see Chinese scenario names today.** One rule reproduces two of the
+   three current behaviours and corrects the third: substitute when the name's
+   script does not match the reader's locale.
+
+   **FAQ copy, safe reland (after #321).** User-facing FAQ strings now live under
+   `faq` in `apps/web/src/locales/{zh,de,en}.json` and are loaded by
+   `apps/web/lib/i18n.ts`. `/faq`, `/de/faq` and `/en/faq` remain real page files
+   that render one shared `FaqPage` with an explicit `locale`. Middleware and
+   `/[locale]` rewrites stay forbidden.
+
+   **Prices copy, same pattern.** `/prices/germany-jet-fuel`,
+   `/de/prices/germany-jet-fuel` and `/en/prices/germany-jet-fuel` render one
+   shared `GermanyJetFuelPage`. The trend-chart panel is locale data
+   (`show_trend_chart`): zh keeps it, de/en do not. Remaining routes still
+   hardcode copy.
+
+   **Research copy, safe reland (after #321).** User-facing research strings now
+   live under `research` in `apps/web/src/locales/{zh,de,en}.json`. `/research`,
+   `/de/research` and `/en/research` remain real page files that render one
+   shared `ResearchPage` with an explicit `locale`. Locale-specific actions,
+   decision-brief mode, panel order, and signal-script substitution stay data.
+   Middleware and `/[locale]` rewrites stay forbidden. Remaining routes are
+   unchanged.
+
+   **Reports copy, safe reland (after #321).** User-facing reports strings now live
+   under `reports` in the same locale files. `/reports`, `/de/reports` and
+   `/en/reports` remain real page files that render one shared `ReportsPage` with
+   an explicit `locale`. Next-action sets stay distinct by locale; the four
+   signal cards keep one order everywhere. Scenario names whose script does not
+   match the reader become a numbered placeholder. Middleware and `/[locale]`
+   rewrites stay forbidden. Remaining routes are unchanged.
+
+   **Admin copy, safe reland (after #321).** User-facing admin strings now live
+   under `admin` in the same locale files. `/admin`, `/de/admin` and `/en/admin`
+   remain real page files that render one shared `AdminPage` with an explicit
+   `locale`. zh stays the write console (`show_admin_ops: true` mounts
+   `AdminDataOps`); de/en stay read-only launch-readiness surfaces. Middleware
+   and `/[locale]` rewrites stay forbidden.
+
+   **Sources copy, safe reland.** The string-compare bug on `en/sources` and
+   `de/sources` (`if (value === '覆盖不可用')`) is closed. Filter, surface,
+   trust, and status labels live under `sources` in the locale files. The three
+   routes stay real page files that render one shared `SourcesPage`; zh keeps
+   the richer Trust Center, de/en stay the slimmer review surface. No
+   middleware and no `/[locale]`.
+
+   **Home copy, safe reland.** User-facing home strings now live under `home` in
+   the same locale files. `/`, `/de` and `/en` remain real page files that render
+   one shared `HomePage` with an explicit `locale`. Locale differences stay as
+   data — zh keeps the transition ladder, research brief, and zh-only cards;
+   de/en stay slimmer indexes. Middleware and `/[locale]` stay forbidden.
+
+   **Dashboard copy, safe reland (after #321).** User-facing dashboard strings now
+   live under `dashboard` in `apps/web/src/locales/{zh,de,en}.json`. `/dashboard`,
+   `/de/dashboard` and `/en/dashboard` remain real page files that render one
+   shared `DashboardPage` with an explicit `locale`. Locale-specific panels stay
+   behind booleans that default to false. Middleware and `/[locale]` rewrites
+   stay forbidden.
+
+   **Scenarios copy, safe reland.** User-facing scenarios strings now live under
+   `scenarios` in the same locale files. `/scenarios`, `/de/scenarios` and
+   `/en/scenarios` stay real page files that render one shared `ScenariosPage`
+   with an explicit `locale`. zh still mounts the write registry and transition
+   readiness dashboard; de/en stay read-only review surfaces. No middleware and
+   no `/[locale]`.
+
+   **Crisis index copy, safe reland (after #321).** User-facing crisis-index
+   strings now live under `crisis` in the same locale files. `/crisis`,
+   `/de/crisis` and `/en/crisis` remain real page files that render one shared
+   `CrisisPage` with an explicit `locale`. zh stays the full monitor; de/en stay
+   the slimmer brief. The `crisis/eu-jet-reserves` and `crisis/saf-tipping-point`
+   subpages remain zh-only. Middleware and `/[locale]` rewrites stay forbidden.
+
+   **Tipping-point report copy, same pattern.** User-facing strings for
+   `/reports/tipping-point-analysis` now live under `tipping_point_report` in the
+   locale files and render through one shared `TippingPointReportPage`. The three
+   locale routes stay real page files. zh keeps the chart, reserve strip,
+   timeline and research brief; de/en stay evidence reviews. Missing artifacts
+   are locale flags that default false. Middleware and `/[locale]` stay
+   forbidden.
+
+### Data provenance note
+
+- Resolved 2026-09-01: `apps/web/lib/research-signals-read-model.ts` now uses
+  only an upstream `published_at` as the signal's evidence time. `created_at`
+  and `generated_at` are ingestion/pipeline timestamps and are intentionally
+  ignored for publication display; signals without `published_at` remain
+  undated instead of appearing freshly sourced. The other #304 items (nested
+  Lufthansa cards, watch reserve using accent, GridHistoryChart hex) are
+  closed.
 
 ## How the work gets delegated
 

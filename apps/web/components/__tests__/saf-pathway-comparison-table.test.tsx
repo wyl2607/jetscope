@@ -1,24 +1,25 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
+import { toPathwayCostRow } from '@/lib/pathways-read-model';
+
+const hefaFixture = toPathwayCostRow(
+  {
+    pathway_key: 'hefa',
+    display_name: 'HEFA',
+    net_cost_low_usd_per_l: 1.8,
+    net_cost_high_usd_per_l: 2.2,
+    spread_low_pct: 10,
+    spread_high_pct: 20,
+    status: 'inflection'
+  },
+  { asOf: null, basis: 'assumption', method: 'test fixture pathway cost' }
+);
 
 describe('SafPathwayComparisonTable', () => {
   it('renders without crashing', () => {
     const { container } = render(
-      <SafPathwayComparisonTable
-        selectedPathwayKey="hefa"
-        pathways={[
-          {
-            pathway_key: 'hefa',
-            display_name: 'HEFA',
-            net_cost_low_usd_per_l: 1.8,
-            net_cost_high_usd_per_l: 2.2,
-            spread_low_pct: 10,
-            spread_high_pct: 20,
-            status: 'inflection'
-          }
-        ]}
-      />
+      <SafPathwayComparisonTable selectedPathwayKey="hefa" pathways={[hefaFixture]} />
     );
 
     expect(container.firstChild).not.toBeNull();
@@ -28,17 +29,7 @@ describe('SafPathwayComparisonTable', () => {
     const { getByText } = render(
       <SafPathwayComparisonTable
         selectedPathwayKey="hefa"
-        pathways={[
-          {
-            pathway_key: 'hefa',
-            display_name: 'HEFA',
-            net_cost_low_usd_per_l: 1.8,
-            net_cost_high_usd_per_l: 2.2,
-            spread_low_pct: 10,
-            spread_high_pct: 20,
-            status: 'inflection'
-          }
-        ]}
+        pathways={[hefaFixture]}
         sources={{
           hefa: {
             sourceType: 'market_feed',

@@ -54,6 +54,7 @@ Do not introduce a second naming scheme.
 | `--js-success` / `--js-success-soft` | `text-success` / `bg-success-soft` | within target, improving |
 | `--js-warning` / `--js-warning-soft` | `text-warning` / `bg-warning-soft` | watch, **assumption-based** |
 | `--js-danger` / `--js-danger-soft` | `text-danger` / `bg-danger-soft` | threshold breached |
+| `--color-series-1` … `--color-series-5` | `bg-series-1` … `bg-series-5` | identity within a set — carries no good/bad meaning |
 
 Measured contrast on `surface`, so nothing above needs re-deriving: ink 16.45 ·
 danger 6.46 · accent 5.97 · muted 5.43 · warning 5.19 · success 5.00 · subtle
@@ -106,6 +107,46 @@ Rules:
    status, so the card reads as having changed state when the user merely moved
    the mouse. Only the selection-group row uses the neutral hover, because there
    the neutral is what distinguishes hovered from selected.
+
+8. **Series colors name a member of a set; they never rank it.** A SAF pathway,
+   a cost component, an event type — the color says *which one*, not *how good*.
+
+   - Assign `series-1` … `series-5` in fixed order, never cycled. A sixth series
+     is not a generated hue: fold it into "other", or facet the chart.
+   - **Series tokens are for marks only** — bar fills, segments, dots. Text
+     stays on `ink` / `muted` / `subtle`; the colored mark beside a label is
+     what carries identity.
+   - **Every series carries a direct label.** Two of the five clear their checks
+     only at the floor (`series-4` against `series-3` is deutan ΔE 7.6, and
+     `series-4` is 2.98:1 on `surface`), which is legal only because the label
+     is there. A chart that drops its labels breaks this rule, not just its
+     legibility.
+   - A series color is never a semantic token, and a semantic token is never a
+     series. They share hue families, so what keeps them apart is context: a
+     series appears inside a plot; a status appears on a card or badge and
+     always ships with its text label. Never put both in one visual group.
+
+9. **An ordered severity ladder longer than three steps uses fill weight, not
+   more hues.** Four steps map to: `success-soft` → `warning-soft` →
+   `danger-soft` → solid `bg-danger text-surface`. The top step is the *only*
+   solid fill, which is what makes it unmistakable.
+
+   This exists because the alternative was measured and does not work. A fourth
+   hue between `warning` and `danger` was tested at five values (`#c2410c`,
+   `#9a3412`, `#7c2d12`, `#a8320a`, `#8a3324`); every one landed within ΔE 15 of
+   `warning` or `danger` in **normal** vision — the best was 12.7. There is no
+   room in that hue span for a fourth distinguishable step, so the fourth step
+   is bought with weight instead.
+
+10. **No gradients.** `from-*` / `via-*` / `to-*` are forbidden. A gradient on a
+    data bar encodes nothing — the value is the length, not the hue ramp — and
+    every gradient is three more raw colors that no token can express. Use a
+    solid token fill.
+
+Known limitation, recorded rather than fixed: `success` and `danger` are deutan
+ΔE 4.7 apart — a red-green colorblind reader cannot tell them apart by hue. This
+is why every status carries a text label. Re-picking both tokens touches every
+screen, so it is out of scope for P1 and is deliberately left open here.
 
 Scale — no other values:
 

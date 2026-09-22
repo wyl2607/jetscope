@@ -1,6 +1,8 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
+import { assumed } from '@/lib/figure';
+import { toPathwayCostRow } from '@/lib/pathways-read-model';
 
 describe('TippingPointSimulator', () => {
   it('renders without crashing', () => {
@@ -26,20 +28,33 @@ describe('TippingPointSimulator', () => {
         blendRatePct: 2
       },
       pathways: [
-        {
-          pathway_key: 'hefa',
-          display_name: 'HEFA',
-          net_cost_low_usd_per_l: 1.8,
-          net_cost_high_usd_per_l: 2.1,
-          spread_low_pct: 10,
-          spread_high_pct: 20,
-          status: 'inflection'
-        }
+        toPathwayCostRow(
+          {
+            pathway_key: 'hefa',
+            display_name: 'HEFA',
+            net_cost_low_usd_per_l: 1.8,
+            net_cost_high_usd_per_l: 2.1,
+            spread_low_pct: 10,
+            spread_high_pct: 20,
+            status: 'inflection'
+          },
+          { asOf: null, basis: 'assumption', method: 'test fixture pathway cost' }
+        )
       ]
     };
 
     const { container } = render(
-      <TippingPointSimulator tippingPoint={tippingPoint} decision={decision} reserveWeeks={3.5} />
+      <TippingPointSimulator
+        tippingPoint={tippingPoint}
+        decision={decision}
+        reserveWeeks={assumed({
+          value: 3.5,
+          unit: 'weeks',
+          sourceId: 'test',
+          method: 'test fixture reserve',
+          precision: 1
+        })}
+      />
     );
 
     expect(container.firstChild).not.toBeNull();
