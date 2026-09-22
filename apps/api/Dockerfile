@@ -2,22 +2,28 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
-# Install dependencies
-COPY requirements.txt .
+# Build context is the repository root:
+#   docker build -f apps/api/Dockerfile .
+# docker-compose.prod.yml uses that same context. Curated JSON lives at
+# data/curated, outside apps/api, so an apps/api-only context cannot see it.
+
+COPY apps/api/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY app ./app
-COPY alembic.ini .
-COPY migrations ./migrations
+COPY apps/api/app ./app
+COPY apps/api/alembic.ini .
+COPY apps/api/migrations ./migrations
 
-# Optional baked curated snapshots (runtime usually mounts host ./data → /app/data)
-# Keep dir present so JETSCOPE_CURATED_DIR / volume paths resolve cleanly.
-RUN mkdir -p /app/data/curated
+# curated_events.py checks JETSCOPE_CURATED_DIR first, then /app/data/curated.
+# The production SQLite bind mount replaces /app/data, which would hide a copy
+# that lived only under that path. /app/curated stays visible with the mount.
+# /app/data/curated is the fallback for a container with no mount and no env.
+COPY data/curated/ /app/curated/
+COPY data/curated/ /app/data/curated/
 
 ENV PYTHONPATH=/app
 ENV SAFVSOIL_APP_ENV=production
-ENV JETSCOPE_CURATED_DIR=/app/data/curated
+ENV JETSCOPE_CURATED_DIR=/app/curated
 
 EXPOSE 8000
 

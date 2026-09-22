@@ -1,6 +1,6 @@
 # Deploy JetScope to USA VPS
 
-**Target host**: `usa-vps` → `racknerd-483e137` (`192.227.130.69`, also on Tailscale)
+**Target host**: SSH alias `usa-vps` → `<usa-vps-hostname>` (`<usa-vps-public-ip>`; Tailscale optional). Do not put the public address in this repo.
 **Production path**: `/opt/jetscope`
 **Running services (verified 2026-08-05)**: Docker Compose `jetscope-api` on `127.0.0.1:8000`; systemd-owned Next.js on `127.0.0.1:3000`; nginx serves `saf.meichen.beauty`
 **Legacy path**: `~/jetscope` (older rsync snapshot; prefer `/opt/jetscope`)
@@ -58,9 +58,63 @@ cd /opt/jetscope
 docker compose -f docker-compose.prod.yml up -d --build api
 # or: docker-compose -f docker-compose.prod.yml up -d --build api
 curl -fsS http://127.0.0.1:8000/v1/health
+curl -fsS http://127.0.0.1:8000/v1/events | head
 curl -fsS http://127.0.0.1:8000/v1/events/lufthansa-q2-2026-earnings | head
 curl -fsS http://127.0.0.1:8000/v1/market/health | head
 ```
+
+## Curated events in the API image
+
+`apps/api/app/services/curated_events.py` picks the first directory that exists, in this order:
+
+1. `JETSCOPE_CURATED_DIR`
+2. `/app/data/curated`
+3. a monorepo checkout path, which is not present inside the image
+
+The API image is built from the repository root (`docker build -f apps/api/Dockerfile .`). That build copies `data/curated/*.json` to `/app/curated` and to `/app/data/curated`. Compose sets `JETSCOPE_CURATED_DIR=/app/curated`. The SQLite bind mount replaces `/app/data`, so the process must not depend on `/app/data/curated` at runtime. `/app/curated` stays in the image, and `GET /v1/events` can return the Lufthansa case (`count` ≥ 1) with the volume mounted.
+
+`.dockerignore` still keeps database files out of the build context. It re-includes only `data/curated`.
+
+## SQLite host volume
+
+`docker-compose.prod.yml` bind-mounts a host directory over the API data directory:
+
+```yaml
+${JETSCOPE_HOST_DATA_DIR:-/opt/jetscope/data}:/app/data
+```
+
+`WORKDIR` is `/app` and `JETSCOPE_DATABASE_URL` is `sqlite:///./data/market.db`, so the database file is `/app/data/market.db` in the container and `$JETSCOPE_HOST_DATA_DIR/market.db` on the host. The deploy script exports `JETSCOPE_HOST_DATA_DIR` to `$JETSCOPE_REMOTE_DIR/data` (default `/opt/jetscope/data`).
+
+### First switch off a container-local database
+
+Older containers may have `market.db` only in the container writable layer. Starting a new container with an empty host directory would hide that file. `scripts/deploy-usa-vps.sh --rebuild` does the copy itself, before it replaces the container:
+
+1. Build the API image while the current `jetscope-api` container is still running.
+2. If the host `market.db` already exists and is non-empty, skip the copy. A later run does not overwrite it.
+3. If the host file is missing or empty, and `jetscope-api` has a non-empty `/app/data/market.db`, run `PRAGMA wal_checkpoint(FULL)`, stop that container, then `docker cp` `market.db` plus non-empty `market.db-wal` and `market.db-shm` into the host directory.
+4. If there is no container, or it has no database file, skip the copy. The new container creates a database on the host volume.
+5. Start the API service with `docker compose -f docker-compose.prod.yml up -d api` so the mount is in effect.
+
+Preview the same steps without SSH, rsync, or docker:
+
+```bash
+bash scripts/deploy-usa-vps.sh --dry-run
+bash scripts/deploy-usa-vps.sh --rebuild --dry-run
+```
+
+Manual equivalent, and only when `/opt/jetscope/data/market.db` is missing or empty and the old container still exists. Do not copy over a non-empty host file.
+
+```bash
+mkdir -p /opt/jetscope/data
+docker exec jetscope-api python -c 'import sqlite3; c=sqlite3.connect("/app/data/market.db"); c.execute("PRAGMA wal_checkpoint(FULL)"); c.close()'
+docker stop jetscope-api
+docker cp jetscope-api:/app/data/market.db /opt/jetscope/data/market.db
+docker cp jetscope-api:/app/data/market.db-wal /opt/jetscope/data/market.db-wal || true
+docker cp jetscope-api:/app/data/market.db-shm /opt/jetscope/data/market.db-shm || true
+JETSCOPE_HOST_DATA_DIR=/opt/jetscope/data docker compose -f /opt/jetscope/docker-compose.prod.yml up -d api
+```
+
+`infra/server/docker-compose.prod.yml` and `infra/docker-compose.yml` still build with context `apps/api`. This Dockerfile now expects the repository root. Production deploys use the root `docker-compose.prod.yml` only.
 
 ## Runtime ownership and reboot recovery
 
@@ -108,7 +162,9 @@ deploy script still excludes `.env` and `data/*.db` and does not use `rsync --de
 |-------|--------|
 | `GET /v1/health` | `ok: true` |
 | `GET /v1/market/health` | JSON with refresh interval / healthy flag |
+| `GET /v1/events` | JSON `count` ≥ 1 (Lufthansa case is in the image) |
 | `GET /v1/events/lufthansa-q2-2026-earnings` | Curated LH payload (not 404) |
+| `GET /v1/market/snapshot` | No seed constants `0.64` or `80.38`. A missing metric may be `null` in `values`. |
 | `GET /v1/sources/coverage` | Metrics + completeness/degraded |
 | `GET /v1/reserves/eu` | No invented IATA claim |
 | Dashboard `/dashboard` | Live strip + LH event card when web is served |

@@ -17,7 +17,16 @@
 #   bash scripts/deploy-usa-vps.sh --rebuild    # rsync + rebuild api container + rebuild/restart systemd web + smoke
 #   bash scripts/deploy-usa-vps.sh --rebuild --api-only   # skip the web rebuild
 #   bash scripts/deploy-usa-vps.sh --rebuild --allow-unmerged  # source not on origin/main
+#   bash scripts/deploy-usa-vps.sh --dry-run    # print the plan, including the SQLite copy; do not SSH
+#   bash scripts/deploy-usa-vps.sh --rebuild --dry-run
 #   JETSCOPE_REMOTE_DIR=/opt/jetscope bash scripts/deploy-usa-vps.sh --rebuild
+#
+# SQLite first-switch (idempotent, only on --rebuild, before the container is replaced):
+#   Host directory ${JETSCOPE_HOST_DATA_DIR:-$REMOTE_DIR/data} is mounted at /app/data.
+#   If jetscope-api has a non-empty /app/data/market.db and the host file is missing
+#   or empty, checkpoint WAL, stop the container, and docker cp market.db (plus
+#   -wal/-shm when non-empty) onto the host. A non-empty host market.db is never
+#   overwritten. --dry-run prints these steps and does not contact the server.
 #
 # The deploy source must be a clean tree AND a commit that is on origin/main.
 # Pipe the output at your peril: `deploy.sh | tail` reports tail's exit code,
@@ -25,7 +34,7 @@
 set -euo pipefail
 
 HOST="${JETSCOPE_DEPLOY_HOST:-usa-vps}"
-# Production on racknerd-483e137 currently lives under /opt/jetscope (docker jetscope-api).
+# Production currently lives under /opt/jetscope (docker jetscope-api).
 REMOTE_DIR="${JETSCOPE_REMOTE_DIR:-/opt/jetscope}"
 # The public vhost host nginx serves. The smoke check sends it as a Host header,
 # because a naked-IP request lands on nginx's default server and proves nothing
@@ -35,6 +44,54 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REBUILD=0
 API_ONLY=0
 ALLOW_UNMERGED=0
+DRY_RUN=0
+HOST_DATA_DIR="${JETSCOPE_HOST_DATA_DIR:-$REMOTE_DIR/data}"
+
+for arg in "$@"; do
+  case "$arg" in
+    --rebuild) REBUILD=1 ;;
+    --api-only) API_ONLY=1 ;;
+    --allow-unmerged) ALLOW_UNMERGED=1 ;;
+    --dry-run) DRY_RUN=1 ;;
+    --help|-h)
+      awk 'NR==1 {next} /^set -euo pipefail$/ {exit} {print}' "$0"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $arg" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  echo "==> DRY-RUN: no SSH, no rsync, no docker, no remote changes"
+  echo "host=$HOST"
+  echo "remote_dir=$REMOTE_DIR"
+  echo "host_data_dir=$HOST_DATA_DIR"
+  echo "container=jetscope-api"
+  echo "container_db=/app/data/market.db"
+  echo "rebuild=$REBUILD api_only=$API_ONLY allow_unmerged=$ALLOW_UNMERGED"
+  echo "would: rsync $ROOT/ -> $HOST:$REMOTE_DIR/ (excludes .env, data/*.db, data/*.sqlite; no --delete)"
+  echo "would: record HEAD in $REMOTE_DIR/.deploy-commit"
+  if [[ "$REBUILD" -eq 1 ]]; then
+    echo "would: docker compose -f docker-compose.prod.yml build api   # old container keeps serving"
+    echo "would: mkdir -p $HOST_DATA_DIR"
+    echo "would: if $HOST_DATA_DIR/market.db is non-empty: skip docker cp (idempotent; never overwrite)"
+    echo "would: else if jetscope-api is missing, or /app/data/market.db is missing or empty: skip docker cp"
+    echo "would: else: PRAGMA wal_checkpoint(FULL); docker stop jetscope-api; docker cp market.db and non-empty -wal/-shm to $HOST_DATA_DIR"
+    echo "would: JETSCOPE_HOST_DATA_DIR=$HOST_DATA_DIR docker compose -f docker-compose.prod.yml up -d api"
+    if [[ "$API_ONLY" -eq 1 ]]; then
+      echo "would: skip systemd web rebuild (--api-only)"
+    else
+      echo "would: npm run web:build && systemctl restart jetscope-web.service"
+    fi
+  else
+    echo "would: skip image rebuild and SQLite migration (pass --rebuild; the running container is not replaced)"
+  fi
+  echo "would: remote smoke against 127.0.0.1:8000 and 127.0.0.1:3000"
+  exit 0
+fi
 
 if ! DEPLOY_COMMIT="$(git -C "$ROOT" rev-parse --verify "HEAD^{commit}")"; then
   echo "ERROR: deploy source is not a Git checkout" >&2
@@ -44,22 +101,6 @@ if [[ -n "$(git -C "$ROOT" status --porcelain)" ]]; then
   echo "ERROR: deploy source tree is dirty; commit or discard changes before deploying" >&2
   exit 1
 fi
-
-for arg in "$@"; do
-  case "$arg" in
-    --rebuild) REBUILD=1 ;;
-    --api-only) API_ONLY=1 ;;
-    --allow-unmerged) ALLOW_UNMERGED=1 ;;
-    --help|-h)
-      sed -n '2,22p' "$0"
-      exit 0
-      ;;
-    *)
-      echo "Unknown option: $arg" >&2
-      exit 1
-      ;;
-  esac
-done
 
 # What gets deployed is the working tree, so "which commit" is decided by
 # whatever happens to be checked out. A clean tree is not the same as a
@@ -121,28 +162,86 @@ if [[ "$REBUILD" -eq 1 ]]; then
   # prepared for a future cutover and would collide with the systemd unit on
   # :3000 and host nginx on :80/:443 if started here. Naming them explicitly is
   # what keeps a bare `up -d --build` from taking the site down.
+  #
+  # Build the image first, while the old container is still serving. Only then
+  # copy SQLite out (if the host volume does not already have it) and replace
+  # the container. A second run sees a non-empty host market.db and skips the copy.
   ssh "$HOST" bash -s <<REMOTE
 set -euo pipefail
 cd "$REMOTE_DIR"
 test -f docker-compose.prod.yml
 test -f .env || { echo "ERROR: missing $REMOTE_DIR/.env"; exit 1; }
-if command -v docker >/dev/null 2>&1; then
-  if docker compose version >/dev/null 2>&1; then
-    docker compose -f docker-compose.prod.yml up -d --build api
-  else
-    docker-compose -f docker-compose.prod.yml down || true
-    while IFS= read -r container_id; do
-      [ -n "\$container_id" ] || continue
-      docker rm -f "\$container_id" || true
-    done < <(docker ps -aq --filter label=com.docker.compose.service=api)
-    docker rm -f jetscope-api || true
-    docker-compose -f docker-compose.prod.yml up -d --build api
-  fi
-  docker ps --filter name=jetscope-api --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
-else
+if ! command -v docker >/dev/null 2>&1; then
   echo "ERROR: docker not installed on remote"
   exit 1
 fi
+export JETSCOPE_HOST_DATA_DIR="$HOST_DATA_DIR"
+host_dir="\$JETSCOPE_HOST_DATA_DIR"
+host_db="\$host_dir/market.db"
+container="jetscope-api"
+if docker compose version >/dev/null 2>&1; then
+  echo "==> Build API image (running container stays up)"
+  docker compose -f docker-compose.prod.yml build api
+else
+  echo "==> Build API image with docker-compose v1 (running container stays up)"
+  docker-compose -f docker-compose.prod.yml build api
+fi
+
+echo "==> SQLite host volume \$host_dir (mounted at /app/data)"
+mkdir -p "\$host_dir"
+if [ -s "\$host_db" ]; then
+  echo "Host market.db already present at \$host_db; skip docker cp"
+else
+  if docker inspect "\$container" >/dev/null 2>&1; then
+    tmp="\$(mktemp -d)"
+    if docker cp "\$container:/app/data/market.db" "\$tmp/market.db" 2>/dev/null && [ -s "\$tmp/market.db" ]; then
+      running="\$(docker inspect -f '{{.State.Running}}' "\$container" 2>/dev/null || echo false)"
+      if [ "\$running" = "true" ]; then
+        if ! docker exec "\$container" python -c 'import sqlite3; c=sqlite3.connect("/app/data/market.db"); c.execute("PRAGMA wal_checkpoint(FULL)"); c.close()'; then
+          echo "WARN: wal checkpoint failed; copying the db file plus wal/shm as they are"
+        fi
+      fi
+      docker stop "\$container" >/dev/null || true
+      docker cp "\$container:/app/data/market.db" "\$tmp/market.db" 2>/dev/null || echo "WARN: post-stop copy failed; using the pre-stop snapshot"
+      docker cp "\$container:/app/data/market.db-wal" "\$tmp/market.db-wal" 2>/dev/null || true
+      docker cp "\$container:/app/data/market.db-shm" "\$tmp/market.db-shm" 2>/dev/null || true
+      if [ ! -s "\$tmp/market.db" ]; then
+        echo "ERROR: recovered market.db is empty; refusing to install it" >&2
+        rm -rf "\$tmp"
+        exit 1
+      fi
+      cp "\$tmp/market.db" "\$host_db"
+      chmod 0640 "\$host_db" || true
+      if [ -s "\$tmp/market.db-wal" ]; then
+        cp "\$tmp/market.db-wal" "\$host_dir/market.db-wal"
+        chmod 0640 "\$host_dir/market.db-wal" || true
+      fi
+      if [ -s "\$tmp/market.db-shm" ]; then
+        cp "\$tmp/market.db-shm" "\$host_dir/market.db-shm"
+        chmod 0640 "\$host_dir/market.db-shm" || true
+      fi
+      echo "Copied \$container:/app/data/market.db -> \$host_db"
+    else
+      echo "Container \$container has no non-empty /app/data/market.db; host volume left empty"
+    fi
+    rm -rf "\$tmp"
+  else
+    echo "No existing \$container container; nothing to migrate"
+  fi
+fi
+
+if docker compose version >/dev/null 2>&1; then
+  docker compose -f docker-compose.prod.yml up -d api
+else
+  docker-compose -f docker-compose.prod.yml down || true
+  while IFS= read -r container_id; do
+    [ -n "\$container_id" ] || continue
+    docker rm -f "\$container_id" || true
+  done < <(docker ps -aq --filter label=com.docker.compose.service=api)
+  docker rm -f jetscope-api || true
+  docker-compose -f docker-compose.prod.yml up -d api
+fi
+docker ps --filter name=jetscope-api --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 REMOTE
 
   if [[ "$API_ONLY" -eq 1 ]]; then
