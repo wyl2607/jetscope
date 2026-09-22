@@ -9,7 +9,7 @@ product work.
 | --- | --- |
 | What are the rules? | `docs/UI_CONTRACT.md` — the single source of frontend style, structure and data honesty |
 | Where does the work stand, and what is next? | `docs/PROJECT_STATE.md` |
-| How is bounded work delegated, and what has gone wrong before? | `docs/task-packets/` |
+| How is bounded work delegated, and what has gone wrong before? | `docs/archive/task-packets/` |
 | How does the frontend reach production? | `docs/DEPLOY_WEB_VPS.md` |
 
 Two rules from the contract that govern every frontend change:

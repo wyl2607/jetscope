@@ -22,9 +22,9 @@ function validPlan(overrides = {}) {
     mode: 'write',
     risk: 'low',
     conflict_group: 'docs',
-    allowed_paths: ['docs/AUTOMATION_LOOP.md'],
+    allowed_paths: ['docs/archive/AUTOMATION_LOOP.md'],
     forbidden_paths: ['.env*', '.automation/**', '.omx/**'],
-    verification: ['test -f docs/AUTOMATION_LOOP.md'],
+    verification: ['test -f docs/archive/AUTOMATION_LOOP.md'],
     max_attempts: 2,
     pr_policy: 'required-before-main',
     merge_policy: 'human-or-controller-after-ci',
@@ -51,7 +51,7 @@ function assertFails(plan, pattern) {
 }
 
 test('automation plan check accepts the safe-local example contract', () => {
-  const output = execFileSync('node', [scriptPath, 'docs/automation-safe-local-task-example.json'], {
+  const output = execFileSync('node', [scriptPath, 'docs/archive/automation-safe-local-task-example.json'], {
     encoding: 'utf8'
   });
 

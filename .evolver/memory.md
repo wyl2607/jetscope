@@ -39,7 +39,7 @@ feature volume:
 Preferred near-term work packets:
 
 - OSS trust pack: `CONTRIBUTING.md`, `MAINTAINERS.md`, `SECURITY.md`,
-  `ROADMAP.md`, `CHANGELOG.md`, `docs/MAINTENANCE_LOG.md`, GitHub issue
+  `ROADMAP.md`, `CHANGELOG.md`, `docs/archive/MAINTENANCE_LOG.md`, GitHub issue
   templates, PR template, and README links.
 - Release readiness: side-effect-free release dry-run, release process docs,
   changelog/README updates, and clear explanation that npm publishing is

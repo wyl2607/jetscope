@@ -268,7 +268,7 @@ to `test/page-template-adoption.test.mjs` and to a baseline file, so expect one
 small conflict per pair and resolve it by keeping both sides. Regenerate
 baselines with `--update` rather than merging the JSON by hand.
 
-`docs/task-packets/` holds the reusable constraint packet. Its value is not the
+`docs/archive/task-packets/` holds the reusable constraint packet. Its value is not the
 instructions — it is the accumulated list of defects that batches produced
 before, each one written as a rule rather than as advice. Eight batches of
 history are compressed there. Read it before writing a new batch section, and
@@ -288,7 +288,7 @@ token.
 
 ## The defect classes this program keeps producing
 
-Recorded in full in `docs/task-packets/page-conversion-constraints.md`. The
+Recorded in full in `docs/archive/task-packets/page-conversion-constraints.md`. The
 short version, because these recur across contributors:
 
 1. **A fallback stamped as fresh.** A default value carrying
