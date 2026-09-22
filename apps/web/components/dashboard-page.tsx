@@ -9,6 +9,7 @@ import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-t
 import { SourceFooter, type SourceRef } from '@/components/source-footer';
 import { StatusBanner } from '@/components/status-banner';
 import { getDashboardReadModel, type DashboardReadModel } from '@/lib/dashboard-read-model';
+import { presentDashboardMarket } from '@/lib/market-quote-read-model';
 import { loadEuEtsPressure } from '@/lib/eu-ets-pressure-read-model';
 import { messagesFor, type DashboardMessages, type Locale } from '@/lib/i18n';
 import { computeDashboardAlertBanners } from '@/lib/market-signals';
@@ -197,6 +198,11 @@ export async function DashboardPage({ locale }: { locale: Locale }) {
   const jet = formatNumber(market.jet_usd_per_l, 3, locale);
   const jetEu = formatNumber(marketJet, 3, locale);
   const carbon = formatNumber(market.carbon_proxy_usd_per_t, 2, locale);
+  const quoteLocale = locale === 'de' || locale === 'en' ? locale : 'zh';
+  const missingCopy = quoteLocale === 'zh' ? '数据缺失' : quoteLocale === 'de' ? 'Daten fehlen' : 'missing';
+  const presentedMarket = readModel.isFallback
+    ? { mode: 'quotes' as const, primary: '—', secondary: missingCopy }
+    : presentDashboardMarket(readModel.market, quoteLocale);
 
   const cards: Record<SignalId, ReactNode> = {
     decision: (
@@ -231,8 +237,16 @@ export async function DashboardPage({ locale }: { locale: Locale }) {
       <MetricCard
         key="market"
         label={copy.market_label}
-        value={fill(copy.market_value, { brent })}
-        hint={fill(copy.market_hint, { jet, jetEu, carbon })}
+        value={
+          presentedMarket.mode === 'quotes'
+            ? presentedMarket.primary
+            : fill(copy.market_value, { brent })
+        }
+        hint={
+          presentedMarket.mode === 'quotes'
+            ? presentedMarket.secondary
+            : fill(copy.market_hint, { jet, jetEu, carbon })
+        }
       />
     )
   };

@@ -132,8 +132,9 @@ def test_ingest_jet_eu_market_value_falls_back_to_brent_when_public_quote_fails(
     source_detail = details["sources"]["jet_eu_proxy"]
 
     assert result == expected
-    assert source_detail["status"] == "fallback"
+    assert source_detail["status"] == "estimated"
     assert source_detail["source"] == "brent-derived"
+    assert "1.20" in str(source_detail.get("method"))
     assert source_detail["primary_error"] == "source down"
 
 

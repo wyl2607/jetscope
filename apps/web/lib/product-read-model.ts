@@ -12,6 +12,9 @@ export type MarketSourceDetail = {
   quote_kind?: string | null;
   product_id?: string | null;
   observed_at?: string | null;
+  as_of?: string | null;
+  method?: string | null;
+  unit?: string | null;
   published_at?: string | null;
   fetched_at?: string | null;
   fallback_used?: boolean | null;
@@ -34,6 +37,10 @@ export type MarketSnapshot = {
   };
   values: Record<string, number | null | undefined>;
   source_details?: Record<string, MarketSourceDetail>;
+  assumptions?: Record<
+    string,
+    { value: number; unit: string; kind: 'assumption'; as_of: string; note?: string | null }
+  >;
   derived?: Record<string, number | string>;
 };
 

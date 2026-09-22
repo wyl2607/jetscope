@@ -653,7 +653,9 @@ export function SourcesPage({
                         {row.fallback}
                       </td>
                     ) : null}
-                    <td className="py-3 pr-4">{localizeScalar(row.value, copy, locale)}</td>
+                    <td className="py-3 pr-4" title={row.quoteTitle ?? undefined}>
+                      {localizeScalar(row.value, copy, locale)}
+                    </td>
                     <td className="py-3 pr-4">{localizeScalar(row.change1d, copy, locale)}</td>
                     <td className="py-3 pr-4">{localizeScalar(row.change7d, copy, locale)}</td>
                     <td className="py-3 pr-4">{localizeScalar(row.change30d, copy, locale)}</td>

@@ -1,5 +1,6 @@
 import { buildApiUrl } from '@/lib/api-config';
 import { derived, missing, observed, type Figure } from '@/lib/figure';
+import { presentQuote, quoteFieldsFor } from '@/lib/market-quote-read-model';
 import {
   formatSourceCoverageLag,
   getSourceCoverageTrustState,
@@ -55,7 +56,17 @@ function completenessFigure(
 type MarketSnapshot = {
   generated_at: string | null;
   source_status: { overall: string };
-  values: Record<string, number>;
+  values: Record<string, number | null | undefined>;
+  source_details?: Record<
+    string,
+    {
+      status?: string | null;
+      value?: number | null;
+      as_of?: string | null;
+      observed_at?: string | null;
+      method?: string | null;
+    }
+  >;
 };
 
 type MarketHistoryMetric = {
@@ -118,6 +129,7 @@ export type SourcesReadModel = {
     alertLevel: "normal" | "watch" | "alert";
     sparkline: string;
     note: string;
+    quoteTitle: string | null;
     reviewAction: SourceReviewAction;
   }>;
   isFallback: boolean;
@@ -398,6 +410,23 @@ function buildRows(
   return coverageMetrics.map((metric) => {
     const historyMetric = metricHistoryFor(history, metric.metric_key);
     const snapshotValue = snapshot.values[metric.metric_key];
+    const presented = presentQuote(
+      metric.metric_key,
+      {
+        ...quoteFieldsFor(snapshot, metric.metric_key),
+        status: quoteFieldsFor(snapshot, metric.metric_key).status ?? metric.status
+      },
+      'zh'
+    );
+    const legacyValue = formatMetricValue(metric.metric_key, snapshotValue ?? undefined);
+    const value =
+      presented.slot === 'missing'
+        ? '—'
+        : presented.slot === 'legacy'
+          ? legacyValue
+          : presented.badge
+            ? `${presented.text} · ${presented.badge}`
+            : presented.text;
 
     return {
       surface: surfaceLabel(metric.metric_key),
@@ -419,13 +448,14 @@ function buildRows(
       })(),
       trustState: getSourceCoverageTrustState(metric),
       degradedReason: degradedReasonFor(metric),
-      value: formatMetricValue(metric.metric_key, snapshotValue),
+      value,
       change1d: formatChange(historyMetric?.change_pct_1d),
       change7d: formatChange(historyMetric?.change_pct_7d),
       change30d: formatChange(historyMetric?.change_pct_30d),
       alertLevel: computeAlertLevel(historyMetric),
       sparkline: encodeSparklinePoints(historyMetric?.points ?? []),
-      note: buildMetricNote(metric),
+      note: [buildMetricNote(metric), presented.title].filter(Boolean).join(' | '),
+      quoteTitle: presented.title,
       reviewAction: reviewActionFor(metric)
     };
   });

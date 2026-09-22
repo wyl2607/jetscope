@@ -58,7 +58,22 @@ def test_market_health_with_recent_ok_run(client):
             id=str(uuid4()),
             refreshed_at=now - timedelta(minutes=2),
             source_status="ok",
-            sources={"brent": {"status": "ok"}},
+            sources={
+                "brent": {
+                    "status": "ok",
+                    "source": "eia",
+                    "quality": "observed",
+                    "value": 80.0,
+                    "observed_at": (now - timedelta(days=1)).isoformat(),
+                },
+                "jet": {
+                    "status": "ok",
+                    "source": "fred",
+                    "quality": "observed",
+                    "value": 0.71,
+                    "observed_at": (now - timedelta(days=1)).isoformat(),
+                },
+            },
             ingest="live-refresh",
         )
     )
