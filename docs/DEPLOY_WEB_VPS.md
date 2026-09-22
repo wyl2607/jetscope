@@ -25,6 +25,25 @@ production nginx in front of both services, and the cutover.
 Phase P4 in `docs/UI_CONTRACT.md` is about the frontend being reachable over
 the public internet. It is — just not from a container.
 
+## Read this before the cutover: the edge is shared
+
+Found on 2026-08-08, while running the deploy for the first time. **Host nginx
+on that VPS does not serve only JetScope** — `esg.meichen.beauty` is configured
+alongside `saf.meichen.beauty` in `/etc/nginx/sites-enabled/`, proxying to
+`127.0.0.1:8001` and serving a static build from `/opt/esg-research-toolkit`.
+
+The plan below has the `nginx` service publish `:80` and `:443`. On this host
+that means a JetScope container becomes the edge for an unrelated product, owns
+its certificate renewal, and takes it down with any botched cutover.
+
+**So the full-edge cutover as written is probably the wrong shape here.** The
+defensible version containerises only the web process — bind it to a free port,
+leave host nginx as the shared edge, and repoint the `saf.meichen.beauty`
+upstream at it. That keeps the blast radius inside JetScope and is reversible by
+editing one `proxy_pass` line.
+
+Decide that before writing any of the steps below.
+
 ## Cutover, and why it is not a flag on a routine deploy
 
 Everything below is built and locally verified, and **none of it is started by
