@@ -220,6 +220,13 @@ compose and should not be reused.
 
 - `location /v1/` proxies to `http://api:8000`
 - `location /` proxies to `http://web:3000`
+- Admin paths use `location ~ ^/(?:en/|de/)?admin(?:/|$)`, which covers
+  `/admin`, `/de/admin`, and `/en/admin` (including subpaths) and does not
+  match `/administrator`. The block sets `auth_basic` and
+  `auth_basic_user_file /etc/nginx/secrets/admin.htpasswd`. The credential
+  file is operator state; mount it, never bake it into the image. Application
+  write routes keep `x-admin-token` as a second layer. The live host-nginx
+  file and the `htpasswd` steps are in `docs/DEPLOY_USA_VPS.md`.
 - forward `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`
 - `proxy_read_timeout` above the app's own fetch timeouts, which default to a
   few seconds via `JETSCOPE_*_FETCH_TIMEOUT_MS`
@@ -228,7 +235,8 @@ compose and should not be reused.
   notes, not here.
 
 Order matters: `/v1/` must be declared before `/`, or the catch-all swallows API
-traffic and the browser silently gets HTML where it expected JSON.
+traffic and the browser silently gets HTML where it expected JSON. The admin
+regex location must also stay ahead of the catch-all `location /`.
 
 ## 5. `scripts/deploy-usa-vps.sh`
 
