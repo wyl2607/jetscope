@@ -245,24 +245,35 @@ export async function getDashboardReadModel(locale: DisplayLocale = 'zh'): Promi
     ]);
 
     const values = market.values ?? {};
+    const details = market.source_details ?? {};
+    const jetCandidates: Array<{ metric: string; detail: string }> = [
+      { metric: 'rotterdam_jet_fuel_usd_per_l', detail: 'rotterdam_jet_fuel' },
+      { metric: 'jet_eu_proxy_usd_per_l', detail: 'jet_eu_proxy' },
+      { metric: 'jet_usd_per_l', detail: 'jet' }
+    ];
+    const qualityRank: Record<string, number> = { observed: 0, stale: 1, derived: 2, seed: 3, missing: 4 };
+    const ranked = jetCandidates
+      .map((candidate, index) => {
+        const value = Number(values[candidate.metric]);
+        const detail = details[candidate.detail] ?? details[candidate.metric];
+        const quality = String(detail?.quality || (detail?.fallback_used ? 'seed' : 'missing'));
+        return { ...candidate, value, quality, index };
+      })
+      .filter((candidate) => Number.isFinite(candidate.value) && candidate.value > 0 && candidate.quality !== 'missing')
+      .sort((left, right) => (qualityRank[left.quality] ?? 4) - (qualityRank[right.quality] ?? 4) || left.index - right.index);
     let jetSourceKey = 'unavailable';
     let fossilJetUsdPerL: number = Number(FALLBACK_VALUES.jet_eu_proxy_usd_per_l);
-    if (Number.isFinite(values.rotterdam_jet_fuel_usd_per_l) && values.rotterdam_jet_fuel_usd_per_l > 0) {
-      fossilJetUsdPerL = Number(values.rotterdam_jet_fuel_usd_per_l);
-      jetSourceKey = 'rotterdam_jet_fuel_usd_per_l';
-    } else if (Number.isFinite(values.jet_eu_proxy_usd_per_l) && values.jet_eu_proxy_usd_per_l > 0) {
-      fossilJetUsdPerL = Number(values.jet_eu_proxy_usd_per_l);
-      jetSourceKey = 'jet_eu_proxy_usd_per_l';
-    } else if (Number.isFinite(values.jet_usd_per_l) && values.jet_usd_per_l > 0) {
-      fossilJetUsdPerL = Number(values.jet_usd_per_l);
-      jetSourceKey = 'jet_usd_per_l';
+    if (ranked[0] && ranked[0].quality !== 'seed') {
+      fossilJetUsdPerL = ranked[0].value;
+      jetSourceKey = ranked[0].metric;
+    } else if (ranked[0]) {
+      fossilJetUsdPerL = ranked[0].value;
+      jetSourceKey = 'seed_fallback';
     } else {
       jetSourceKey = 'seed_fallback';
     }
-    const carbonPriceEurPerT =
-      Number.isFinite(values.eu_ets_price_eur_per_t) && values.eu_ets_price_eur_per_t > 0
-        ? values.eu_ets_price_eur_per_t
-        : 92.5;
+    const euEts = Number(values.eu_ets_price_eur_per_t);
+    const carbonPriceEurPerT = Number.isFinite(euEts) && euEts > 0 ? euEts : 92.5;
     const reserveWeeks =
       reserve && Number.isFinite(reserve.coverage_weeks) && reserve.coverage_weeks > 0
         ? reserve.coverage_weeks

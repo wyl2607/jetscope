@@ -15,7 +15,8 @@ export type PriceTrendChartData = {
   change_pct_1d: Figure; // unit '%'
   change_pct_7d: Figure; // unit '%'
   change_pct_30d: Figure; // unit '%'
-  points: Array<{ as_of: string; value: number }>;
+  quality?: string | null;
+  points: Array<{ as_of: string; value: number; quality?: string | null; source?: string | null }>;
 };
 
 export type PriceTrendChartReadModel = {
@@ -28,12 +29,18 @@ export type PriceTrendChartReadModel = {
 /**
  * Latest spot/level for a series. Provenance lives on this Figure; series points
  * stay bare (see price-trends-chart PricePoint ignore).
+ *
+ * An explicit seed or missing quality is not a quote, even when a numeric
+ * carry-forward is present. Untagged history with a timestamp stays observed,
+ * which is what the figure contract already did before quality existed.
  */
 function latestValueFigure(
   value: number | null | undefined,
   unit: string,
-  asOf: string | null
+  asOf: string | null,
+  quality: string | null | undefined
 ): Figure {
+  const normalized = quality?.trim().toLowerCase() || null;
   if (value == null || !Number.isFinite(value)) {
     return missing({
       unit,
@@ -42,7 +49,15 @@ function latestValueFigure(
       basis: 'observed'
     });
   }
-  if (asOf) {
+  if (normalized === 'missing' || normalized === 'seed') {
+    return missing({
+      unit,
+      sourceId: PRICE_TREND_SOURCE_ID,
+      reason: normalized === 'seed' ? '种子值不是行情' : '缺少可引用的行情',
+      basis: 'assumption'
+    });
+  }
+  if ((normalized === 'observed' || normalized == null) && asOf) {
     return observed({
       value,
       unit,
@@ -55,9 +70,12 @@ function latestValueFigure(
     value,
     unit,
     sourceId: PRICE_TREND_SOURCE_ID,
-    asOf: null,
+    asOf,
     precision: 2,
-    method: 'market history latest without source timestamp'
+    method:
+      normalized === 'derived' || normalized === 'proxy'
+        ? `market history quality=${normalized}`
+        : 'market history latest without source timestamp'
   });
 }
 
@@ -87,43 +105,48 @@ function changePctFigure(
   });
 }
 
-export async function getPriceTrendChartReadModel(): Promise<PriceTrendChartReadModel> {
-  try {
-    const history = await fetchJson<MarketHistory>('/market/history');
+export function buildPriceTrendChartReadModelFromHistory(history: MarketHistory): PriceTrendChartReadModel {
+  if (!history?.metrics) {
+    throw new Error('No metrics in history response');
+  }
 
-    if (!history?.metrics) {
-      throw new Error('No metrics in history response');
-    }
+  const metrics: Record<string, PriceTrendChartData> = {};
 
-    const metrics: Record<string, PriceTrendChartData> = {};
+  for (const [key, metric] of Object.entries(history.metrics)) {
+    const latestAsOf = metric.latest_as_of ?? null;
+    metrics[key] = {
+      metric_key: key,
+      unit: metric.unit,
+      latest_value: latestValueFigure(metric.latest_value, metric.unit, latestAsOf, metric.quality),
+      latest_as_of: latestAsOf,
+      change_pct_1d: changePctFigure(finiteChangeOrNull(metric.change_pct_1d), 1, latestAsOf),
+      change_pct_7d: changePctFigure(finiteChangeOrNull(metric.change_pct_7d), 7, latestAsOf),
+      change_pct_30d: changePctFigure(finiteChangeOrNull(metric.change_pct_30d), 30, latestAsOf),
+      quality: metric.quality ?? null,
+      points: metric.points ?? []
+    };
+  }
 
-    for (const [key, metric] of Object.entries(history.metrics)) {
-      const latestAsOf = metric.latest_as_of ?? null;
-      metrics[key] = {
-        metric_key: key,
-        unit: metric.unit,
-        latest_value: latestValueFigure(metric.latest_value, metric.unit, latestAsOf),
-        latest_as_of: latestAsOf,
-        change_pct_1d: changePctFigure(finiteChangeOrNull(metric.change_pct_1d), 1, latestAsOf),
-        change_pct_7d: changePctFigure(finiteChangeOrNull(metric.change_pct_7d), 7, latestAsOf),
-        change_pct_30d: changePctFigure(finiteChangeOrNull(metric.change_pct_30d), 30, latestAsOf),
-        points: metric.points ?? []
-      };
-    }
-
-    const generatedAt = Object.values(metrics).reduce<{ at: number; iso: string } | null>((latest, metric) => {
+  const generatedAt =
+    Object.values(metrics).reduce<{ at: number; iso: string } | null>((latest, metric) => {
       if (!metric.latest_as_of) return latest;
       const at = new Date(metric.latest_as_of).getTime();
       if (Number.isNaN(at)) return latest;
       return latest == null || at > latest.at ? { at, iso: metric.latest_as_of } : latest;
     }, null)?.iso ?? null;
 
-    return {
-      metrics,
-      generatedAt,
-      isFallback: false,
-      error: null
-    };
+  return {
+    metrics,
+    generatedAt,
+    isFallback: false,
+    error: null
+  };
+}
+
+export async function getPriceTrendChartReadModel(): Promise<PriceTrendChartReadModel> {
+  try {
+    const history = await fetchJson<MarketHistory>('/market/history');
+    return buildPriceTrendChartReadModelFromHistory(history);
   } catch (error) {
     return {
       metrics: {},

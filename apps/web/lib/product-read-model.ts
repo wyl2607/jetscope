@@ -3,16 +3,37 @@ import { toPathwayCostRow, type PathwayCostRow } from '@/lib/pathways-read-model
 
 const DEFAULT_FETCH_TIMEOUT_MS = 2000;
 
+export type MarketSourceDetail = {
+  source: string;
+  status: string;
+  value?: number | null;
+  quality?: string | null;
+  freshness?: string | null;
+  quote_kind?: string | null;
+  product_id?: string | null;
+  observed_at?: string | null;
+  published_at?: string | null;
+  fetched_at?: string | null;
+  fallback_used?: boolean | null;
+  lag_minutes?: number | null;
+  input_observed_at?: Record<string, string | null | undefined> | null;
+  note?: string | null;
+};
+
 export type MarketSnapshot = {
   generated_at: string | null;
+  fetched_at?: string | null;
   source_status: {
     overall: string;
     confidence?: number | null;
     freshness_minutes?: number | null;
     fallback_rate?: number | null;
     is_fallback?: boolean | null;
+    quote_coverage_rate?: number | null;
+    fetched_at?: string | null;
   };
-  values: Record<string, number>;
+  values: Record<string, number | null | undefined>;
+  source_details?: Record<string, MarketSourceDetail>;
   derived?: Record<string, number | string>;
 };
 
@@ -110,12 +131,13 @@ export type AirlineDecisionResponse = {
 export type MarketHistoryMetric = {
   metric_key: string;
   unit: string;
-  latest_value?: number;
-  latest_as_of?: string;
+  latest_value?: number | null;
+  latest_as_of?: string | null;
   change_pct_1d?: number | null;
   change_pct_7d?: number | null;
   change_pct_30d?: number | null;
-  points?: Array<{ as_of: string; value: number }>;
+  quality?: string | null;
+  points?: Array<{ as_of: string; value: number; quality?: string | null; source?: string | null }>;
 };
 
 export type MarketHistory = {
@@ -127,6 +149,7 @@ export type MarketHistory = {
 export const FALLBACK_VALUES = {
   brent_usd_per_bbl: 87.01,
   jet_usd_per_l: 0.64,
+  rotterdam_jet_fuel_usd_per_l: 0.657,
   jet_eu_proxy_usd_per_l: 0.657,
   carbon_proxy_usd_per_t: 91.91
 } as const;
@@ -161,6 +184,11 @@ export function metricLabel(metric: string, locale: DisplayLocale = 'zh'): strin
     if (locale === 'en') return 'Jet fuel';
     return '航煤';
   }
+  if (metric === 'rotterdam_jet_fuel_usd_per_l') {
+    if (locale === 'de') return 'Rotterdam Jet';
+    if (locale === 'en') return 'Rotterdam jet';
+    return '鹿特丹航煤';
+  }
   if (metric === 'jet_eu_proxy_usd_per_l') {
     if (locale === 'de') return 'EU-Jet-Proxy';
     if (locale === 'en') return 'EU jet proxy';
@@ -175,12 +203,15 @@ export function metricLabel(metric: string, locale: DisplayLocale = 'zh'): strin
 }
 
 export function finiteNumberOrNull(value: unknown): number | null {
-  const numeric = Number(value);
+  if (value == null) return null;
+  if (typeof value === 'string' && value.trim() === '') return null;
+  if (typeof value === 'boolean') return null;
+  const numeric = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(numeric) ? numeric : null;
 }
 
 export function resolveSnapshotMetric(
-  values: Record<string, number>,
+  values: Record<string, number | null | undefined>,
   key: string,
   fallbackKey?: string
 ): {

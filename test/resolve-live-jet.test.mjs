@@ -17,10 +17,13 @@ const FOSSIL_JET_PRIORITY = [
   'jet_usd_per_l'
 ];
 
-function resolveLiveFossilJetUsdPerL(values) {
+function resolveLiveFossilJetUsdPerL(values, details = {}) {
+  const SIGNAL = new Set(['observed', 'stale', 'derived']);
   for (const key of FOSSIL_JET_PRIORITY) {
     const value = values[key];
-    if (Number.isFinite(value) && value > 0) {
+    const detail = details[key] || {};
+    const quality = detail.quality || (detail.fallback_used ? 'seed' : 'observed');
+    if (Number.isFinite(value) && value > 0 && SIGNAL.has(quality)) {
       return { value, sourceKey: key };
     }
   }
@@ -43,27 +46,53 @@ async function extractPythonTuple(relPath, anchor) {
 }
 
 test('the JS mirror matches the fossil-jet priority the API actually ships', async () => {
-  const routeChain = await extractPythonTuple(
-    'apps/api/app/api/routes/analysis.py',
-    'for key in'
+  const analysisSource = await readFile(new URL('../apps/api/app/api/routes/analysis.py', import.meta.url), 'utf8');
+  assert.match(analysisSource, /select_fossil_jet_benchmark/);
+  assert.doesNotMatch(
+    analysisSource,
+    /for key in \("rotterdam_jet_fuel_usd_per_l"/,
+    'analysis.py must not fall back to the first positive number after the quality selector rejects'
   );
   const engineChain = await extractPythonTuple(
     'apps/api/app/services/analysis/tipping_point.py',
     'FOSSIL_METRIC_PRIORITY'
   );
 
-  assert.deepEqual(routeChain, FOSSIL_JET_PRIORITY);
   assert.deepEqual(engineChain, FOSSIL_JET_PRIORITY);
 });
 
 test('prefers Rotterdam jet over EU proxy and US jet', () => {
-  const out = resolveLiveFossilJetUsdPerL({
-    rotterdam_jet_fuel_usd_per_l: 0.85,
-    jet_eu_proxy_usd_per_l: 0.87,
-    jet_usd_per_l: 0.99
-  });
+  const out = resolveLiveFossilJetUsdPerL(
+    {
+      rotterdam_jet_fuel_usd_per_l: 0.85,
+      jet_eu_proxy_usd_per_l: 0.87,
+      jet_usd_per_l: 0.99
+    },
+    {
+      rotterdam_jet_fuel_usd_per_l: { quality: 'observed' },
+      jet_eu_proxy_usd_per_l: { quality: 'derived' },
+      jet_usd_per_l: { quality: 'observed' }
+    }
+  );
   assert.equal(out.sourceKey, 'rotterdam_jet_fuel_usd_per_l');
   assert.equal(out.value, 0.85);
+});
+
+test('does not take a seed Rotterdam print after the quality selector rejects', () => {
+  const out = resolveLiveFossilJetUsdPerL(
+    {
+      rotterdam_jet_fuel_usd_per_l: 0.657,
+      jet_eu_proxy_usd_per_l: 0.657,
+      jet_usd_per_l: 0.64
+    },
+    {
+      rotterdam_jet_fuel_usd_per_l: { quality: 'seed', fallback_used: true },
+      jet_eu_proxy_usd_per_l: { quality: 'seed', fallback_used: true },
+      jet_usd_per_l: { quality: 'seed', fallback_used: true }
+    }
+  );
+  assert.equal(out.sourceKey, 'unavailable');
+  assert.equal(out.value, null);
 });
 
 test('falls back to EU proxy then US jet', () => {

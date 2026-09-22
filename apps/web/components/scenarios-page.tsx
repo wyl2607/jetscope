@@ -90,10 +90,11 @@ export function scenarioNameForLocale(
 }
 
 function formatNumber(
-  value: number, // figure-contract-lint-ignore: formatter input, not a display prop
+  value: number | null | undefined, // figure-contract-lint-ignore: formatter input, not a display prop
   locale: Locale,
   digits = 2
 ): string {
+  if (!Number.isFinite(value ?? NaN)) return 'n/a';
   const tag = locale === 'de' ? 'de-DE' : locale === 'zh' ? 'zh-CN' : 'en-US';
   return Number(value).toLocaleString(tag, {
     minimumFractionDigits: digits,

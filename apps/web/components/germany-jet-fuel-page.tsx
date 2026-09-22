@@ -1,8 +1,7 @@
-import { MetricCard } from '@/components/cards';
-import { PageTemplate, SignalRow } from '@/components/page-template';
-import { Panel } from '@/components/panel';
-import { PriceTrendsChart } from '@/components/price-trends-chart';
+import { GermanyJetFuelMonitor } from '@/components/germany-jet-fuel-monitor';
+import { PageTemplate } from '@/components/page-template';
 import { SourceFooter, type SourceRef } from '@/components/source-footer';
+import { germanyJetFuelCopy } from '@/lib/germany-jet-fuel-copy';
 import { getGermanyJetFuelReadModel } from '@/lib/germany-jet-fuel-read-model';
 import { messagesFor, type Locale } from '@/lib/i18n';
 import { NAV_ENTRIES } from '@/lib/navigation';
@@ -15,80 +14,20 @@ import type { Route } from 'next';
  * `app/en/prices` pages pass the locale they already own.
  *
  * The trend chart is locale data, not a rewrite: only zh ships it today.
- * de/en keep the signal row + footer they already had.
+ * de/en keep the signal row + footer they already had. The monitor owns the
+ * selected-quote signal, quote-versus-fetch time, and the cost estimate.
  */
 
 const SOURCE_KEYS = [
   'brent_usd_per_bbl',
   'jet_usd_per_l',
+  'rotterdam_jet_fuel_usd_per_l',
   'jet_eu_proxy_usd_per_l',
   'carbon_proxy_usd_per_t'
 ] as const;
 
-const NUMBER_LOCALE: Record<Locale, string> = {
-  zh: 'en-US',
-  de: 'de-DE',
-  en: 'en-US'
-};
-
 function fill(template: string, vars: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (_, key: string) => vars[key] ?? '');
-}
-
-function formatMetricValue(
-  locale: Locale,
-  value: number | null, // figure-contract-lint-ignore: internal formatter parameter, not a prop
-  digits: number, // figure-contract-lint-ignore: display-digit count, not a measurement
-  unit: string,
-  na: string
-): string {
-  if (!Number.isFinite(value ?? NaN)) return `${na} ${unit}`;
-  return `${Number(value).toLocaleString(NUMBER_LOCALE[locale], {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits
-  })} ${unit}`;
-}
-
-function formatChange(value: number | null, na: string): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
-  if (!Number.isFinite(value ?? NaN)) return na;
-  const numeric = Number(value);
-  const sign = numeric > 0 ? '+' : '';
-  return `${sign}${numeric.toFixed(2)}%`;
-}
-
-function changeClass(value: number | null): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
-  if (!Number.isFinite(value ?? NaN)) return 'text-warning';
-  const magnitude = Math.abs(Number(value));
-  if (magnitude >= 20) return 'text-danger';
-  if (magnitude >= 10) return 'text-warning';
-  return 'text-success';
-}
-
-function decisionLabel(
-  change: number | null, // figure-contract-lint-ignore: internal formatter parameter, not a prop
-  isFallback: boolean,
-  copy: ReturnType<typeof messagesFor>['prices']
-): string {
-  if (isFallback || !Number.isFinite(change ?? NaN)) return copy.decision_review_source;
-  const magnitude = Math.abs(Number(change));
-  if (magnitude >= 20) return copy.decision_revisit;
-  if (magnitude >= 10) return copy.decision_review;
-  return copy.decision_hold;
-}
-
-function decisionTone(change: number | null, isFallback: boolean): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
-  if (isFallback || !Number.isFinite(change ?? NaN)) return 'text-danger';
-  const magnitude = Math.abs(Number(change));
-  if (magnitude >= 20) return 'text-danger';
-  if (magnitude >= 10) return 'text-warning';
-  return 'text-success';
-}
-
-function statusLabel(status: string, copy: ReturnType<typeof messagesFor>['prices']): string {
-  if (status === 'live') return copy.status_live;
-  if (status === 'proxy') return copy.status_proxy;
-  if (status === 'degraded') return copy.status_degraded;
-  return copy.use_status_fallback ? copy.status_fallback : status;
 }
 
 function sourceBasis(sourceKey: string, isFallback: boolean): SourceRef['basis'] {
@@ -112,6 +51,7 @@ function sourceLinkLabel(
 ): string {
   if (key === 'brent_usd_per_bbl') return copy.source_brent;
   if (key === 'jet_usd_per_l') return copy.source_jet;
+  if (key === 'rotterdam_jet_fuel_usd_per_l') return copy.source_rotterdam;
   if (key === 'jet_eu_proxy_usd_per_l') return copy.source_jet_eu;
   return copy.source_carbon;
 }
@@ -122,21 +62,14 @@ export async function GermanyJetFuelPage({ locale }: { locale: Locale }) {
     getGermanyJetFuelReadModel(locale),
     copy.show_trend_chart ? getPriceTrendChartReadModel() : Promise.resolve(null)
   ]);
-  const euJetMetric =
-    readModel.metrics.find((metric) => metric.metricKey === 'jet_eu_proxy_usd_per_l') ??
-    readModel.metrics[0];
-  // Verdict + 3 keeps the signal row within the 2-4 the contract allows. The
-  // metric config is exactly four, so nothing is dropped today - a fifth one
-  // would need a home rather than silently falling off the end.
-  const signalMetrics = readModel.metrics
-    .filter((metric) => metric.metricKey !== euJetMetric?.metricKey)
-    .slice(0, 3);
   const observedAsOf =
+    readModel.quoteAsOf ??
     readModel.metrics
       .map((metric) => metric.latestAsOf)
       .filter((value): value is string => value !== null && !Number.isNaN(new Date(value).getTime()))
       .sort((left, right) => new Date(left).getTime() - new Date(right).getTime())
-      .pop() ?? readModel.generatedAt;
+      .pop() ??
+    readModel.generatedAt;
   const asOf = readModel.isFallback ? null : observedAsOf;
 
   return (
@@ -147,48 +80,20 @@ export async function GermanyJetFuelPage({ locale }: { locale: Locale }) {
       question={copy.question}
       asOf={asOf}
     >
-      <SignalRow label={copy.signal_label}>
-        <MetricCard
-          label={copy.decision_label}
-          value={decisionLabel(euJetMetric?.changePct30d ?? null, readModel.isFallback, copy)}
-          valueClassName={decisionTone(euJetMetric?.changePct30d ?? null, readModel.isFallback)}
-          hint={
-            euJetMetric
-              ? fill(copy.decision_hint, {
-                  value: formatMetricValue(
-                    locale,
-                    euJetMetric.value,
-                    euJetMetric.digits,
-                    euJetMetric.unit,
-                    copy.na
-                  ),
-                  window30: copy.window_30d,
-                  change: formatChange(euJetMetric.changePct30d, copy.na),
-                  status: statusLabel(readModel.overallStatus, copy)
-                })
-              : copy.decision_missing
-          }
-        />
-        {signalMetrics.map((metric) => (
-          <MetricCard
-            key={metric.metricKey}
-            label={metric.label}
-            value={formatMetricValue(locale, metric.value, metric.digits, metric.unit, copy.na)}
-            valueClassName={readModel.isFallback ? 'text-warning' : changeClass(metric.changePct30d)}
-            hint={`${copy.window_1d} ${formatChange(metric.changePct1d, copy.na)} · ${copy.window_7d} ${formatChange(metric.changePct7d, copy.na)} · ${copy.window_30d} ${formatChange(metric.changePct30d, copy.na)}${metric.note ? ` · ${metric.note}` : ''}`}
-          />
-        ))}
-      </SignalRow>
-
-      {copy.show_trend_chart && priceChartData ? (
-        <Panel title={copy.trend_title} why={copy.trend_why}>
-          <PriceTrendsChart
-            metrics={priceChartData.metrics}
-            isLoading={false}
-            error={priceChartData.error}
-          />
-        </Panel>
-      ) : null}
+      <GermanyJetFuelMonitor
+        locale={locale}
+        copy={germanyJetFuelCopy[locale]}
+        pageDecision={{
+          hold: copy.decision_hold,
+          review: copy.decision_review,
+          revisit: copy.decision_revisit,
+          insufficient: copy.decision_review_source
+        }}
+        initialReadModel={readModel}
+        initialChart={priceChartData}
+        showChart={Boolean(copy.show_trend_chart) && priceChartData != null}
+        showFooter={false}
+      />
 
       <SourceFooter
         locale={locale}

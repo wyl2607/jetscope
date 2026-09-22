@@ -342,8 +342,12 @@ async function CrisisMonitor({ locale, copy }: { locale: Locale; copy: CrisisMes
     !dashboardReadModel.isFallback && typeof marketConfidence === 'number'
       ? `${Math.round(marketConfidence * 100)}%`
       : copy.confidence.unavailable;
+  const usdPerEur = dashboardReadModel.market.values.usd_per_eur;
   const carbonPriceEurPerT = Number(
-    ((dashboardReadModel.market.values.carbon_proxy_usd_per_t ?? 102.6) / 1.08).toFixed(2)
+    (
+      (dashboardReadModel.market.values.carbon_proxy_usd_per_t ?? 102.6) /
+      (typeof usdPerEur === 'number' && usdPerEur > 0 ? usdPerEur : 1.1435)
+    ).toFixed(2)
   );
   const marketSnapshotUsesFallback =
     dashboardReadModel.isFallback ||

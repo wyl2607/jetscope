@@ -393,6 +393,7 @@
     "source_unknown_error": "unbekannter Grund",
     "source_brent": "Brent-Quellenstatus",
     "source_jet": "Globaler Jet-Quellenstatus",
+    "source_rotterdam": "Rotterdam-Jet-Quellenstatus",
     "source_jet_eu": "EU-Jet-Proxy-Quellenstatus",
     "source_carbon": "Carbon-Proxy-Quellenstatus",
     "source_trend": "Preistrend-Historie (1T-, 7T-, 30T-Fenster)",

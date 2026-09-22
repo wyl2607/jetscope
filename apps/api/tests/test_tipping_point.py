@@ -9,20 +9,42 @@ from app.services.analysis.tipping_point import TippingPointEngine
 
 
 class MockSession:
-    def __init__(self, fossil_price: float | None = None) -> None:
+    def __init__(
+        self,
+        fossil_price: float | None = None,
+        fossil_payload: dict | None = None,
+        fossil_rows: dict[str, tuple[float, dict]] | None = None,
+    ) -> None:
         self.fossil_price = fossil_price
+        self.fossil_payload = fossil_payload
+        self.fossil_rows = fossil_rows
         self.recorded_events: list[SimpleNamespace] = []
         self.added: list[object] = []
         self.committed = False
+
+    def _default_payload(self) -> dict:
+        if self.fossil_payload is not None:
+            return dict(self.fossil_payload)
+        return {"quality": "observed", "observed_at": "2026-04-23T11:00:00+00:00"}
 
     def scalar(self, query):  # noqa: ANN001
         entity_name = query.column_descriptions[0].get("name")
         where_items = list(getattr(query, "_where_criteria", ()))
 
         if entity_name == "MarketSnapshot":
+            metric_key = None
+            for condition in where_items:
+                if getattr(getattr(condition, "left", None), "key", None) == "metric_key":
+                    metric_key = getattr(getattr(condition, "right", None), "value", None)
+            if self.fossil_rows is not None:
+                row = self.fossil_rows.get(metric_key) if metric_key else None
+                if row is None:
+                    return None
+                value, payload = row
+                return SimpleNamespace(value=value, payload=dict(payload))
             if self.fossil_price is None:
                 return None
-            return SimpleNamespace(value=self.fossil_price)
+            return SimpleNamespace(value=self.fossil_price, payload=self._default_payload())
 
         if entity_name == "id":
             event_type = None
@@ -177,3 +199,40 @@ def test_fetch_events_since_and_limit() -> None:
     )
 
     assert [event.id for event in events] == ["c"]
+
+
+def test_evaluate_skips_expired_derived_quote(now: datetime) -> None:
+    expired = {"quality": "derived", "observed_at": "2020-01-02T00:00:00+00:00"}
+    session = MockSession(
+        fossil_rows={
+            "rotterdam_jet_fuel_usd_per_l": (1.40, expired),
+            "jet_eu_proxy_usd_per_l": (1.40, expired),
+            "jet_usd_per_l": (1.40, expired),
+        }
+    )
+    engine = TippingPointEngine()
+
+    assert engine.evaluate(now=now, db=session) == []
+
+
+def test_evaluate_falls_back_to_fresh_proxy_when_rotterdam_expired(now: datetime) -> None:
+    session = MockSession(
+        fossil_rows={
+            "rotterdam_jet_fuel_usd_per_l": (
+                0.50,
+                {"quality": "derived", "observed_at": "2020-01-02T00:00:00+00:00"},
+            ),
+            "jet_eu_proxy_usd_per_l": (
+                1.40,
+                {"quality": "derived", "observed_at": "2026-04-23T11:00:00+00:00"},
+            ),
+        }
+    )
+    engine = TippingPointEngine()
+
+    events = engine.evaluate(now=now, db=session)
+
+    hefa_event = _event_for_pathway(events, "hefa")
+    assert hefa_event is not None
+    assert hefa_event.event_type == "CROSSOVER"
+    assert hefa_event.fossil_price == pytest.approx(1.40)

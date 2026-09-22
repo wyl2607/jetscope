@@ -176,12 +176,22 @@ def test_build_source_coverage_response_is_not_degraded_for_full_non_fallback_co
             fallback_used=False,
         ),
         "germany_premium": MarketSourceDetail(
-            source="manual-regional",
-            status="ok",
+            source="airport-differential-pending",
+            status="missing",
             region="de",
-            market_scope="regional_tax_premium",
-            confidence_score=0.75,
+            market_scope="airport_differential_missing",
+            confidence_score=0.0,
             fallback_used=False,
+            quality="missing",
+        ),
+        "ecb": MarketSourceDetail(
+            source="ecb",
+            status="ok",
+            region="eu",
+            market_scope="fx_reference",
+            confidence_score=0.9,
+            fallback_used=False,
+            quality="observed",
         ),
     }
 
@@ -196,5 +206,6 @@ def test_build_source_coverage_response_is_not_degraded_for_full_non_fallback_co
 
     assert response.completeness == 1.0
     assert response.degraded is False
-    assert len(response.metrics) == 7
-    assert by_key["germany_premium_pct"].source_type == "market_primary"
+    assert len(response.metrics) == 8
+    assert by_key["germany_premium_pct"].source_type == "derived"
+    assert by_key["usd_per_eur"].source_type == "official"

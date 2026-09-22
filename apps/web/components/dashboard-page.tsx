@@ -60,7 +60,8 @@ function dateLocale(locale: Locale): string {
 }
 
 // figure-contract-lint-ignore: internal formatter parameter, not a prop
-function formatNumber(value: number, digits = 2, locale: Locale): string {
+function formatNumber(value: number | null | undefined, digits = 2, locale: Locale): string {
+  if (!Number.isFinite(value ?? NaN)) return 'n/a';
   return Number(value).toLocaleString(numberLocale(locale), {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits
@@ -241,7 +242,12 @@ export async function DashboardPage({ locale }: { locale: Locale }) {
     try {
       pathwayComparison = await loadPathwayComparison({
         fossilJetUsdPerL: readModel.analysisInputs?.fossilJetUsdPerL ?? marketJet ?? 0.9,
-        carbonPriceEurPerT: Number(((market.carbon_proxy_usd_per_t ?? 0) / 1.08).toFixed(2)),
+        carbonPriceEurPerT: Number(
+          (
+            (market.carbon_proxy_usd_per_t ?? 0) /
+            (typeof market.usd_per_eur === 'number' && market.usd_per_eur > 0 ? market.usd_per_eur : 1.1435)
+          ).toFixed(2)
+        ),
         subsidyUsdPerL: 0,
         blendRatePct: 6
       });

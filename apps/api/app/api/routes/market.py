@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -29,8 +31,13 @@ def get_market_snapshot(db: Session = Depends(get_db)) -> MarketSnapshotResponse
 
 
 @router.get("/history", response_model=MarketHistoryResponse)
-def get_market_history(db: Session = Depends(get_db)) -> MarketHistoryResponse:
-    return build_market_history_response(db)
+def get_market_history(
+    db: Session = Depends(get_db),
+    window_days: int = Query(30, ge=1, le=365, description="Inclusive lookback window in days"),
+    start: datetime | None = Query(default=None),
+    end: datetime | None = Query(default=None),
+) -> MarketHistoryResponse:
+    return build_market_history_response(db, window_days=window_days, start=start, end=end)
 
 
 @router.get("/health", response_model=MarketHealthResponse)

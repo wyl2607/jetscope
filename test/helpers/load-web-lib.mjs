@@ -36,6 +36,8 @@ function rewriteAppAliasImports(source, options = {}) {
   const researchSignalsReadModelUrl =
     options.researchSignalsReadModelUrl ??
     pathToFileURL(path.join(repoRoot, 'apps/web/lib/research-signals-read-model.ts')).href;
+  const marketQualityUrl =
+    options.marketQualityUrl ?? pathToFileURL(path.join(repoRoot, 'apps/web/lib/market-quality.ts')).href;
   return source
     .replaceAll("'@/lib/api-config'", `'${apiConfigUrl}'`)
     .replaceAll("'@/lib/figure'", `'${figureUrl}'`)
@@ -44,6 +46,7 @@ function rewriteAppAliasImports(source, options = {}) {
     .replaceAll("'@/lib/dashboard-read-model'", `'${dashboardReadModelUrl}'`)
     .replaceAll("'@/lib/price-trend-chart-read-model'", `'${priceTrendChartReadModelUrl}'`)
     .replaceAll("'@/lib/research-signals-read-model'", `'${researchSignalsReadModelUrl}'`)
+    .replaceAll("'@/lib/market-quality'", `'${marketQualityUrl}'`)
     .replaceAll("'./dashboard-read-model'", `'${dashboardReadModelUrl}'`)
     .replaceAll("'./price-trend-chart-read-model'", `'${priceTrendChartReadModelUrl}'`)
     .replaceAll("'./research-signals-read-model'", `'${researchSignalsReadModelUrl}'`)
@@ -62,18 +65,21 @@ export async function importWebLib(relativePath) {
   const dashboardReadModelPath = 'apps/web/lib/dashboard-read-model.ts';
   const priceTrendChartReadModelPath = 'apps/web/lib/price-trend-chart-read-model.ts';
   const researchSignalsReadModelPath = 'apps/web/lib/research-signals-read-model.ts';
+  const marketQualityPath = 'apps/web/lib/market-quality.ts';
   const productReadModelSlot = await reserveTempPath(productReadModelPath);
   const pathwaysReadModelSlot = await reserveTempPath(pathwaysReadModelPath);
   const dashboardReadModelSlot = await reserveTempPath(dashboardReadModelPath);
   const priceTrendChartReadModelSlot = await reserveTempPath(priceTrendChartReadModelPath);
   const researchSignalsReadModelSlot = await reserveTempPath(researchSignalsReadModelPath);
+  const marketQualitySlot = await reserveTempPath(marketQualityPath);
 
   const rewriteOptions = {
     productReadModelUrl: productReadModelSlot.url,
     pathwaysReadModelUrl: pathwaysReadModelSlot.url,
     dashboardReadModelUrl: dashboardReadModelSlot.url,
     priceTrendChartReadModelUrl: priceTrendChartReadModelSlot.url,
-    researchSignalsReadModelUrl: researchSignalsReadModelSlot.url
+    researchSignalsReadModelUrl: researchSignalsReadModelSlot.url,
+    marketQualityUrl: marketQualitySlot.url
   };
 
   const pathwaysReadModelSource = rewriteAppAliasImports(
@@ -105,6 +111,12 @@ export async function importWebLib(relativePath) {
     rewriteOptions
   );
   await writeFile(researchSignalsReadModelSlot.tempPath, researchSignalsReadModelSource, 'utf8');
+
+  const marketQualitySource = rewriteAppAliasImports(
+    await readFile(path.join(repoRoot, marketQualityPath), 'utf8'),
+    rewriteOptions
+  );
+  await writeFile(marketQualitySlot.tempPath, marketQualitySource, 'utf8');
 
   const source = rewriteAppAliasImports(rawSource, rewriteOptions);
   const tempUrl = await writeTempModule(relativePath, source);

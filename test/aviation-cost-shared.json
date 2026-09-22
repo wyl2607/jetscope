@@ -1,0 +1,46 @@
+{
+  "jet_only_repro": {
+    "baseline": {
+      "fossil_jet_usd_per_l": 1.0,
+      "usd_per_eur": 1.25,
+      "fuel_burn_t": 10.0,
+      "passengers": 100,
+      "saf_usd_per_l": 2.0,
+      "blend_share": 0.5,
+      "ets_applicable": false,
+      "quality": "observed"
+    },
+    "current": {
+      "fossil_jet_usd_per_l": 1.2,
+      "usd_per_eur": 1.25,
+      "fuel_burn_t": 10.0,
+      "passengers": 100,
+      "saf_usd_per_l": 2.0,
+      "blend_share": 0.5,
+      "ets_applicable": false,
+      "quality": "observed"
+    }
+  },
+  "saf_and_fx": {
+    "baseline": {
+      "fossil_jet_usd_per_l": 1.0,
+      "usd_per_eur": 1.25,
+      "fuel_burn_t": 10.0,
+      "passengers": 100,
+      "saf_usd_per_l": 2.0,
+      "blend_share": 0.5,
+      "ets_applicable": false,
+      "quality": "observed"
+    },
+    "current": {
+      "fossil_jet_usd_per_l": 1.2,
+      "usd_per_eur": 1.1,
+      "fuel_burn_t": 10.0,
+      "passengers": 100,
+      "saf_usd_per_l": 2.0,
+      "blend_share": 0.5,
+      "ets_applicable": false,
+      "quality": "observed"
+    }
+  }
+}

@@ -26,10 +26,10 @@ const MILESTONES_BY_LOCALE: Record<PolicyTimelineLocale, Milestone[]> = {
     },
     {
       year: 2026,
-      title: '欧盟 e-SAF 子目标启动',
-      description: '合成燃料组成部分纳入强制要求',
+      title: '航空 EU ETS 免费配额退出完成',
+      description: 'ReFuelEU 仍为 2025 年起 2% SAF；合成燃料子义务从 2030 年开始',
       regions: ['EU'],
-      target: '0.7% 合成燃料要求',
+      target: 'ETS 免费配额退出',
     },
     {
       year: 2027,
@@ -70,10 +70,10 @@ const MILESTONES_BY_LOCALE: Record<PolicyTimelineLocale, Milestone[]> = {
     },
     {
       year: 2026,
-      title: 'EU e-SAF-Unterziel startet',
-      description: 'Synthetische Kraftstoffe werden Teil der verbindlichen Quote.',
+      title: 'EU-ETS Gratiszuteilung für die Luftfahrt endet',
+      description: 'ReFuelEU bleibt die 2%-SAF-Pflicht ab 2025; das synthetische Unterziel beginnt 2030.',
       regions: ['EU'],
-      target: '0.7% synthetischer Kraftstoff',
+      target: 'ETS-Gratiszuteilung endet',
     },
     {
       year: 2027,

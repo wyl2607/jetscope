@@ -375,6 +375,7 @@
     "source_unknown_error": "未知原因",
     "source_brent": "Brent 来源状态",
     "source_jet": "全球航油来源状态",
+    "source_rotterdam": "鹿特丹航煤来源状态",
     "source_jet_eu": "EU 航油代理来源状态",
     "source_carbon": "碳价代理来源状态",
     "source_trend": "价格趋势历史读模型（1d、7d、30d 窗口）",

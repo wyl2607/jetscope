@@ -5,9 +5,15 @@ import { messagesFor, type Locale } from '@/lib/i18n';
 const getGermanyJetFuelReadModel = vi.fn();
 const getPriceTrendChartReadModel = vi.fn();
 
-vi.mock('@/lib/germany-jet-fuel-read-model', () => ({
-  getGermanyJetFuelReadModel: (...args: unknown[]) => getGermanyJetFuelReadModel(...args)
-}));
+vi.mock('@/lib/germany-jet-fuel-read-model', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/germany-jet-fuel-read-model')>(
+    '@/lib/germany-jet-fuel-read-model'
+  );
+  return {
+    ...actual,
+    getGermanyJetFuelReadModel: (...args: unknown[]) => getGermanyJetFuelReadModel(...args)
+  };
+});
 
 vi.mock('@/lib/price-trend-chart-read-model', () => ({
   getPriceTrendChartReadModel: (...args: unknown[]) => getPriceTrendChartReadModel(...args)

@@ -89,7 +89,9 @@ export default async function SafTippingPointPage() {
   const liveFuel = readModel.market.values?.jet_eu_proxy_usd_per_l ?? readModel.market.values?.jet_usd_per_l ?? 1.3;
   const carbonIsAssumed = readModel.market.values?.carbon_proxy_usd_per_t == null;
   const liveCarbonUsd = readModel.market.values?.carbon_proxy_usd_per_t ?? 102.6;
-  const liveCarbonEur = Number((liveCarbonUsd / 1.08).toFixed(2));
+  const usdPerEur = readModel.market.values?.usd_per_eur;
+  const eurUsd = typeof usdPerEur === 'number' && usdPerEur > 0 ? usdPerEur : 1.1435;
+  const liveCarbonEur = Number((liveCarbonUsd / eurUsd).toFixed(2));
   const reserveIsAssumed = readModel.reserve == null;
   const anyInputIsAssumed = readModel.isFallback || fuelSource === 'assumed' || carbonIsAssumed || reserveIsAssumed;
   const asOf = anyInputIsAssumed ? null : readModel.market.generated_at;
@@ -141,7 +143,7 @@ export default async function SafTippingPointPage() {
           sourceId: 'saf-tipping-carbon',
           asOf: marketAsOf,
           precision: 2,
-          method: 'carbon_proxy_usd_per_t / 1.08 (EUR conversion)'
+          method: `carbon_proxy_usd_per_t / ${eurUsd} USD per EUR`
         });
 
   const subsidyDefault = assumed({

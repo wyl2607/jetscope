@@ -365,12 +365,14 @@ def test_history_backfill_inserts_public_proxy_curves(client: TestClient, db_pat
         def fake_yahoo(symbol: str, *, days: int):
             if symbol == "BZ=F":
                 return [
+                    (datetime(2099, 12, 10, tzinfo=UTC), 95.0),
                     (datetime(2099, 12, 11, tzinfo=UTC), 100.0),
                     (datetime(2100, 1, 3, tzinfo=UTC), 110.0),
                     (datetime(2100, 1, 9, tzinfo=UTC), 120.0),
                 ]
             if symbol == "CO2.L":
                 return [
+                    (datetime(2099, 12, 10, tzinfo=UTC), 65.0),
                     (datetime(2099, 12, 11, tzinfo=UTC), 70.0),
                     (datetime(2100, 1, 3, tzinfo=UTC), 75.0),
                     (datetime(2100, 1, 9, tzinfo=UTC), 80.0),
@@ -380,6 +382,7 @@ def test_history_backfill_inserts_public_proxy_curves(client: TestClient, db_pat
         def fake_fred(series_id: str, *, days: int):
             assert series_id == "DJFUELUSGULF"
             return [
+                (datetime(2099, 12, 10, tzinfo=UTC), 3.4),
                 (datetime(2099, 12, 11, tzinfo=UTC), 3.6),
                 (datetime(2100, 1, 3, tzinfo=UTC), 3.8),
                 (datetime(2100, 1, 9, tzinfo=UTC), 4.0),
@@ -390,7 +393,7 @@ def test_history_backfill_inserts_public_proxy_curves(client: TestClient, db_pat
 
         result = market_service.backfill_market_history_from_public_sources(db, days=30)
 
-        assert result["inserted_metric_count"] == 21
+        assert result["inserted_metric_count"] == 28
         assert "Yahoo Finance BZ=F" in result["sources"]
         assert "FRED DJFUELUSGULF" in result["sources"]
 

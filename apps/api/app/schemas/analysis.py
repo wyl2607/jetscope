@@ -134,7 +134,7 @@ class CrisisBriefAction(BaseModel):
 class CrisisBriefResponse(BaseModel):
     generated_at: datetime
     market_generated_at: datetime
-    fossil_jet_usd_per_l: float = Field(gt=0)
+    fossil_jet_usd_per_l: float | None = Field(default=None, gt=0)
     source_status: SourceStatus
     reserve: ReserveSignalResponse
     tipping_events: list[TippingEventResponse] = Field(default_factory=list)

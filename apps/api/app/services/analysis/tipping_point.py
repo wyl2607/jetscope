@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.models.tables import MarketSnapshot, TippingEvent
 from app.services.analysis.breakeven import compute_breakeven_oil_price
 from app.services.analysis.pathway_costs import effective_saf_cost
+from app.services.market_quality import SIGNAL_QUALITIES
 
 TippingEventType = Literal["CRITICAL", "ALERT", "CROSSOVER"]
 
@@ -26,7 +27,7 @@ class TippingPointEngine:
 
     def evaluate(self, now: datetime, db: Session) -> list[TippingEvent]:
         now_utc = self._as_utc(now)
-        fossil_price = self._latest_fossil_price(db)
+        fossil_price = self._latest_fossil_price(db, now_utc)
         if fossil_price is None:
             return []
 
@@ -80,17 +81,48 @@ class TippingPointEngine:
             query = query.where(TippingEvent.timestamp >= self._as_utc(since))
         return list(db.scalars(query).all())
 
-    def _latest_fossil_price(self, db: Session) -> float | None:
-        for metric_key in self.FOSSIL_METRIC_PRIORITY:
+    def _latest_fossil_price(self, db: Session, now: datetime | None = None) -> float | None:
+        ranked: list[tuple[int, float]] = []
+        for index, metric_key in enumerate(self.FOSSIL_METRIC_PRIORITY):
             latest = db.scalar(
                 select(MarketSnapshot)
                 .where(MarketSnapshot.metric_key == metric_key)
                 .order_by(MarketSnapshot.as_of.desc())
                 .limit(1)
             )
-            if latest is not None:
-                return float(latest.value)
-        return None
+            if latest is None or float(latest.value) <= 0:
+                continue
+            payload = getattr(latest, "payload", None)
+            if not isinstance(payload, dict):
+                payload = {}
+            from app.services.market_quality import (
+                observation_from_detail,
+                quote_freshness,
+                snapshot_quality,
+                usable_for_signal,
+            )
+
+            quality = snapshot_quality(payload if isinstance(payload, dict) else None)
+            if quality not in SIGNAL_QUALITIES:
+                continue
+            lag_minutes = payload.get("lag_minutes")
+            try:
+                lag_minutes = int(lag_minutes) if lag_minutes is not None else None
+            except (TypeError, ValueError):
+                lag_minutes = None
+            freshness = quote_freshness(
+                quality=quality,
+                observed_at=observation_from_detail(payload),
+                lag_minutes=lag_minutes,
+                now=now,
+            )
+            if not usable_for_signal(quality, freshness):
+                continue
+            ranked.append((index if quality == "observed" else 10 + index, float(latest.value)))
+        if not ranked:
+            return None
+        ranked.sort()
+        return ranked[0][1]
 
     def _seen_recent_event(
         self,

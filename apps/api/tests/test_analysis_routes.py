@@ -200,7 +200,7 @@ def test_crisis_brief_route_aggregates_source_backed_operating_context(client: T
 
     assert payload["generated_at"]
     assert payload["market_generated_at"]
-    assert payload["fossil_jet_usd_per_l"] > 0
+    assert payload["fossil_jet_usd_per_l"] is None or payload["fossil_jet_usd_per_l"] > 0
 
     assert payload["source_status"]["overall"] in {"ok", "degraded", "error", "seed"}
     assert 0.0 <= payload["source_status"]["confidence"] <= 1.0
@@ -347,6 +347,6 @@ def test_source_coverage_route_marks_seed_only_catalog_as_degraded(client: TestC
 
     assert payload["degraded"] is True
     assert payload["completeness"] == 0.0
-    assert len(payload["metrics"]) == 7
+    assert len(payload["metrics"]) == 8
     assert all(metric["fallback_used"] is True for metric in payload["metrics"])
     assert all(metric["status"] == "seed" for metric in payload["metrics"])

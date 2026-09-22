@@ -331,7 +331,7 @@ describe('CrisisPage', () => {
     });
     await renderCrisis('zh', dashboard);
 
-    const label = copy.footer.market_snapshot.replace('{price}', '0.66').replace('{carbon}', '95.00');
+    const label = copy.footer.market_snapshot.replace('{price}', '0.66').replace('{carbon}', '89.72');
     const row = screen.getByText(label).closest('li');
     expect(row).toHaveTextContent('情景假设');
     expect(row?.querySelector('time')).toBeNull();

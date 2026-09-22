@@ -12,9 +12,11 @@ SOURCE_DETAIL_KEY_TO_METRIC_KEY = {
     "rotterdam_jet_fuel": "rotterdam_jet_fuel_usd_per_l",
     "eu_ets": "eu_ets_price_eur_per_t",
     "germany_premium": "germany_premium_pct",
+    "ecb": "usd_per_eur",
 }
 
 _EXPECTED_METRIC_KEYS = set(SOURCE_DETAIL_KEY_TO_METRIC_KEY.values())
+_COVERAGE_METRIC_KEYS = _EXPECTED_METRIC_KEYS - {"germany_premium_pct"}
 
 # Seed fallback rows for per-metric backfill when coverage is partial.
 # Each entry maps metric_key -> (source_name, source_type, confidence, region, market_scope)
@@ -25,7 +27,8 @@ _SEED_FALLBACKS: dict[str, tuple[str, str, float, str, str]] = {
     "jet_eu_proxy_usd_per_l": ("Derived from Brent", "derived", 0.65, "eu", "derived_proxy"),
     "rotterdam_jet_fuel_usd_per_l": ("ARA/Rotterdam (public)", "public_proxy", 0.60, "eu", "spot_market"),
     "eu_ets_price_eur_per_t": ("EEX EU ETS", "official", 0.85, "eu", "compliance_market"),
-    "germany_premium_pct": ("Derived comparison", "derived", 0.60, "de", "price_differential"),
+    "germany_premium_pct": ("Airport differential pending", "derived", 0.0, "de", "price_differential"),
+    "usd_per_eur": ("ECB EUR/USD", "official", 0.90, "eu", "fx_reference"),
 }
 
 
@@ -35,6 +38,8 @@ def _classify_source_type(source_name: str, fallback_used: bool) -> str:
         return "derived"
     if normalized in {"eia", "ecb", "eu_ets_eex", "eex-eu-ets"}:
         return "official"
+    if normalized in {"airport-differential-pending", "germany-premium-db"}:
+        return "derived"
     if normalized == "cbam+ecb":
         return "derived"
     if normalized in {"fred", "ara-rotterdam-public", "rotterdam-jet-direct"}:
@@ -109,8 +114,12 @@ def build_source_coverage_response(db: Session) -> SourceCoverageResponse:
                 )
             )
 
-    # Completeness counts only metrics present on the live snapshot, not seed backfill.
-    completeness = len(present_keys) / len(_EXPECTED_METRIC_KEYS) if had_source_details else 0.0
+    live_keys = {
+        metric.metric_key
+        for metric in metrics
+        if metric.metric_key in _COVERAGE_METRIC_KEYS and metric.status not in {"seed", "missing"}
+    }
+    completeness = len(live_keys) / len(_COVERAGE_METRIC_KEYS) if had_source_details else 0.0
     fallback_or_seed = any(metric.fallback_used or metric.status == "seed" for metric in metrics)
     return SourceCoverageResponse(
         generated_at=snapshot.generated_at,

@@ -28,11 +28,11 @@ export const POLICY_MILESTONES: ReadonlyArray<PolicyMilestone> = [
   },
   {
     year: 2026,
-    headlineZh: 'EU e-SAF 子目标启动',
-    headlineEn: 'EU e-SAF sub-target starts',
-    detailZh: '需含 0.7% 合成燃料',
-    detailEn: 'A 0.7% synthetic fuel share becomes mandatory.',
-    pctLabel: 'e0.7%',
+    headlineZh: '航空 EU ETS 免费配额退出完成',
+    headlineEn: 'Aviation EU ETS free allocation ends',
+    detailZh: 'ReFuelEU 仍为 2025 年起的 2% SAF 义务；合成燃料子义务从 2030 年开始。2026 年完成航空免费配额退出。',
+    detailEn: 'ReFuelEU remains the 2% SAF obligation that started in 2025; the synthetic sub-obligation starts in 2030. Aviation free allocation is phased out in 2026.',
+    pctLabel: 'ETS',
     color: '--purple'
   },
   {

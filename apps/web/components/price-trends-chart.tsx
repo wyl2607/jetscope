@@ -23,6 +23,7 @@ type PriceTrendData = {
   change_pct_1d: Figure;
   change_pct_7d: Figure;
   change_pct_30d: Figure;
+  quality?: string | null;
   points: PricePoint[];
 };
 
@@ -498,11 +499,12 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
       <div className="grid gap-4 md:grid-cols-4">
         <div className="rounded-lg border border-line bg-surface p-4">
           <p className="text-sm text-muted">最新值</p>
-          <p className="mt-2 text-2xl font-semibold text-ink">
+          <p className="mt-2 text-2xl font-semibold text-ink" data-testid="price-trend-latest">
             <FigureValue figure={data.latest_value} locale="zh" size="inline" showTimestamp={false} />
           </p>
           <p className="mt-1 text-xs text-muted">
             截至 {data.latest_as_of ? new Date(data.latest_as_of).toLocaleString('zh-CN') : '暂无数据'}
+            {data.quality ? ` · ${data.quality}` : ''}
           </p>
         </div>
 
