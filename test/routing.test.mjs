@@ -47,7 +47,15 @@ const ROUTES = [
 test('current JetScope routes expose canonical product surfaces', async () => {
   for (const [relativePath, expectedCopy] of ROUTES) {
     const pagePath = relativePath ? `${relativePath}` : 'page.tsx';
-    const source = await readFile(new URL(pagePath, APP_DIR), 'utf8');
+    let source = await readFile(new URL(pagePath, APP_DIR), 'utf8');
+    if (pagePath.includes('prices/germany-jet-fuel') && source.includes('<GermanyJetFuelPage')) {
+      const locale = pagePath.startsWith('de/') ? 'de' : pagePath.startsWith('en/') ? 'en' : 'zh';
+      const dictionary = await readFile(
+        new URL(`../src/locales/${locale}.json`, APP_DIR),
+        'utf8'
+      );
+      source = `${source}\n${dictionary}`;
+    }
 
     assert.match(source, new RegExp(expectedCopy, 'i'), `${pagePath} should include ${expectedCopy}`);
   }

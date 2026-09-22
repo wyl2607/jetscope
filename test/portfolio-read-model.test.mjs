@@ -79,7 +79,9 @@ test('portfolio read model normalizes research signal response variants', async 
                 raw_title: 'Undated market signal',
                 impact_direction: 'neutral',
                 confidence_score: 0.5,
-                summary: 'No upstream publication time.'
+                summary: 'No upstream publication time.',
+                created_at: '2026-04-23T11:59:00Z',
+                generated_at: '2026-04-23T12:00:00Z'
               }
             ]
           })
@@ -101,6 +103,7 @@ test('portfolio read model normalizes research signal response variants', async 
   assert.equal(result.signals[0].signal_type, 'policy');
   assert.equal(result.signals[0].impact_direction, 'positive');
   assert.equal(result.signals[0].confidence, 1);
+  assert.equal(result.signals[0].published_at, null);
   assert.equal(result.signals[1].id, 'sig-undated');
   assert.equal(result.signals[1].published_at, null);
 });

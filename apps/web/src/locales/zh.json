@@ -15,7 +15,119 @@
     "description": "用五分钟了解欧洲航油压力信号、SAF 转折点事件、EU ETS 成本影响与 AI 辅助研究工作流。",
     "primary_cta": "打开决策驾驶舱",
     "scenario_cta": "测试情景",
-    "sources_cta": "查看来源质量"
+    "sources_cta": "查看来源质量",
+    "page_title": "JetScope",
+    "eyebrow": "Phase C 作品集入口",
+    "question": "这个产品能不能回答我关心的问题，我该从哪一页开始？",
+    "show_transition_ladder": true,
+    "show_research_brief": true,
+    "show_thesis": true,
+    "show_dual_domain": true,
+    "swap_research_limitation": true,
+    "entry_layout": "portfolio",
+    "chinese_workspace_cta": "",
+    "chinese_workspace_href": "/dashboard",
+    "thesis_ctas": [
+      "primary",
+      "scenario",
+      "sources"
+    ],
+    "signals": {
+      "label": "产品入口与当前信号",
+      "recommended_label": "推荐起点",
+      "recommended_value": "决策驾驶舱",
+      "recommended_hint": "先看全局结论，再按问题进入详情页。",
+      "reserve_label": "库存覆盖",
+      "reserve_unavailable": "暂不可用",
+      "reserve_unit": "周",
+      "reserve_hint": "压力等级：{stress_level} · /v1/reserves/eu",
+      "reserve_hint_unavailable": "上游储备数据暂不可用，必须复核。",
+      "event_label": "最近转折事件",
+      "event_empty": "暂无事件",
+      "event_hint": "{pathway} · 已载入 {count} 条 · /v1/analysis/tipping-point/events",
+      "event_hint_empty": "事件流为空，不等于没有风险。",
+      "research_label": "研究信号",
+      "research_not_found": "未部署",
+      "research_error": "接口异常",
+      "research_count": "{count} 条",
+      "research_hint": "/v1/research/signals · 状态口径与研究页一致。"
+    },
+    "thesis": {
+      "title": "产品论点",
+      "why": "先判断 JetScope 的问题空间是否与你的工作相关，再决定进入驾驶舱、情景或来源复核。",
+      "headline": "欧洲 Jet-A 航油库存已连续六周徘徊在三周覆盖线附近。SAF 要到什么价格，才会成为经营理性选择？",
+      "body": "JetScope 用实时市场数据与策略模型回答何时 SAF 不再只是合规成本，而是经营理性选择。"
+    },
+    "dual_domain": {
+      "title": "双域叙事",
+      "why": "同一碳价如何连接航空与电力，决定读者应进入哪一个问题域继续分析。",
+      "body": "同一 EU ETS 碳价正在同时推动天上的 SAF 转折点与地上的电网平价：它把化石燃料的排放成本显性化，也让低碳替代方案更快跨过经营理性线。",
+      "grid_cta": "查看电网平价",
+      "saf_cta": "查看 SAF 转折点"
+    },
+    "transition": {
+      "title": "脱碳碳价阶梯",
+      "why": "把不同技术放在同一碳价轴上，帮助读者选择值得继续查看的转型路径。",
+      "error_detail": "转型摘要接口暂不可用；本页保留错误态，避免这块内容静默消失。",
+      "empty_detail": "接口已响应，但没有可展示的转型摘要。"
+    },
+    "research_brief": {
+      "title": "研究决策层",
+      "why": "研究信号解释上面的市场数字在往哪个方向动，以及哪些说法仍需复核。"
+    },
+    "entries": {
+      "title": "选择下一页",
+      "why": "这些入口按任务分工，而不是用装饰性色彩暗示不存在的状态。",
+      "eyebrow_label": "深入查看",
+      "open_label": ""
+    },
+    "entry_cards": [
+      {
+        "title": "危机监测",
+        "description": "面向运营团队的实时库存覆盖、压力色带与转折事件时间线。",
+        "navId": "crisis",
+        "suffix": ""
+      },
+      {
+        "title": "研究信号台",
+        "description": "AI 信号流、双语摘要与置信度过滤，帮助快速筛选可行动线索。",
+        "navId": "research",
+        "suffix": ""
+      },
+      {
+        "title": "路径推演",
+        "description": "比较 SAF 路径与成本情景，判断何时 SAF 成为经营理性选择。",
+        "navId": "crisis",
+        "suffix": "/saf-tipping-point"
+      },
+      {
+        "title": "电网平价",
+        "description": "比较可再生 LCOE 与化石发电加 EU ETS 碳成本的交叉点。",
+        "navId": "grid",
+        "suffix": ""
+      },
+      {
+        "title": "分析报告",
+        "description": "为招聘方、评审者和业务读者准备的结构化投资与产品论证。",
+        "navId": "reports",
+        "suffix": "/tipping-point-analysis"
+      }
+    ],
+    "sources": {
+      "reserve_label": "欧盟储备覆盖 API（{source_name}）",
+      "reserve_unavailable": "当前不可用",
+      "events_label": "SAF 临界点事件流（{count} 条）",
+      "events_nav_id": "crisis",
+      "events_suffix": "/saf-tipping-point",
+      "research_label": "研究信号流（{count} 条）",
+      "method_label": "口径与来源清单"
+    },
+    "limitations": [
+      "首页是摘要与导航入口，不呈现每个数字的完整计算口径；请进入对应详情页复核。",
+      "空事件窗口不代表没有风险，研究接口未部署或异常也不代表没有市场变化。"
+    ],
+    "limitation_research_enabled": "研究信号是文章与流水线派生证据，不替代市场观测。",
+    "limitation_research_disabled": "当前环境未启用 AI 研究流水线，首页明确展示这一边界。"
   },
   "dashboard": {
     "market_price": "市场价格",
@@ -24,7 +136,142 @@
     "rotterdam_port": "鹿特丹港排放",
     "eu_ets_volume": "欧盟ETS交易量",
     "data_freshness": "数据新鲜度",
-    "source_status": "来源状态"
+    "source_status": "来源状态",
+    "meta_title": "决策驾驶舱",
+    "meta_description": "可持续航空燃料与传统航油的实时决策看板，覆盖市场快照、情景库状态与转型交付信号。",
+    "eyebrow": "市场情报",
+    "title": "JetScope 决策驾驶舱",
+    "question": "今天的市场和数据交付状况，有没有变到需要重跑情景的程度？",
+    "show_price_trends": true,
+    "show_pathways": true,
+    "show_ets": true,
+    "show_provenance": true,
+    "show_policy_timeline": true,
+    "show_status_banners": true,
+    "show_sources_matrix": false,
+    "show_risk_href": true,
+    "na": "n/a",
+    "unknown_cause": "未知原因",
+    "signal_row_label": "决策信号",
+    "signal_order": [
+      "decision",
+      "delivery",
+      "risk",
+      "market"
+    ],
+    "source_ok": "正常",
+    "source_degraded": "降级",
+    "source_offline": "离线",
+    "source_unknown": "未知",
+    "freshness_fresh": "新鲜",
+    "freshness_stale": "偏旧",
+    "freshness_critical": "严重过期",
+    "risk_normal": "正常",
+    "risk_watch": "观察",
+    "risk_alert": "警报",
+    "decision_label": "情景动作",
+    "decision_rerun": "建议重跑",
+    "decision_review": "先复核",
+    "decision_keep": "可沿用",
+    "decision_hint_fallback": "当前使用内置回退值，不能把它当作重跑情景的实测输入。",
+    "decision_hint_alert": "历史窗口已出现警报，先复核来源，再用当前市场输入重跑情景。",
+    "decision_hint_unknown": "历史窗口尚未形成可识别信号，不能把未知当作正常。",
+    "decision_hint_source": "来源状态未达正常，先完成来源复核，再决定是否沿用情景。",
+    "decision_hint_watch": "风险处于观察区间，先复核关键假设，再决定是否重跑。",
+    "decision_hint_ok": "来源和风险窗口均未触发复核条件。",
+    "delivery_label": "交付状态",
+    "delivery_fallback": "回退",
+    "delivery_live": "实时切片",
+    "delivery_hint_fallback": "本地 API 暂不可用，正在使用内置决策模型，确保驾驶舱仍可审阅。",
+    "delivery_hint_live": "来源状态：{status} · 数据新鲜度：{freshness}（{minutes} 分钟）",
+    "risk_label": "最高风险信号",
+    "risk_hint_none": "暂无历史风险信号",
+    "risk_hint": "级别：{level} · 截至：{asOf} · 样本：{samples}",
+    "market_label": "市场快照",
+    "market_value": "${brent}/bbl",
+    "market_hint": "Jet(全球) ${jet}/L | Jet(EU 代理) ${jetEu}/L | 碳价 ${carbon}/tCO2",
+    "work_title": "工作入口",
+    "work_why": "这些入口把当前市场读数连接到管理参数和德国航油价格的可复核页面。",
+    "work_entries": [
+      {
+        "nav": "admin",
+        "label": "管理控制",
+        "value": "打开管理",
+        "hint": "路线成本、政策参数、来源维护"
+      },
+      {
+        "nav": "prices",
+        "label": "德国航油价格页",
+        "value": "打开实时页面",
+        "hint": "展示 Brent、全球航油、EU 航油代理价、碳价及 1d/7d/30d 变化"
+      }
+    ],
+    "provenance_title": "来源溯源",
+    "provenance_why": "这一屏所有数字的可信状态：多少是实测、多少是代理、多少是回退。",
+    "price_trends_title": "价格趋势",
+    "price_trends_why": "上面的快照只是一个点；要判断它是不是异常，得看它在 1d / 7d / 30d 窗口里的位置。",
+    "capabilities_title": "决策驾驶舱能力",
+    "capabilities_why": "这是当前产品能力清单，说明驾驶舱能覆盖哪些工作，不替代本页的市场决策结论。",
+    "priorities": [
+      "实时市场数据：Brent 原油、航油代理价、EU ETS 碳价",
+      "统一情景引擎：价格、补贴、碳成本与盈亏平衡分析",
+      "管理控制：航线假设、政策参数与数据来源",
+      "导出与报告：图表、快照与情景对比"
+    ],
+    "migration_title": "迁移规则",
+    "migration_why": "这些护栏说明安全回退和下一步工作模型如何处理。",
+    "migration_items": [],
+    "scenarios_title": "最近情景",
+    "scenarios_why": "这些是可供对比的已保存假设；它们说明情景准备度，不等于已经批准的采购决定。",
+    "scenarios_action": "打开情景工作区",
+    "scenarios_empty": "暂无保存情景。可通过 scenario API 创建一个情景，用于端到端验证 CRUD。",
+    "pathways_title": "SAF 路径净成本与来源可信度",
+    "pathways_why": "以当前市场切片算出各路径的净成本与价差，并标注来源类型与置信度——便宜但来源不可信的路径不该赢。",
+    "pathways_signal": "对比信号：{signal}",
+    "ets_title": "碳价对化石航油的成本压力",
+    "ets_why": "EU ETS 是同时推动 SAF 与电网平价的那一个驱动量；这里逐档看它把化石航油推高多少。",
+    "policy_timeline_title": "政策里程碑时间线",
+    "policy_timeline_why": "哪条规则什么时候生效，按上方市场快照的时间点对齐——已经过期的期限不该看起来像未来的。",
+    "sources_matrix_title": "来源姿态",
+    "sources_matrix_why": "这是市场快照背后的证据层：实时、代理、回退和置信度放在一起看。",
+    "sources_matrix_live": "实时",
+    "sources_matrix_proxy": "代理",
+    "sources_matrix_fallback": "回退",
+    "sources_matrix_confidence": "置信度",
+    "sources_matrix_review": "需复核",
+    "sources_matrix_proxy_backed": "代理支撑",
+    "sources_matrix_healthy": "健康",
+    "sources_matrix_summary": "{posture} | 完整度 {completeness}。打开来源复核查看逐行恢复动作。",
+    "status_market_label": "实时市场状态",
+    "status_detail": "分析航油：{jetSource}=${jetPrice}/L · ETS €{ets}/t · 刷新间隔 {interval}s · 下次预计 {eta} · 健康度 {health}{runs}",
+    "status_health_ok": "ok",
+    "status_health_attention": "attention",
+    "status_runs": " · runs {ok}/{total}",
+    "status_snapshot": "快照时间",
+    "status_freshness": "数据新鲜度",
+    "status_source_overall": "来源总体",
+    "status_spread": "Jet–Brent spread",
+    "status_sources_action": "查看来源 →",
+    "status_lh_action": "LH Q2 2026 →",
+    "status_alert_action": "查看详情 →",
+    "status_event_label": "航空事件 · 仅策展数据 · as_of {asOf}",
+    "status_event_summary": "二季度调整后营业利润 €{profit}m（同比 {profitYoy}%）· 伊朗战争额外煤油成本 €{kerosene}m · 罢工成本约 €{strikes}m · 成本传导约 {passThrough}% · 全年燃油成本预计 €{fuel}bn",
+    "status_residual": "Residual exposure {exposure} · pass-through {passThrough}",
+    "footer_read_model_live": "市场快照接口（市场读数、来源状态、新鲜度）",
+    "footer_read_model_fallback": "市场快照接口无响应，当前为内置兜底值（{error}）",
+    "footer_coverage_live": "来源覆盖汇总（实测、代理、回退、置信度）",
+    "footer_coverage_fallback": "来源覆盖接口无响应，当前为兜底摘要（{error}）",
+    "footer_risk": "风险信号由市场历史窗口的变动幅度推导，非上游直接给出",
+    "footer_scenarios": "本地情景库（当前 {count} 个已保存情景）",
+    "method_label": "口径与来源清单",
+    "limitations": [
+      "覆盖健康时，实时指标优先使用主要或官方来源。",
+      "代理指标与回退值分开标注。",
+      "置信度、滞后时间与降级原因可在 Sources 页查看。",
+      "回退值用于保持驾驶舱可用，但不会对决策用户隐藏。",
+      "风险信号依赖历史窗口样本量，样本不足时不会产生警报，不等于没有风险。",
+      "情景库是本地保存的假设，用于复盘和讨论，不替代真实采购审批。"
+    ]
   },
   "indicators": {
     "market_price": "SAF 价格",
@@ -95,6 +342,1044 @@
     "limitations": [
       "这些回答描述的是当前部署的设计意图，不随实时数据变化；具体环境是否就绪以上线前置状态为准。",
       "FAQ 不替代来源、研究或情景页面上的实时状态与适用边界。"
+    ]
+  },
+  "prices": {
+    "meta_title": "德国航油价格",
+    "meta_description": "可索引的德国航油 SSR 视图，展示 Brent、全球航油、EU 航油代理价、碳价代理及 1d/7d/30d 市场变化。",
+    "eyebrow": "价格 · 德国",
+    "title": "德国航油价格监测",
+    "question": "德国航油当前价，是不是已经偏离到需要重新看合同或套保的程度？",
+    "signal_label": "德国航油决策信号",
+    "decision_label": "德国航油决策压力",
+    "decision_review_source": "先复核来源",
+    "decision_revisit": "重看合同/套保",
+    "decision_review": "需要复核",
+    "decision_hold": "暂不需要重看",
+    "decision_hint": "EU 航油代理 {value} · {window30} {change} · {status}",
+    "decision_missing": "EU 航油代理当前没有可用读数。",
+    "window_1d": "1d",
+    "window_7d": "7d",
+    "window_30d": "30d",
+    "na": "n/a",
+    "status_live": "实时来源",
+    "status_proxy": "代理来源",
+    "status_degraded": "回退估算",
+    "status_fallback": "来源状态待确认",
+    "use_status_fallback": true,
+    "show_trend_chart": true,
+    "trend_title": "价格趋势",
+    "trend_why": "当前价只是一个点；只有把它放进 1d、7d、30d 窗口，才能判断偏离是否足以触发合同或套保复核。",
+    "source_read_model": "德国航油价格读模型（Brent、全球航油、EU 航油代理与碳价代理）",
+    "source_read_model_fallback": "德国航油价格读模型不可用，当前为回退估算（{error}）",
+    "source_unknown_error": "未知原因",
+    "source_brent": "Brent 来源状态",
+    "source_jet": "全球航油来源状态",
+    "source_jet_eu": "EU 航油代理来源状态",
+    "source_carbon": "碳价代理来源状态",
+    "source_trend": "价格趋势历史读模型（1d、7d、30d 窗口）",
+    "source_trend_fallback": "价格趋势历史不可用（{error}）",
+    "method_label": "来源与价格趋势方法",
+    "limitations": [
+      "航油价格是代理指标，可能与德国具体机场的合约结算价存在差异。",
+      "区域数据源不可用时，EU 航油代理价可能临时回退到全球航油序列；回退值不能当作实测。",
+      "碳价代理跟踪政策成本压力，应结合航线与掺混假设解读。",
+      "本页用于决策支持，不用于交易执行；采购决策仍需与合约供应商报价交叉核验。"
+    ]
+  },
+  "research": {
+    "meta_title": "研究工作台",
+    "meta_description": "AI 辅助的 SAF 与航油研究信号工作台，附带启用状态、置信度与复核动作。",
+    "eyebrow": "AI 研究流水线",
+    "title": "研究工作台",
+    "question": "今天的研究信号，够不够解释市场为什么在动？",
+    "signal_row_label": "研究结论信号",
+    "decision_brief_mode": "card",
+    "summary_mode": "both",
+    "cjk_title_template": "",
+    "panel_order": [
+      "status",
+      "decision",
+      "signals",
+      "actions"
+    ],
+    "pipeline_error_unknown": "未知原因",
+    "metrics": {
+      "pipeline_status": "流水线状态",
+      "signal_count": "信号总数",
+      "signal_count_hint": "正向 {positive} · 负向 {negative} · 中性 {neutral}",
+      "latest_signal": "最新信号",
+      "latest_none": "暂无",
+      "latest_none_hint": "还没有可用于报告叙事的研究记录",
+      "usage_boundary": "使用边界",
+      "boundary_enabled": "可解释",
+      "boundary_disabled": "只读空态",
+      "boundary_hint": "研究信号只解释变化原因，不替代市场、储备或来源复核。"
+    },
+    "pipeline": {
+      "disabled": {
+        "label": "未启用",
+        "detail": "开启研究流水线前，本页只提供产品工作台，不声称正在运行实时 AI 分析。"
+      },
+      "waiting": {
+        "label": "等待信号",
+        "detail": "研究 API 已启用，但当前没有持久化信号；等待每日研究任务产出可复核记录。"
+      },
+      "not_found": {
+        "label": "未部署",
+        "detail": "研究服务尚未部署或当前环境找不到它；不要把空结果解释成没有市场变化。"
+      },
+      "error": {
+        "label": "错误",
+        "detail": "Research API 错误：{message}。恢复前不要引用研究结论。"
+      },
+      "ready": {
+        "label": "运行中",
+        "detail": "研究 API 已启用，页面展示最近 30 天内持久化的研究信号。"
+      }
+    },
+    "panels": {
+      "status": {
+        "title": "研究流水线状态",
+        "why": "先区分配置边界、等待、未部署和故障，再决定是否引用研究结论。"
+      },
+      "decision": {
+        "title": "研究决策层",
+        "why": "把下面这串信号压成一句可以拿去做决定的话，以及它现在有多可信。"
+      },
+      "signals": {
+        "title": "信号列表",
+        "why": "逐条查看研究结论、影响方向和置信度，避免只引用汇总判断。"
+      },
+      "actions": {
+        "title": "使用动作",
+        "why": "研究信号必须回到证据链，读者应能从这里进入报告和来源复核。"
+      }
+    },
+    "impacts": {
+      "positive": "正向",
+      "negative": "负向",
+      "neutral": "中性",
+      "unknown": "未知"
+    },
+    "counts": {
+      "active": "活跃",
+      "positive": "正向",
+      "negative": "负向",
+      "neutral": "中性"
+    },
+    "confidence": "置信度",
+    "summary_placeholder": "该信号暂无已复核的摘要。",
+    "summary_en_cjk": "该信号尚无可用的英文摘要。",
+    "summary_en_missing": "该信号没有英文摘要。",
+    "actions": [
+      {
+        "id": "tipping_point",
+        "nav_id": "reports",
+        "suffix": "/tipping-point-analysis",
+        "label": "打开临界点报告",
+        "description": "把研究信号放回储备、航油价格和 SAF 切换概率的报告语境。"
+      },
+      {
+        "id": "sources",
+        "nav_id": "sources",
+        "suffix": "?filter=review",
+        "label": "复核来源",
+        "description": "先确认市场来源、代理和回退状态，再使用研究信号解释变化。"
+      }
+    ],
+    "footer": {
+      "source_signals_ok": "研究信号 read model（文章级信号、影响方向、置信度）",
+      "source_signals_error": "研究信号 API 当前不可用",
+      "source_pipeline": "研究流水线启用配置与部署状态",
+      "method_label": "口径与来源清单",
+      "limitations": [
+        "研究信号解释可能的变化原因，不替代市场、储备、情景或来源复核。",
+        "未启用、等待、未部署和错误都不产生可引用的 as-of 时间；只有最新信号的 published_at 才作为页面时间。",
+        "研究 API 出错或没有信号时，空结果不等于市场没有变化。"
+      ]
+    }
+  },
+  "reports": {
+    "meta_title": "报告工作台",
+    "meta_description": "JetScope SAF 临界点分析的报告工作台，展示来源状态、情景数量与风险信号。",
+    "eyebrow": "组合报告",
+    "title": "报告工作台",
+    "question": "这份报告现在能不能作为决策依据发出去？",
+    "signals_label": "发布就绪信号",
+    "number_unavailable": "不可用",
+    "readiness": {
+      "label": "上线姿态",
+      "review": "需复核",
+      "publish": "可发布候选",
+      "hint_fallback": "报告可渲染，但当前使用 fallback：{error}",
+      "hint_source": "来源状态为{status}，发布前先复核数据来源",
+      "hint_ok": "所有报告入口可从当前 read model 复核"
+    },
+    "source": {
+      "label": "来源状态",
+      "ok": "正常",
+      "degraded": "降级",
+      "offline": "离线",
+      "unknown": "未知",
+      "hint": "置信度 {confidence} · 回退率 {fallback_rate} · {freshness} {minutes} 分钟"
+    },
+    "freshness": {
+      "fresh": "新鲜",
+      "stale": "偏旧",
+      "critical": "严重过期"
+    },
+    "risk": {
+      "label": "风险信号",
+      "none": "暂无异常",
+      "hint": "{level} · {change}",
+      "empty": "市场历史窗口尚未形成可排序警报",
+      "normal": "normal",
+      "watch": "watch",
+      "alert": "alert"
+    },
+    "scenarios": {
+      "label": "情景数量",
+      "empty": "暂无已保存情景",
+      "placeholder": "已保存情景 {n}"
+    },
+    "catalog": {
+      "title": "报告目录",
+      "why": "每份报告的入口，以及它当前接的是实时数据还是静态叙事。",
+      "tipping_point": {
+        "title": "临界点报告",
+        "description": "串联储备压力、燃料经济性、航司决策概率与研究信号的主报告。",
+        "status": "已接入实时 read model"
+      }
+    },
+    "actions": {
+      "title": "发布前动作",
+      "why": "报告页的下一步不是猜测，而是复核——每个入口都指向可验证的证据。",
+      "tipping_point": {
+        "label": "打开临界点报告",
+        "description": "阅读当前最完整的 SAF-vs-航油阈值叙事。"
+      },
+      "review_sources": {
+        "label": "复核来源",
+        "description": "检查回退、代理、降级和波动警报。"
+      },
+      "dashboard": {
+        "label": "查看驾驶舱",
+        "description": "回到实时市场、情景与风险总览。"
+      },
+      "admin": {
+        "label": "检查上线前置状态",
+        "description": "发布前确认来源覆盖、管理令牌与研究基础。"
+      },
+      "research": {
+        "label": "打开研究工作台",
+        "description": "确认研究信号是启用、空、降级还是可用于解释。"
+      }
+    },
+    "footer": {
+      "source_live": "市场快照接口（来源状态、置信度、回退率、新鲜度）",
+      "source_fallback": "市场快照接口无响应，当前为内置兜底值（{error}）",
+      "unknown_cause": "未知原因",
+      "source_scenarios": "本地情景库（当前 {count} 个已保存情景）",
+      "source_risk": "风险信号由市场历史窗口的变动幅度推导，非上游直接给出",
+      "method_label": "口径与来源清单",
+      "limitations": [
+        "“可发布候选”只表示数据链路可复核，不代表结论已被人工审阅。",
+        "风险信号依赖历史窗口样本量，样本不足时不会产生警报，不等于没有风险。",
+        "情景库是本地保存的假设，用于复盘和讨论，不替代真实采购审批。"
+      ]
+    }
+  },
+  "admin": {
+    "show_admin_ops": true,
+    "eyebrow": "管理台",
+    "title": "假设与数据接入管理",
+    "question": "这套后台现在能不能安全地写入和上线？",
+    "signals_label": "上线结论信号",
+    "decision_label": "能否上线",
+    "decision_hint_error": "Readiness API 暂不可用：{error}",
+    "decision_hint_ready": "当前没有阻塞上线的前置项。",
+    "decision_hint_blocked": "先处理阻塞项，再执行写入或上线。",
+    "blocking_label": "阻塞项",
+    "blocking_hint": "任何一项都会阻止安全上线。",
+    "review_label": "需复核项",
+    "review_hint": "不一定阻塞，但上线前需要确认适用边界。",
+    "environment_label": "环境上下文",
+    "environment_hint": "schema {mode}；结论只适用于这个部署环境。",
+    "scope_title": "当前可操作范围",
+    "scope_why": "明确哪些动作会写入真实 API，避免把管理台误当成演示界面。",
+    "scope_items": [
+      "手动编辑各路线成本区间与减排参数",
+      "维护政策参数和时间表",
+      "触发市场数据刷新并读回快照",
+      "查看写入本地数据库的刷新证据",
+      "确认前端读取的是 API 返回的最新状态"
+    ],
+    "scope_bullet": "• ",
+    "contract_title": "后端数据合同",
+    "contract_why": "这些表决定写入落在哪里，以及刷新结果能否被后续页面读回。",
+    "contract_items": [
+      {
+        "code": "route_catalog",
+        "text": "维护默认路线定义"
+      },
+      {
+        "code": "policy_parameters",
+        "text": "维护政策、补贴与 mandate 参数"
+      },
+      {
+        "code": "market_snapshots",
+        "text": "保存定时任务抓取结果"
+      },
+      {
+        "code": "scenarios",
+        "text": "版本化假设，支持对比与导出"
+      }
+    ],
+    "checks_title": "上线前置状态",
+    "checks_why": "逐项定位阻塞、复核和健康状态，决定当前环境还缺哪一步。",
+    "badge_ready": "Ready",
+    "badge_not_ready": "Not ready",
+    "badge_degraded": "Degraded",
+    "env_badge": "{environment} · {apiPrefix} · schema {schemaBootstrapMode}",
+    "error_banner": "Readiness API 暂不可用：{error}",
+    "config_keys_label": "相关配置：",
+    "ops_title": "数据与假设写入工作区",
+    "ops_why": "只有在前置状态允许时，才在这里修改参数、刷新数据并核对写入证据。",
+    "source_unavailable": "Readiness API 当前不可用",
+    "source_available": "Readiness API 服务端检查结果",
+    "source_contract": "后端数据合同表：route_catalog / policy_parameters / market_snapshots / scenarios",
+    "method_label": "查看来源与数据口径",
+    "limitations": [
+      "本页反映当前部署环境的就绪状态，不代表 JetScope 的产品能力上限。",
+      "就绪检查是服务端根据当前配置和数据合同推导的结果；受保护写入仍需有效管理令牌。"
+    ],
+    "readiness_status": {
+      "ready": "可上线候选",
+      "degraded": "可运行，需复核",
+      "not_ready": "未就绪"
+    },
+    "readiness_status_unknown": "{status}",
+    "check_status": {
+      "ok": "正常",
+      "degraded": "降级",
+      "missing": "缺少配置",
+      "disabled": "未启用",
+      "missing_credentials": "缺少凭证",
+      "mock": "Mock 模式",
+      "seed": "种子数据",
+      "error": "错误"
+    },
+    "check_status_unknown": "{status}",
+    "check_labels": {
+      "database": "数据库",
+      "market_snapshot": "市场快照",
+      "source_coverage": "来源覆盖",
+      "admin_token": "管理令牌",
+      "ai_research_pipeline": "AI 研究流水线"
+    },
+    "impact_blocking": "阻塞上线",
+    "impact_review": "需复核",
+    "impact_ok": "可用",
+    "impact_unknown": "未识别的状态",
+    "detail_cjk_fallback": "",
+    "detail_empty": "无详情",
+    "detail_market_count": "",
+    "detail_source_completeness": "",
+    "detail_source_metrics": "",
+    "detail_by_key": {
+      "database": "",
+      "market_snapshot": "",
+      "source_coverage": "",
+      "admin_token": "",
+      "ai_research_pipeline": ""
+    },
+    "actions": {
+      "source_coverage": {
+        "label_ok": "查看来源",
+        "label_fix": "修复来源",
+        "nav_id": "sources",
+        "query": "?filter=review",
+        "target_locale": ""
+      },
+      "market_snapshot": {
+        "label_ok": "查看市场",
+        "label_fix": "查看市场",
+        "nav_id": "sources",
+        "query": "",
+        "target_locale": ""
+      },
+      "admin_token": {
+        "label_ok": "配置管理令牌",
+        "label_fix": "配置管理令牌",
+        "nav_id": "admin",
+        "query": "",
+        "target_locale": ""
+      },
+      "ai_research_pipeline": {
+        "label_ok": "打开研究工作台",
+        "label_fix": "打开研究工作台",
+        "nav_id": "research",
+        "query": "",
+        "target_locale": ""
+      },
+      "default": {
+        "label_ok": "查看 Admin",
+        "label_fix": "查看 Admin",
+        "nav_id": "admin",
+        "query": "",
+        "target_locale": ""
+      }
+    }
+  },
+  "sources": {
+    "meta_title": "来源 · Trust Center",
+    "meta_description": "查看 JetScope 来源溯源、as-of、置信度、滞后、回退状态与 market refresh 健康度。",
+    "eyebrow": "来源目录",
+    "title": "来源与溯源视图",
+    "question": "这一屏的市场输入，现在有哪些还不能直接拿去做决策？",
+    "signal_row_label": "来源可信信号",
+    "metrics": {
+      "needs_review": {
+        "label": "需复核",
+        "hint_open": "{fallback} 个回退、{degraded} 个降级，或存在代理/波动警报。",
+        "hint_clear": "当前来源行没有需要额外复核的信号。"
+      },
+      "trust_posture": {
+        "label": "信任姿态"
+      },
+      "average_confidence": {
+        "label": "平均置信度",
+        "hint": "完整度 {completeness} · {freshness}"
+      },
+      "input_mix": {
+        "label": "输入构成",
+        "value": "{live} 个实时",
+        "hint": "代理 {proxy} · 回退 {fallback} · 降级 {degraded}"
+      }
+    },
+    "trust_posture": {
+      "review": "需核验降级输入",
+      "proxy": "含代理来源",
+      "ready": "实时来源就绪"
+    },
+    "trust_hint": {
+      "review": "决策支持：请核验降级输入",
+      "proxy": "决策支持：含代理来源",
+      "ready": "决策支持：实时来源就绪"
+    },
+    "freshness": {
+      "unknown": "新鲜度未知",
+      "latest": "最新来源 {lag}"
+    },
+    "filters": {
+      "all": {
+        "label": "全部",
+        "hint": "完整矩阵"
+      },
+      "review": {
+        "label": "需复核",
+        "hint": "回退、降级、代理或波动警报"
+      },
+      "fallback": {
+        "label": "回退",
+        "hint": "当前依赖回退路径"
+      },
+      "proxy": {
+        "label": "代理",
+        "hint": "代理或派生估算"
+      },
+      "live": {
+        "label": "实时",
+        "hint": "实时主来源或官方来源"
+      }
+    },
+    "surfaces": {
+      "brent_usd_per_bbl": "Brent",
+      "jet_usd_per_l": "航煤",
+      "carbon_proxy_usd_per_t": "碳价代理",
+      "jet_eu_proxy_usd_per_l": "航煤（欧盟代理）",
+      "rotterdam_jet_fuel_usd_per_l": "Rotterdam 航煤",
+      "eu_ets_price_eur_per_t": "EU ETS",
+      "germany_premium_pct": "德国溢价"
+    },
+    "trust": {
+      "live": "实时",
+      "proxy": "代理",
+      "fallback": "回退",
+      "degraded": "降级"
+    },
+    "status": {
+      "ok": "正常",
+      "seed": "种子回退",
+      "fallback": "回退",
+      "error": "异常",
+      "unknown": "未知"
+    },
+    "alert": {
+      "alert": "警报",
+      "watch": "观察",
+      "normal": "正常"
+    },
+    "source_type": {
+      "live": "实时主来源或官方来源",
+      "proxy": "代理或派生",
+      "fallback": "回退路径",
+      "degraded": "需排查"
+    },
+    "read_model_literals": {
+      "无数据": "无数据",
+      "覆盖不可用": "覆盖不可用",
+      "Brent 派生回退": "Brent 派生回退"
+    },
+    "read_model_fallbacks": {
+      "no_data": "无数据",
+      "coverage_unavailable": "覆盖不可用"
+    },
+    "read_model_replacements": {
+      "派生回退": "派生回退",
+      "回退": "回退"
+    },
+    "panels": {
+      "provenance": {
+        "title": "来源溯源",
+        "why": "当前市场快照里有多少是实测、多少是代理、多少是回退——这决定下面每一行能不能直接引用。"
+      },
+      "coverage": {
+        "title": "来源覆盖",
+        "why": "覆盖状态说明哪些 canonical metric 有可追溯的输入，避免把缺口误读成完整市场视图。"
+      },
+      "market_health": {
+        "title": "Market refresh health",
+        "why": "刷新循环的健康度决定来源表是近期快照，还是可能已经脱离预期更新节奏。"
+      },
+      "recovery": {
+        "title": "恢复步骤",
+        "why": "把需要复核的来源变成可执行入口，避免数据质量问题停留在状态标签里。"
+      },
+      "matrix": {
+        "title": "市场输入矩阵",
+        "why": "逐行展示来源、时间、滞后、数值和处理入口，支持在引用市场输入前完成复核。"
+      }
+    },
+    "market_health": {
+      "line1": "间隔 {interval}s · age {age} · next ETA {eta} · status",
+      "line2": "runs {ok}/{total}",
+      "success": " · success {rate}%",
+      "unavailable": "无法加载 /v1/market/health。请确认 API 已启动并有 refresh run。"
+    },
+    "recovery": {
+      "review_badge": "需复核 {count}",
+      "priority_badge": "优先处理 {count}",
+      "open_admin": "打开 Admin 刷新",
+      "show_review": "只看需复核",
+      "back_dashboard": "返回驾驶舱",
+      "open_action": "处理入口",
+      "empty": "当前来源没有回退或降级行；代理来源仍应在重大采购、定价、披露前做人工复核。"
+    },
+    "review_actions": {
+      "critical": {
+        "label": "刷新并复核",
+        "detail": "配置管理令牌后触发刷新，再回到本页确认该指标脱离回退或错误状态。"
+      },
+      "review": {
+        "label": "人工复核代理假设",
+        "detail": "用于高风险定价或采购决策前，交叉核对原始报价、政策口径和报告说明。"
+      },
+      "normal": {
+        "label": "保留快照证据",
+        "detail": "当前来源可用；重大决策前记录生成时间、置信度和快照链接。"
+      }
+    },
+    "reasons": {
+      "fallback": "实时覆盖不可用，或已使用回退路径。",
+      "status": "来源状态为 {status}。",
+      "proxy": "派生或代理指标；用于高风险决策前需要复核。",
+      "alert": "近期波动被标记为 {alert}。",
+      "ok": "实时主来源或官方来源，未标记降级。"
+    },
+    "table": {
+      "surface": "界面",
+      "source": "来源",
+      "trust": "可信状态",
+      "scope": "范围",
+      "confidence": "置信度",
+      "as_of": "As of",
+      "lag": "滞后",
+      "status": "状态",
+      "fallback": "Fallback",
+      "value": "数值",
+      "change_1d": "1d",
+      "change_7d": "7d",
+      "change_30d": "30d",
+      "volatility": "波动",
+      "trend": "趋势",
+      "action": "操作",
+      "reason": "可信原因 / 降级原因",
+      "empty": "当前筛选没有匹配来源。",
+      "focus": "聚焦",
+      "record": "留证",
+      "handle": "处理",
+      "trend_alt": "{surface} 趋势",
+      "na": "n/a",
+      "showing": "正在显示 {visible} / {total}",
+      "generated": "生成于 {when}",
+      "no_stamp": "生成时间不可作为数据时间",
+      "fallback_note": " · 实时来源覆盖不可用时显示回退估算",
+      "focus_banner": "已从驾驶舱风险信号聚焦：",
+      "clear_focus": "清除"
+    },
+    "footer": {
+      "source_ok": "来源读模型（覆盖、置信度、滞后、回退与复核状态）",
+      "source_fallback": "来源读模型不可用，当前为回退估算（{error}）",
+      "health_ok": "Market refresh health API",
+      "health_unavailable": "Market refresh health API 当前不可用",
+      "unknown_error": "未知原因",
+      "method_label": "来源覆盖与复核方法",
+      "limitations": [
+        "来源状态说明输入质量，不证明单个市场数字适用于所有机场、合同或交易场景。",
+        "代理、派生、回退和降级行在重大采购、定价或披露前都需要人工复核。",
+        "回退读模型的生成时间是抓取失败后的本地时间，因此本页不会把它显示为数据时间。"
+      ]
+    }
+  },
+  "scenarios": {
+    "meta_title": "情景工作区",
+    "meta_description": "管理 SAF 转型情景、比较政策路径，并通过持久化情景库工作流监测就绪度信号。",
+    "eyebrow": "情景工作区",
+    "title": "情景管理与转型监测",
+    "question": "这些保存下来的假设，还能不能代表当前市场？",
+    "signal_row_label": "情景结论信号",
+    "policy_target_methods": {
+      "saf": "RefuelEU 法定 SAF 掺混目标（法定要求，不是情景假设）",
+      "synthetic": "RefuelEU 法定合成航空燃料掺混目标（法定要求，不是情景假设）"
+    },
+    "transition_signal": {
+      "label": "转型信号",
+      "hint": "当前临界点模型对 SAF 成本相对化石航油的判断。",
+      "hint_fallback": "临界点接口没有返回结果，当前结论来自内置假设。",
+      "saf_advantaged": "SAF 已占优",
+      "switch_window": "切换窗口开启",
+      "fossil_advantaged": "SAF 仍不经济",
+      "needs_review": "需复核"
+    },
+    "data_posture": {
+      "label": "数据姿态",
+      "connected": "数据已接入",
+      "partial": "部分假设",
+      "assumed": "内置假设",
+      "hint": "{count} 个关键输入使用了假设或不可用数据。",
+      "hint_fallback": "市场快照接口处于回退；页面上的数字不能当作刚刚观测到的市场事实。"
+    },
+    "airline_signal": {
+      "label": "航司决策信号",
+      "hint": "把储备、碳价和航油输入映射为可讨论的航司动作概率。",
+      "switch_window": "切换窗口开启",
+      "capacity_stress": "运力压力主导",
+      "incremental": "渐进调整",
+      "needs_review": "需复核"
+    },
+    "reserve": {
+      "label": "储备覆盖",
+      "weeks": "{weeks} 周",
+      "needs_review": "需复核",
+      "hint": "来源 {source} · 置信度 {confidence}%",
+      "hint_fallback": "实时储备数据不可用；当前周数只是可编辑情景假设。"
+    },
+    "assumption_posture": {
+      "label": "假设状态",
+      "unreliable": "不可靠",
+      "reassess": "需重估",
+      "review": "先复核",
+      "usable": "可用",
+      "hint_fallback": "市场读模型回退本身，并不能让已保存假设自动变得可靠。",
+      "hint_review": "来源姿态、风险或缺失情景要求在沿用假设前先复核。",
+      "hint_ok": "当前来源姿态和风险窗口没有立即触发复核。"
+    },
+    "saved_scenarios": {
+      "label": "已保存情景",
+      "hint": "工作区假设已可用于比较和复核。",
+      "hint_empty": "还没有已保存情景；请在主情景工作区新建。"
+    },
+    "market_context": {
+      "label": "市场上下文",
+      "value": "{brent} 美元/桶",
+      "hint": "航煤 {jet} 美元/升 · 欧盟航煤代理 {eu} 美元/升 · 碳价 {carbon} 美元/吨CO2"
+    },
+    "risk_signal": {
+      "label": "最高风险信号",
+      "none": "无异常",
+      "none_hint": "市场历史窗口尚未产生可排序的警报。",
+      "hint": "{level} · 样本 {samples} · 截至 {asOf}",
+      "level_normal": "正常",
+      "level_watch": "观察",
+      "level_alert": "警报"
+    },
+    "source_status": {
+      "ok": "健康",
+      "degraded": "降级",
+      "offline": "离线",
+      "unknown": "未知"
+    },
+    "unknown_cause": "未知原因",
+    "not_available": "暂无",
+    "readiness_panel": {
+      "title": "转型监测",
+      "why": "把燃油价格、碳价、储备压力和政策目标放在同一个工作区，判断哪些 SAF 路径接近可执行区间。"
+    },
+    "registry_panel": {
+      "title": "情景管理",
+      "why": "保存和复核团队确认过的转型假设；受保护的写操作仍留在这个主工作区。"
+    },
+    "capabilities_panel": {
+      "title": "工作区能力",
+      "why": "这些能力说明读者可以怎样使用情景，不把工作流描述误读成市场结论。"
+    },
+    "capabilities": [
+      {
+        "title": "保存假设",
+        "body": "把油价、碳价、补贴和航线成本保存成可复用的决策版本。"
+      },
+      {
+        "title": "比较压力",
+        "body": "对照当前市场、储备压力和政策目标，判断哪条路径最先变得可行。"
+      },
+      {
+        "title": "敏感性扫描",
+        "body": "围绕燃油、碳价和补贴做范围扫描，找到最影响结论的输入。"
+      }
+    ],
+    "duties_panel": {
+      "title": "页面职责",
+      "why": "帮助读者把情景页的选择问题与驾驶舱、危机监测和来源复核页面分开。"
+    },
+    "duties": [
+      "实时价格在决策驾驶舱，负责回答“现在发生了什么”。",
+      "危机监测解释压力来源，负责回答“为什么需要行动”。",
+      "情景工作区保存假设和比较结果，负责回答“下一步怎么选择”。",
+      "来源复核在数据来源页，负责回答“这些数字的证据链是否足够可靠”。"
+    ],
+    "assumptions_panel": {
+      "title": "情景假设",
+      "why": "已保存的工作区记录显示哪些假设可用于比较和复核。",
+      "empty": "还没有已保存假设。请使用主情景编辑器，为价格、储备、航线和政策讨论建立可复核案例。"
+    },
+    "scenario_name_placeholder": "已保存情景 {index}",
+    "context_panel": {
+      "title": "决策上下文",
+      "why": "情景只有配合当前证据才有决策意义；回退和缺失信号必须保持可见。"
+    },
+    "context_paragraphs": [
+      "情景是供复核和团队讨论的证据记录；它们不能替代采购批准、来源核验或受保护的管理配置。",
+      "比较假设前，先确认来源覆盖和上线前置状态没有把回退或停用边界藏起来。"
+    ],
+    "delivery_fallback": "本地 API 回退已启用：{error}。使用前请以来源证据核对假设。",
+    "delivery_live": "来源状态：{status} · 新鲜度 {minutes} 分钟",
+    "review_panel": {
+      "title": "复核流程",
+      "why": "下一步从已保存假设回到证据、上线前置状态和受保护写边界。"
+    },
+    "write_boundary_label": "受保护写边界",
+    "write_boundary_body": "创建、更新和删除仍留在主情景工作区。",
+    "actions": [
+      {
+        "id": "primary_editor",
+        "label": "打开主情景编辑器",
+        "description": "在已有管理令牌保护的主工作区创建、更新或删除情景。"
+      },
+      {
+        "id": "sources",
+        "label": "复核来源证据",
+        "description": "在把已保存假设用于决策前，检查回退、代理、降级和波动行。"
+      },
+      {
+        "id": "dashboard",
+        "label": "打开决策驾驶舱",
+        "description": "回到实时市场快照、来源姿态和最高风险信号。"
+      },
+      {
+        "id": "admin",
+        "label": "查看上线前置状态",
+        "description": "确认受保护写入、来源覆盖和研究前置项是否就绪。"
+      }
+    ],
+    "source_dashboard_fallback": "市场快照接口无响应，当前为内置兜底值（{error}）",
+    "source_dashboard_live": "市场快照接口（市场读数、来源状态和储备输入）",
+    "source_tipping_fallback": "临界点分析无响应，当前使用内置情景假设",
+    "source_tipping_live": "临界点分析接口（由市场输入推导 SAF 成本信号）",
+    "source_airline_fallback": "航司决策分析无响应，当前使用内置情景假设",
+    "source_airline_live": "航司决策分析接口（由市场和储备输入推导动作概率）",
+    "source_reserve_live": "储备信号（{source}）",
+    "source_reserve_fallback": "储备信号不可用，当前使用可编辑周数假设",
+    "source_store": "本地情景库（保存的是团队假设，不是市场实测）",
+    "source_store_count": "本地情景库（{count} 个已保存情景）",
+    "source_policy_live": "RefuelEU 政策目标接口（法定强制掺混目标）",
+    "source_policy_empty": "RefuelEU 政策目标暂未返回",
+    "source_risk": "风险信号由市场历史窗口中的变动推导，不是上游直接提供",
+    "method_label": "口径与来源清单",
+    "limitations": [
+      "情景库是保存的假设；即使记录确实存在，里面的价格、碳价和路线数字也不能自动视为实测。",
+      "临界点和航司决策信号是由输入推导的分析结果，不是对未来采购结果的保证。",
+      "任一接口回退或不可用时，页面会继续提供可编辑工作区，但对应数字没有有效的实测 as-of；旧版“数据真实性”说明已并入这里。",
+      "页面职责是产品分工说明，是否保留该说明由产品负责人决定。"
+    ]
+  },
+  "crisis": {
+    "show_price_chart": true,
+    "show_reserves_strip": true,
+    "show_event_timeline": true,
+    "show_simulator": true,
+    "show_research_brief": true,
+    "show_zh_subpage_links": true,
+    "meta_title": "危机监测",
+    "meta_description": "在一个运营危机监测视图中跟踪储备覆盖、临界事件与 SAF 经济性跨越。",
+    "eyebrow": "危机简报",
+    "title": "EU 航油风险简报",
+    "question": "现在的储备压力和数据可信度，够不够支撑改变采购动作？",
+    "signals_label": "危机信号",
+    "na": "n/a",
+    "stress": {
+      "critical": "紧急",
+      "elevated": "偏高",
+      "guarded": "警戒",
+      "normal": "平稳",
+      "unknown": "回退模式"
+    },
+    "source_type": {
+      "official": "官方来源",
+      "manual": "人工估算",
+      "derived": "模型推导",
+      "unknown": "情景基线"
+    },
+    "confidence": {
+      "missing": "暂无置信度",
+      "high": "高置信",
+      "medium_high": "中高置信",
+      "medium": "中等置信",
+      "unavailable": "暂不可用"
+    },
+    "signal": {
+      "saf_cost_advantaged": "SAF 成本占优",
+      "switch_window_opening": "切换窗口正在打开",
+      "fossil_still_advantaged": "化石航油仍占优",
+      "unknown": "情景基线"
+    },
+    "source_status": {
+      "ok": "健康",
+      "degraded": "降级",
+      "offline": "离线",
+      "unknown": "未知"
+    },
+    "research_posture": {
+      "disabled": "未启用边界",
+      "empty": "等待信号",
+      "backed": "已有信号支撑"
+    },
+    "monitor": {
+      "decision_label": "决策信号",
+      "decision_hint": "{status} · 化石航油基线 ${price}/L",
+      "reserve_connected": "储备数据已连接",
+      "reserve_baseline": "正在使用情景基线",
+      "coverage_label": "储备覆盖",
+      "coverage_weeks": "{weeks} 周",
+      "coverage_missing": "需重新连接",
+      "coverage_hint": "压力等级：{stress} · {source}",
+      "coverage_source_missing": "未连接实时储备源",
+      "reserve_confidence_label": "储备数据置信度",
+      "reserve_confidence_hint": "{confidence} · 来源类型：{source_type}",
+      "market_confidence_label": "市场数据置信度",
+      "market_confidence_hint": "市场快照的整体可信度，决定下面的价格阶梯能不能直接引用",
+      "actions_title": "下一步动作",
+      "actions_why": "建议路径是先确认储备可信度，再测试 SAF 经济性——不要跳过第一步直接改采购。",
+      "reserves_panel_title": "欧盟航煤储备覆盖",
+      "reserves_panel_why": "储备周数是危机叙事的底座。跌破警戒线时，价格反应和政策反应会同时加速。",
+      "timeline_title": "SAF 交叉时间线",
+      "timeline_why": "记录 SAF 有效成本真的越过化石航油的时刻，而不是模型预测它会越过。",
+      "research_title": "研究决策层",
+      "research_why": "解释上面这些数字为什么在动。信号本身不是结论，是结论的理由。",
+      "chart_title": "航油与 SAF 价格阶梯",
+      "chart_why": "化石航油基准、碳调整后的有效成本，以及各路径的净成本区间——要看的是差距，不是绝对值。",
+      "simulator_title": "拐点模拟器",
+      "simulator_why": "综合燃油价格、碳价、储备压力与路径经济性的 API 模型；用来试探结论在什么条件下翻转。",
+      "methods": {
+        "fossil_fallback": "crisis page fossil-jet fallback or missing source timestamp",
+        "effective_fossil": "effective fossil jet = spot fossil jet + carbon price pressure at selected blend rate, minus subsidy (tipping-point model)",
+        "reserve_derived": "derived reserve coverage from {name}",
+        "reserve_named": "reserve coverage from {name} ({type})",
+        "reserve_dashboard": "dashboard reserve coverage without connected reserve source metadata",
+        "reserve_baseline": "情景基线 3.0 周；实时储备未连接"
+      }
+    },
+    "zh_links": {
+      "reserves": {
+        "title": "打开储备详情",
+        "description": "先检查覆盖周数、来源类型、置信度和供应缺口，再调整采购判断。",
+        "eyebrow": "储备"
+      },
+      "workbench": {
+        "title": "打开 SAF 工作台",
+        "description": "带入当前燃油、碳价和储备读数，直接测试 SAF 路径敏感性。",
+        "eyebrow": "模拟"
+      },
+      "sources": {
+        "title": "复核数据来源",
+        "description": "查看需要复核的市场输入，确认实时、代理、回退和降级状态。",
+        "eyebrow": "来源"
+      }
+    },
+    "brief": {
+      "stress_label": "储备压力",
+      "stress_weeks": "{weeks} 周",
+      "stress_hint": "欧盟储备态势：{stress} | {source}",
+      "fallback_source": "情景基线回退",
+      "source_label": "来源置信度",
+      "source_hint": "市场状态 {status} | 储备置信度 {reserve}",
+      "events_label": "临界事件",
+      "events_hint": "{type} | {pathway} | {when}",
+      "events_empty": "当前复核窗口内没有事件。",
+      "research_label": "研究姿态",
+      "research_hint": "有 {count} 条研究信号可供复核。",
+      "research_hint_empty": "页面展示研究边界，而不是编造证据。",
+      "readout_title": "运营读数",
+      "readout_why": "上面这些数字合在一起是什么意思，以及如何判断它们来自实时证据还是回退状态。",
+      "readout_p1_lead": "当前化石航油成本锚点为",
+      "readout_p1_tail": "。JetScope 把它和欧盟储备覆盖、来源置信度放在一起，方便复核人员在改采购或 SAF 假设之前，把实时证据和回退状态分开。",
+      "readout_p2": "危机简报来自 FastAPI crisis-brief 合同，所以页面能给出一份连贯的运营读数，而不在展示层重复储备、来源、临界事件和研究聚合。",
+      "evidence_title": "证据纪律",
+      "evidence_why": "这四项读数决定这份简报能不能当作决策证据，还是必须先过来源复核。",
+      "freshness_label": "市场新鲜度",
+      "freshness_minutes": "{minutes} 分钟",
+      "freshness_review": "待复核",
+      "fallback_rate_label": "回退率",
+      "reserve_timestamp_label": "储备时间戳",
+      "as_of_unavailable": "暂不可用",
+      "contract_label": "合同状态",
+      "contract_fallback": "回退",
+      "contract_connected": "已连接",
+      "actions_title": "下一步",
+      "actions_why": "只展示数字的危机简报什么也改不了。这里的每个入口都通向可核查的东西。"
+    },
+    "recovery": {
+      "review_sources": {
+        "title": "复核来源证据",
+        "description": "在把危机信号当作运营证据之前，先检查回退、代理、降级和波动行。"
+      },
+      "open_report": {
+        "title": "打开本地化报告",
+        "description": "从简报进入有来源支撑的临界点报告，阅读更长的复核叙事。"
+      },
+      "review_scenarios": {
+        "title": "复核情景",
+        "description": "在改计划之前，把已保存假设对照当前储备压力和市场置信度。"
+      }
+    },
+    "footer": {
+      "reserve_connected": "EU 航油储备覆盖，来自{type}（{name}）",
+      "reserve_missing": "储备服务未连接，覆盖读数使用情景基线",
+      "market_snapshot": "市场快照（化石航油基线 ${price}/L、碳价代理 €{carbon}/t）",
+      "tipping_events": "复核窗口内观察到的 {count} 个 SAF 交叉事件",
+      "tipping_model": "决策信号与路径净成本由拐点模型推导，不是上游直接给出的读数",
+      "brief_error": "Crisis-Brief-API 不可达；正在使用内部回退值（{error}）",
+      "brief_ok": "Crisis-Brief-API（储备、来源状态、临界事件、研究姿态）",
+      "reserve_via": "欧盟储备态势，来源 {name}",
+      "events_observed": "复核窗口内观察到 {count} 个 SAF 临界事件",
+      "fossil_anchor": "化石成本锚点 {price}，由市场快照推导",
+      "method_label": "口径与来源清单"
+    },
+    "limitations": [
+      "本页描述的是区域层面的储备压力，不是某一家航司的供应状况——航司自有合同和库存不在其中。",
+      "交叉事件只统计复核窗口内的观察值。没有事件不等于没有风险，只表示这个窗口内没观察到跨越。",
+      "储备来源若是人工估算，上方会标成“情景假设”，不能当作官方实时报价引用。",
+      "模拟器用于试探敏感性，它的输出是情景推演，不构成采购建议。"
+    ]
+  },
+  "tipping_point_report": {
+    "meta_title": "临界点报告",
+    "meta_description": "以数据支撑的 JetScope 报告页，解释欧洲航油压力与 SAF 切换经济性。",
+    "eyebrow": "报告页",
+    "title": "临界点报告",
+    "question": "这份报告的经济学论点，现在还站得住吗？",
+    "signal_row_label": "临界点结论",
+    "signal_label": "当前临界点信号",
+    "signal_unknown": "未识别",
+    "signal_hint": "结论优先；未知信号保留为需复核状态。",
+    "probability_label": "SAF 切换概率",
+    "probability_hint": "取现货采购与长期承购两项概率中的较高值。",
+    "confidence_metric_label": "来源置信度",
+    "confidence_metric_hint": "市场状态：{status}",
+    "events_label": "已加载事件",
+    "events_hint": "当前 42 天复核窗口内的事件样本量。",
+    "events_hint_latest": "最近：{event}",
+    "events_hint_empty": "当前复核窗口内没有事件。",
+    "thesis_title": "核心论点",
+    "thesis_why": "先说明这份报告要验证的因果链，避免读者把任一单项指标误当成完整结论。",
+    "thesis_lead": "当储备压力、传统航油价格与政策惩罚同时收敛时，SAF 采购会变得理性。",
+    "thesis_body": "JetScope 将欧洲航空燃料危机视为决策阈值，而不是静态合规叙事。当前报告页使用实时驾驶舱契约，并清晰标注代理或人工来源；AI 研究信号用于解释运营论点为何正在变化。",
+    "reserves_title": "欧盟航煤储备覆盖",
+    "reserves_why": "储备周数决定这份报告的紧迫度：覆盖越薄，价格与政策的反应窗口越短。",
+    "chart_title": "航油与 SAF 价格阶梯",
+    "chart_why": "化石航油基准、碳调整后的有效成本，以及各路径的净成本区间——报告的经济学论点全部落在这张图的差距上。",
+    "chart_why_assumed": "化石航油基准未取到实时值，使用内置假设 0.657 USD/L；因此价格差只能用于情景讨论。",
+    "decision_title": "航司决策含义",
+    "decision_why": "把模型输出翻译成可复核的运营含义，避免概率被误读为简单的是或否建议。",
+    "decision_body": "决策模型刻意以概率与阈值证据呈现，而不是给出简单的是/否建议。储备事件显示运营环境何时跨过警戒或严重区间；研究信号解释概率叙事为何发生变化。",
+    "research_title": "研究决策层",
+    "research_why": "解释这份报告的论点为什么在变。信号本身不是结论，是结论的理由。",
+    "timeline_title": "SAF 交叉时间线",
+    "timeline_why": "记录 SAF 有效成本真的越过化石航油的时刻，而不是模型预测它会越过。",
+    "confidence_title": "来源置信度",
+    "confidence_why": "这四项说明结论能承载多少权重，以及还缺哪些证据。",
+    "market_status_label": "市场状态",
+    "fallback_rate_label": "回退率",
+    "latest_event_label": "最近事件",
+    "latest_event_none": "无",
+    "research_status_label": "研究状态",
+    "source_status": {
+      "ok": "健康",
+      "degraded": "降级",
+      "offline": "离线",
+      "unknown": "未知"
+    },
+    "research_posture": {
+      "disabled": "已关闭边界",
+      "error": "降级",
+      "not_found": "未部署",
+      "with_signals": "已有信号",
+      "waiting": "等待信号"
+    },
+    "next_title": "下一步复核",
+    "next_why": "只有来源、情景假设和发布路径仍然可达，报告才真正可执行。",
+    "next_actions": {
+      "sources": {
+        "title": "复核市场来源",
+        "description": "对外使用前检查实时、代理、回退和降级输入。"
+      },
+      "scenarios": {
+        "title": "比较情景假设",
+        "description": "改变采购姿态前确认已保存的假设。"
+      },
+      "reports": {
+        "title": "返回报告工作台",
+        "description": "再次核对上线姿态和报告目录。"
+      }
+    },
+    "number_unavailable": "n/a",
+    "figure_methods": {
+      "fossil_assumed": "报告页使用内置化石航油常量 0.657 USD/L，或当前缺少可引用时间戳",
+      "effective_fossil": "有效化石航油成本 = 现货航油 + 所选掺混比例下的碳价压力 - 补贴（临界点模型）"
+    },
+    "source_dashboard": "驾驶舱读模型与市场状态",
+    "source_reserve": "欧盟航煤储备覆盖（{source}）",
+    "source_unavailable": "来源暂不可用",
+    "source_fossil_assumed": "内置化石航油基准 0.657 USD/L",
+    "source_fossil_live": "驾驶舱化石航油价格基准",
+    "source_events": "SAF 临界点事件流（42 天窗口，{count} 条）",
+    "source_research": "研究信号流（{count} 条）",
+    "method_label": "口径与来源清单",
+    "limitations": [
+      "报告展示跨市场的经济学阈值，不替代单一航司的合同、库存或采购审批。",
+      "切换概率来自模型情景，不是对未来行为的观测；低样本事件窗口也不等于没有风险。",
+      "化石航油实时值缺失时会明确使用 0.657 USD/L 内置假设，届时价格结论只能作为情景依据。"
     ]
   }
 }

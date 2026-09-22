@@ -15,7 +15,133 @@
     "description": "Ein Fünf-Minuten-Überblick über europäische Jet-A-Stresssignale, SAF-Kipppunkt-Ereignisse, EU-ETS-Kosteneffekte und KI-gestützte Research-Workflows.",
     "primary_cta": "Entscheidungscockpit öffnen",
     "scenario_cta": "Szenario testen",
-    "sources_cta": "Quellenqualität prüfen"
+    "sources_cta": "Quellenqualität prüfen",
+    "page_title": "JetScope Deutschland",
+    "eyebrow": "Startseite · Deutsch",
+    "question": "Kann JetScope meine Frage beantworten, und auf welcher Seite sollte ich beginnen?",
+    "show_transition_ladder": false,
+    "show_research_brief": false,
+    "show_thesis": false,
+    "show_dual_domain": false,
+    "swap_research_limitation": false,
+    "entry_layout": "index",
+    "chinese_workspace_cta": "",
+    "chinese_workspace_href": "/dashboard",
+    "thesis_ctas": [],
+    "signals": {
+      "label": "Einstieg und aktuelle Signale",
+      "recommended_label": "Empfohlener Einstieg",
+      "recommended_value": "Dashboard",
+      "recommended_hint": "Mit dem Gesamtbild beginnen und danach in die passende Prüfung wechseln.",
+      "reserve_label": "Reserveabdeckung",
+      "reserve_unavailable": "Nicht verfügbar",
+      "reserve_unit": "Wochen",
+      "reserve_hint": "EU-Reservehaltung · /v1/reserves/eu",
+      "reserve_hint_unavailable": "EU-Reservehaltung · /v1/reserves/eu",
+      "event_label": "Letztes Kippereignis",
+      "event_empty": "Kein Ereignis",
+      "event_hint": "{count} Ereignisse im 42-Tage-Fenster · /v1/analysis/tipping-point/events",
+      "event_hint_empty": "{count} Ereignisse im 42-Tage-Fenster · /v1/analysis/tipping-point/events",
+      "research_label": "Forschungssignale",
+      "research_not_found": "Nicht bereitgestellt",
+      "research_error": "Fehler",
+      "research_count": "{count} Signale",
+      "research_hint": "/v1/research/signals · gleiche Statuslogik wie die Forschungsseite"
+    },
+    "thesis": {
+      "title": "Produktthese",
+      "why": "Zuerst klären, ob JetScope den relevanten Entscheidungsraum abdeckt.",
+      "headline": "Wann wird SAF eine Betriebsentscheidung und nicht nur eine Compliance-Kostenposition?",
+      "body": "JetScope verbindet Marktbilder, Reservestress, Politikdruck und Forschungssignale zu einem prüfbaren Ablauf."
+    },
+    "dual_domain": {
+      "title": "Zwei Problemräume",
+      "why": "Derselbe CO2-Preis verbindet Luftfahrt und Strom, bestimmt aber getrennte Prüfpfade.",
+      "body": "Der EU-ETS-Preis wirkt gleichzeitig auf den SAF-Kipppunkt und auf Netzparität.",
+      "grid_cta": "Netzparität öffnen",
+      "saf_cta": "SAF-Kipppunkt öffnen"
+    },
+    "transition": {
+      "title": "Dekarbonisierungsleiter",
+      "why": "Technologien auf derselben Kohlenstoffpreisachse vergleichen.",
+      "error_detail": "Die Transformationszusammenfassung ist vorübergehend nicht verfügbar.",
+      "empty_detail": "Die Schnittstelle hat geantwortet, aber es gibt keine darstellbare Zusammenfassung."
+    },
+    "research_brief": {
+      "title": "Forschungsentscheidung",
+      "why": "Forschungssignale erklären, in welche Richtung die Marktzahlen laufen."
+    },
+    "entries": {
+      "title": "Deutsche Einstiegspunkte",
+      "why": "Jeder Einstieg beantwortet eine andere Prüfaufgabe; die bestehenden deutschen Inhalte und Routen bleiben getrennt erhalten.",
+      "eyebrow_label": "",
+      "open_label": "Ansicht öffnen"
+    },
+    "entry_cards": [
+      {
+        "title": "Dashboard (DE)",
+        "description": "Live-Marktstatus, Szenario-Registry und Risikosignale für operative Entscheidungen.",
+        "navId": "dashboard",
+        "suffix": ""
+      },
+      {
+        "title": "Deutschland Jet-Fuel Preise",
+        "description": "Serverseitige Preisbeobachtung für Brent, Jet global, EU-Jet-Proxy und Carbon-Proxy.",
+        "navId": "prices",
+        "suffix": ""
+      },
+      {
+        "title": "Quellenprüfung",
+        "description": "Zeilenbasierte Prüfung von Live-, Proxy- und Fallback-Quellen.",
+        "navId": "sources",
+        "suffix": ""
+      },
+      {
+        "title": "Szenario-Workbench",
+        "description": "Lesende Prüfung gespeicherter SAF-Annahmen mit Marktkontext.",
+        "navId": "scenarios",
+        "suffix": ""
+      },
+      {
+        "title": "Berichtswerkstatt",
+        "description": "Deutsche Startprüfung für Quellenstatus, Szenarien und Berichtseinstiege.",
+        "navId": "reports",
+        "suffix": ""
+      },
+      {
+        "title": "Forschungswerkstatt",
+        "description": "Prüfung der AI-Research-Pipeline mit ehrlicher Leer- oder Fehlerlage.",
+        "navId": "research",
+        "suffix": ""
+      },
+      {
+        "title": "Startbereitschaft",
+        "description": "Lesende Prüfung von Datenbank, Quellenabdeckung und Backend-Bereitschaft.",
+        "navId": "admin",
+        "suffix": ""
+      },
+      {
+        "title": "Lufthansa-Analyse (DE)",
+        "description": "Tiefenanalyse der Lufthansa-Flugkürzungen 2026 und des SAF-Wendepunkts.",
+        "navId": "analysis",
+        "suffix": ""
+      }
+    ],
+    "sources": {
+      "reserve_label": "EU-Reserveabdeckung über {source_name}",
+      "reserve_unavailable": "nicht verfügbare Quelle",
+      "events_label": "SAF-Kipppunktereignisse ({count})",
+      "events_nav_id": "reports",
+      "events_suffix": "/tipping-point-analysis",
+      "research_label": "Abgeleitete Forschungssignale ({count})",
+      "method_label": "Quellen- und Methodenliste"
+    },
+    "limitations": [
+      "Die Startseite ist eine Zusammenfassung und Navigation; vollständige Definitionen stehen auf den jeweiligen Detailseiten.",
+      "Ein leeres Ereignisfenster bedeutet nicht, dass kein Risiko besteht."
+    ],
+    "limitation_research_enabled": "Forschungssignale sind abgeleitete Evidenz und keine direkte Marktbeobachtung.",
+    "limitation_research_disabled": "Forschungssignale sind abgeleitete Evidenz und keine direkte Marktbeobachtung."
   },
   "dashboard": {
     "market_price": "Marktpreis",
@@ -24,7 +150,146 @@
     "rotterdam_port": "Rotterdam Hafen Emissionen",
     "eu_ets_volume": "EU ETS Volumen",
     "data_freshness": "Datenfrische",
-    "source_status": "Quellenstatus"
+    "source_status": "Quellenstatus",
+    "meta_title": "Entscheidungscockpit",
+    "meta_description": "Deutsches JetScope-Dashboard mit Live-Marktsnapshot, Szenarioregister und Risikosignal für SAF-gegen-Kerosin-Entscheidungen.",
+    "eyebrow": "Marktintelligenz",
+    "title": "JetScope Entscheidungscockpit",
+    "question": "Hat sich die heutige Markt- und Datenlage so verändert, dass Szenarien neu gerechnet werden müssen?",
+    "show_price_trends": false,
+    "show_pathways": false,
+    "show_ets": false,
+    "show_provenance": false,
+    "show_policy_timeline": true,
+    "show_status_banners": false,
+    "show_sources_matrix": false,
+    "show_risk_href": true,
+    "na": "n/a",
+    "unknown_cause": "unbekannte Ursache",
+    "signal_row_label": "Entscheidungssignale",
+    "signal_order": [
+      "decision",
+      "market",
+      "delivery",
+      "risk"
+    ],
+    "source_ok": "OK",
+    "source_degraded": "eingeschränkt",
+    "source_offline": "offline",
+    "source_unknown": "unbekannt",
+    "freshness_fresh": "aktuell",
+    "freshness_stale": "veraltet",
+    "freshness_critical": "kritisch",
+    "risk_normal": "normal",
+    "risk_watch": "Beobachtung",
+    "risk_alert": "Alarm",
+    "decision_label": "Szenarioaktion",
+    "decision_rerun": "Neu rechnen",
+    "decision_review": "Zuerst prüfen",
+    "decision_keep": "Weiter nutzen",
+    "decision_hint_fallback": "Der API-Fallback liefert keine Messung; vor einem Szenario-Neulauf zuerst die Quelle prüfen.",
+    "decision_hint_alert": "Das Historienfenster meldet Alarm; Quellen prüfen und das Szenario mit aktuellen Marktdaten neu rechnen.",
+    "decision_hint_unknown": "Das Historienfenster hat noch kein erkennbares Signal gebildet; Unbekanntes nicht als normal behandeln.",
+    "decision_hint_source": "Der Quellenstatus ist nicht normal; erst Evidenz prüfen, dann das Szenario weiterverwenden.",
+    "decision_hint_watch": "Das Risiko liegt im Beobachtungsbereich; Schlüsselannahmen vor einem Neulauf prüfen.",
+    "decision_hint_ok": "Quellenstatus und Risikofenster lösen derzeit keine erneute Prüfung aus.",
+    "delivery_label": "Datenmodus",
+    "delivery_fallback": "Fallback",
+    "delivery_live": "Live",
+    "delivery_hint_fallback": "API-Fallback: {error}",
+    "delivery_hint_live": "Quellenstatus: {status} | Aktualität: {freshness} ({minutes} Min.)",
+    "risk_label": "Top-Risikosignal",
+    "risk_hint_none": "Noch kein belastbares History-Signal; unbekannte Evidenz ist kein normales Risiko.",
+    "risk_hint": "Stufe: {level} | Stand: {asOf} | Stichproben: {samples}",
+    "market_label": "Markt-Snapshot",
+    "market_value": "{brent} USD/bbl",
+    "market_hint": "Jet (global) {jet} USD/L | Jet (EU-Proxy) {jetEu} USD/L | Carbon {carbon} USD/tCO2",
+    "work_title": "Arbeitszugänge",
+    "work_why": "Diese Einstiege verbinden den aktuellen Marktstatus mit den prüfbaren Admin- und Preisansichten.",
+    "work_entries": [
+      {
+        "nav": "admin",
+        "label": "Admin-Kontrolle",
+        "value": "Erforderlich",
+        "hint": "Routenkosten, Policy-Parameter, Quellenpflege"
+      },
+      {
+        "nav": "prices",
+        "label": "Deutschland Kerosinseite",
+        "value": "Seite öffnen",
+        "hint": "Serverseitige Preisansicht für Brent / Jet global / EU-Jet-Proxy / Carbon mit 1d/7d/30d"
+      }
+    ],
+    "provenance_title": "Quellenherkunft",
+    "provenance_why": "Der Vertrauensstatus aller Zahlen auf diesem Bildschirm: gemessen, Proxy oder Fallback.",
+    "price_trends_title": "Preistrends",
+    "price_trends_why": "Der Snapshot ist nur ein Punkt; die 1d-/7d-/30d-Fenster zeigen, ob er ungewöhnlich ist.",
+    "capabilities_title": "Dashboard-Verantwortung",
+    "capabilities_why": "Diese Fähigkeitensammlung zeigt, welche Arbeitsbereiche das Cockpit abdeckt; sie ist selbst keine Marktentscheidung.",
+    "priorities": [
+      "Echtzeit-Marktdaten: Brent / Jet-Proxy / Carbon-Proxy",
+      "Einheitliche Szenarioberechnung: Preis, Förderung, CO2-Preis, Break-even",
+      "Admin-Steuerung: Routenannahmen, Policy-Parameter, Datenquellen",
+      "Export und Reporting: Diagramme, Snapshots, Szenariovergleich"
+    ],
+    "migration_title": "Migrationsregel",
+    "migration_why": "Diese Leitplanken erklären, wie ein sicherer Fallback und die nächste Ausbaustufe des Arbeitsmodells behandelt werden.",
+    "migration_items": [
+      "1. Erst vertikale End-to-End Slice für market + scenarios, dann Funktionsumfang erweitern.",
+      "2. Bei API-Ausfall bleibt eine sichere Fallback-Darstellung aktiv.",
+      "3. Als Nächstes Vergleichs- und Sweep-Ansichten auf dasselbe Workspace-Modell konsolidieren."
+    ],
+    "scenarios_title": "Aktuelle Szenarien",
+    "scenarios_why": "Gespeicherte Szenarien sind lokale Annahmen zum Vergleich und ersetzen keine fachliche oder beschaffungsseitige Freigabe.",
+    "scenarios_action": "",
+    "scenarios_empty": "Noch keine gespeicherten Szenarien. Lege ein Szenario über die API an, um CRUD Ende-zu-Ende zu prüfen.",
+    "pathways_title": "SAF-Pfad-Nettokosten und Quellenvertrauen",
+    "pathways_why": "Nettokosten und Spreads der Pfade aus dem aktuellen Marktschnitt, mit Quellentyp und Konfidenz.",
+    "pathways_signal": "Vergleichssignal: {signal}",
+    "ets_title": "CO2-Preisdruck auf fossiles Kerosin",
+    "ets_why": "EU ETS treibt SAF und Netzparität; hier zeigt sich stufenweise, wie stark fossiles Kerosin teurer wird.",
+    "policy_timeline_title": "Politik-Zeitlinie",
+    "policy_timeline_why": "Wann welche Regel greift, gemessen am Marktzeitpunkt oben - eine Frist, die schon vorbei ist, liest sich sonst wie eine künftige.",
+    "sources_matrix_title": "Quellenlage",
+    "sources_matrix_why": "Die Evidenz hinter dem Marktsnapshot: Live, Proxy, Fallback und Konfidenz bleiben sichtbar.",
+    "sources_matrix_live": "Live",
+    "sources_matrix_proxy": "Proxy",
+    "sources_matrix_fallback": "Fallback",
+    "sources_matrix_confidence": "Konfidenz",
+    "sources_matrix_review": "Prüfung nötig",
+    "sources_matrix_proxy_backed": "Proxy-gestützt",
+    "sources_matrix_healthy": "Gesund",
+    "sources_matrix_summary": "{posture} | Vollständigkeit {completeness}. Quellenprüfung für zeilenweise Wiederherstellung öffnen.",
+    "status_market_label": "Live-Marktstatus",
+    "status_detail": "Analyse-Kerosin: {jetSource}={jetPrice}/L · ETS €{ets}/t · Intervall {interval}s · nächste {eta} · Gesundheit {health}{runs}",
+    "status_health_ok": "ok",
+    "status_health_attention": "attention",
+    "status_runs": " · runs {ok}/{total}",
+    "status_snapshot": "Snapshot-Zeit",
+    "status_freshness": "Aktualität",
+    "status_source_overall": "Quellen insgesamt",
+    "status_spread": "Jet–Brent-Spread",
+    "status_sources_action": "Quellen ansehen →",
+    "status_lh_action": "LH Q2 2026 →",
+    "status_alert_action": "Details ansehen →",
+    "status_event_label": "Luftfahrtereignis · nur kuratierte Daten · as_of {asOf}",
+    "status_event_summary": "Bereinigtes operatives Ergebnis Q2 €{profit}m ({profitYoy}%) · zusätzliche Kerosinkosten €{kerosene}m · Streikkosten ca. €{strikes}m · Kostenweitergabe ca. {passThrough}% · erwartete Treibstoffkosten Gesamtjahr €{fuel} Mrd.",
+    "status_residual": "Residual exposure {exposure} · pass-through {passThrough}",
+    "footer_read_model_live": "Markt-Snapshot-API (Marktwerte, Quellenstatus und Aktualität)",
+    "footer_read_model_fallback": "Markt-Snapshot-API nicht erreichbar; es werden interne Ersatzwerte verwendet",
+    "footer_coverage_live": "Quellenabdeckung (Live, Proxy, Fallback und Konfidenz)",
+    "footer_coverage_fallback": "Quellenabdeckung nicht erreichbar; Fallback-Zusammenfassung aktiv ({error})",
+    "footer_risk": "Das Risikosignal wird aus der Bewegung im Markthistorienfenster abgeleitet, nicht vom Upstream geliefert",
+    "footer_scenarios": "Lokaler Szenariospeicher ({count} gespeicherte Szenarien)",
+    "method_label": "Quellen- und Methodenliste",
+    "limitations": [
+      "Bei gesunder Abdeckung werden Echtzeitwerte bevorzugt aus primären oder offiziellen Quellen übernommen.",
+      "Proxy-Werte und Fallback-Werte werden getrennt gekennzeichnet.",
+      "Konfidenz, Verzögerung und Degradierungsgrund sind auf der Quellen-Seite prüfbar.",
+      "Fallback-Werte halten das Cockpit verfügbar, werden aber nicht als Messung ausgegeben.",
+      "Das Risikosignal hängt von der Stichprobengröße im Historienfenster ab; kein Signal bedeutet nicht kein Risiko.",
+      "Gespeicherte Szenarien sind lokale Annahmen für Prüfung und Diskussion."
+    ]
   },
   "indicators": {
     "market_price": "SAF Preis",
@@ -95,6 +360,1045 @@
     "limitations": [
       "Diese Antworten beschreiben die beabsichtigte Funktion des aktuellen Deployments und ändern sich nicht mit Echtzeitdaten; die konkrete Bereitschaft steht auf der Admin-Seite.",
       "Die FAQ ersetzt nicht die aktuellen Zustände und Grenzen auf den Quellen-, Forschungs- oder Szenarioseiten."
+    ]
+  },
+  "prices": {
+    "meta_title": "Deutschland Kerosinpreis",
+    "meta_description": "Indexierbare serverseitig gerenderte Seite für Deutschland mit Brent, globalem Jet-Fuel, EU-Jet-Proxy, Carbon-Proxy und 1d/7d/30d-Änderung.",
+    "eyebrow": "Preise · Deutschland",
+    "title": "Deutschland Jet-Fuel Preis-Monitor",
+    "question": "Ist der aktuelle Deutschlandpreis für Jet-Fuel so weit abgewichen, dass Vertrag oder Hedging neu geprüft werden müssen?",
+    "signal_label": "Deutschland Jet-Fuel Entscheidungssignale",
+    "decision_label": "Entscheidungsdruck",
+    "decision_review_source": "Quelle prüfen",
+    "decision_revisit": "Vertrag/Hedge prüfen",
+    "decision_review": "Prüfung nötig",
+    "decision_hold": "Noch kein Anlass",
+    "decision_hint": "EU-Jet-Proxy {value} · {window30} {change} · Status {status}",
+    "decision_missing": "Für den EU-Jet-Proxy ist aktuell kein Wert verfügbar.",
+    "window_1d": "1T",
+    "window_7d": "7T",
+    "window_30d": "30T",
+    "na": "n/a",
+    "status_live": "live",
+    "status_proxy": "proxy",
+    "status_degraded": "degraded",
+    "status_fallback": "unbekannt",
+    "use_status_fallback": false,
+    "show_trend_chart": false,
+    "trend_title": "Preistrend",
+    "trend_why": "Ein einzelner Preis ist nur ein Punkt. Erst die 1T-, 7T- und 30T-Fenster zeigen, ob die Abweichung Vertrag oder Hedging neu prüfen lässt.",
+    "source_read_model": "Deutschland-Jet-Fuel-Read-Model (Brent, Jet-Fuel, EU-Jet-Proxy und Carbon-Proxy)",
+    "source_read_model_fallback": "Deutschland-Jet-Fuel-Read-Model nicht verfügbar; Fallback-Schätzungen werden verwendet ({error})",
+    "source_unknown_error": "unbekannter Grund",
+    "source_brent": "Brent-Quellenstatus",
+    "source_jet": "Globaler Jet-Quellenstatus",
+    "source_jet_eu": "EU-Jet-Proxy-Quellenstatus",
+    "source_carbon": "Carbon-Proxy-Quellenstatus",
+    "source_trend": "Preistrend-Historie (1T-, 7T-, 30T-Fenster)",
+    "source_trend_fallback": "Preistrend-Historie nicht verfügbar ({error})",
+    "method_label": "Methode für Quellen und Preisbewegungen",
+    "limitations": [
+      "Jet-Fuel-Preise sind Proxies und können von standortspezifischen Vertragswerten in Deutschland abweichen.",
+      "Der EU-Jet-Proxy kann bei Datenfeed-Ausfall vorübergehend auf die globale Jet-Serie zurückfallen; ein Fallback ist keine Messung.",
+      "Der Carbon-Proxy zeigt Richtlinien-Kostendruck und muss mit Route und Beimischungsannahmen gelesen werden.",
+      "Diese Seite unterstützt Entscheidungen, ist aber kein Ausführungsfeed; Beschaffungsentscheidungen müssen gegen Lieferantenangebote geprüft werden."
+    ]
+  },
+  "research": {
+    "meta_title": "Forschungswerkstatt",
+    "meta_description": "Deutsche JetScope-Forschungswerkstatt für AI-Research-Pipeline-Status, Signalanzahl, Konfidenz und Evidenzübergaben.",
+    "eyebrow": "AI-Forschungspipeline",
+    "title": "Forschungswerkstatt",
+    "question": "Repräsentieren die heutigen Forschungssignale ausreichend, warum sich der Markt bewegt?",
+    "signal_row_label": "Forschungsergebnisse",
+    "decision_brief_mode": "counts",
+    "summary_mode": "placeholder",
+    "cjk_title_template": "Forschungssignal {n}",
+    "panel_order": [
+      "status",
+      "decision",
+      "actions",
+      "signals"
+    ],
+    "pipeline_error_unknown": "unbekannte Ursache",
+    "metrics": {
+      "pipeline_status": "Pipeline-Status",
+      "signal_count": "Signalanzahl",
+      "signal_count_hint": "Positiv {positive} | Negativ {negative} | Neutral {neutral}",
+      "latest_signal": "Neuestes Signal",
+      "latest_none": "Kein Signal",
+      "latest_none_hint": "Für den aktuellen Prüfzeitraum ist kein persistiertes Forschungssignal verfügbar.",
+      "usage_boundary": "Nutzungsgrenze",
+      "boundary_enabled": "Evidenzebene",
+      "boundary_disabled": "Nur Grenze",
+      "boundary_hint": "Forschung erklärt mögliche Ursachen; sie ersetzt nie Markt-, Reserve-, Szenario- oder Quellenprüfung."
+    },
+    "pipeline": {
+      "disabled": {
+        "label": "Deaktiviert",
+        "detail": "Die Forschungspipeline ist deaktiviert. Diese Seite behauptet keine laufende AI-Analyse."
+      },
+      "waiting": {
+        "label": "Wartet auf Signale",
+        "detail": "Die Forschungs-API ist aktiviert, aber es gibt noch kein persistiertes Signal. Der tägliche Forschungsjob muss erst Evidenz liefern."
+      },
+      "not_found": {
+        "label": "Nicht bereitgestellt",
+        "detail": "Der Forschungsdienst ist noch nicht bereitgestellt oder in dieser Umgebung nicht auffindbar. Ein leeres Ergebnis ist kein Marktbefund."
+      },
+      "error": {
+        "label": "Fehler",
+        "detail": "Forschungs-API-Fehler: {message}. Forschungsergebnisse erst nach Wiederherstellung nutzen."
+      },
+      "ready": {
+        "label": "Aktiv",
+        "detail": "Die Forschungs-API ist aktiviert; diese Seite zeigt persistierte Signale aus dem aktuellen Prüfzeitraum."
+      }
+    },
+    "panels": {
+      "status": {
+        "title": "Forschungsstatus",
+        "why": "Konfiguration, Warten, fehlende Bereitstellung und Fehler müssen sichtbar getrennt bleiben, bevor ein Signal zitiert wird."
+      },
+      "decision": {
+        "title": "Entscheidungsnotiz",
+        "why": "Forschung ist erklärende Evidenz, keine autonome Empfehlung für Markt- oder Beschaffungsentscheidungen."
+      },
+      "signals": {
+        "title": "Signalliste",
+        "why": "Die einzelnen Signale zeigen Richtung, Quelle und Konfidenz statt nur eine aggregierte Aussage."
+      },
+      "actions": {
+        "title": "Evidenzaktionen",
+        "why": "Jedes Forschungssignal muss zurück in die Entscheidungskette und zur prüfbaren Quelle führen."
+      }
+    },
+    "impacts": {
+      "positive": "Positiv",
+      "negative": "Negativ",
+      "neutral": "Neutral",
+      "unknown": "Unbekannt"
+    },
+    "counts": {
+      "active": "Aktiv",
+      "positive": "Positiv",
+      "negative": "Negativ",
+      "neutral": "Neutral"
+    },
+    "confidence": "Konfidenz",
+    "summary_placeholder": "Für dieses Signal liegt noch keine geprüfte deutsche Zusammenfassung vor. Vor Nutzung im Bericht Originalquelle, Marktkontext und Quellenstatus gegenprüfen.",
+    "summary_en_cjk": "Für dieses Signal liegt noch keine geprüfte englische Zusammenfassung vor.",
+    "summary_en_missing": "Für dieses Signal liegt keine englische Zusammenfassung vor.",
+    "actions": [
+      {
+        "id": "reports",
+        "nav_id": "reports",
+        "suffix": "",
+        "label": "Berichtswerkstatt öffnen",
+        "description": "Forschungssignale zurück in Quellenstatus, Szenarien, Risikosignale und Berichtseinstiege einordnen."
+      },
+      {
+        "id": "sources",
+        "nav_id": "sources",
+        "suffix": "?filter=review",
+        "label": "Quellennachweise prüfen",
+        "description": "Marktprovenienz, Proxy-Annahmen, Fallback-Zeilen und Volatilität prüfen, bevor Forschungssignale zitiert werden."
+      },
+      {
+        "id": "admin",
+        "nav_id": "admin",
+        "suffix": "",
+        "label": "Startbereitschaft prüfen",
+        "description": "Forschungskonfiguration, Admin-Token und geschützte Refresh-Bereitschaft vor operativer Nutzung bestätigen."
+      }
+    ],
+    "footer": {
+      "source_signals_ok": "Forschungs-Signal-Read-Model (Richtung, Konfidenz und Veröffentlichungszeit)",
+      "source_signals_error": "Forschungs-Signal-API aktuell nicht verfügbar",
+      "source_pipeline": "Aktivierung und Bereitstellungsstatus der Forschungspipeline",
+      "method_label": "Quellen- und Methodenliste",
+      "limitations": [
+        "Forschung erklärt mögliche Ursachen; sie ersetzt keine Markt-, Reserve-, Szenario- oder Quellenprüfung.",
+        "Deaktiviert, wartend, nicht bereitgestellt oder fehlerhaft bedeutet: kein gültiger Datenstand. Der Zeitstempel kommt nur vom neuesten Signal.",
+        "Ein leeres Ergebnis ist kein Beleg dafür, dass sich der Markt nicht bewegt hat."
+      ]
+    }
+  },
+  "reports": {
+    "meta_title": "Berichtswerkstatt",
+    "meta_description": "Deutsche JetScope-Berichtswerkstatt für Quellenstatus, gespeicherte Szenarien, Risikosignale und Startprüfung vor Veröffentlichung.",
+    "eyebrow": "Berichtsbereitschaft",
+    "title": "Berichtswerkstatt",
+    "question": "Ist dieser Bericht belastbar genug, um jetzt als Entscheidungsgrundlage veröffentlicht zu werden?",
+    "signals_label": "Startbereitschaftssignale",
+    "number_unavailable": "Nicht verfügbar",
+    "readiness": {
+      "label": "Startposition",
+      "review": "Prüfung nötig",
+      "publish": "Veröffentlichungskandidat",
+      "hint_fallback": "Die Berichtswerkstatt kann rendern, aber der lokale API-Fallback ist aktiv; Quellen und Startbereitschaft vor Nutzung prüfen.",
+      "hint_source": "Quellenstatus ist {status}; vor Start oder Veröffentlichung zuerst Evidenz prüfen.",
+      "hint_ok": "Berichtseinstiege können aus dem aktuellen Read Model geprüft werden."
+    },
+    "source": {
+      "label": "Quellenstatus",
+      "ok": "gesund",
+      "degraded": "eingeschränkt",
+      "offline": "offline",
+      "unknown": "unbekannt",
+      "hint": "Konfidenz {confidence} | Fallback-Rate {fallback_rate} | {freshness} {minutes} Min."
+    },
+    "freshness": {
+      "fresh": "aktuell",
+      "stale": "veraltet",
+      "critical": "kritisch"
+    },
+    "risk": {
+      "label": "Risikosignal",
+      "none": "Keine Anomalie",
+      "hint": "{level} | {change}",
+      "empty": "Das Marktfenster hat noch kein priorisiertes Warnsignal erzeugt.",
+      "normal": "normal",
+      "watch": "Beobachtung",
+      "alert": "Alarm"
+    },
+    "scenarios": {
+      "label": "Szenarioanzahl",
+      "empty": "Noch kein gespeichertes Szenario.",
+      "placeholder": "Gespeichertes Szenario {n}"
+    },
+    "catalog": {
+      "title": "Berichtskatalog",
+      "why": "Jeder Berichtseinstieg und ob er an Live-Daten oder an eine statische Darstellung angebunden ist.",
+      "tipping_point": {
+        "title": "Tipping-Point-Bericht",
+        "description": "Hauptbericht, der Reserve-Druck, Kraftstoffökonomie, Airline-Entscheidungswahrscheinlichkeit und Forschungssignale zusammenführt.",
+        "status": "Mit aktuellem Read Model verbunden"
+      }
+    },
+    "actions": {
+      "title": "Vor dem Start",
+      "why": "Der nächste Schritt ist Evidenzprüfung, nicht Vermutung - jeder Einstieg führt zu etwas Nachprüfbarem.",
+      "tipping_point": {
+        "label": "Kipppunktbericht öffnen",
+        "description": "Die vollständigste SAF-gegen-Kerosin-Schwellen-Erzählung lesen."
+      },
+      "review_sources": {
+        "label": "Quellennachweise prüfen",
+        "description": "Fallback-, Proxy-, eingeschränkte und volatile Zeilen prüfen, bevor Berichtsergebnisse als Entscheidungsgrundlage genutzt werden."
+      },
+      "dashboard": {
+        "label": "Entscheidungscockpit öffnen",
+        "description": "Zum aktuellen Marktsnapshot, zur Quellenlage, zu Szenarien und zum wichtigsten Risikosignal zurückkehren."
+      },
+      "admin": {
+        "label": "Startbereitschaft prüfen",
+        "description": "Quellenabdeckung, Admin-Token und Forschungsgrundlagen vor Start oder Veröffentlichung bestätigen."
+      },
+      "research": {
+        "label": "Forschungswerkstatt öffnen",
+        "description": "Prüfen, ob Forschungssignale aktiv, leer, eingeschränkt oder erklärend nutzbar sind."
+      }
+    },
+    "footer": {
+      "source_live": "Markt-Snapshot-API (Quellenstatus, Konfidenz, Fallback-Rate, Aktualität)",
+      "source_fallback": "Markt-Snapshot-API nicht erreichbar; es werden interne Ersatzwerte verwendet",
+      "unknown_cause": "unbekannte Ursache",
+      "source_scenarios": "Lokaler Szenariospeicher ({count} gespeicherte Szenarien)",
+      "source_risk": "Das Risikosignal wird aus der Bewegung im Markthistorienfenster abgeleitet, nicht vom Upstream geliefert",
+      "method_label": "Quellen- und Methodenliste",
+      "limitations": [
+        "„Veröffentlichungskandidat“ heißt, dass der Datenpfad prüfbar ist - nicht, dass die Aussage fachlich geprüft wurde.",
+        "Das Risikosignal hängt von der Stichprobengröße im Historienfenster ab. Kein Alarm bei dünner Stichprobe heißt nicht kein Risiko.",
+        "Gespeicherte Szenarien sind lokale Annahmen für Prüfung und Diskussion; sie ersetzen keine Beschaffungsfreigabe."
+      ]
+    }
+  },
+  "admin": {
+    "show_admin_ops": false,
+    "eyebrow": "Startbetrieb",
+    "title": "Startbereitschaft",
+    "question": "Kann dieses Backend jetzt sicher schreiben und in Betrieb gehen?",
+    "signals_label": "Signale zur Startentscheidung",
+    "decision_label": "Startentscheidung",
+    "decision_hint_error": "Readiness-API nicht verfügbar: {error}",
+    "decision_hint_ready": "Keine Voraussetzung blockiert den Start.",
+    "decision_hint_blocked": "Blocker vor Schreibvorgängen oder Start beheben.",
+    "blocking_label": "Blocker",
+    "blocking_hint": "Jeder Blocker verhindert einen sicheren Start.",
+    "review_label": "Prüfpunkte",
+    "review_hint": "Nicht zwingend blockierend, aber vor dem Start zu bestätigen.",
+    "environment_label": "Umgebungskontext",
+    "environment_hint": "Schema {mode}; die Aussage gilt nur für diese Umgebung.",
+    "scope_title": "Geschützte Operationen",
+    "scope_why": "Diese Grenzen zeigen, welche Aktionen hier nur geprüft und welche ausschließlich in der primären Konsole ausgeführt werden.",
+    "scope_items": [
+      "Geschützte Schreibvorgänge, Aktualisierungen und Parameteränderungen bleiben in der primären Admin-Konsole.",
+      "Diese deutsche Ansicht ist nur lesend und zeigt keine geheimen Werte an.",
+      "Die Prüfungen zeigen, ob Quellen-, Forschungs-, Token- oder Datenbankarbeit vor dem Start noch offen ist."
+    ],
+    "scope_bullet": "",
+    "contract_title": "Backend-Vertrag",
+    "contract_why": "Der Readiness-Vertrag legt fest, welche Voraussetzungen geprüft werden, ohne geheime Werte offenzulegen.",
+    "contract_items": [
+      {
+        "code": "",
+        "text": "Datenbank-Bootstrap, Markt-Snapshot, Quellenabdeckung, Admin-Token-Konfiguration und Forschungssignal-Status kommen aus dem API-Readiness-Vertrag."
+      },
+      {
+        "code": "",
+        "text": "Geheime Werte werden von Readiness nicht zurückgegeben und von dieser deutschen Seite nicht abgefragt."
+      },
+      {
+        "code": "",
+        "text": "Parameterbearbeitung, manuelle Aktualisierung und Token-Eingabe bleiben in der primären Admin-Konsole."
+      }
+    ],
+    "checks_title": "Startbereitschaftsprüfungen",
+    "checks_why": "Die Einzelprüfungen zeigen, welche Voraussetzung den Start blockiert oder vorab bestätigt werden muss.",
+    "badge_ready": "Bereit",
+    "badge_not_ready": "Nicht bereit",
+    "badge_degraded": "Eingeschränkt",
+    "env_badge": "{environment} | {apiPrefix} | Schema {schemaBootstrapMode}",
+    "error_banner": "Readiness-API ist nicht verfügbar: {error}",
+    "config_keys_label": "Relevante Konfiguration:",
+    "ops_title": "Schreibarbeitsbereich bleibt in der primären Konsole.",
+    "ops_why": "Diese deutsche Ansicht ist nur lesend; Parameter, Aktualisierung und Token bleiben in der primären Admin-Konsole.",
+    "source_unavailable": "Readiness-API derzeit nicht verfügbar",
+    "source_available": "Serverseitig berechnete Readiness-API-Prüfungen",
+    "source_contract": "Backend-Datenvertrag: route_catalog / policy_parameters / market_snapshots / scenarios",
+    "method_label": "Quellen und Datenkonventionen öffnen",
+    "limitations": [
+      "Diese Seite zeigt die Bereitschaft der aktuellen Deployment-Umgebung, nicht die Obergrenze der Produktfähigkeiten.",
+      "Die Prüfungen werden serverseitig aus Konfiguration und Datenverträgen abgeleitet; geschützte Schreibvorgänge benötigen weiterhin eine gültige Admin-Berechtigung."
+    ],
+    "readiness_status": {
+      "ready": "Startkandidat",
+      "degraded": "Lauffähig, Prüfung nötig",
+      "not_ready": "Nicht bereit"
+    },
+    "readiness_status_unknown": "Nicht erkannter Status: {status}",
+    "check_status": {
+      "ok": "Gesund",
+      "degraded": "Eingeschränkt",
+      "missing": "Konfiguration fehlt",
+      "disabled": "Deaktiviert",
+      "missing_credentials": "Zugangsdaten fehlen",
+      "mock": "Mock-Modus",
+      "seed": "Seed-Daten",
+      "error": "Fehler"
+    },
+    "check_status_unknown": "Nicht erkannt: {status}",
+    "check_labels": {
+      "database": "Datenbank",
+      "market_snapshot": "Markt-Snapshot",
+      "source_coverage": "Quellenabdeckung",
+      "admin_token": "Admin-Token",
+      "ai_research_pipeline": "AI-Research-Pipeline"
+    },
+    "impact_blocking": "Blockiert Start",
+    "impact_review": "Prüfung nötig",
+    "impact_ok": "Startbereit",
+    "impact_unknown": "Nicht erkannter Status",
+    "detail_cjk_fallback": "Diese Voraussetzung in der primären Admin-Konsole prüfen.",
+    "detail_empty": "Die API meldet keine weiteren Details für diese Prüfung.",
+    "detail_market_count": "{count} Marktmesswerte verfügbar.",
+    "detail_source_completeness": "Vollständigkeit ",
+    "detail_source_metrics": "Messwerte ",
+    "detail_by_key": {
+      "database": "Datenbankprüfung ohne zusätzliche Hinweise.",
+      "market_snapshot": "Markt-Snapshot prüfen und bei Bedarf aktualisieren.",
+      "source_coverage": "",
+      "admin_token": "JETSCOPE_ADMIN_TOKEN ist nicht konfiguriert; geschützte Schreibvorgänge und Marktaktualisierung bleiben gesperrt.",
+      "ai_research_pipeline": "JETSCOPE_AI_RESEARCH_ENABLED ist false; Erzeugung von Forschungssignalen ist deaktiviert."
+    },
+    "actions": {
+      "source_coverage": {
+        "label_ok": "Quellen öffnen",
+        "label_fix": "Quellen beheben",
+        "nav_id": "sources",
+        "query": "?filter=review",
+        "target_locale": ""
+      },
+      "market_snapshot": {
+        "label_ok": "Marktquellen öffnen",
+        "label_fix": "Marktquellen öffnen",
+        "nav_id": "sources",
+        "query": "",
+        "target_locale": ""
+      },
+      "admin_token": {
+        "label_ok": "Primäre Admin-Konsole öffnen",
+        "label_fix": "Primäre Admin-Konsole öffnen",
+        "nav_id": "admin",
+        "query": "",
+        "target_locale": "zh"
+      },
+      "ai_research_pipeline": {
+        "label_ok": "Forschungspfad prüfen",
+        "label_fix": "Forschungspfad prüfen",
+        "nav_id": "admin",
+        "query": "",
+        "target_locale": "zh"
+      },
+      "default": {
+        "label_ok": "Zur Übersicht",
+        "label_fix": "Zur Übersicht",
+        "nav_id": "dashboard",
+        "query": "",
+        "target_locale": ""
+      }
+    }
+  },
+  "sources": {
+    "meta_title": "Quellenprüfung",
+    "meta_description": "Deutsche JetScope-Ansicht zur Prüfung von Marktdatenquellen, Fallback-Status, Vertrauen, Verzögerung und Wiederherstellungsaktionen.",
+    "eyebrow": "Quellenprüfung",
+    "title": "Quellenprüfung",
+    "question": "Welche Markteingaben können aktuell noch nicht direkt als Entscheidungsgrundlage verwendet werden?",
+    "signal_row_label": "Vertrauenssignale",
+    "metrics": {
+      "needs_review": {
+        "label": "Prüfzeilen",
+        "hint_open": "{fallback} Fallback-, {degraded} eingeschränkte oder proxy-/volatilitätsmarkierte Zeilen.",
+        "hint_clear": "Keine Zeile braucht aktuell zusätzliche Prüfung."
+      },
+      "trust_posture": {
+        "label": "Vertrauenshaltung"
+      },
+      "average_confidence": {
+        "label": "Durchschnittliche Konfidenz",
+        "hint": "Abdeckung {completeness} · {freshness}"
+      },
+      "input_mix": {
+        "label": "Input-Struktur",
+        "value": "{live} live",
+        "hint": "Proxy {proxy} · Fallback {fallback} · eingeschränkt {degraded}"
+      }
+    },
+    "trust_posture": {
+      "review": "Degradierung prüfen",
+      "proxy": "Mit Proxy-Quellen",
+      "ready": "Live-Quellen bereit"
+    },
+    "trust_hint": {
+      "review": "Entscheidungsunterstützung: Degradierung prüfen",
+      "proxy": "Entscheidungsunterstützung: mit Proxy-Quellen",
+      "ready": "Entscheidungsunterstützung: Live-Quellen bereit"
+    },
+    "freshness": {
+      "unknown": "Aktualität unbekannt",
+      "latest": "Neueste Quelle {lag}"
+    },
+    "filters": {
+      "all": {
+        "label": "Alle",
+        "hint": "Vollständige Quellenmatrix"
+      },
+      "review": {
+        "label": "Prüfen",
+        "hint": "Fallback, eingeschränkte, Proxy- oder Volatilitätszeilen"
+      },
+      "fallback": {
+        "label": "Fallback",
+        "hint": "Zeilen mit Fallback- oder Seed-Werten"
+      },
+      "proxy": {
+        "label": "Proxy",
+        "hint": "Abgeleitete oder proxybasierte Schätzungen"
+      },
+      "live": {
+        "label": "Live",
+        "hint": "Primäre oder offizielle Live-Quellen"
+      }
+    },
+    "surfaces": {
+      "brent_usd_per_bbl": "Brent",
+      "jet_usd_per_l": "Jet Fuel",
+      "carbon_proxy_usd_per_t": "Carbon-Proxy",
+      "jet_eu_proxy_usd_per_l": "EU-Jet-Proxy",
+      "rotterdam_jet_fuel_usd_per_l": "Rotterdam Jet Fuel",
+      "eu_ets_price_eur_per_t": "EU ETS",
+      "germany_premium_pct": "Deutschland-Premium"
+    },
+    "trust": {
+      "live": "Live",
+      "proxy": "Proxy",
+      "fallback": "Fallback",
+      "degraded": "Eingeschränkt"
+    },
+    "status": {
+      "ok": "Gesund",
+      "seed": "Seed-Fallback",
+      "fallback": "Fallback",
+      "error": "Fehler",
+      "unknown": "Unbekannt"
+    },
+    "alert": {
+      "alert": "Alarm",
+      "watch": "Beobachtung",
+      "normal": "Normal"
+    },
+    "source_type": {
+      "live": "Primär oder offiziell",
+      "proxy": "Proxy oder abgeleitet",
+      "fallback": "Fallback-Pfad",
+      "degraded": "Untersuchung nötig"
+    },
+    "read_model_literals": {
+      "无数据": "Keine Daten",
+      "覆盖不可用": "Abdeckung nicht verfügbar",
+      "Brent 派生回退": "Brent-abgeleiteter Fallback"
+    },
+    "read_model_fallbacks": {
+      "no_data": "Keine Daten",
+      "coverage_unavailable": "Abdeckung nicht verfügbar"
+    },
+    "read_model_replacements": {
+      "派生回退": "abgeleiteter Fallback",
+      "回退": "Fallback"
+    },
+    "panels": {
+      "provenance": {
+        "title": "Quellenherkunft",
+        "why": "Wie viel der aktuellen Momentaufnahme gemessen, Proxy oder Fallback ist, entscheidet, ob eine Zeile direkt zitiert werden kann."
+      },
+      "coverage": {
+        "title": "Quellenabdeckung",
+        "why": "Der Abdeckungsstatus zeigt, welche kanonischen Kennzahlen nachvollziehbare Eingaben haben, damit eine Lücke nicht als vollständige Marktsicht gelesen wird."
+      },
+      "market_health": {
+        "title": "Market-Refresh-Gesundheit",
+        "why": "Die Gesundheit der Aktualisierungsschleife entscheidet, ob die Quellentabelle ein aktueller Snapshot ist oder vom erwarteten Rhythmus abgewichen ist."
+      },
+      "recovery": {
+        "title": "Wiederherstellungsaktionen",
+        "why": "Eingeschränkte Zeilen werden zu einer operativen Checkliste, damit eine Datenlücke nicht nur als Label stehen bleibt."
+      },
+      "matrix": {
+        "title": "Quellenmatrix",
+        "why": "Jede Zeile verbindet Quelle, Zeit, Verzögerung, Wert und Aktion, damit Markteingaben vor ihrer Verwendung prüfbar bleiben."
+      }
+    },
+    "market_health": {
+      "line1": "Intervall {interval}s · Alter {age} · nächstes ETA {eta} · Status",
+      "line2": "Läufe {ok}/{total}",
+      "success": " · Erfolg {rate}%",
+      "unavailable": "/v1/market/health konnte nicht geladen werden. Bitte prüfen, ob die API läuft und einen Refresh-Lauf hat."
+    },
+    "recovery": {
+      "review_badge": "Prüfzeilen {count}",
+      "priority_badge": "Priorisierte Zeilen {count}",
+      "open_admin": "Admin-Aktualisierung öffnen",
+      "show_review": "Prüfzeilen anzeigen",
+      "back_dashboard": "Zurück zum Dashboard",
+      "open_action": "Aktion öffnen",
+      "empty": "Keine Fallback- oder Degradierungszeile ist aktuell kritisch. Proxy-Zeilen sollten vor größeren Preis-, Einkaufs- oder Offenlegungsentscheidungen trotzdem manuell geprüft werden."
+    },
+    "review_actions": {
+      "critical": {
+        "label": "Aktualisieren und verifizieren",
+        "detail": "Nach konfiguriertem Admin-Token den Aktualisierungspfad auslösen und hier prüfen, ob die Kennzahl den Fallback- oder Fehlerzustand verlässt."
+      },
+      "review": {
+        "label": "Proxy-Annahmen prüfen",
+        "detail": "Vor relevanten Preis-, Einkaufs- oder Offenlegungsentscheidungen Originalnotierung, Policy-Basis und Berichtstext gegenprüfen."
+      },
+      "normal": {
+        "label": "Snapshot-Nachweis sichern",
+        "detail": "Generierungszeit, Vertrauen und Quellenzustand dokumentieren, bevor diese Kennzahl in eine wesentliche Entscheidung einfließt."
+      }
+    },
+    "reasons": {
+      "fallback": "Live-Abdeckung ist nicht verfügbar oder ein Fallback wurde genutzt.",
+      "status": "Quellenstatus ist {status}.",
+      "proxy": "Proxy oder abgeleitete Kennzahl; Annahmen vor wesentlicher Nutzung prüfen.",
+      "alert": "Jüngste Volatilität ist als {alert} markiert.",
+      "ok": "Primäre oder offizielle Quelle ohne Degradierungsmarkierung."
+    },
+    "table": {
+      "surface": "Kennzahl",
+      "source": "Quelle",
+      "trust": "Vertrauen",
+      "scope": "Geltung",
+      "confidence": "Konfidenz",
+      "as_of": "Stand",
+      "lag": "Verzögerung",
+      "status": "Status",
+      "fallback": "Fallback",
+      "value": "Wert",
+      "change_1d": "1T",
+      "change_7d": "7T",
+      "change_30d": "30T",
+      "volatility": "Volatilität",
+      "trend": "Trend",
+      "action": "Aktion",
+      "reason": "Begründung",
+      "empty": "Keine Quellenzeilen passen zu diesem Filter.",
+      "focus": "Fokussieren",
+      "record": "Dokumentieren",
+      "handle": "Bearbeiten",
+      "trend_alt": "{surface} Trend",
+      "na": "n/a",
+      "showing": "Anzeige {visible} / {total}",
+      "generated": "Generiert am {when}",
+      "no_stamp": "Generierungszeit ist kein Datenstand",
+      "fallback_note": " | zeigt Fallback-Schätzungen, weil Live-Abdeckung nicht verfügbar ist",
+      "focus_banner": "Fokus von einer anderen Ansicht:",
+      "clear_focus": "Zurücksetzen"
+    },
+    "footer": {
+      "source_ok": "Quellen-Read-Model (Abdeckung, Konfidenz, Verzögerung, Fallback- und Prüfstatus)",
+      "source_fallback": "Quellen-Read-Model nicht verfügbar; Fallback-Schätzungen werden verwendet ({error})",
+      "health_ok": "Market-Refresh-Health-API",
+      "health_unavailable": "Market-Refresh-Health-API ist derzeit nicht verfügbar",
+      "unknown_error": "unbekannter Grund",
+      "method_label": "Methode der Quellenabdeckung und Prüfung",
+      "limitations": [
+        "Der Quellenstatus beschreibt die Qualität der Eingabe, nicht die Gültigkeit jedes Werts für jeden Flughafen, Vertrag oder Trade.",
+        "Proxy-, abgeleitete, Fallback- und eingeschränkte Zeilen müssen vor wesentlichen Preis-, Einkaufs- oder Offenlegungsentscheidungen manuell geprüft werden.",
+        "Die Fallback-Generierungszeit ist keine Beobachtungszeit; deshalb wird sie nicht als Datenstand ausgegeben."
+      ]
+    }
+  },
+  "scenarios": {
+    "meta_title": "Szenario-Workbench",
+    "meta_description": "Deutsche JetScope-Ansicht für gespeicherte SAF-Übergangsannahmen, Marktkontext, Risikosignale und geschützte Schreibgrenzen.",
+    "eyebrow": "Szenarioprüfung",
+    "title": "Szenario-Workbench",
+    "question": "Repräsentieren die gespeicherten Annahmen noch den aktuellen Markt?",
+    "signal_row_label": "Szenarioentscheidung",
+    "policy_target_methods": {
+      "saf": "Verbindliches RefuelEU-SAF-Beimischungsziel (gesetzliche Vorgabe, keine Szenarioannahme)",
+      "synthetic": "Verbindliches RefuelEU-Beimischungsziel für synthetischen Flugkraftstoff (gesetzliche Vorgabe, keine Szenarioannahme)"
+    },
+    "transition_signal": {
+      "label": "Übergangssignal",
+      "hint": "Aktuelle Kipppunkt-Einschätzung der SAF-Kosten gegenüber fossilem Kerosin.",
+      "hint_fallback": "Die Kipppunkt-Schnittstelle hat kein Ergebnis geliefert; die aktuelle Aussage stammt aus eingebauten Annahmen.",
+      "saf_advantaged": "SAF ist im Vorteil",
+      "switch_window": "Wechselfenster offen",
+      "fossil_advantaged": "SAF bleibt unwirtschaftlich",
+      "needs_review": "Prüfung nötig"
+    },
+    "data_posture": {
+      "label": "Datenlage",
+      "connected": "Daten angebunden",
+      "partial": "Teilweise Annahmen",
+      "assumed": "Eingebaute Annahmen",
+      "hint": "{count} zentrale Eingaben nutzen Annahmen oder nicht verfügbare Daten.",
+      "hint_fallback": "Der Markt-Snapshot-Fallback ist aktiv; Zahlen auf der Seite sind keine frisch beobachteten Marktfakten."
+    },
+    "airline_signal": {
+      "label": "Airline-Entscheidungssignal",
+      "hint": "Reserve, CO2-Preis und Kerosin werden in diskutierbare Airline-Handlungswahrscheinlichkeiten übersetzt.",
+      "switch_window": "Wechselfenster offen",
+      "capacity_stress": "Kapazitätsdruck dominant",
+      "incremental": "Schrittweise Anpassung",
+      "needs_review": "Prüfung nötig"
+    },
+    "reserve": {
+      "label": "Reserveabdeckung",
+      "weeks": "{weeks} Wochen",
+      "needs_review": "Prüfung nötig",
+      "hint": "Quelle {source} · Konfidenz {confidence}%",
+      "hint_fallback": "Echtzeit-Reservedaten sind nicht verfügbar; die aktuelle Wochenzahl ist nur eine editierbare Szenarioannahme."
+    },
+    "assumption_posture": {
+      "label": "Annahmenstatus",
+      "unreliable": "Nicht belastbar",
+      "reassess": "Neu bewerten",
+      "review": "Prüfen",
+      "usable": "Vertretbar",
+      "hint_fallback": "Der Markt-Read-Model-Fallback macht die gespeicherten Annahmen nicht automatisch belastbar.",
+      "hint_review": "Quellenlage, Risiko oder fehlende Szenarien verlangen eine Prüfung vor der Übernahme.",
+      "hint_ok": "Aktuelle Quellenlage und Risikofenster geben keinen unmittelbaren Prüfhinweis."
+    },
+    "saved_scenarios": {
+      "label": "Gespeicherte Szenarien",
+      "hint": "Workspace-Annahmen stehen für Vergleich und Review bereit.",
+      "hint_empty": "Noch kein gespeichertes Szenario; neues Szenario in der primären Arbeitsfläche anlegen."
+    },
+    "market_context": {
+      "label": "Marktkontext",
+      "value": "{brent} USD/bbl",
+      "hint": "Jet {jet} USD/L | EU-Jet-Proxy {eu} USD/L | Carbon {carbon} USD/tCO2"
+    },
+    "risk_signal": {
+      "label": "Höchstes Risikosignal",
+      "none": "Keine Anomalie",
+      "none_hint": "Das Marktfenster hat noch kein priorisiertes Warnsignal erzeugt.",
+      "hint": "{level} | Stichproben {samples} | Stand {asOf}",
+      "level_normal": "normal",
+      "level_watch": "Beobachtung",
+      "level_alert": "Alarm"
+    },
+    "source_status": {
+      "ok": "gesund",
+      "degraded": "eingeschränkt",
+      "offline": "offline",
+      "unknown": "unbekannt"
+    },
+    "unknown_cause": "unbekannte Ursache",
+    "not_available": "n/a",
+    "readiness_panel": {
+      "title": "Übergangsüberwachung",
+      "why": "Kraftstoffpreis, CO2-Preis, Reservedruck und Politikziele in einer Arbeitsfläche prüfen, welche SAF-Pfade nah an der Umsetzbarkeit liegen."
+    },
+    "registry_panel": {
+      "title": "Szenarioverwaltung",
+      "why": "Vom Team bestätigte Übergangsannahmen speichern und prüfen; geschützte Schreibvorgänge bleiben in der primären Arbeitsfläche."
+    },
+    "capabilities_panel": {
+      "title": "Workspace-Fähigkeiten",
+      "why": "Diese Fähigkeiten beschreiben, wie Szenarien genutzt werden können, ohne Workflow-Text als Marktaussage zu lesen."
+    },
+    "capabilities": [
+      {
+        "title": "Annahmen speichern",
+        "body": "Ölpreis, CO2-Preis, Subventionen und Streckenkosten als wiederverwendbare Entscheidungsversionen speichern."
+      },
+      {
+        "title": "Druck vergleichen",
+        "body": "Aktuellen Markt, Reservedruck und Politikziele gegenüberstellen und prüfen, welcher Pfad zuerst tragfähig wird."
+      },
+      {
+        "title": "Sensitivität scannen",
+        "body": "Kraftstoff, CO2-Preis und Subventionen im Bereich scannen und die einflussreichsten Eingaben finden."
+      }
+    ],
+    "duties_panel": {
+      "title": "Seitenzuständigkeit",
+      "why": "Die Auswahlfrage der Szenarioseite von Cockpit, Krisenmonitor und Quellenprüfung trennen."
+    },
+    "duties": [
+      "Echtzeitpreise stehen im Entscheidungscockpit und beantworten, was gerade passiert.",
+      "Der Krisenmonitor erklärt die Druckquelle und beantwortet, warum gehandelt werden muss.",
+      "Die Szenario-Arbeitsfläche speichert Annahmen und Vergleiche und beantwortet, wie als Nächstes gewählt wird.",
+      "Die Quellenprüfung auf der Quellenseite beantwortet, ob die Beweiskette der Zahlen belastbar genug ist."
+    ],
+    "assumptions_panel": {
+      "title": "Szenarioannahmen",
+      "why": "Gespeicherte Workspace-Datensätze zeigen, welche Annahmen für Vergleich und Review verfügbar sind.",
+      "empty": "Noch keine gespeicherten Annahmen verfügbar. Nutze den primären Szenario-Editor, um überprüfbare Fälle für Preis-, Reserve-, Routen- und Policy-Diskussionen anzulegen."
+    },
+    "scenario_name_placeholder": "Gespeichertes Szenario {index}",
+    "context_panel": {
+      "title": "Entscheidungskontext",
+      "why": "Szenarien werden erst mit aktueller Evidenz entscheidungsrelevant; Fallbacks und fehlende Signale müssen sichtbar bleiben."
+    },
+    "context_paragraphs": [
+      "Szenarien sind Evidenzdatensätze für Review und Teamdiskussion; sie ersetzen keine Beschaffungsfreigabe, Quellenvalidierung oder geschützte Admin-Konfiguration.",
+      "Vor dem Vergleich von Annahmen prüfen, ob Quellenabdeckung und Startbereitschaft Fallbacks oder deaktivierte Systemteile sichtbar machen."
+    ],
+    "delivery_fallback": "Lokaler API-Fallback ist aktiv; Annahmen vor Nutzung mit Quellenprüfung und Startbereitschaft abgleichen.",
+    "delivery_live": "Quellenstatus: {status} | Aktualität {minutes} Min.",
+    "review_panel": {
+      "title": "Review-Ablauf",
+      "why": "Die nächsten Schritte führen von gespeicherten Annahmen zurück zu Evidenz, Startbereitschaft und geschützten Schreibgrenzen."
+    },
+    "write_boundary_label": "Geschützte Schreibgrenze",
+    "write_boundary_body": "Erstellen, Aktualisieren und Löschen bleiben in der primären Szenario-Arbeitsfläche.",
+    "actions": [
+      {
+        "id": "primary_editor",
+        "label": "Primären Szenario-Editor öffnen",
+        "description": "Szenarien in der primären Arbeitsfläche erstellen, aktualisieren oder löschen; Schreibvorgänge bleiben dort durch den Admin-Token geschützt."
+      },
+      {
+        "id": "sources",
+        "label": "Quellennachweise prüfen",
+        "description": "Fallback-, Proxy-, eingeschränkte und volatile Zeilen prüfen, bevor gespeicherte Annahmen für Entscheidungen genutzt werden."
+      },
+      {
+        "id": "dashboard",
+        "label": "Entscheidungscockpit öffnen",
+        "description": "Zum Live-Marktsnapshot, zur Quellenlage und zum wichtigsten Risikosignal zurückkehren."
+      },
+      {
+        "id": "admin",
+        "label": "Startbereitschaft prüfen",
+        "description": "Bestätigen, ob geschützte Schreibvorgänge, Quellenabdeckung und Forschungsgrundlagen einsatzbereit sind."
+      }
+    ],
+    "source_dashboard_fallback": "Markt-Snapshot-API nicht erreichbar; es werden interne Ersatzwerte verwendet",
+    "source_dashboard_live": "Markt-Snapshot-API (Quellenstatus, Konfidenz, Fallback-Rate und Aktualität)",
+    "source_tipping_fallback": "Kipppunktanalyse nicht erreichbar; es werden eingebaute Szenarioannahmen verwendet",
+    "source_tipping_live": "Kipppunktanalyse (SAF-Kostensignal aus Markteingaben abgeleitet)",
+    "source_airline_fallback": "Airline-Entscheidungsanalyse nicht erreichbar; es werden eingebaute Szenarioannahmen verwendet",
+    "source_airline_live": "Airline-Entscheidungsanalyse (Handlungswahrscheinlichkeiten aus Markt- und Reserveeingaben abgeleitet)",
+    "source_reserve_live": "Reservesignal ({source})",
+    "source_reserve_fallback": "Reservesignal nicht verfügbar; es wird eine editierbare Wochenannahme verwendet",
+    "source_store": "Lokaler Szenariospeicher (gespeicherte Teamannahmen, keine Marktmessung)",
+    "source_store_count": "Lokaler Szenariospeicher ({count} gespeicherte Szenarien)",
+    "source_policy_live": "RefuelEU-Politikziel-Schnittstelle (gesetzliche Beimischungsvorgaben)",
+    "source_policy_empty": "RefuelEU-Politikziele wurden noch nicht zurückgegeben",
+    "source_risk": "Das Risikosignal wird aus der Bewegung im Markthistorienfenster abgeleitet, nicht vom Upstream geliefert",
+    "method_label": "Quellen- und Methodenliste",
+    "limitations": [
+      "Gespeicherte Szenarien sind lokale Annahmen für Prüfung und Diskussion; sie ersetzen keine Beschaffungsfreigabe.",
+      "Ein Fallback-Read-Model erhält die Seite sichtbar, liefert aber keinen gültigen Datenstand für die enthaltenen Ersatzwerte.",
+      "Kein Risikosignal bei dünner Stichprobe heißt nicht, dass kein Risiko besteht.",
+      "Die geschützte Schreibgrenze liegt in der primären Szenario-Arbeitsfläche."
+    ]
+  },
+  "crisis": {
+    "show_price_chart": false,
+    "show_reserves_strip": false,
+    "show_event_timeline": false,
+    "show_simulator": false,
+    "show_research_brief": false,
+    "show_zh_subpage_links": false,
+    "meta_title": "Krisenbrief",
+    "meta_description": "Deutscher JetScope-Krisenmonitor für EU-Kerosin-Reservestress, Quellenvertrauen, Kippereignisse und Forschungsstatus.",
+    "eyebrow": "Krisenmonitor",
+    "title": "Krisenbrief",
+    "question": "Ist der Reservestress hoch genug, um jetzt eine operative Entscheidung zu ändern?",
+    "signals_label": "Krisensignale",
+    "na": "n/a",
+    "stress": {
+      "critical": "kritisch",
+      "elevated": "erhöht",
+      "guarded": "wachsam",
+      "normal": "normal",
+      "unknown": "Prüfung"
+    },
+    "source_type": {
+      "official": "amtliche Quelle",
+      "manual": "manuelle Schätzung",
+      "derived": "modellabgeleitet",
+      "unknown": "Szenariobasis"
+    },
+    "confidence": {
+      "missing": "kein Vertrauen",
+      "high": "hohes Vertrauen",
+      "medium_high": "mittleres bis hohes Vertrauen",
+      "medium": "mittleres Vertrauen",
+      "unavailable": "nicht verfügbar"
+    },
+    "signal": {
+      "saf_cost_advantaged": "SAF kostenseitig im Vorteil",
+      "switch_window_opening": "Wechselfenster öffnet sich",
+      "fossil_still_advantaged": "fossiles Kerosin weiter im Vorteil",
+      "unknown": "Szenariobasis"
+    },
+    "source_status": {
+      "ok": "gesund",
+      "degraded": "eingeschränkt",
+      "offline": "offline",
+      "unknown": "unbekannt"
+    },
+    "research_posture": {
+      "disabled": "deaktivierte Grenze",
+      "empty": "wartet auf Signale",
+      "backed": "mit Signalen belegt"
+    },
+    "monitor": {
+      "decision_label": "Entscheidungssignal",
+      "decision_hint": "{status} · fossiler Kerosinanker ${price}/L",
+      "reserve_connected": "Reservedaten verbunden",
+      "reserve_baseline": "Szenariobasis wird verwendet",
+      "coverage_label": "Reserveabdeckung",
+      "coverage_weeks": "{weeks} Wochen",
+      "coverage_missing": "Neuverbindung nötig",
+      "coverage_hint": "Stressstufe: {stress} · {source}",
+      "coverage_source_missing": "keine Live-Reservequelle verbunden",
+      "reserve_confidence_label": "Reservevertrauen",
+      "reserve_confidence_hint": "{confidence} · Quellentyp: {source_type}",
+      "market_confidence_label": "Marktvertrauen",
+      "market_confidence_hint": "Gesamtvertrauen des Marktsnapshots, das entscheidet, ob die Preistreppe zitierbar ist",
+      "actions_title": "Nächste Schritte",
+      "actions_why": "Zuerst die Reserveverlässlichkeit prüfen, dann die SAF-Wirtschaftlichkeit — den ersten Schritt nicht überspringen.",
+      "reserves_panel_title": "EU-Kerosin-Reserveabdeckung",
+      "reserves_panel_why": "Die Reservewochen tragen die Krisenerzählung. Unter der Schwelle beschleunigen sich Preis- und Politikreaktionen zugleich.",
+      "timeline_title": "SAF-Kreuzungszeitleiste",
+      "timeline_why": "Den Moment festhalten, in dem die effektiven SAF-Kosten das fossile Kerosin wirklich überqueren — nicht die Modellprognose.",
+      "research_title": "Forschungsentscheidungsschicht",
+      "research_why": "Erklärt, warum die Zahlen oben sich bewegen. Das Signal selbst ist nicht die Schlussfolgerung, sondern ihr Grund.",
+      "chart_title": "Kerosin- und SAF-Preistreppe",
+      "chart_why": "Fossiler Anker, kohlenstoffbereinigte Effektivkosten und Nettokostenspannen der Pfade — es geht um den Abstand, nicht um den Absolutwert.",
+      "simulator_title": "Kipppunktsimulator",
+      "simulator_why": "API-Modell aus Kraftstoffpreis, CO2-Preis, Reservestress und Pfadökonomie; zum Testen, wann die Schlussfolgerung kippt.",
+      "methods": {
+        "fossil_fallback": "Krisenseite fossiler Fallback oder fehlender Quellenzeitstempel",
+        "effective_fossil": "effektives fossiles Kerosin = Spot + CO2-Druck bei gewählter Beimischung, minus Subvention (Kipppunktmodell)",
+        "reserve_derived": "abgeleitete Reserveabdeckung aus {name}",
+        "reserve_named": "Reserveabdeckung aus {name} ({type})",
+        "reserve_dashboard": "Dashboard-Reserveabdeckung ohne verbundene Quellenmetadaten",
+        "reserve_baseline": "Szenariobasis 3,0 Wochen; Live-Reserve nicht verbunden"
+      }
+    },
+    "zh_links": {
+      "reserves": {
+        "title": "Reservedetails öffnen",
+        "description": "Zuerst Abdeckungswochen, Quellentyp, Vertrauen und Versorgungslücke prüfen, dann die Beschaffung anpassen.",
+        "eyebrow": "Reserve"
+      },
+      "workbench": {
+        "title": "SAF-Workbench öffnen",
+        "description": "Aktuelle Kraftstoff-, CO2- und Reservewerte übernehmen und die Pfadsensitivität direkt testen.",
+        "eyebrow": "Simulation"
+      },
+      "sources": {
+        "title": "Quellen prüfen",
+        "description": "Markteingaben mit Prüfbedarf ansehen und Live-, Proxy-, Fallback- und Degradationsstatus bestätigen.",
+        "eyebrow": "Quellen"
+      }
+    },
+    "brief": {
+      "stress_label": "Reservestress",
+      "stress_weeks": "{weeks} Wochen",
+      "stress_hint": "EU-Reservehaltung: {stress} | {source}",
+      "fallback_source": "Fallback-Szenariobasis",
+      "source_label": "Quellenvertrauen",
+      "source_hint": "Marktstatus {status} | Reservevertrauen {reserve}",
+      "events_label": "Kippereignisse",
+      "events_hint": "{type} | {pathway} | {when}",
+      "events_empty": "Keine Ereignisse im aktuellen Prüffenster.",
+      "research_label": "Forschungsstatus",
+      "research_hint": "{count} Forschungssignale verfügbar.",
+      "research_hint_empty": "Die Seite zeigt die Forschungsgrenze, statt Evidenz zu erfinden.",
+      "readout_title": "Operative Lage",
+      "readout_why": "Was die Zahlen oben zusammen bedeuten, und woran man erkennt, ob sie aus Live-Evidenz oder aus einer Fallback-Lage stammen.",
+      "readout_p1_lead": "Der aktuelle fossile Kostenanker liegt bei",
+      "readout_p1_tail": ". JetScope stellt diesen Wert neben EU-Reserveabdeckung und Quellenvertrauen, damit Prüfer Live-Evidenz von Fallback-Lagen trennen können, bevor Beschaffung oder SAF-Annahmen geändert werden.",
+      "readout_p2": "Der Krisenbrief kommt aus dem FastAPI-Crisis-Brief-Vertrag. Die Seite zeigt dadurch eine kohärente operative Lage, ohne Reserve-, Quellen-, Kippereignis- und Forschungsaggregation in der Anzeige zu duplizieren.",
+      "evidence_title": "Evidenzdisziplin",
+      "evidence_why": "Die vier Angaben, an denen sich entscheidet, ob dieser Brief als Entscheidungsgrundlage taugt oder erst durch die Quellenprüfung muss.",
+      "freshness_label": "Marktfrische",
+      "freshness_minutes": "{minutes} Min.",
+      "freshness_review": "Prüfung",
+      "fallback_rate_label": "Fallback-Rate",
+      "reserve_timestamp_label": "Reservezeitpunkt",
+      "as_of_unavailable": "nicht verfügbar",
+      "contract_label": "Vertragsstatus",
+      "contract_fallback": "Fallback",
+      "contract_connected": "verbunden",
+      "actions_title": "Nächste Schritte",
+      "actions_why": "Ein Krisenbrief, der nur Zahlen zeigt, ändert nichts. Jeder Einstieg führt zu etwas Nachprüfbarem."
+    },
+    "recovery": {
+      "review_sources": {
+        "title": "Quellennachweise prüfen",
+        "description": "Fallback-, Proxy-, eingeschränkte und volatile Zeilen prüfen, bevor das Krisensignal operativ genutzt wird."
+      },
+      "open_report": {
+        "title": "Lokalen Bericht öffnen",
+        "description": "Vom Kurzbrief in den quellengestützten Kipppunktbericht mit längerer Prüferzählung wechseln."
+      },
+      "review_scenarios": {
+        "title": "Szenarien prüfen",
+        "description": "Gespeicherte Annahmen gegen aktuellen Reservestress und Marktvertrauen halten, bevor sich der Plan ändert."
+      }
+    },
+    "footer": {
+      "reserve_connected": "EU-Kerosin-Reserveabdeckung über {type} ({name})",
+      "reserve_missing": "Reservedienst nicht verbunden; Abdeckung nutzt die Szenariobasis",
+      "market_snapshot": "Marktsnapshot (fossiler Kerosinanker ${price}/L, CO2-Proxy €{carbon}/t)",
+      "tipping_events": "{count} beobachtete SAF-Kreuzungen im Prüffenster",
+      "tipping_model": "Entscheidungssignal und Pfadnettokosten stammen aus dem Kipppunktmodell, nicht aus einem Upstream-Rohwert",
+      "brief_error": "Crisis-Brief-API nicht erreichbar; es werden interne Ersatzwerte verwendet ({error})",
+      "brief_ok": "Crisis-Brief-API (Reserve, Quellenstatus, Kippereignisse, Forschungslage)",
+      "reserve_via": "EU-Reservehaltung über {name}",
+      "events_observed": "{count} beobachtete SAF-Kippereignisse im Prüffenster",
+      "fossil_anchor": "Fossiler Kostenanker {price}, aus dem Marktsnapshot abgeleitet",
+      "method_label": "Quellen- und Methodenliste"
+    },
+    "limitations": [
+      "Der Brief zeigt Reservedruck, nicht die Beschaffungslage eines einzelnen Betreibers. Verträge und Vorräte einer Airline stehen hier nicht drin.",
+      "Kippereignisse werden im Prüffenster gezählt. Keine Ereignisse heißt nicht kein Risiko, sondern nur: in diesem Fenster wurde keine Überschreitung beobachtet.",
+      "Ist die Reservequelle eine manuelle Schätzung, trägt sie oben die Kennzeichnung „Szenarioannahme\" und darf nicht wie eine amtliche Meldung gelesen werden.",
+      "Der Brief ist eine Prüffläche, keine Beschaffungsempfehlung."
+    ]
+  },
+  "tipping_point_report": {
+    "meta_title": "Kipppunktbericht",
+    "meta_description": "Deutscher JetScope-Berichtsdetailblick für SAF-Kipppunkt, Quellenvertrauen, Reservestress und Forschungsstatus.",
+    "eyebrow": "Berichtsdetail",
+    "title": "Kipppunktbericht",
+    "question": "Trägt die wirtschaftliche These dieses Berichts noch?",
+    "signal_row_label": "Kipppunkt-Fazit",
+    "signal_label": "Kipppunkt-Signal",
+    "signal_unknown": "Prüfung",
+    "signal_hint": "Das Fazit zuerst; ein unbekanntes Signal bleibt prüfpflichtig.",
+    "probability_label": "Entscheidungswahrscheinlichkeit",
+    "probability_hint": "Höchster Wert aus Spot-SAF-Kauf und langfristiger Abnahme.",
+    "confidence_metric_label": "Quellenvertrauen",
+    "confidence_metric_hint": "Marktstatus: {status}",
+    "events_label": "Geladene Ereignisse",
+    "events_hint": "Ereignisse im aktuellen 42-Tage-Prüffenster.",
+    "events_hint_latest": "Zuletzt: {event}",
+    "events_hint_empty": "Keine Ereignisse im aktuellen Prüffenster.",
+    "thesis_title": "Kernthese",
+    "thesis_why": "Die Evidenzkette zeigt, ob das Modell als Entscheidungsgrundlage taugt oder zuerst in die Quellenprüfung muss.",
+    "thesis_lead": "JetScope behandelt den Kipppunkt als Zusammenlaufen von fossilen Kraftstoffkosten, Kohlenstoffexponierung, Reservestress und SAF-Pfadabstand. Der aktuelle fossile Kostenanker liegt bei {price}.",
+    "thesis_body": "Der Quellenstatus ist {status} mit {confidence} Vertrauen. Bei Fallback-Zeilen bleibt der Bericht lesbar, muss aber vor Veröffentlichung geprüft werden.",
+    "reserves_title": "EU-Kerosinreserve",
+    "reserves_why": "Die Reservewochen bestimmen die Dringlichkeit: Je dünner die Deckung, desto kürzer das Reaktionsfenster.",
+    "chart_title": "Kerosin- und SAF-Preisstaffel",
+    "chart_why": "Fossiler Anker, kohlenstoffbereinigte Effektivkosten und Netto-Pfadkosten — die ökonomische These sitzt in diesen Abständen.",
+    "chart_why_assumed": "Kein fossiler Echtzeitanker; die Preisdifferenz dient nur der Szenariodiskussion.",
+    "decision_title": "Implikationen für Airlines",
+    "decision_why": "Modellausgaben in prüfbare Betriebsimplikationen übersetzen, statt Wahrscheinlichkeiten als Ja/Nein zu lesen.",
+    "decision_body": "Das Entscheidungsmodell zeigt Wahrscheinlichkeiten und Schwellen, keine einfachen Ja/Nein-Empfehlungen.",
+    "research_title": "Forschungsentscheidungsschicht",
+    "research_why": "Erklärt, warum sich die These ändert. Signale sind Gründe, keine Schlüsse.",
+    "timeline_title": "SAF-Kreuzungszeitleiste",
+    "timeline_why": "Hält fest, wann die effektiven SAF-Kosten den fossilen Anker wirklich überschritten — nicht wann das Modell es erwartet.",
+    "confidence_title": "Quellenvertrauen",
+    "confidence_why": "Diese vier Angaben erklären, wie belastbar das Fazit ist und welche Evidenz noch fehlt.",
+    "market_status_label": "Marktstatus",
+    "fallback_rate_label": "Fallback-Rate",
+    "latest_event_label": "Letztes Ereignis",
+    "latest_event_none": "keins",
+    "research_status_label": "Forschungsstatus",
+    "source_status": {
+      "ok": "gesund",
+      "degraded": "eingeschränkt",
+      "offline": "offline",
+      "unknown": "unbekannt"
+    },
+    "research_posture": {
+      "disabled": "deaktivierte Grenze",
+      "error": "eingeschränkt",
+      "not_found": "nicht bereitgestellt",
+      "with_signals": "mit Signalen belegt",
+      "waiting": "wartet auf Signale"
+    },
+    "next_title": "Nächste Prüfschritte",
+    "next_why": "Die Berichtsthese wird erst nutzbar, wenn Quellen, Szenarioannahmen und Veröffentlichungspfad erreichbar bleiben.",
+    "next_actions": {
+      "sources": {
+        "title": "Quellen prüfen",
+        "description": "Live-, Proxy-, Fallback- und eingeschränkte Eingaben vor externer Nutzung prüfen."
+      },
+      "scenarios": {
+        "title": "Szenarioannahmen vergleichen",
+        "description": "Gespeicherte Annahmen prüfen, bevor sich die Beschaffungshaltung ändert."
+      },
+      "reports": {
+        "title": "Zur Berichtswerkstatt",
+        "description": "Startposition und Berichtskatalog auf der Übersicht erneut prüfen."
+      }
+    },
+    "number_unavailable": "n/a",
+    "figure_methods": {
+      "fossil_assumed": "Die Berichtsseite verwendet die angenommene Konstante 0,657 USD/L für fossiles Kerosin oder es fehlt ein zitierbarer Zeitstempel",
+      "effective_fossil": "Effektive fossile Kerosinkosten = Spotpreis + CO₂-Kostendruck beim gewählten Beimischungsanteil - Förderung (Kipppunktmodell)"
+    },
+    "source_dashboard": "Dashboard-Read-Model und Marktstatus",
+    "source_reserve": "EU-Reserveabdeckung über {source}",
+    "source_unavailable": "nicht verfügbare Quelle",
+    "source_fossil_assumed": "Kein fossiler Kostenanker verfügbar",
+    "source_fossil_live": "Fossiler Jet-Fuel-Kostenanker",
+    "source_events": "SAF-Kipppunktereignisse ({count})",
+    "source_research": "Abgeleitete Forschungssignale ({count})",
+    "method_label": "Quellen- und Methodenliste",
+    "limitations": [
+      "Der Bericht beschreibt marktweite Schwellen, nicht Verträge, Vorräte oder Freigaben einer einzelnen Airline.",
+      "Entscheidungswahrscheinlichkeiten sind Modellergebnisse und keine beobachteten zukünftigen Handlungen.",
+      "Fehlende Ereignisse in einem dünnen Prüffenster bedeuten nicht, dass kein Risiko besteht."
     ]
   }
 }

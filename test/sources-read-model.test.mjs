@@ -112,6 +112,7 @@ test('source coverage contract owns trust-state and lag formatting helpers', asy
 test('sources page keeps a light data-review theme', async () => {
   const files = [
     new URL('../apps/web/app/sources/page.tsx', import.meta.url),
+    new URL('../apps/web/components/sources-page.tsx', import.meta.url),
     new URL('../apps/web/components/provenance-summary.tsx', import.meta.url),
     new URL('../apps/web/components/source-coverage-panel.tsx', import.meta.url)
   ];
@@ -127,22 +128,25 @@ test('sources page keeps a light data-review theme', async () => {
 });
 
 test('sources page exposes click-through filters and row focus actions', async () => {
-  const source = await readFile(new URL('../apps/web/app/sources/page.tsx', import.meta.url), 'utf8');
+  const source = await readFile(new URL('../apps/web/components/sources-page.tsx', import.meta.url), 'utf8');
+  const zh = JSON.parse(
+    await readFile(new URL('../apps/web/src/locales/zh.json', import.meta.url), 'utf8')
+  ).sources;
 
   assert.match(source, /filterRaw/);
   assert.match(source, /rowMatchesSourceFilter/);
   assert.match(source, /visibleRows/);
-  assert.match(source, /key: 'review', label: '需复核'/);
-  assert.match(source, /key: 'fallback', label: '回退'/);
-  assert.match(source, /key: 'proxy', label: '代理'/);
-  assert.match(source, /key: 'live', label: '实时'/);
-  assert.match(source, /href=\{sourceFilterHref\(filter\.key\)\}/);
+  assert.equal(zh.filters.review.label, '需复核');
+  assert.equal(zh.filters.fallback.label, '回退');
+  assert.equal(zh.filters.proxy.label, '代理');
+  assert.equal(zh.filters.live.label, '实时');
+  assert.match(source, /href=\{sourceFilterHref\(key\)\}/);
   assert.match(source, /href=\{sourceFocusHref\(row\.metricKey\)\}/);
-  assert.ok(source.includes('正在显示 {visibleRows.length} / {readModel.rows.length}'));
-  assert.match(source, /恢复步骤/);
+  assert.match(zh.table.showing, /正在显示 \{visible\} \/ \{total\}/);
+  assert.equal(zh.panels.recovery.title, '恢复步骤');
   assert.match(source, /actionRows/);
   assert.match(source, /row\.reviewAction\.label/);
-  assert.match(source, /打开 Admin 刷新/);
+  assert.equal(zh.recovery.open_admin, '打开 Admin 刷新');
 });
 
 test('sources read model keeps summary aggregation centralized', async () => {

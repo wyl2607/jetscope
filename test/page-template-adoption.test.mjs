@@ -107,13 +107,95 @@ async function read(path) {
 }
 
 /**
- * Thin locale wrappers render `<FaqPage locale="…" />`. The template contract
- * lives in that shared view, not in the three route files.
+ * Thin locale wrappers render a shared view (`<FaqPage locale="…" />`,
+ * `<GermanyJetFuelPage locale="…" />`, …). The template contract lives in that
+ * shared view, not in the three route files, so a wrapper has to be resolved to
+ * its implementation before anything is asserted about it.
+ *
+ * One row per converted view: how to recognise the route, the component the
+ * wrapper renders, the file that component lives in, and the locale-dictionary
+ * key holding its copy. Converting a page is adding a row — this used to be a
+ * chain of ternaries, which meant every page landing in parallel rewrote the
+ * same three lines and collided with the others.
  */
+const SHARED_VIEWS = [
+  {
+    route: /\/faq\/page\.tsx$/,
+    component: 'FaqPage',
+    source: 'apps/web/components/faq-page.tsx',
+    i18nKey: 'faq',
+  },
+  {
+    route: /\/prices\/germany-jet-fuel\/page\.tsx$/,
+    component: 'GermanyJetFuelPage',
+    source: 'apps/web/components/germany-jet-fuel-page.tsx',
+    i18nKey: 'prices',
+  },
+  {
+    route: /\/research\/page\.tsx$/,
+    component: 'ResearchPage',
+    source: 'apps/web/components/research-page.tsx',
+    i18nKey: 'research',
+  },
+  {
+    route: /\/reports\/page\.tsx$/,
+    component: 'ReportsPage',
+    source: 'apps/web/components/reports-page.tsx',
+    i18nKey: 'reports',
+  },
+  {
+    route: /\/admin\/page\.tsx$/,
+    component: 'AdminPage',
+    source: 'apps/web/components/admin-page.tsx',
+    i18nKey: 'admin',
+  },
+  {
+    route: /\/sources\/page\.tsx$/,
+    component: 'SourcesPage',
+    source: 'apps/web/components/sources-page.tsx',
+    i18nKey: 'sources',
+  },
+  {
+    route: /^apps\/web\/app\/(?:de\/|en\/)?page\.tsx$/,
+    component: 'HomePage',
+    source: 'apps/web/components/home-page.tsx',
+    i18nKey: 'home',
+  },
+  {
+    route: /\/dashboard\/page\.tsx$/,
+    component: 'DashboardPage',
+    source: 'apps/web/components/dashboard-page.tsx',
+    i18nKey: 'dashboard',
+  },
+  {
+    route: /\/scenarios\/page\.tsx$/,
+    component: 'ScenariosPage',
+    source: 'apps/web/components/scenarios-page.tsx',
+    i18nKey: 'scenarios',
+  },
+  {
+    route: /\/crisis\/page\.tsx$/,
+    component: 'CrisisPage',
+    source: 'apps/web/components/crisis-page.tsx',
+    i18nKey: 'crisis',
+  },
+  {
+    route: /\/reports\/tipping-point-analysis\/page\.tsx$/,
+    component: 'TippingPointReportPage',
+    source: 'apps/web/components/tipping-point-report-page.tsx',
+    i18nKey: 'tipping_point_report',
+  },
+];
+
+function sharedViewFor(path) {
+  return SHARED_VIEWS.find((view) => view.route.test(path)) ?? null;
+}
+
 async function implementationOf(path) {
   const source = await read(path);
-  if (/\/faq\/page\.tsx$/.test(path) && source.includes('<FaqPage')) {
-    return read('apps/web/components/faq-page.tsx');
+  const view = sharedViewFor(path);
+  if (view && source.includes(`<${view.component}`)) {
+    return read(view.source);
   }
   return source;
 }
@@ -130,7 +212,8 @@ test('every converted page states the decision question it answers', async () =>
   for (const path of CONVERTED_PAGES) {
     const source = await implementationOf(path);
 
-    if (/\/faq\/page\.tsx$/.test(path)) {
+    const i18nKey = sharedViewFor(path)?.i18nKey ?? null;
+    if (i18nKey) {
       assert.match(
         source,
         /question=\{copy\.question\}/,
@@ -138,10 +221,27 @@ test('every converted page states the decision question it answers', async () =>
       );
       for (const locale of ['zh', 'de', 'en']) {
         const dictionary = JSON.parse(await read(`apps/web/src/locales/${locale}.json`));
-        const question = dictionary.faq?.question;
+        const question = dictionary[i18nKey]?.question;
         assert.ok(
           typeof question === 'string' && question.trim().length > 10,
-          `${locale}.json faq.question must be a real sentence, got: ${question}`
+          `${locale}.json ${i18nKey}.question must be a real sentence, got: ${question}`
+        );
+      }
+      continue;
+    }
+
+    if (/\/dashboard\/page\.tsx$/.test(path)) {
+      assert.match(
+        source,
+        /question=\{copy\.question\}/,
+        `${path} must pass a question to PageTemplate`
+      );
+      for (const locale of ['zh', 'de', 'en']) {
+        const dictionary = JSON.parse(await read(`apps/web/src/locales/${locale}.json`));
+        const question = dictionary.dashboard?.question;
+        assert.ok(
+          typeof question === 'string' && question.trim().length > 10,
+          `${locale}.json dashboard.question must be a real sentence, got: ${question}`
         );
       }
       continue;
@@ -162,6 +262,16 @@ test('every converted page ends with its sources', async () => {
     assert.match(source, /<SourceFooter/, `${path} must close with SourceFooter (contract section 2 rule 4)`);
     assert.match(source, /limitations=\{/, `${path} must state its limitations, not imply completeness`);
   }
+});
+
+test('admin pages never invent a data timestamp', async () => {
+  const source = await read('apps/web/components/admin-page.tsx');
+  assert.match(
+    source,
+    /readiness\.error \? null : readiness\.generatedAt/,
+    'admin must suppress the timestamp when readiness is on fallback'
+  );
+  assert.doesNotMatch(source, /new Date\(/, 'admin must not turn fetch or render time into an as-of stamp');
 });
 
 test('static FAQ pages never invent a data timestamp', async () => {
@@ -233,7 +343,7 @@ test('a page on fallback data never stamps it with a fresh timestamp', async () 
   // that as a data timestamp would present fabricated values as freshly
   // observed, which is the failure this contract exists to prevent.
   for (const path of FALLBACK_AWARE_PAGES) {
-    const source = await read(path);
+    const source = await implementationOf(path);
     // Matched loosely on purpose: the guarantee is "the stamp is gated on
     // isFallback", not one particular spelling of it. Pinning the exact line
     // would make a prettier run look like a contract violation.
@@ -244,7 +354,7 @@ test('a page on fallback data never stamps it with a fresh timestamp', async () 
     );
     assert.match(
       source,
-      /basis:\s*(?:dashboardReadModel|readModel)\.isFallback\s*\?\s*'assumption'\s*:/,
+      /basis:\s*(?:dashboardReadModel|readModel)\.isFallback\s*\?\s*\(?\s*'assumption'(?:\s+as\s+const)?\s*\)?\s*:/,
       `${path} must label fallback data as an assumption, never as observed`
     );
   }
@@ -252,7 +362,7 @@ test('a page on fallback data never stamps it with a fresh timestamp', async () 
 
 test('a crisis-brief page on fallback data never stamps it with a fresh timestamp', async () => {
   for (const path of CRISIS_BRIEF_PAGES) {
-    const source = await read(path);
+    const source = await implementationOf(path);
     assert.match(
       source,
       /readModel\.error\s*\?\s*null\s*:/,
@@ -267,10 +377,10 @@ test('a crisis-brief page on fallback data never stamps it with a fresh timestam
 });
 
 test('scenario pages never stamp default analysis timestamps as fresh data', async () => {
-  const primarySource = await read('apps/web/app/scenarios/page.tsx');
+  const primarySource = await implementationOf('apps/web/app/scenarios/page.tsx');
   assert.match(
     primarySource,
-    /const\s+asOf\s*=\s*usingDefaultTippingPoint\s*\?\s*null\s*:\s*tippingPoint\.generated_at/,
+    /usingDefaultTippingPoint\s*\?\s*null\s*:\s*tippingPoint\.generated_at/,
     'apps/web/app/scenarios/page.tsx must suppress the default tipping-point timestamp'
   );
   assert.match(
@@ -295,7 +405,7 @@ test('a reserve reading is labelled by how it was produced, not assumed observed
   // the failure this contract exists to prevent, so every crisis page has to
   // route source_type through a basis mapping rather than hardcoding observed.
   for (const path of ['apps/web/app/crisis/page.tsx', ...CRISIS_BRIEF_PAGES]) {
-    const source = await read(path);
+    const source = await implementationOf(path);
     assert.match(source, /function reserveBasis\(/, `${path} must map reserve source_type to a basis`);
     assert.match(source, /return 'assumption'/, `${path} must fall back to assumption, not to observed`);
   }
@@ -303,7 +413,7 @@ test('a reserve reading is labelled by how it was produced, not assumed observed
 
 test('home-page event tone fallbacks remain semantic problem states', async () => {
   function assertSemanticFallback(source, path) {
-    const mapping = source.match(/function eventTone\([^)]*\)[^{]*\{([\s\S]*?)\n\}/);
+    const mapping = source.match(/function eventTone\([^)]*\)[^{]*\{([\s\S]*?)\r?\n\}/);
     assert.ok(mapping, `${path} must keep eventTone as an explicit status mapping`);
     const returns = [...mapping[1].matchAll(/return\s+'([^']+)'/g)].map((match) => match[1]);
     const fallback = returns.at(-1);
@@ -315,39 +425,68 @@ test('home-page event tone fallbacks remain semantic problem states', async () =
     );
   }
 
-  for (const path of HOME_PAGES) {
-    const source = await read(path);
-    assertSemanticFallback(source, path);
+  const path = 'apps/web/components/home-page.tsx';
+  const source = await read(path);
+  assertSemanticFallback(source, path);
 
-    // Mutation check: prove this guard fails for the historical regression,
-    // rather than merely matching the current implementation by accident.
-    const regressed = source.replace(/(function eventTone\([^)]*\)[^{]*\{[\s\S]*?)return 'text-warning';\n\}/, "$1return 'text-muted';\n}");
-    assert.throws(
-      () => assertSemanticFallback(regressed, `${path} (mutated)`),
-      /must not wash an unknown event type/
-    );
-  }
+  // Mutation check: prove this guard fails for the historical regression,
+  // rather than merely matching the current implementation by accident.
+  // `\r?` keeps the mutation live on a Windows working tree without
+  // changing the LF source CI reads.
+  const regressed = source.replace(
+    /(function eventTone\([^)]*\)[^{]*\{[\s\S]*?)return 'text-warning';\r?\n\}/,
+    "$1return 'text-muted';\n}"
+  );
+  assert.throws(
+    () => assertSemanticFallback(regressed, `${path} (mutated)`),
+    /must not wash an unknown event type/
+  );
 });
 
+function assertTippingFossilAnchor(source, path) {
+  assert.match(source, /const fossilJetSource\s*=/, `${path} must retain the fossil-price fallback level`);
+  assert.match(
+    source,
+    /const fossilJetIsAssumed\s*=\s*readModel\.isFallback\s*\|\|\s*fossilJetSource === 'assumed'\s*\|\|\s*fossilJetAsOf == null/,
+    `${path} must treat fallback, assumed, and undated fossil anchors as assumptions`
+  );
+  assert.match(
+    source,
+    /basis:\s*fossilJetIsAssumed\s*\?\s*'assumption'\s*:\s*fossilJetSource === 'spot'\s*\?\s*'observed'\s*:\s*'derived'/,
+    `${path} must label the built-in or missing fossil anchor as an assumption`
+  );
+}
+
 test('tipping-point reports never label an assumed fossil anchor as observed', async () => {
+  const zhCopy = JSON.parse(await read('apps/web/src/locales/zh.json')).tipping_point_report;
   for (const path of TIPPING_POINT_REPORT_PAGES) {
-    const source = await read(path);
-    assert.match(source, /const fossilJetSource\s*=/, `${path} must retain the fossil-price fallback level`);
-    assert.match(
-      source,
-      /fossilJetSource === 'spot' \? 'observed' : fossilJetSource === 'assumed' \? 'assumption' : 'derived'/,
-      `${path} must label the built-in or missing fossil anchor as an assumption`
+    const source = await implementationOf(path);
+    assertTippingFossilAnchor(source, path);
+
+    const regressed = source.replace(
+      "basis: fossilJetIsAssumed ? 'assumption'",
+      "basis: fossilJetIsAssumed ? 'observed'"
     );
+    assert.notEqual(regressed, source, `${path} mutation must alter the fossil-anchor basis`);
+    assert.throws(
+      () => assertTippingFossilAnchor(regressed, `${path} (mutated)`),
+      /must label the built-in or missing fossil anchor as an assumption/
+    );
+
     if (source.includes('0.657')) {
       assert.match(source, /fossilJetSource === 'assumed'/, `${path} must expose the 0.657 fallback branch`);
-      assert.match(source, /内置假设 0\.657 USD\/L/, `${path} must disclose the 0.657 assumption on the page`);
+      assert.match(
+        `${zhCopy.chart_why_assumed}\n${zhCopy.source_fossil_assumed}\n${zhCopy.limitations.join('\n')}`,
+        /内置假设 0\.657 USD\/L/,
+        `${path} must disclose the 0.657 assumption in the zh locale file`
+      );
     }
   }
 });
 
 test('home pages derive as-of from source timestamps, never the current clock', async () => {
   for (const path of HOME_PAGES) {
-    const source = await read(path);
+    const source = await implementationOf(path);
     const assignment = source.match(/const asOf\s*=\s*([^;]+);/);
     assert.ok(assignment, `${path} must derive a page-level asOf`);
     assert.doesNotMatch(assignment[1], /new Date\s*\(/, `${path} must not stamp the home page with the current clock`);

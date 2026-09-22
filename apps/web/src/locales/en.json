@@ -15,7 +15,136 @@
     "description": "A five-minute view of Europe jet fuel stress signals, SAF tipping-point events, EU ETS cost impact, and AI-assisted research workflows.",
     "primary_cta": "Open decision cockpit",
     "scenario_cta": "Test a scenario",
-    "sources_cta": "Check source quality"
+    "sources_cta": "Check source quality",
+    "page_title": "JetScope Europe",
+    "eyebrow": "English preview",
+    "question": "Can this product answer my question, and which page should I open first?",
+    "show_transition_ladder": false,
+    "show_research_brief": false,
+    "show_thesis": true,
+    "show_dual_domain": false,
+    "swap_research_limitation": false,
+    "entry_layout": "index",
+    "chinese_workspace_cta": "Open full Chinese workspace",
+    "chinese_workspace_href": "/dashboard",
+    "thesis_ctas": [
+      "primary",
+      "chinese_workspace"
+    ],
+    "signals": {
+      "label": "Entry point and current signals",
+      "recommended_label": "Recommended start",
+      "recommended_value": "Decision cockpit",
+      "recommended_hint": "Begin with the whole picture, then move into the relevant review.",
+      "reserve_label": "EU reserve coverage",
+      "reserve_unavailable": "Unavailable",
+      "reserve_unit": "weeks",
+      "reserve_hint": "Reserve posture · /v1/reserves/eu",
+      "reserve_hint_unavailable": "Reserve posture · /v1/reserves/eu",
+      "event_label": "Latest tipping event",
+      "event_empty": "No event",
+      "event_hint": "{count} events in the 42-day window · /v1/analysis/tipping-point/events",
+      "event_hint_empty": "{count} events in the 42-day window · /v1/analysis/tipping-point/events",
+      "research_label": "Research signals",
+      "research_not_found": "Not deployed",
+      "research_error": "Error",
+      "research_count": "{count} signals",
+      "research_hint": "/v1/research/signals · same status language as the research page"
+    },
+    "thesis": {
+      "title": "Product thesis",
+      "why": "Decide whether JetScope covers your problem space before choosing a detailed workflow.",
+      "headline": "When does SAF become an operating decision, not only a compliance cost?",
+      "body": "JetScope combines market snapshots, reserve stress, policy cost pressure, and research signals into a reviewable workflow."
+    },
+    "dual_domain": {
+      "title": "Two problem spaces",
+      "why": "The same carbon price connects aviation and power, but they remain separate review paths.",
+      "body": "EU ETS carbon pricing pushes both the SAF tipping point and grid parity.",
+      "grid_cta": "Open grid parity",
+      "saf_cta": "Open SAF tipping point"
+    },
+    "transition": {
+      "title": "Decarbonisation ladder",
+      "why": "Compare technologies on one carbon-price axis.",
+      "error_detail": "The transition summary is temporarily unavailable.",
+      "empty_detail": "The endpoint responded, but there is no transition summary to show."
+    },
+    "research_brief": {
+      "title": "Research decision layer",
+      "why": "Research signals explain which way the market numbers are moving."
+    },
+    "entries": {
+      "title": "Choose the next page",
+      "why": "Each neutral entry card names a task; colour is reserved for actual status in the signal row.",
+      "eyebrow_label": "",
+      "open_label": "Open surface"
+    },
+    "entry_cards": [
+      {
+        "title": "Decision cockpit",
+        "description": "Live market snapshot, scenario count, source posture, and highest-risk fuel-price movement.",
+        "navId": "dashboard",
+        "suffix": ""
+      },
+      {
+        "title": "Germany price monitor",
+        "description": "English price surface for Brent, global jet fuel, EU jet proxy, and carbon proxy.",
+        "navId": "prices",
+        "suffix": ""
+      },
+      {
+        "title": "Source review",
+        "description": "Row-level provenance, confidence, fallback state, and recovery actions.",
+        "navId": "sources",
+        "suffix": ""
+      },
+      {
+        "title": "Research workbench",
+        "description": "Pipeline status, empty-state honesty, signal counts, and evidence handoffs.",
+        "navId": "research",
+        "suffix": ""
+      },
+      {
+        "title": "Report workbench",
+        "description": "Source status, saved scenarios, risk signal, and launch posture.",
+        "navId": "reports",
+        "suffix": ""
+      },
+      {
+        "title": "Launch readiness",
+        "description": "Read-only prerequisite checks for admin token, source coverage, and backend readiness.",
+        "navId": "admin",
+        "suffix": ""
+      },
+      {
+        "title": "Scenario workbench",
+        "description": "Saved assumptions, current market context, risk signal, and protected write boundaries.",
+        "navId": "scenarios",
+        "suffix": ""
+      },
+      {
+        "title": "Lufthansa SAF analysis",
+        "description": "English review of the Lufthansa flight-cut signal and SAF breakeven pressure.",
+        "navId": "analysis",
+        "suffix": ""
+      }
+    ],
+    "sources": {
+      "reserve_label": "EU reserve coverage via {source_name}",
+      "reserve_unavailable": "unavailable source",
+      "events_label": "SAF tipping-point event stream ({count})",
+      "events_nav_id": "reports",
+      "events_suffix": "/tipping-point-analysis",
+      "research_label": "Derived research signals ({count})",
+      "method_label": "Source and method registry"
+    },
+    "limitations": [
+      "The home page is a summary and navigation surface; full definitions remain on each detail page.",
+      "An empty event window does not mean there is no risk."
+    ],
+    "limitation_research_enabled": "Research signals are derived evidence, not direct market observations.",
+    "limitation_research_disabled": "Research signals are derived evidence, not direct market observations."
   },
   "dashboard": {
     "market_price": "SAF Market Price",
@@ -24,7 +153,142 @@
     "rotterdam_port": "Rotterdam Port Emissions",
     "eu_ets_volume": "EU ETS Volume",
     "data_freshness": "Data Freshness",
-    "source_status": "Source Status"
+    "source_status": "Source Status",
+    "meta_title": "Decision Cockpit",
+    "meta_description": "English JetScope dashboard for SAF versus jet-fuel decisions, including market snapshot, scenarios, source posture, and launch-readiness actions.",
+    "eyebrow": "Market intelligence",
+    "title": "Decision Cockpit",
+    "question": "Has today's market and data-delivery posture changed enough to require a scenario rerun?",
+    "show_price_trends": false,
+    "show_pathways": false,
+    "show_ets": false,
+    "show_provenance": false,
+    "show_policy_timeline": false,
+    "show_status_banners": false,
+    "show_sources_matrix": true,
+    "show_risk_href": false,
+    "na": "n/a",
+    "unknown_cause": "unknown cause",
+    "signal_row_label": "Decision signals",
+    "signal_order": [
+      "decision",
+      "market",
+      "delivery",
+      "risk"
+    ],
+    "source_ok": "healthy",
+    "source_degraded": "degraded",
+    "source_offline": "offline",
+    "source_unknown": "unknown",
+    "freshness_fresh": "fresh",
+    "freshness_stale": "stale",
+    "freshness_critical": "critical",
+    "risk_normal": "normal",
+    "risk_watch": "watch",
+    "risk_alert": "alert",
+    "decision_label": "Scenario action",
+    "decision_rerun": "Re-run scenario",
+    "decision_review": "Review first",
+    "decision_keep": "Continue current case",
+    "decision_hint_fallback": "The API fallback is not a measured input; review the source before re-running a scenario.",
+    "decision_hint_alert": "The history window is in alert; review the sources and re-run with current market inputs.",
+    "decision_hint_unknown": "The history window has not produced an identifiable signal; do not treat unknown as normal.",
+    "decision_hint_source": "Source status is not healthy; review the evidence before continuing with the scenario.",
+    "decision_hint_watch": "Risk is in the watch range; review key assumptions before a re-run.",
+    "decision_hint_ok": "Source status and the risk window do not currently require a review.",
+    "delivery_label": "Delivery mode",
+    "delivery_fallback": "Fallback",
+    "delivery_live": "Live slice",
+    "delivery_hint_fallback": "Local API fallback is active: {error}.",
+    "delivery_hint_live": "Source status: {status} | freshness: {freshness} ({minutes} min.)",
+    "risk_label": "Highest risk signal",
+    "risk_hint_none": "No historical risk signal is available yet; unknown evidence is not a normal state.",
+    "risk_hint": "Level: {level} | As of: {asOf} | Samples: {samples}",
+    "market_label": "Market snapshot",
+    "market_value": "${brent}/bbl",
+    "market_hint": "Jet global ${jet}/L | EU jet proxy ${jetEu}/L | carbon ${carbon}/tCO2",
+    "work_title": "Operating access",
+    "work_why": "These entry points connect the current market readout to the checkable admin and source-review surfaces.",
+    "work_entries": [
+      {
+        "nav": "admin",
+        "label": "Admin controls",
+        "value": "Required",
+        "hint": "Route costs, policy parameters, source refresh, and protected writes."
+      },
+      {
+        "nav": "sources",
+        "label": "Source review",
+        "value": "Open evidence",
+        "hint": "Row-level confidence, fallback state, and recovery actions are available in English."
+      }
+    ],
+    "provenance_title": "Source provenance",
+    "provenance_why": "Trust state for every number on this screen: observed, proxy, or fallback.",
+    "price_trends_title": "Price trends",
+    "price_trends_why": "The snapshot is one point; the 1d / 7d / 30d windows show whether it is unusual.",
+    "capabilities_title": "Decision support scope",
+    "capabilities_why": "This capability list describes the product surface that supports the decision; it is not itself a market conclusion.",
+    "priorities": [
+      "Market data: Brent, global jet fuel, EU jet proxy, and carbon proxy.",
+      "Scenario context: saved assumptions and recent workspace records.",
+      "Source quality: confidence, fallback use, and degraded evidence stay visible.",
+      "Launch posture: admin and research prerequisites are handled in the operations console."
+    ],
+    "migration_title": "Migration rule",
+    "migration_why": "These rails explain how a safe fallback and the next workspace expansion are handled.",
+    "migration_items": [],
+    "scenarios_title": "Recent scenarios",
+    "scenarios_why": "Saved scenarios are local assumptions for comparison and do not replace a reviewed procurement decision.",
+    "scenarios_action": "",
+    "scenarios_empty": "No saved scenarios yet. Use the primary scenario workspace to create and compare operating assumptions.",
+    "pathways_title": "SAF pathway net cost and source trust",
+    "pathways_why": "Net cost and spread for each pathway from the current market slice, with source type and confidence.",
+    "pathways_signal": "Comparison signal: {signal}",
+    "ets_title": "Carbon-price pressure on fossil jet",
+    "ets_why": "EU ETS is the driver that moves both SAF and grid parity; the steps show how far it lifts fossil jet.",
+    "policy_timeline_title": "Policy milestone timeline",
+    "policy_timeline_why": "Which rule takes effect when, aligned to the market snapshot above — a deadline already past should not read as future.",
+    "sources_matrix_title": "Source posture",
+    "sources_matrix_why": "This is the evidence layer behind the market snapshot: live, proxy, fallback, and confidence remain visible together.",
+    "sources_matrix_live": "Live",
+    "sources_matrix_proxy": "Proxy",
+    "sources_matrix_fallback": "Fallback",
+    "sources_matrix_confidence": "Confidence",
+    "sources_matrix_review": "Review needed",
+    "sources_matrix_proxy_backed": "Proxy-backed",
+    "sources_matrix_healthy": "Healthy",
+    "sources_matrix_summary": "{posture} | completeness {completeness}. Open Source Review for row-level recovery actions.",
+    "status_market_label": "Live market status",
+    "status_detail": "Analysis jet: {jetSource}=${jetPrice}/L · ETS €{ets}/t · interval {interval}s · next {eta} · health {health}{runs}",
+    "status_health_ok": "ok",
+    "status_health_attention": "attention",
+    "status_runs": " · runs {ok}/{total}",
+    "status_snapshot": "Snapshot time",
+    "status_freshness": "Freshness",
+    "status_source_overall": "Source overall",
+    "status_spread": "Jet–Brent spread",
+    "status_sources_action": "View sources →",
+    "status_lh_action": "LH Q2 2026 →",
+    "status_alert_action": "View details →",
+    "status_event_label": "Aviation event · curated data only · as_of {asOf}",
+    "status_event_summary": "Q2 adjusted operating profit €{profit}m ({profitYoy}%) · extra kerosene cost €{kerosene}m · strike cost about €{strikes}m · pass-through about {passThrough}% · expected FY fuel cost €{fuel}bn",
+    "status_residual": "Residual exposure {exposure} · pass-through {passThrough}",
+    "footer_read_model_live": "Market snapshot API (market values, source status, and freshness)",
+    "footer_read_model_fallback": "Market snapshot API unavailable; internal fallback values are in use ({error})",
+    "footer_coverage_live": "Source coverage summary (live, proxy, fallback, and confidence)",
+    "footer_coverage_fallback": "Source coverage API unavailable; fallback summary is in use ({error})",
+    "footer_risk": "The risk signal is derived from movement in the market-history window, not supplied directly upstream",
+    "footer_scenarios": "Local scenario store ({count} saved scenarios)",
+    "method_label": "Source definitions and method",
+    "limitations": [
+      "When coverage is healthy, live metrics prefer primary or official sources.",
+      "Proxy metrics and fallback values are labeled separately.",
+      "Confidence, lag, and degraded reasons are available on Source Review.",
+      "Fallback values keep the cockpit available but are never presented as measurements.",
+      "The risk signal depends on history-window sample size; no alert does not mean no risk.",
+      "Saved scenarios are local assumptions for review and discussion."
+    ]
   },
   "indicators": {
     "market_price": "SAF Price",
@@ -95,6 +359,1045 @@
     "limitations": [
       "These answers describe the current deployment design intent and do not change with live data; use the Admin page for the environment’s actual readiness.",
       "The FAQ does not replace the current states and limitations on the Sources, Research, or Scenarios pages."
+    ]
+  },
+  "prices": {
+    "meta_title": "Germany Jet-Fuel Price Monitor",
+    "meta_description": "English Germany jet-fuel market view for Brent, global jet fuel, EU jet proxy, carbon proxy, and 1d/7d/30d source-backed changes.",
+    "eyebrow": "Prices · Germany",
+    "title": "Germany Jet-Fuel Price Monitor",
+    "question": "Has Germany's current jet-fuel price moved far enough to revisit the contract or hedging decision?",
+    "signal_label": "Germany jet-fuel decision signals",
+    "decision_label": "Decision pressure",
+    "decision_review_source": "Review source first",
+    "decision_revisit": "Revisit contract/hedge",
+    "decision_review": "Review needed",
+    "decision_hold": "No trigger yet",
+    "decision_hint": "EU jet proxy {value} · {window30} {change} · Status {status}",
+    "decision_missing": "The EU jet proxy has no current value.",
+    "window_1d": "1d",
+    "window_7d": "7d",
+    "window_30d": "30d",
+    "na": "n/a",
+    "status_live": "live",
+    "status_proxy": "proxy",
+    "status_degraded": "degraded",
+    "status_fallback": "unknown",
+    "use_status_fallback": false,
+    "show_trend_chart": false,
+    "trend_title": "Price trend",
+    "trend_why": "A single print is one point. Only the 1d, 7d, and 30d windows show whether the move is large enough to revisit a contract or hedge.",
+    "source_read_model": "Source Review: Germany jet-fuel read model (Brent, global jet fuel, EU jet proxy, and carbon proxy)",
+    "source_read_model_fallback": "Germany jet-fuel read model unavailable; fallback estimates are in use ({error})",
+    "source_unknown_error": "unknown reason",
+    "source_brent": "Brent source status",
+    "source_jet": "Global jet-fuel source status",
+    "source_jet_eu": "EU jet proxy source status",
+    "source_carbon": "Carbon proxy source status",
+    "source_trend": "Price-trend history read model (1d, 7d, 30d windows)",
+    "source_trend_fallback": "Price-trend history unavailable ({error})",
+    "method_label": "Source and price-movement method",
+    "limitations": [
+      "Jet-fuel prices are proxies and may differ from airport-specific or contract-settled prices in Germany.",
+      "The EU jet proxy can temporarily fall back to the global jet-fuel series when regional data is unavailable; a fallback is not a measurement.",
+      "The carbon proxy reflects policy-cost pressure and should be read with route and blend assumptions.",
+      "Decision support, not a trading feed. Compare procurement action with supplier quotes and internal contract terms."
+    ]
+  },
+  "research": {
+    "meta_title": "Research Workbench",
+    "meta_description": "English JetScope research workbench for AI research pipeline status, signal counts, confidence, and evidence handoffs.",
+    "eyebrow": "AI research pipeline",
+    "title": "Research Workbench",
+    "question": "Are today’s research signals strong enough to explain why the market is moving?",
+    "signal_row_label": "Research conclusion signals",
+    "decision_brief_mode": "counts",
+    "summary_mode": "en_if_clean",
+    "cjk_title_template": "{signal_type} signal {n}",
+    "panel_order": [
+      "status",
+      "decision",
+      "actions",
+      "signals"
+    ],
+    "pipeline_error_unknown": "unknown cause",
+    "metrics": {
+      "pipeline_status": "Pipeline status",
+      "signal_count": "Signal count",
+      "signal_count_hint": "Positive {positive} | Negative {negative} | Neutral {neutral}",
+      "latest_signal": "Latest signal",
+      "latest_none": "No signal",
+      "latest_none_hint": "No persisted research signal is available for the current review window.",
+      "usage_boundary": "Usage boundary",
+      "boundary_enabled": "Evidence layer",
+      "boundary_disabled": "Boundary only",
+      "boundary_hint": "Research explains possible causes; it never replaces market, reserve, scenario, or source review."
+    },
+    "pipeline": {
+      "disabled": {
+        "label": "Disabled",
+        "detail": "The research pipeline is disabled. This page does not claim that live AI analysis is running."
+      },
+      "waiting": {
+        "label": "Waiting for signals",
+        "detail": "The research API is enabled, but no persisted signal is available yet. The daily research job still needs to produce reviewable evidence."
+      },
+      "not_found": {
+        "label": "Not deployed",
+        "detail": "The research service is not deployed or cannot be found in this environment. An empty result is not a market finding."
+      },
+      "error": {
+        "label": "Error",
+        "detail": "Research API error: {message}. Do not cite research findings until it recovers."
+      },
+      "ready": {
+        "label": "Running",
+        "detail": "The research API is enabled; this page displays persisted signals from the current review window."
+      }
+    },
+    "panels": {
+      "status": {
+        "title": "Research pipeline status",
+        "why": "Keep configuration boundaries, waiting, missing deployment, and failures distinct before citing a signal."
+      },
+      "decision": {
+        "title": "Decision brief",
+        "why": "Research is explanatory evidence, not an autonomous recommendation for market or procurement decisions."
+      },
+      "signals": {
+        "title": "Signal list",
+        "why": "The individual signals keep direction, source context, and confidence visible instead of hiding them in an aggregate."
+      },
+      "actions": {
+        "title": "Evidence actions",
+        "why": "Every research signal must reconnect to the decision chain and a reviewable source."
+      }
+    },
+    "impacts": {
+      "positive": "Positive",
+      "negative": "Negative",
+      "neutral": "Neutral",
+      "unknown": "Unknown"
+    },
+    "counts": {
+      "active": "Active",
+      "positive": "Positive",
+      "negative": "Negative",
+      "neutral": "Neutral"
+    },
+    "confidence": "Confidence",
+    "summary_placeholder": "No reviewed summary is available for this signal yet.",
+    "summary_en_cjk": "English summary is not available for this signal yet.",
+    "summary_en_missing": "No English summary is available for this signal yet.",
+    "actions": [
+      {
+        "id": "tipping_point",
+        "nav_id": "reports",
+        "suffix": "/tipping-point-analysis",
+        "label": "Open tipping-point report",
+        "description": "Put research signals back into the reserve, fuel-price, and SAF switching context."
+      },
+      {
+        "id": "sources",
+        "nav_id": "sources",
+        "suffix": "?filter=review",
+        "label": "Review source evidence",
+        "description": "Check market provenance, proxy assumptions, fallback rows, and volatility before citing research signals."
+      },
+      {
+        "id": "admin",
+        "nav_id": "admin",
+        "suffix": "",
+        "label": "Open admin prerequisites",
+        "description": "Use the primary operations console to verify research configuration and protected refresh readiness."
+      }
+    ],
+    "footer": {
+      "source_signals_ok": "Research signal read model (direction, confidence, and publication time)",
+      "source_signals_error": "Research signal API is currently unavailable",
+      "source_pipeline": "Research pipeline enablement and deployment status",
+      "method_label": "Sources and methods",
+      "limitations": [
+        "Research explains possible causes; it does not replace market, reserve, scenario, or source review.",
+        "Disabled, waiting, not deployed, or error states have no valid data-as-of. The timestamp comes only from the latest signal.",
+        "An empty result is not evidence that the market has not moved."
+      ]
+    }
+  },
+  "reports": {
+    "meta_title": "Report Workbench",
+    "meta_description": "English JetScope report readiness workbench for source status, saved scenarios, risk signals, and launch posture.",
+    "eyebrow": "Report readiness",
+    "title": "Report Workbench",
+    "question": "Is this report solid enough to be published as decision evidence right now?",
+    "signals_label": "Launch readiness signals",
+    "number_unavailable": "Unavailable",
+    "readiness": {
+      "label": "Launch posture",
+      "review": "Review needed",
+      "publish": "Publish candidate",
+      "hint_fallback": "The report surface can render, but the local API fallback is active: {error}.",
+      "hint_source": "Source status is {status}; review source evidence before launch or publication.",
+      "hint_ok": "Report entry points can be reviewed from the current read model."
+    },
+    "source": {
+      "label": "Source status",
+      "ok": "healthy",
+      "degraded": "degraded",
+      "offline": "offline",
+      "unknown": "unknown",
+      "hint": "Confidence {confidence} | fallback rate {fallback_rate} | {freshness} {minutes} min."
+    },
+    "freshness": {
+      "fresh": "fresh",
+      "stale": "stale",
+      "critical": "critical"
+    },
+    "risk": {
+      "label": "Risk signal",
+      "none": "No anomaly",
+      "hint": "{level} | {change}",
+      "empty": "The market history window has not produced a ranked alert yet.",
+      "normal": "normal",
+      "watch": "watch",
+      "alert": "alert"
+    },
+    "scenarios": {
+      "label": "Scenario count",
+      "empty": "No saved scenario yet.",
+      "placeholder": "Saved scenario {n}"
+    },
+    "catalog": {
+      "title": "Report catalog",
+      "why": "Each report entry point, and whether it is wired to live data or to a static narrative.",
+      "tipping_point": {
+        "title": "Tipping-point report",
+        "description": "Primary long-form report tying reserve pressure, fuel economics, airline decision probability, and research signals together.",
+        "status": "Connected to live read model"
+      }
+    },
+    "actions": {
+      "title": "Pre-launch actions",
+      "why": "The next report step is evidence review, not guesswork - every entry point leads to something verifiable.",
+      "tipping_point": {
+        "label": "Open tipping-point report",
+        "description": "Read the most complete SAF-versus-jet-fuel threshold narrative."
+      },
+      "review_sources": {
+        "label": "Review source evidence",
+        "description": "Check fallback, proxy, degraded, and volatility rows before treating report output as decision evidence."
+      },
+      "dashboard": {
+        "label": "Open decision cockpit",
+        "description": "Return to the current market snapshot, source posture, scenarios, and top risk signal."
+      },
+      "admin": {
+        "label": "Check launch readiness",
+        "description": "Confirm source coverage, admin token, and research foundations before launch or publication."
+      },
+      "research": {
+        "label": "Open research workbench",
+        "description": "Confirm whether research signals are enabled, empty, degraded, or ready for explanatory use."
+      }
+    },
+    "footer": {
+      "source_live": "Market snapshot API (source status, confidence, fallback rate, freshness)",
+      "source_fallback": "Market snapshot API unreachable; built-in fallback values are in use ({error})",
+      "unknown_cause": "unknown cause",
+      "source_scenarios": "Local scenario store ({count} saved scenarios)",
+      "source_risk": "The risk signal is derived from movement across the market history window, not supplied upstream",
+      "method_label": "Source and method list",
+      "limitations": [
+        "\"Publish candidate\" means the data path is reviewable, not that a human has reviewed the conclusion.",
+        "The risk signal depends on history-window sample size. No alert on thin samples does not mean no risk.",
+        "Saved scenarios are local assumptions for review and discussion; they do not replace procurement approval."
+      ]
+    }
+  },
+  "admin": {
+    "show_admin_ops": false,
+    "eyebrow": "Launch operations",
+    "title": "Launch Readiness",
+    "question": "Can this backend safely write data and go live now?",
+    "signals_label": "Launch-decision signals",
+    "decision_label": "Launch decision",
+    "decision_hint_error": "Readiness API unavailable: {error}",
+    "decision_hint_ready": "No prerequisite currently blocks launch.",
+    "decision_hint_blocked": "Resolve blockers before writes or launch.",
+    "blocking_label": "Blocking checks",
+    "blocking_hint": "Any blocker prevents a safe launch.",
+    "review_label": "Review checks",
+    "review_hint": "Not necessarily blocking, but must be confirmed before launch.",
+    "environment_label": "Environment context",
+    "environment_hint": "Schema {mode}; this conclusion applies only to this environment.",
+    "scope_title": "Protected operations",
+    "scope_why": "These boundaries distinguish read-only checks from actions that must remain in the primary console.",
+    "scope_items": [
+      "Protected writes, refreshes, and parameter edits remain in the primary admin console.",
+      "This English surface is read-only and never displays secret values.",
+      "Use readiness checks to decide whether source, research, token, or database work is still required."
+    ],
+    "scope_bullet": "",
+    "contract_title": "Backend contract",
+    "contract_why": "The readiness contract defines which prerequisites are checked without exposing secret values.",
+    "contract_items": [
+      {
+        "code": "",
+        "text": "Database bootstrap, market snapshots, source coverage, admin token configuration, and AI research readiness are reported by the API readiness contract."
+      },
+      {
+        "code": "",
+        "text": "Secret values are never returned by readiness and are not requested by this English page."
+      },
+      {
+        "code": "",
+        "text": "Protected parameter editing, manual refresh, and token entry stay in the primary admin console."
+      }
+    ],
+    "checks_title": "Launch readiness checks",
+    "checks_why": "Each check identifies the prerequisite that blocks launch or still needs confirmation.",
+    "badge_ready": "Ready",
+    "badge_not_ready": "Not ready",
+    "badge_degraded": "Degraded",
+    "env_badge": "{environment} | {apiPrefix} | schema {schemaBootstrapMode}",
+    "error_banner": "Readiness API is unavailable: {error}",
+    "config_keys_label": "Related config:",
+    "ops_title": "Write workspace remains in the primary admin console.",
+    "ops_why": "This English surface is read-only; parameter edits, refresh, and token entry stay in the primary admin console.",
+    "source_unavailable": "Readiness API currently unavailable",
+    "source_available": "Server-derived Readiness API checks",
+    "source_contract": "Backend data contract: route_catalog / policy_parameters / market_snapshots / scenarios",
+    "method_label": "Open source and data conventions",
+    "limitations": [
+      "This page reports the readiness of the current deployment environment, not the upper limit of the product’s capabilities.",
+      "Checks are derived server-side from configuration and data contracts; protected writes still require valid admin authorization."
+    ],
+    "readiness_status": {
+      "ready": "Launch candidate",
+      "degraded": "Runnable, needs review",
+      "not_ready": "Not ready"
+    },
+    "readiness_status_unknown": "Unrecognized status: {status}",
+    "check_status": {
+      "ok": "Healthy",
+      "degraded": "Degraded",
+      "missing": "Missing configuration",
+      "disabled": "Disabled",
+      "missing_credentials": "Missing credentials",
+      "mock": "Mock mode",
+      "seed": "Seed data",
+      "error": "Error"
+    },
+    "check_status_unknown": "Unrecognized: {status}",
+    "check_labels": {
+      "database": "Database",
+      "market_snapshot": "Market snapshot",
+      "source_coverage": "Source coverage",
+      "admin_token": "Admin token",
+      "ai_research_pipeline": "AI research pipeline"
+    },
+    "impact_blocking": "Blocks launch",
+    "impact_review": "Review needed",
+    "impact_ok": "Ready for launch",
+    "impact_unknown": "Unrecognized status",
+    "detail_cjk_fallback": "Review this prerequisite in the primary admin console.",
+    "detail_empty": "No detail provided.",
+    "detail_market_count": "",
+    "detail_source_completeness": "",
+    "detail_source_metrics": "",
+    "detail_by_key": {
+      "database": "",
+      "market_snapshot": "",
+      "source_coverage": "",
+      "admin_token": "",
+      "ai_research_pipeline": ""
+    },
+    "actions": {
+      "source_coverage": {
+        "label_ok": "Open sources",
+        "label_fix": "Fix sources",
+        "nav_id": "sources",
+        "query": "?filter=review",
+        "target_locale": ""
+      },
+      "market_snapshot": {
+        "label_ok": "Open market sources",
+        "label_fix": "Open market sources",
+        "nav_id": "sources",
+        "query": "",
+        "target_locale": ""
+      },
+      "admin_token": {
+        "label_ok": "Open primary admin",
+        "label_fix": "Open primary admin",
+        "nav_id": "admin",
+        "query": "",
+        "target_locale": "zh"
+      },
+      "ai_research_pipeline": {
+        "label_ok": "Open research",
+        "label_fix": "Open research",
+        "nav_id": "research",
+        "query": "",
+        "target_locale": ""
+      },
+      "default": {
+        "label_ok": "Open primary admin",
+        "label_fix": "Open primary admin",
+        "nav_id": "admin",
+        "query": "",
+        "target_locale": "zh"
+      }
+    }
+  },
+  "sources": {
+    "meta_title": "Source Review",
+    "meta_description": "English JetScope source review surface for market provenance, fallback state, confidence, lag, and recovery actions.",
+    "eyebrow": "Source review",
+    "title": "Source Review",
+    "question": "Which market inputs are not ready to use directly in a decision right now?",
+    "signal_row_label": "Source trust signals",
+    "metrics": {
+      "needs_review": {
+        "label": "Needs review",
+        "hint_open": "{fallback} fallback, {degraded} degraded, proxy, or volatility-marked rows.",
+        "hint_clear": "No source row currently needs additional review."
+      },
+      "trust_posture": {
+        "label": "Trust posture"
+      },
+      "average_confidence": {
+        "label": "Average confidence",
+        "hint": "Coverage {completeness} · {freshness}"
+      },
+      "input_mix": {
+        "label": "Input mix",
+        "value": "{live} live",
+        "hint": "Proxy {proxy} · fallback {fallback} · degraded {degraded}"
+      }
+    },
+    "trust_posture": {
+      "review": "Review degradation",
+      "proxy": "Proxy sources present",
+      "ready": "Live sources ready"
+    },
+    "trust_hint": {
+      "review": "Decision support: review degraded inputs",
+      "proxy": "Decision support: proxy sources present",
+      "ready": "Decision support: live sources ready"
+    },
+    "freshness": {
+      "unknown": "Freshness unknown",
+      "latest": "Newest source {lag}"
+    },
+    "filters": {
+      "all": {
+        "label": "All",
+        "hint": "Complete source matrix"
+      },
+      "review": {
+        "label": "Needs review",
+        "hint": "Fallback, degraded, proxy, or volatility watch rows"
+      },
+      "fallback": {
+        "label": "Fallback",
+        "hint": "Rows currently using fallback or seed values"
+      },
+      "proxy": {
+        "label": "Proxy",
+        "hint": "Derived or proxy estimates"
+      },
+      "live": {
+        "label": "Live",
+        "hint": "Primary or official live sources"
+      }
+    },
+    "surfaces": {
+      "brent_usd_per_bbl": "Brent",
+      "jet_usd_per_l": "Jet fuel",
+      "carbon_proxy_usd_per_t": "Carbon proxy",
+      "jet_eu_proxy_usd_per_l": "EU jet proxy",
+      "rotterdam_jet_fuel_usd_per_l": "Rotterdam jet fuel",
+      "eu_ets_price_eur_per_t": "EU ETS",
+      "germany_premium_pct": "Germany premium"
+    },
+    "trust": {
+      "live": "Live",
+      "proxy": "Proxy",
+      "fallback": "Fallback",
+      "degraded": "Degraded"
+    },
+    "status": {
+      "ok": "Healthy",
+      "seed": "Seed fallback",
+      "fallback": "Fallback",
+      "error": "Error",
+      "unknown": "Unknown"
+    },
+    "alert": {
+      "alert": "Alert",
+      "watch": "Watch",
+      "normal": "Normal"
+    },
+    "source_type": {
+      "live": "Primary or official",
+      "proxy": "Proxy or derived",
+      "fallback": "Fallback path",
+      "degraded": "Needs investigation"
+    },
+    "read_model_literals": {
+      "无数据": "No data",
+      "覆盖不可用": "Coverage unavailable",
+      "Brent 派生回退": "Brent-derived fallback"
+    },
+    "read_model_fallbacks": {
+      "no_data": "No data",
+      "coverage_unavailable": "Coverage unavailable"
+    },
+    "read_model_replacements": {
+      "派生回退": "derived fallback",
+      "回退": "fallback"
+    },
+    "panels": {
+      "provenance": {
+        "title": "Source provenance",
+        "why": "How much of the current snapshot is observed, proxy, or fallback decides whether a row can be cited directly."
+      },
+      "coverage": {
+        "title": "Source coverage",
+        "why": "Coverage status shows which canonical metrics have traceable inputs, so a gap is not read as a complete market view."
+      },
+      "market_health": {
+        "title": "Market refresh health",
+        "why": "Refresh-loop health decides whether the source table is a recent snapshot or has drifted from its expected cadence."
+      },
+      "recovery": {
+        "title": "Recovery actions",
+        "why": "Turning degraded rows into an operator checklist keeps a data-quality problem from ending as a passive status label."
+      },
+      "matrix": {
+        "title": "Market input matrix",
+        "why": "Each row connects source, time, lag, value, and action so market inputs remain reviewable before use."
+      }
+    },
+    "market_health": {
+      "line1": "interval {interval}s · age {age} · next ETA {eta} · status",
+      "line2": "runs {ok}/{total}",
+      "success": " · success {rate}%",
+      "unavailable": "Unable to load /v1/market/health. Confirm the API is running and has a refresh run."
+    },
+    "recovery": {
+      "review_badge": "Needs review {count}",
+      "priority_badge": "Priority rows {count}",
+      "open_admin": "Open Admin refresh",
+      "show_review": "Show review rows",
+      "back_dashboard": "Back to dashboard",
+      "open_action": "Open action",
+      "empty": "No fallback or degraded row is currently critical. Proxy rows still deserve manual review before major pricing, purchasing, or disclosure decisions."
+    },
+    "review_actions": {
+      "critical": {
+        "label": "Refresh and verify",
+        "detail": "Use the admin refresh path after configuring an admin token, then return here to confirm this metric leaves fallback or error state."
+      },
+      "review": {
+        "label": "Review proxy assumptions",
+        "detail": "Before high-risk pricing, purchasing, or disclosure use, cross-check the original quote, policy basis, and report wording."
+      },
+      "normal": {
+        "label": "Keep snapshot evidence",
+        "detail": "Record generated time, confidence, and source state before using this metric in a material decision."
+      }
+    },
+    "reasons": {
+      "fallback": "Live coverage is unavailable or fallback was used.",
+      "status": "Source status is {status}.",
+      "proxy": "Proxy or derived metric; review assumptions before material use.",
+      "alert": "Recent volatility is marked {alert}.",
+      "ok": "Primary or official source with no degradation flag."
+    },
+    "table": {
+      "surface": "Metric",
+      "source": "Source",
+      "trust": "Trust",
+      "scope": "Scope",
+      "confidence": "Confidence",
+      "as_of": "As of",
+      "lag": "Lag",
+      "status": "Status",
+      "fallback": "Fallback",
+      "value": "Value",
+      "change_1d": "1d",
+      "change_7d": "7d",
+      "change_30d": "30d",
+      "volatility": "Volatility",
+      "trend": "Trend",
+      "action": "Action",
+      "reason": "Reason",
+      "empty": "No source rows match this filter.",
+      "focus": "Focus",
+      "record": "Record",
+      "handle": "Handle",
+      "trend_alt": "{surface} trend",
+      "na": "n/a",
+      "showing": "Showing {visible} / {total}",
+      "generated": "Generated at {when}",
+      "no_stamp": "Generation time is not a data timestamp",
+      "fallback_note": " | showing fallback estimates because live coverage is unavailable",
+      "focus_banner": "Focused from another surface:",
+      "clear_focus": "Clear"
+    },
+    "footer": {
+      "source_ok": "Source read model (coverage, confidence, lag, fallback, and review state)",
+      "source_fallback": "Source read model unavailable; fallback estimates are in use ({error})",
+      "health_ok": "Market refresh health API",
+      "health_unavailable": "Market refresh health API is currently unavailable",
+      "unknown_error": "unknown reason",
+      "method_label": "Source coverage and review method",
+      "limitations": [
+        "Source status describes input quality; it does not prove that each value applies to every airport, contract, or trade.",
+        "Proxy, derived, fallback, and degraded rows require human review before material pricing, purchasing, or disclosure decisions.",
+        "A fallback generation time is not an observation time, so it is not shown as the data timestamp."
+      ]
+    }
+  },
+  "scenarios": {
+    "meta_title": "Scenario Workbench",
+    "meta_description": "English JetScope scenario review surface for saved assumptions, market context, risk signals, and protected write boundaries.",
+    "eyebrow": "Scenario review",
+    "title": "Scenario Workbench",
+    "question": "Do the saved assumptions still represent the current market?",
+    "signal_row_label": "Scenario decision signals",
+    "policy_target_methods": {
+      "saf": "RefuelEU mandatory SAF blending target (statutory mandate, not a scenario assumption)",
+      "synthetic": "RefuelEU mandatory synthetic aviation fuel blending target (statutory mandate, not a scenario assumption)"
+    },
+    "transition_signal": {
+      "label": "Transition signal",
+      "hint": "The current tipping-point model’s view of SAF cost versus fossil jet.",
+      "hint_fallback": "The tipping-point API did not return a result; the current conclusion is a built-in assumption.",
+      "saf_advantaged": "SAF is advantaged",
+      "switch_window": "Switch window opening",
+      "fossil_advantaged": "SAF is still uneconomic",
+      "needs_review": "Needs review"
+    },
+    "data_posture": {
+      "label": "Data posture",
+      "connected": "Data connected",
+      "partial": "Partial assumptions",
+      "assumed": "Built-in assumptions",
+      "hint": "{count} key inputs use assumptions or unavailable data.",
+      "hint_fallback": "The market snapshot API is on fallback; numbers on this page are not freshly observed market facts."
+    },
+    "airline_signal": {
+      "label": "Airline decision signal",
+      "hint": "Maps reserve, carbon price, and jet-fuel inputs into discussable airline action probabilities.",
+      "switch_window": "Switch window opening",
+      "capacity_stress": "Capacity stress dominant",
+      "incremental": "Incremental adjustment",
+      "needs_review": "Needs review"
+    },
+    "reserve": {
+      "label": "Reserve coverage",
+      "weeks": "{weeks} weeks",
+      "needs_review": "Needs review",
+      "hint": "Source {source} · confidence {confidence}%",
+      "hint_fallback": "Live reserve data is unavailable; the current week count is only an editable scenario assumption."
+    },
+    "assumption_posture": {
+      "label": "Assumption posture",
+      "unreliable": "Not reliable",
+      "reassess": "Reassess",
+      "review": "Review first",
+      "usable": "Usable",
+      "hint_fallback": "The market read-model fallback does not make saved assumptions reliable by itself.",
+      "hint_review": "Source posture, risk, or missing scenarios require review before carrying assumptions forward.",
+      "hint_ok": "Current source posture and risk window show no immediate review trigger."
+    },
+    "saved_scenarios": {
+      "label": "Saved scenarios",
+      "hint": "Workspace assumptions are available for comparison.",
+      "hint_empty": "No saved scenario yet; create one in the primary scenario editor."
+    },
+    "market_context": {
+      "label": "Market context",
+      "value": "${brent}/bbl",
+      "hint": "Jet ${jet}/L | EU jet proxy ${eu}/L | carbon ${carbon}/tCO2"
+    },
+    "risk_signal": {
+      "label": "Highest risk signal",
+      "none": "No anomaly",
+      "none_hint": "The market history window has not produced a ranked alert yet.",
+      "hint": "{level} | samples {samples} | as of {asOf}",
+      "level_normal": "normal",
+      "level_watch": "watch",
+      "level_alert": "alert"
+    },
+    "source_status": {
+      "ok": "healthy",
+      "degraded": "degraded",
+      "offline": "offline",
+      "unknown": "unknown"
+    },
+    "unknown_cause": "unknown cause",
+    "not_available": "n/a",
+    "readiness_panel": {
+      "title": "Transition monitoring",
+      "why": "Place fuel price, carbon price, reserve pressure, and policy targets in one workspace to see which SAF paths are close to an executable range."
+    },
+    "registry_panel": {
+      "title": "Scenario management",
+      "why": "Save and review team-confirmed transition assumptions; protected writes stay in this primary workspace."
+    },
+    "capabilities_panel": {
+      "title": "Workspace capabilities",
+      "why": "These capabilities explain how readers can use scenarios, without treating workflow copy as a market conclusion."
+    },
+    "capabilities": [
+      {
+        "title": "Save assumptions",
+        "body": "Save oil price, carbon price, subsidy, and route cost as reusable decision versions."
+      },
+      {
+        "title": "Compare pressure",
+        "body": "Compare the current market, reserve pressure, and policy targets to see which path becomes viable first."
+      },
+      {
+        "title": "Sensitivity scan",
+        "body": "Scan ranges around fuel, carbon price, and subsidy to find the inputs that move the conclusion most."
+      }
+    ],
+    "duties_panel": {
+      "title": "Page responsibilities",
+      "why": "Keep the scenario page’s choice question separate from the cockpit, crisis monitor, and source-review pages."
+    },
+    "duties": [
+      "Live prices live on the decision cockpit and answer what is happening now.",
+      "Crisis monitoring explains the source of pressure and answers why action is needed.",
+      "The scenario workspace saves assumptions and comparisons and answers how to choose next.",
+      "Source review on the sources page answers whether the evidence chain behind the numbers is reliable enough."
+    ],
+    "assumptions_panel": {
+      "title": "Scenario assumptions",
+      "why": "Saved workspace records show which assumptions are available for comparison and review.",
+      "empty": "No saved assumptions are available yet. Use the primary scenario editor to create reviewable cases for pricing, reserve, route, and policy discussions."
+    },
+    "scenario_name_placeholder": "Saved scenario {index}",
+    "context_panel": {
+      "title": "Decision context",
+      "why": "Scenarios become decision-relevant only alongside current evidence; fallback and missing-signal boundaries stay visible."
+    },
+    "context_paragraphs": [
+      "Scenarios are evidence records for review and team discussion; they do not replace procurement approval, source validation, or protected admin configuration.",
+      "Before comparing assumptions, confirm that source coverage and launch readiness are not hiding fallback or disabled-state boundaries."
+    ],
+    "delivery_fallback": "Local API fallback is active: {error}. Review assumptions against source evidence before use.",
+    "delivery_live": "Source status: {status} | freshness {minutes} min.",
+    "review_panel": {
+      "title": "Review workflow",
+      "why": "The next steps move from saved assumptions back to evidence, launch readiness, and protected write boundaries."
+    },
+    "write_boundary_label": "Protected write boundary",
+    "write_boundary_body": "create, update, and delete actions remain in the primary scenario workspace.",
+    "actions": [
+      {
+        "id": "primary_editor",
+        "label": "Open primary scenario editor",
+        "description": "Create, update, or delete scenarios in the primary workspace where admin-token writes are already guarded."
+      },
+      {
+        "id": "sources",
+        "label": "Review source evidence",
+        "description": "Check fallback, proxy, degraded, and volatility rows before using saved assumptions in decisions."
+      },
+      {
+        "id": "dashboard",
+        "label": "Open decision cockpit",
+        "description": "Return to the live market snapshot, source posture, and top risk signal."
+      },
+      {
+        "id": "admin",
+        "label": "Check launch readiness",
+        "description": "Confirm whether protected writes, source coverage, and research prerequisites are ready."
+      }
+    ],
+    "source_dashboard_fallback": "Market snapshot API unavailable; internal fallback values are being used",
+    "source_dashboard_live": "Market snapshot API (source posture, confidence, fallback rate, and freshness)",
+    "source_tipping_fallback": "Tipping-point analysis unavailable; built-in scenario assumptions are being used",
+    "source_tipping_live": "Tipping-point analysis API (SAF cost signal derived from market inputs)",
+    "source_airline_fallback": "Airline-decision analysis unavailable; built-in scenario assumptions are being used",
+    "source_airline_live": "Airline-decision analysis API (action probabilities derived from market and reserve inputs)",
+    "source_reserve_live": "Reserve signal ({source})",
+    "source_reserve_fallback": "Reserve signal unavailable; an editable week-count assumption is being used",
+    "source_store": "Local scenario store (saved team assumptions, not market observations)",
+    "source_store_count": "Local scenario store ({count} saved scenarios)",
+    "source_policy_live": "RefuelEU policy-target API (statutory blending mandates)",
+    "source_policy_empty": "RefuelEU policy targets have not been returned yet",
+    "source_risk": "Risk signal derived from movement in the market history window, not supplied directly by upstream",
+    "method_label": "Sources and methods",
+    "limitations": [
+      "Saved scenarios are local assumptions for review and discussion; they do not replace procurement approval.",
+      "A fallback read model keeps the page available but does not provide a valid data-as-of for its replacement values.",
+      "No risk signal with a thin sample does not mean there is no risk.",
+      "Protected writes remain in the primary scenario workspace."
+    ]
+  },
+  "crisis": {
+    "show_price_chart": false,
+    "show_reserves_strip": false,
+    "show_event_timeline": false,
+    "show_simulator": false,
+    "show_research_brief": false,
+    "show_zh_subpage_links": false,
+    "meta_title": "Fuel Stress Brief",
+    "meta_description": "English JetScope crisis monitor for EU jet-fuel reserve stress, source confidence, tipping events, and research posture.",
+    "eyebrow": "Crisis monitor",
+    "title": "Fuel Stress Brief",
+    "question": "Is reserve stress high enough to change an operating decision right now?",
+    "signals_label": "Crisis signals",
+    "na": "n/a",
+    "stress": {
+      "critical": "critical",
+      "elevated": "elevated",
+      "guarded": "guarded",
+      "normal": "normal",
+      "unknown": "review"
+    },
+    "source_type": {
+      "official": "official source",
+      "manual": "manual estimate",
+      "derived": "model-derived",
+      "unknown": "scenario baseline"
+    },
+    "confidence": {
+      "missing": "no confidence",
+      "high": "high confidence",
+      "medium_high": "medium-high confidence",
+      "medium": "medium confidence",
+      "unavailable": "unavailable"
+    },
+    "signal": {
+      "saf_cost_advantaged": "SAF cost-advantaged",
+      "switch_window_opening": "switch window opening",
+      "fossil_still_advantaged": "fossil jet still advantaged",
+      "unknown": "scenario baseline"
+    },
+    "source_status": {
+      "ok": "healthy",
+      "degraded": "degraded",
+      "offline": "offline",
+      "unknown": "unknown"
+    },
+    "research_posture": {
+      "disabled": "disabled boundary",
+      "empty": "waiting for signals",
+      "backed": "signal-backed"
+    },
+    "monitor": {
+      "decision_label": "Decision signal",
+      "decision_hint": "{status} · fossil jet baseline ${price}/L",
+      "reserve_connected": "Reserve data connected",
+      "reserve_baseline": "Using the scenario baseline",
+      "coverage_label": "Reserve coverage",
+      "coverage_weeks": "{weeks} weeks",
+      "coverage_missing": "Needs reconnect",
+      "coverage_hint": "Stress level: {stress} · {source}",
+      "coverage_source_missing": "no live reserve source connected",
+      "reserve_confidence_label": "Reserve confidence",
+      "reserve_confidence_hint": "{confidence} · source type: {source_type}",
+      "market_confidence_label": "Market confidence",
+      "market_confidence_hint": "Overall market-snapshot confidence, which decides whether the price ladder can be cited",
+      "actions_title": "Next actions",
+      "actions_why": "Confirm reserve credibility first, then test SAF economics — do not skip the first step into procurement.",
+      "reserves_panel_title": "EU jet-fuel reserve coverage",
+      "reserves_panel_why": "Reserve weeks are the base of the crisis narrative. Below the watch line, price and policy responses accelerate together.",
+      "timeline_title": "SAF crossover timeline",
+      "timeline_why": "Record the moment SAF effective cost actually crossed fossil jet, not the moment a model said it would.",
+      "research_title": "Research decision layer",
+      "research_why": "Explains why the numbers above are moving. The signal is not the conclusion; it is the reason for one.",
+      "chart_title": "Jet-fuel and SAF price ladder",
+      "chart_why": "Fossil baseline, carbon-adjusted effective cost, and pathway net-cost bands — the gap is the point, not the absolute.",
+      "simulator_title": "Tipping-point simulator",
+      "simulator_why": "API model of fuel price, carbon price, reserve stress, and pathway economics; used to probe when the conclusion flips.",
+      "methods": {
+        "fossil_fallback": "crisis page fossil-jet fallback or missing source timestamp",
+        "effective_fossil": "effective fossil jet = spot fossil jet + carbon price pressure at selected blend rate, minus subsidy (tipping-point model)",
+        "reserve_derived": "derived reserve coverage from {name}",
+        "reserve_named": "reserve coverage from {name} ({type})",
+        "reserve_dashboard": "dashboard reserve coverage without connected reserve source metadata",
+        "reserve_baseline": "scenario baseline 3.0 weeks; live reserve not connected"
+      }
+    },
+    "zh_links": {
+      "reserves": {
+        "title": "Open reserve detail",
+        "description": "Check coverage weeks, source type, confidence, and the supply gap before changing a procurement call.",
+        "eyebrow": "Reserve"
+      },
+      "workbench": {
+        "title": "Open SAF workbench",
+        "description": "Carry the current fuel, carbon, and reserve readings in and test pathway sensitivity directly.",
+        "eyebrow": "Simulate"
+      },
+      "sources": {
+        "title": "Review data sources",
+        "description": "Inspect market inputs that need review and confirm live, proxy, fallback, and degraded states.",
+        "eyebrow": "Sources"
+      }
+    },
+    "brief": {
+      "stress_label": "Reserve stress",
+      "stress_weeks": "{weeks} weeks",
+      "stress_hint": "EU reserve posture: {stress} | {source}",
+      "fallback_source": "fallback scenario baseline",
+      "source_label": "Source confidence",
+      "source_hint": "Market status {status} | reserve confidence {reserve}",
+      "events_label": "Tipping events",
+      "events_hint": "{type} | {pathway} | {when}",
+      "events_empty": "No events in the current review window.",
+      "research_label": "Research posture",
+      "research_hint": "{count} research signals available for review.",
+      "research_hint_empty": "The page exposes the research boundary instead of inventing evidence.",
+      "readout_title": "Operating readout",
+      "readout_why": "What the numbers above mean together, and how to tell whether they came from live evidence or from a fallback posture.",
+      "readout_p1_lead": "The current fossil fuel anchor is",
+      "readout_p1_tail": ". JetScope keeps that value beside EU reserve coverage and source confidence so reviewers can separate live evidence from fallback posture before changing procurement or SAF adoption assumptions.",
+      "readout_p2": "The crisis brief comes from the FastAPI crisis-brief contract, so the page can show one coherent operating readout without duplicating reserve, source, tipping-event, and research aggregation in the display layer.",
+      "evidence_title": "Evidence discipline",
+      "evidence_why": "The four readings that decide whether this brief can be used as decision evidence or has to go through source review first.",
+      "freshness_label": "Market freshness",
+      "freshness_minutes": "{minutes} min",
+      "freshness_review": "review",
+      "fallback_rate_label": "Fallback rate",
+      "reserve_timestamp_label": "Reserve timestamp",
+      "as_of_unavailable": "not available",
+      "contract_label": "Contract status",
+      "contract_fallback": "fallback",
+      "contract_connected": "connected",
+      "actions_title": "Next steps",
+      "actions_why": "A crisis brief that only shows numbers changes nothing. Every entry point here leads to something checkable."
+    },
+    "recovery": {
+      "review_sources": {
+        "title": "Review source evidence",
+        "description": "Check fallback, proxy, degraded, and volatile rows before treating the crisis signal as operational evidence."
+      },
+      "open_report": {
+        "title": "Open localized report",
+        "description": "Move from the brief into the source-backed tipping-point report for a longer review narrative."
+      },
+      "review_scenarios": {
+        "title": "Review scenarios",
+        "description": "Compare saved assumptions against the current reserve stress and market confidence before changing the plan."
+      }
+    },
+    "footer": {
+      "reserve_connected": "EU jet-fuel reserve coverage via {type} ({name})",
+      "reserve_missing": "Reserve service not connected; coverage uses the scenario baseline",
+      "market_snapshot": "Market snapshot (fossil jet baseline ${price}/L, carbon proxy €{carbon}/t)",
+      "tipping_events": "{count} observed SAF crossover events in the review window",
+      "tipping_model": "Decision signal and pathway net costs are derived by the tipping-point model, not an upstream raw reading",
+      "brief_error": "Crisis brief API unreachable; internal fallback values are in use ({error})",
+      "brief_ok": "Crisis brief API (reserve, source status, tipping events, research posture)",
+      "reserve_via": "EU reserve posture via {name}",
+      "events_observed": "{count} observed SAF tipping events in the review window",
+      "fossil_anchor": "Fossil cost anchor {price}, derived from the market snapshot",
+      "method_label": "Source and method list"
+    },
+    "limitations": [
+      "This brief describes reserve pressure across the region, not one operator’s supply position. An airline’s own contracts and stock are not in here.",
+      "Tipping events are counted inside the review window. No events does not mean no risk; it means no crossing was observed in this window.",
+      "When the reserve source is a manual estimate it is tagged “scenario assumption” above, and must not be read as an official filing.",
+      "This brief is a review surface, not a procurement recommendation."
+    ]
+  },
+  "tipping_point_report": {
+    "meta_title": "Tipping-Point Report",
+    "meta_description": "English JetScope report detail for SAF tipping-point evidence, market source confidence, reserve stress, and research posture.",
+    "eyebrow": "Report detail",
+    "title": "Tipping-Point Report",
+    "question": "Does this report's economic case still hold?",
+    "signal_row_label": "Tipping-point conclusion",
+    "signal_label": "Tipping-point signal",
+    "signal_unknown": "review",
+    "signal_hint": "Conclusion first; an unknown signal remains review-required.",
+    "probability_label": "Decision probability",
+    "probability_hint": "Maximum probability across spot SAF purchase and long-term offtake.",
+    "confidence_metric_label": "Source confidence",
+    "confidence_metric_hint": "Market status: {status}",
+    "events_label": "Events loaded",
+    "events_hint": "Event sample in the current 42-day review window.",
+    "events_hint_latest": "Latest: {event}",
+    "events_hint_empty": "No events in the current review window.",
+    "thesis_title": "Core argument",
+    "thesis_why": "The evidence chain shows whether the model can support a decision or must go through source review first.",
+    "thesis_lead": "JetScope treats the tipping point as a convergence of fossil fuel cost, carbon exposure, reserve stress, and SAF pathway spread. The current fossil cost anchor is {price}.",
+    "thesis_body": "The source posture is {status} with {confidence} confidence. If fallback rows are active, the report remains readable but must be reviewed before publication.",
+    "reserves_title": "EU jet-fuel reserve coverage",
+    "reserves_why": "Reserve weeks set the urgency: the thinner the cover, the shorter the price and policy reaction window.",
+    "chart_title": "Jet-fuel and SAF price ladder",
+    "chart_why": "The fossil anchor, carbon-adjusted effective cost, and pathway net-cost ranges — the report's economic case sits in those gaps.",
+    "chart_why_assumed": "No live fossil anchor is available; the price gap is for scenario discussion only.",
+    "decision_title": "Airline decision implications",
+    "decision_why": "Translate model output into reviewable operating implications, so probabilities are not read as a yes-or-no recommendation.",
+    "decision_body": "The decision model presents probabilities and threshold evidence rather than a simple yes/no recommendation.",
+    "research_title": "Research decision layer",
+    "research_why": "Explains why this report's argument is changing. Signals are reasons, not conclusions.",
+    "timeline_title": "SAF crossover timeline",
+    "timeline_why": "Records when SAF effective cost actually crossed fossil jet, not when the model expected it to.",
+    "confidence_title": "Source confidence",
+    "confidence_why": "These four checks explain how much weight the conclusion can carry and which evidence is still missing.",
+    "market_status_label": "Market status",
+    "fallback_rate_label": "Fallback rate",
+    "latest_event_label": "Latest event",
+    "latest_event_none": "none",
+    "research_status_label": "Research posture",
+    "source_status": {
+      "ok": "healthy",
+      "degraded": "degraded",
+      "offline": "offline",
+      "unknown": "unknown"
+    },
+    "research_posture": {
+      "disabled": "disabled boundary",
+      "error": "degraded",
+      "not_found": "not deployed",
+      "with_signals": "signal-backed",
+      "waiting": "waiting for signals"
+    },
+    "next_title": "Next review steps",
+    "next_why": "The report becomes actionable only when its sources, scenario assumptions, and publication path remain reachable.",
+    "next_actions": {
+      "sources": {
+        "title": "Review market sources",
+        "description": "Check live, proxy, fallback, and degraded inputs before external use."
+      },
+      "scenarios": {
+        "title": "Compare scenario assumptions",
+        "description": "Confirm saved assumptions before changing procurement posture."
+      },
+      "reports": {
+        "title": "Return to report workbench",
+        "description": "Review launch posture and report catalog status."
+      }
+    },
+    "number_unavailable": "n/a",
+    "figure_methods": {
+      "fossil_assumed": "Report-page assumed fossil-jet constant of 0.657 USD/L, or no citable timestamp is available",
+      "effective_fossil": "Effective fossil jet = spot fossil jet + carbon-price pressure at the selected blend rate - subsidy (tipping-point model)"
+    },
+    "source_dashboard": "Dashboard read model and market status",
+    "source_reserve": "EU reserve coverage via {source}",
+    "source_unavailable": "unavailable source",
+    "source_fossil_assumed": "No fossil cost anchor available",
+    "source_fossil_live": "Fossil jet-fuel cost anchor",
+    "source_events": "SAF tipping-point events ({count})",
+    "source_research": "Derived research signals ({count})",
+    "method_label": "Source and method registry",
+    "limitations": [
+      "The report describes market-wide thresholds, not one airline’s contracts, inventory, or approvals.",
+      "Decision probabilities are model outputs, not observed future behaviour.",
+      "No events in a thin review window does not mean there is no risk."
     ]
   }
 }
