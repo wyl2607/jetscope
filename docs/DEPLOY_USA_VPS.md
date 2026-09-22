@@ -113,6 +113,53 @@ deploy script still excludes `.env` and `data/*.db` and does not use `rsync --de
 | `GET /v1/reserves/eu` | No invented IATA claim |
 | Dashboard `/dashboard` | Live strip + LH event card when web is served |
 
+## Admin UI edge gate (host nginx)
+
+The public admin pages (`/admin`, `/de/admin`, `/en/admin`) show operational
+detail and write controls. Mutating API calls already require `x-admin-token`.
+Edge Basic Auth is the first gate for the HTML. `infra/server/nginx.conf` puts
+it on the existing admin location:
+
+```nginx
+location ~ ^/(?:en/|de/)?admin(?:/|$) {
+    auth_basic "JetScope admin";
+    auth_basic_user_file /etc/nginx/secrets/jetscope-admin.htpasswd;
+}
+```
+
+That regex covers `/admin`, `/de/admin`, and `/en/admin`, including subpaths,
+and does not match `/administrator`. Do not replace it with a bare
+`location /admin` prefix: that prefix also matches `/administrator`. The
+container edge in `infra/nginx.prod.conf` uses the same location with
+`auth_basic_user_file /etc/nginx/secrets/admin.htpasswd`, so a later cutover
+does not drop the gate. This host also serves unrelated products; only touch
+the `saf.meichen.beauty` vhost.
+
+Create the credential file on the VPS before reloading nginx. nginx refuses
+to start or reload if `auth_basic_user_file` is missing. Never commit the
+file, the password, or the hash.
+
+```bash
+ssh usa-vps
+sudo mkdir -p /etc/nginx/secrets
+sudo chmod 750 /etc/nginx/secrets
+# First user: -c creates the file. Additional users: omit -c.
+sudo htpasswd -c /etc/nginx/secrets/jetscope-admin.htpasswd <username>
+sudo chmod 640 /etc/nginx/secrets/jetscope-admin.htpasswd
+sudo chown root:www-data /etc/nginx/secrets/jetscope-admin.htpasswd
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+If the live vhost is still a hand-edited copy under `/etc/nginx/sites-enabled/`
+rather than this file, add those two `auth_basic` lines to its existing
+`location ~ ^/(?:en/|de/)?admin(?:/|$)` block. Do not add a second set of
+`location = /admin` blocks beside that regex.
+
+`X-Robots-Tag: noindex, nofollow` is set on the same nginx location and again
+in `apps/web/next.config.mjs`, so the tag still holds if a request reaches
+Next without this edge. Installing the htpasswd file and reloading host nginx
+is a human production step; this change does not do it.
+
 ## Notes / risks
 
 - Compose owns the API; systemd owns Next.js; nginx proxies the public Host `saf.meichen.beauty`. A naked IP request is expected to hit the default nginx server and return 404.
