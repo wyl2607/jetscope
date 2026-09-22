@@ -1,4 +1,6 @@
 import os
+import shlex
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -7,8 +9,41 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 HEALTH_CHECK = REPO_ROOT / "infra" / "server" / "health-check.sh"
 
 
+def bash_path(path: Path | str) -> str:
+    """Drive path with forward slashes so bash does not eat backslashes."""
+    return Path(path).resolve().as_posix()
+
+
+def bash_msys_path(path: Path | str) -> str:
+    """MSYS/Git-Bash path form (/c/Users/...) for PATH and shell lookups."""
+    posix = bash_path(path)
+    if len(posix) >= 2 and posix[1] == ":":
+        return f"/{posix[0].lower()}{posix[2:]}"
+    return posix
+
+
+def resolve_bash() -> str:
+    """Prefer Git Bash on Windows; PATH's `bash` is often WSL and cannot see Windows paths."""
+    for key in ("JETSCOPE_BASH", "BASH"):
+        override = os.environ.get(key)
+        if override:
+            return override
+    git = shutil.which("git")
+    if git:
+        candidate = Path(git).resolve().parent.parent / "bin" / "bash.exe"
+        if candidate.is_file():
+            return str(candidate)
+    for fallback in (
+        Path(r"C:\Program Files\Git\bin\bash.exe"),
+        Path(r"C:\Program Files\Git\usr\bin\bash.exe"),
+    ):
+        if fallback.is_file():
+            return str(fallback)
+    return "bash"
+
+
 def _write_executable(path: Path, content: str) -> None:
-    path.write_text(content)
+    path.write_text(content, encoding="utf-8", newline="\n")
     path.chmod(0o755)
 
 
@@ -19,7 +54,13 @@ def _run_health_check(
     bin_dir.mkdir(parents=True)
     log_path = tmp_path / "health.log"
     script = tmp_path / "health-check.sh"
-    script.write_text(HEALTH_CHECK.read_text().replace('LOG="/var/log/jetscope-health.log"', f'LOG="{log_path}"'))
+    script.write_text(
+        HEALTH_CHECK.read_text(encoding="utf-8").replace(
+            'LOG="/var/log/jetscope-health.log"', f'LOG="{bash_path(log_path)}"'
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
     script.chmod(0o755)
 
     ready_value = "true" if readiness in {"ready", "degraded"} else "false"
@@ -42,12 +83,16 @@ esac
     )
     _write_executable(bin_dir / "date", "#!/bin/sh\nprintf '11'\n")
 
+    msys_bin = bash_msys_path(bin_dir)
+    command = (
+        f'export PATH={shlex.quote(msys_bin)}:"$PATH"; '
+        f"exec bash {shlex.quote(bash_path(script))}"
+    )
     return subprocess.run(
-        ["bash", str(script)],
+        [resolve_bash(), "-c", command],
         cwd=REPO_ROOT,
         env={
             **os.environ,
-            "PATH": f"{bin_dir}:{os.environ['PATH']}",
             "JETSCOPE_API_HEALTH_URL": "http://test/health",
             "JETSCOPE_API_READINESS_URL": "http://test/readiness",
             "JETSCOPE_PUBLIC_URL": "http://test/web",
