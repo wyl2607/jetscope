@@ -72,5 +72,14 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="JETSCOPE_")
 
+    @property
+    def ai_research_informational(self) -> bool:
+        """Disabled or mock-only research does not gate launch readiness."""
+        return (not self.ai_research_enabled) or self.ai_research_mock_mode
+
+    @property
+    def market_refresh_loop_enabled(self) -> bool:
+        return int(self.market_refresh_interval_seconds) > 0
+
 
 settings = Settings()

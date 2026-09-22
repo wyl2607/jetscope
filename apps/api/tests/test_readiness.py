@@ -14,12 +14,24 @@ from app.schemas.sources import SourceCoverageMetric, SourceCoverageResponse
 from app.services.bootstrap import utcnow
 
 
-def _client(db_path: Path, db_override=None) -> TestClient:
+class _RunningRefreshTask:
+    def done(self) -> bool:
+        return False
+
+    def cancelled(self) -> bool:
+        return False
+
+
+def _client(db_path: Path, db_override=None, *, refresh_task: str = "missing") -> TestClient:
     engine = create_engine(f"sqlite:///{db_path}", future=True)
     SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
     Base.metadata.create_all(bind=engine)
 
     app = FastAPI(title="readiness-route-test")
+    if refresh_task == "running":
+        app.state.market_refresh_task = _RunningRefreshTask()
+    elif refresh_task == "stopped":
+        app.state.market_refresh_task = None
     app.include_router(api_router, prefix="/v1")
 
     def _override_db():
@@ -68,6 +80,7 @@ def test_readiness_reports_database_market_and_source_checks(tmp_path: Path):
         "source_coverage",
         "admin_token",
         "ai_research_pipeline",
+        "market_refresh_task",
     }
     assert payload["checks"]["database"]["ok"] is True
     assert payload["checks"]["market_snapshot"]["ok"] is True
@@ -81,18 +94,22 @@ def test_readiness_reports_database_market_and_source_checks(tmp_path: Path):
         "href": "/admin",
         "config_keys": ["JETSCOPE_ADMIN_TOKEN"],
     }
-    assert payload["checks"]["ai_research_pipeline"]["ok"] is False
+    assert payload["checks"]["ai_research_pipeline"]["ok"] is True
     assert payload["checks"]["ai_research_pipeline"]["status"] == "disabled"
-    assert payload["checks"]["ai_research_pipeline"]["severity"] == "blocker"
+    assert payload["checks"]["ai_research_pipeline"]["severity"] == "info"
+    assert payload["checks"]["ai_research_pipeline"]["blocking"] is False
     assert payload["checks"]["ai_research_pipeline"]["action"] == {
         "key": "enable_ai_research",
         "href": "/research",
         "config_keys": ["JETSCOPE_AI_RESEARCH_ENABLED"],
     }
+    assert payload["checks"]["market_refresh_task"]["ok"] is False
+    assert payload["checks"]["market_refresh_task"]["blocking"] is True
+    assert payload["checks"]["market_snapshot"]["blocking"] is False
 
 
 def test_readiness_reports_degraded_when_source_coverage_is_partial(tmp_path: Path, monkeypatch):
-    client = _client(tmp_path / "partial-readiness.sqlite3")
+    client = _client(tmp_path / "partial-readiness.sqlite3", refresh_task="running")
 
     def _partial_coverage(_db):
         return SourceCoverageResponse(
@@ -138,6 +155,10 @@ def test_readiness_reports_degraded_when_source_coverage_is_partial(tmp_path: Pa
     }
     assert payload["checks"]["admin_token"]["ok"] is True
     assert payload["checks"]["ai_research_pipeline"]["status"] == "mock"
+    assert payload["checks"]["ai_research_pipeline"]["severity"] == "info"
+    assert payload["checks"]["ai_research_pipeline"]["blocking"] is False
+    assert payload["checks"]["market_refresh_task"]["ok"] is True
+    assert payload["checks"]["market_refresh_task"]["blocking"] is False
 
 
 def test_readiness_reports_not_ready_when_database_check_fails(tmp_path: Path, monkeypatch):
