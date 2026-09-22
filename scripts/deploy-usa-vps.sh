@@ -16,7 +16,12 @@
 #   bash scripts/deploy-usa-vps.sh              # rsync + smoke only
 #   bash scripts/deploy-usa-vps.sh --rebuild    # rsync + rebuild api container + rebuild/restart systemd web + smoke
 #   bash scripts/deploy-usa-vps.sh --rebuild --api-only   # skip the web rebuild
+#   bash scripts/deploy-usa-vps.sh --rebuild --allow-unmerged  # source not on origin/main
 #   JETSCOPE_REMOTE_DIR=/opt/jetscope bash scripts/deploy-usa-vps.sh --rebuild
+#
+# The deploy source must be a clean tree AND a commit that is on origin/main.
+# Pipe the output at your peril: `deploy.sh | tail` reports tail's exit code,
+# which is how a smoke failure reads as a successful deploy.
 set -euo pipefail
 
 HOST="${JETSCOPE_DEPLOY_HOST:-usa-vps}"
@@ -29,6 +34,7 @@ PUBLIC_HOST="${JETSCOPE_PUBLIC_HOST:-saf.meichen.beauty}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REBUILD=0
 API_ONLY=0
+ALLOW_UNMERGED=0
 
 if ! DEPLOY_COMMIT="$(git -C "$ROOT" rev-parse --verify "HEAD^{commit}")"; then
   echo "ERROR: deploy source is not a Git checkout" >&2
@@ -43,8 +49,9 @@ for arg in "$@"; do
   case "$arg" in
     --rebuild) REBUILD=1 ;;
     --api-only) API_ONLY=1 ;;
+    --allow-unmerged) ALLOW_UNMERGED=1 ;;
     --help|-h)
-      sed -n '2,20p' "$0"
+      sed -n '2,22p' "$0"
       exit 0
       ;;
     *)
@@ -53,6 +60,24 @@ for arg in "$@"; do
       ;;
   esac
 done
+
+# What gets deployed is the working tree, so "which commit" is decided by
+# whatever happens to be checked out. A clean tree is not the same as a
+# reviewed one: a local branch, an unpushed commit, or a half-finished
+# experiment all pass the check above and all rsync straight to production.
+#
+# --is-ancestor rather than an equality test, so rolling back to an older
+# merged commit still works; the thing being refused is source that is not on
+# origin/main at all.
+if [[ "$ALLOW_UNMERGED" -eq 0 ]]; then
+  git -C "$ROOT" fetch origin main --quiet 2>/dev/null || true
+  if ! git -C "$ROOT" merge-base --is-ancestor "$DEPLOY_COMMIT" origin/main 2>/dev/null; then
+    echo "ERROR: $DEPLOY_COMMIT is not on origin/main." >&2
+    echo "       Production deploys only commits that were merged and passed CI." >&2
+    echo "       Check out a merged commit, or pass --allow-unmerged deliberately." >&2
+    exit 1
+  fi
+fi
 
 echo "==> Preflight SSH ($HOST)"
 if ! ssh -o BatchMode=yes -o ConnectTimeout=12 "$HOST" "echo OK && hostname"; then
@@ -213,19 +238,9 @@ fi
 # the presence of that stamp is proof the server-side fetch reached the API.
 # This is the check that actually matters.
 #
-# The second probe goes to the public HTTPS URL, not to 127.0.0.1 with a Host
-# header. The first real run of this step tried the Host-header route and
-# reported a failed deploy that had in fact succeeded: host nginx answers :80
-# with a 301 to https, and the probe read the empty redirect body. Adding -L did
-# not rescue it either - the redirected request returned 404 - while a plain
-# request to https://<public host> from the same machine returned 200 and the
-# full page.
-#
-# So: ask for the page the way a reader asks for it. This host serves more than
-# one site, and reproducing nginx's vhost selection inside a smoke test only
-# creates a second thing that can be wrong. A check that cries wolf on every
-# deploy gets ignored on the deploy where it is right, which is as bad as the
-# false pass this whole step exists to prevent.
+# The second probe carries the public Host header on purpose: host nginx serves
+# a named vhost and answers naked-IP requests from its default server, so an
+# unadorned http://127.0.0.1/ proves nothing about the public entrypoint.
 if curl -fsS --max-time 20 http://127.0.0.1:3000/ >/dev/null 2>&1; then
   echo "WEB responding on :3000"
 else
@@ -233,10 +248,44 @@ else
   exit 1
 fi
 
-for probe in "http://127.0.0.1:3000/sources|direct :3000" "https://$PUBLIC_HOST/sources|public https"; do
-  url="\${probe%%|*}"
-  label="\${probe##*|}"
-  body="\$(curl -fsS --max-time 25 "\$url" 2>/dev/null || true)"
+# Every route the middleware rewrites, probed without following redirects.
+#
+# This exists because a deploy passed every check while /faq and /reports were
+# 308ing to themselves: the default locale is the only one that gets rewritten,
+# and the only page this smoke check read was /sources, which is not rewritten.
+# A route that answers 3xx here is a redirect loop, not a redirect.
+for path in /faq /reports; do
+  code="\$(curl -s -o /dev/null --max-time 15 -w '%{http_code}' "http://127.0.0.1:3000\$path" || echo 000)"
+  if [ "\$code" = "200" ]; then
+    echo "OK \$path — default locale rewrite resolves"
+  else
+    echo "FAIL \$path — expected 200, got \$code. The default-locale rewrite is not resolving."
+    exit 1
+  fi
+done
+
+for probe in "http://127.0.0.1:3000/sources||direct :3000" "|$PUBLIC_HOST|via nginx as $PUBLIC_HOST"; do
+  url="\$(printf '%s' "\$probe" | cut -d'|' -f1)"
+  host_header="\$(printf '%s' "\$probe" | cut -d'|' -f2)"
+  label="\$(printf '%s' "\$probe" | cut -d'|' -f3)"
+  if [ -n "\$host_header" ]; then
+    # Probe the vhost over TLS, with the name pinned to this host.
+    #
+    # The previous form asked for http://127.0.0.1/ with a Host header. The
+    # public vhost answers :80 with a 301 to https, so the probe read the
+    # 178-byte nginx redirect page, found no as-of stamp, and reported a live,
+    # correct site as broken. A check that cries wolf is worse than no check.
+    #
+    # Following the redirect with -L is not the fix either: the Location points
+    # at the public name, which is Cloudflare-proxied, so the probe would leave
+    # the box and come back through the CDN - testing DNS and Cloudflare rather
+    # than the nginx this deploy just touched. --resolve keeps it local; -k
+    # because pinning the name to 127.0.0.1 is exactly what a cert cannot cover.
+    body="\$(curl -fsS -k --max-time 25 --resolve "\$host_header:443:127.0.0.1" \
+      "https://\$host_header/sources" 2>/dev/null || true)"
+  else
+    body="\$(curl -fsS --max-time 25 "\$url" 2>/dev/null || true)"
+  fi
   if [ -z "\$body" ]; then
     echo "FAIL /sources \$label — no response"
     exit 1
@@ -254,8 +303,8 @@ for probe in "http://127.0.0.1:3000/sources|direct :3000" "https://$PUBLIC_HOST/
 done
 
 # nginx must not let its catch-all swallow the API prefix.
-if curl -fsS --max-time 10 "https://$PUBLIC_HOST/v1/health" >/dev/null 2>&1; then
-  echo "OK /v1/health via public https"
+if curl -fsS --max-time 10 -H "Host: $PUBLIC_HOST" http://127.0.0.1/v1/health >/dev/null 2>&1; then
+  echo "OK /v1/health via nginx as $PUBLIC_HOST"
 else
   echo "FAIL /v1/health via nginx — check the /v1 location order in the active nginx config"
   exit 1

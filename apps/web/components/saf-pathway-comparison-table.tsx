@@ -1,18 +1,10 @@
 import { listCanonicalPathways } from '@core/aviation/pathways';
-import type { PathwaySourceView } from '@/lib/pathways-read-model';
-
-type TippingPointPathway = {
-  pathway_key: string;
-  display_name: string;
-  net_cost_low_usd_per_l: number;
-  net_cost_high_usd_per_l: number;
-  spread_low_pct: number;
-  spread_high_pct: number;
-  status: string;
-};
+import { FigureValue } from '@/components/figure-value';
+import { formatFigure } from '@/lib/figure';
+import type { PathwayCostRow, PathwaySourceView } from '@/lib/pathways-read-model';
 
 type Props = {
-  pathways: TippingPointPathway[];
+  pathways: PathwayCostRow[];
   selectedPathwayKey: string;
   /** Optional source-trust metadata keyed by pathway_key. When provided,
    *  the table renders provenance columns; when omitted it renders as before. */
@@ -30,19 +22,15 @@ const canonicalByKey = new Map<string, (typeof listCanonicalPathways extends () 
   listCanonicalPathways().map((pathway) => [pathway.pathwayKey, pathway])
 );
 
-function formatRange(low: number, high: number): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
-  return `$${low.toFixed(2)}–$${high.toFixed(2)}/L`;
-}
-
 export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, sources }: Props) {
   const showSources = Boolean(sources);
   return (
     // Bare artifact: card, title and why-line come from the wrapping Panel.
     <div className="min-w-0">
       <div className="overflow-x-auto">
-        <table className="min-w-full text-left text-sm text-slate-700">
+        <table className="min-w-full text-left text-sm text-ink">
           <thead>
-            <tr className="border-b border-slate-200 text-slate-500">
+            <tr className="border-b border-line text-muted">
               <th className="py-3 pr-4">路径</th>
               <th className="py-3 pr-4">净成本</th>
               <th className="py-3 pr-4">CO₂ 减排</th>
@@ -56,21 +44,25 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, source
             {pathways.map((pathway) => {
               const canonical = canonicalByKey.get(pathway.pathway_key);
               const isSelected = pathway.pathway_key === selectedPathwayKey;
-              const rowClass = isSelected ? 'bg-sky-50 ring-1 ring-sky-300' : '';
+              const rowClass = isSelected ? 'bg-accent-soft ring-1 ring-accent' : '';
               const statusColor =
                 pathway.status === 'competitive'
-                  ? 'text-emerald-700'
+                  ? 'text-success'
                   : pathway.status === 'inflection'
-                    ? 'text-amber-700'
-                    : 'text-rose-700';
+                    ? 'text-warning'
+                    : 'text-danger';
               return (
-                <tr key={pathway.pathway_key} className={`border-b border-slate-200 last:border-none ${rowClass}`}>
+                <tr key={pathway.pathway_key} className={`border-b border-line last:border-none ${rowClass}`}>
                   <td className="py-3 pr-4">
-                    <div className="font-medium text-slate-950">{pathway.display_name}</div>
-                    <div className="text-xs text-slate-500">{pathway.pathway_key}</div>
+                    <div className="font-medium text-ink">{pathway.display_name}</div>
+                    <div className="text-xs text-muted">{pathway.pathway_key}</div>
                   </td>
                   <td className="py-3 pr-4">
-                    {formatRange(pathway.net_cost_low_usd_per_l, pathway.net_cost_high_usd_per_l)}
+                    <span className="inline-flex flex-wrap items-baseline gap-1">
+                      <FigureValue figure={pathway.netCostLow} locale="zh" size="inline" showTimestamp={false} />
+                      <span>–</span>
+                      <FigureValue figure={pathway.netCostHigh} locale="zh" size="inline" showTimestamp={false} />
+                    </span>
                   </td>
                   <td className="py-3 pr-4">
                     {canonical
@@ -82,23 +74,23 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, source
                   </td>
                   <td className={`py-3 pr-4 font-medium ${statusColor}`}>{pathway.status}</td>
                   <td className="py-3 pr-4">
-                    {pathway.spread_low_pct.toFixed(1)}% 至 {pathway.spread_high_pct.toFixed(1)}%
+                    {formatFigure(pathway.spreadLow)} 至 {formatFigure(pathway.spreadHigh)}
                   </td>
                   {showSources ? (
                     <td className="py-3">
                       {sources?.[pathway.pathway_key] ? (
                         <div>
-                          <div className="text-slate-950">
+                          <div className="text-ink">
                             {sources[pathway.pathway_key].sourceType} · {sources[pathway.pathway_key].confidenceLabel}（
                             {sources[pathway.pathway_key].confidencePct}%）
                           </div>
-                          <div className="text-xs text-slate-500">
+                          <div className="text-xs text-muted">
                             {sources[pathway.pathway_key].freshnessLabel}
                             {sources[pathway.pathway_key].fallbackUsed ? ' · 回退' : ''}
                           </div>
                         </div>
                       ) : (
-                        <span className="text-slate-400">无数据</span>
+                        <span className="text-subtle">无数据</span>
                       )}
                     </td>
                   ) : null}

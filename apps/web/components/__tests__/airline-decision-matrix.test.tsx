@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { AirlineDecisionMatrix } from '@/components/airline-decision-matrix';
+import { assumed } from '@/lib/figure';
 
 describe('AirlineDecisionMatrix', () => {
   it('renders without crashing', () => {
@@ -18,7 +19,13 @@ describe('AirlineDecisionMatrix', () => {
     const { container } = render(
       <AirlineDecisionMatrix
         decision={decision}
-        reserveWeeks={3.2}
+        reserveWeeks={assumed({
+          value: 3.2,
+          unit: 'weeks',
+          sourceId: 'test',
+          method: 'test fixture reserve',
+          precision: 1
+        })}
         pathwayKey="hefa"
       />
     );

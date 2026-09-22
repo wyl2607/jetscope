@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { ScenarioCostStackChart } from '@/components/scenario-cost-stack-chart';
+import { toPathwayCostRow } from '@/lib/pathways-read-model';
 
 describe('ScenarioCostStackChart', () => {
   it('renders without crashing', () => {
@@ -15,15 +16,18 @@ describe('ScenarioCostStackChart', () => {
       effectiveFossilJetUsdPerL: 1.4,
       signal: 'inflection',
       pathways: [
-        {
-          pathway_key: 'hefa',
-          display_name: 'HEFA',
-          net_cost_low_usd_per_l: 1.9,
-          net_cost_high_usd_per_l: 2.1,
-          spread_low_pct: 8,
-          spread_high_pct: 15,
-          status: 'inflection'
-        }
+        toPathwayCostRow(
+          {
+            pathway_key: 'hefa',
+            display_name: 'HEFA',
+            net_cost_low_usd_per_l: 1.9,
+            net_cost_high_usd_per_l: 2.1,
+            spread_low_pct: 8,
+            spread_high_pct: 15,
+            status: 'inflection'
+          },
+          { asOf: null, basis: 'assumption', method: 'test fixture pathway cost' }
+        )
       ]
     };
 

@@ -8,7 +8,10 @@ import { pathToFileURL } from 'node:url';
 async function importReadModel() {
   const source = await readFile(new URL('../apps/web/lib/pathways-read-model.ts', import.meta.url), 'utf8');
   const apiConfigUrl = new URL('../apps/web/lib/api-config.ts', import.meta.url).href;
-  const rewritten = source.replaceAll("'@/lib/api-config'", `'${apiConfigUrl}'`);
+  const figureUrl = new URL('../apps/web/lib/figure.ts', import.meta.url).href;
+  const rewritten = source
+    .replaceAll("'@/lib/api-config'", `'${apiConfigUrl}'`)
+    .replaceAll("'@/lib/figure'", `'${figureUrl}'`);
   const tempDir = await mkdtemp(path.join(tmpdir(), 'jetscope-pathways-read-model-'));
   const tempPath = path.join(tempDir, 'pathways-read-model.ts');
   await writeFile(tempPath, rewritten, 'utf8');

@@ -5,9 +5,9 @@ type Props = {
 };
 
 const EVENT_COLOR: Record<string, string> = {
-  CRITICAL: 'border-rose-200 bg-rose-50 text-rose-700',
-  ALERT: 'border-amber-200 bg-amber-50 text-amber-800',
-  CROSSOVER: 'border-emerald-200 bg-emerald-50 text-emerald-800'
+  CRITICAL: 'border-danger bg-danger-soft text-danger',
+  ALERT: 'border-warning bg-warning-soft text-warning',
+  CROSSOVER: 'border-accent bg-accent-soft text-accent'
 };
 
 function formatTime(value: string): string {
@@ -37,28 +37,28 @@ export function TippingEventTimeline({ events }: Props) {
     // Bare artifact: card, title and why-line come from the wrapping Panel.
     <div>
       <div className="flex justify-end">
-        <p className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600">{events.length} 个事件</p>
+        <p className="rounded-full border border-line bg-surface-muted px-3 py-1 text-xs text-muted">{events.length} 个事件</p>
       </div>
 
       {events.length === 0 ? (
-        <p className="mt-4 rounded-xl border border-dashed border-sky-200 bg-sky-50 p-5 text-sm text-sky-800">
+        <p className="mt-4 rounded-xl border border-dashed border-line-strong bg-surface-muted p-5 text-sm text-muted">
           最近窗口内没有返回新的 SAF 成本交叉事件。若 API 未连接，这里会保持空状态，避免把情景基线误读成真实事件。
         </p>
       ) : (
         <div className="mt-4 space-y-3">
           {events.map((event) => {
-            const badgeClass = EVENT_COLOR[event.event_type] ?? 'border-slate-200 bg-slate-50 text-slate-700';
+            const badgeClass = EVENT_COLOR[event.event_type] ?? 'border-line-strong bg-surface text-ink';
             return (
-              <article key={event.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <article key={event.id} className="rounded-xl border border-line bg-surface-muted p-4">
                 <div className="flex flex-wrap items-center gap-3">
                   <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.14em] ${badgeClass}`}>
                     {event.event_type}
                   </span>
-                  <span className="text-sm font-medium text-slate-950">{pathwayLabel(event.saf_pathway)}</span>
-                  <span className="text-xs text-slate-500">{formatTime(event.observed_at)}</span>
+                  <span className="text-sm font-medium text-ink">{pathwayLabel(event.saf_pathway)}</span>
+                  <span className="text-xs text-muted">{formatTime(event.observed_at)}</span>
                 </div>
 
-                <div className="mt-3 grid gap-3 text-sm text-slate-600 md:grid-cols-3">
+                <div className="mt-3 grid gap-3 text-sm text-muted md:grid-cols-3">
                   <p>化石航油：{event.fossil_price_usd_per_l.toFixed(3)} USD/L</p>
                   <p>SAF 有效成本：{event.saf_effective_cost_usd_per_l.toFixed(3)} USD/L</p>
                   <p>价差：{formatGap(event.gap_usd_per_l)}</p>

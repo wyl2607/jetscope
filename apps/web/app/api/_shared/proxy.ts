@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { buildApiUrl } from '@/lib/api-config';
+import { classifyProxyFailure } from './proxy-errors';
 
 const DEFAULT_PROXY_TIMEOUT_MS = 8000;
 
@@ -53,12 +54,16 @@ export async function proxyToApi(
       headers: responseHeaders,
     });
   } catch (error) {
-    const isTimeout = error instanceof Error && error.name === 'AbortError';
-    const message = isTimeout
-      ? 'Upstream API timed out'
-      : error instanceof Error
-        ? error.message
-        : 'Proxy request failed';
-    return NextResponse.json({ error: message }, { status: isTimeout ? 504 : 502 });
+    const requestId = crypto.randomUUID();
+    const failure = classifyProxyFailure(error, requestId);
+    console.error('JetScope API proxy failure', {
+      apiPath,
+      requestId,
+      error: failure.internalMessage
+    });
+    return NextResponse.json(failure.publicBody, {
+      status: failure.status,
+      headers: { 'x-request-id': requestId }
+    });
   }
 }

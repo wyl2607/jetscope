@@ -1,11 +1,14 @@
 import { InfoCard } from '@/components/cards';
+import { FigureValue } from '@/components/figure-value';
+import type { Figure } from '@/lib/figure';
 
 type PriceData = {
-  source: string;
-  value: number;
-  unit: string;
+  /**
+   * Unit, source and fallback flag live on the Figure (unit / sourceId / basis).
+   * `is_fallback: true` is carried as `basis: 'assumption'`.
+   */
+  value: Figure;
   priority: number; // figure-contract-lint-ignore: display sort order, not a measurement
-  is_fallback: boolean;
 };
 
 type PricesPanelProps = {
@@ -20,14 +23,13 @@ export function PricesPanel({ prices }: PricesPanelProps) {
     <InfoCard title="按优先级排序的价格" subtitle="EU ETS > Rotterdam > Germany > Cache">
       <div className="space-y-4">
         {sortedPrices.map((price, index) => (
-          <div key={price.source} className="flex items-center justify-between p-3 border border-line-strong rounded-lg bg-surface">
+          <div key={price.value.sourceId} className="flex items-center justify-between p-3 border border-line-strong rounded-lg bg-surface">
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium text-subtle">#{index + 1}</span>
               <div>
-                <p className="font-semibold text-ink">{price.source}</p>
+                <p className="font-semibold text-ink">{price.value.sourceId}</p>
                 <p className="text-sm text-muted">
-                  {price.value} {price.unit}
-                  {price.is_fallback && <span className="ml-2 text-warning">回退值</span>}
+                  <FigureValue figure={price.value} locale="zh" size="inline" showTimestamp={false} />
                 </p>
               </div>
             </div>

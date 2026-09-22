@@ -1,6 +1,117 @@
 import { buildApiUrl } from '@/lib/api-config';
+import { assumed, derived, observed, type Figure } from '@/lib/figure';
 
 const DEFAULT_FETCH_TIMEOUT_MS = 2000;
+const PATHWAY_COST_SOURCE_ID = 'pathways-read-model';
+
+/**
+ * Pathway net-cost band carried as Figures (UI_CONTRACT.md §3).
+ * Low/high are an uncertainty range — two independent Figures, not one pair.
+ */
+export type PathwayCostRow = {
+  pathway_key: string;
+  display_name: string;
+  netCostLow: Figure; // unit 'USD/L'
+  netCostHigh: Figure; // unit 'USD/L'
+  spreadLow: Figure; // unit '%'
+  spreadHigh: Figure; // unit '%'
+  status: string;
+};
+
+type PathwayCostWire = {
+  pathway_key: string;
+  display_name: string;
+  net_cost_low_usd_per_l: number;
+  net_cost_high_usd_per_l: number;
+  spread_low_pct: number;
+  spread_high_pct: number;
+  status: string;
+};
+
+/**
+ * Sole constructor for pathway cost rows. Page adapters call this; JSX call
+ * sites must not assemble Figures inline.
+ */
+export function toPathwayCostRow(
+  input: PathwayCostWire,
+  opts: {
+    asOf: string | null;
+    basis: 'observed' | 'assumption';
+    method?: string;
+    sourceId?: string;
+  }
+): PathwayCostRow {
+  const sourceId = opts.sourceId ?? PATHWAY_COST_SOURCE_ID;
+
+  const costFigure = (value: number): Figure => {
+    if (opts.basis === 'assumption') {
+      return assumed({
+        value,
+        unit: 'USD/L',
+        sourceId,
+        precision: 2,
+        method: opts.method ?? 'scenario or demo pathway cost constant'
+      });
+    }
+    if (opts.asOf) {
+      return observed({
+        value,
+        unit: 'USD/L',
+        sourceId,
+        precision: 2,
+        asOf: opts.asOf
+      });
+    }
+    // Observed intent without a source timestamp — cannot call observed().
+    return derived({
+      value,
+      unit: 'USD/L',
+      sourceId,
+      precision: 2,
+      asOf: null,
+      method: opts.method ?? 'pathway cost from API without source timestamp'
+    });
+  };
+
+  const spreadFigure = (value: number): Figure => {
+    if (opts.basis === 'assumption') {
+      return assumed({
+        value,
+        unit: '%',
+        sourceId,
+        precision: 1,
+        method: opts.method ?? 'scenario or demo pathway spread constant'
+      });
+    }
+    if (opts.asOf) {
+      return observed({
+        value,
+        unit: '%',
+        sourceId,
+        precision: 1,
+        asOf: opts.asOf
+      });
+    }
+    return derived({
+      value,
+      unit: '%',
+      sourceId,
+      precision: 1,
+      asOf: null,
+      method: opts.method ?? 'pathway spread from API without source timestamp'
+    });
+  };
+
+  return {
+    pathway_key: input.pathway_key,
+    display_name: input.display_name,
+    netCostLow: costFigure(input.net_cost_low_usd_per_l),
+    netCostHigh: costFigure(input.net_cost_high_usd_per_l),
+    spreadLow: spreadFigure(input.spread_low_pct),
+    spreadHigh: spreadFigure(input.spread_high_pct),
+    status: input.status
+  };
+}
 
 export type PathwayComparisonStatus =
   | 'below_fossil'

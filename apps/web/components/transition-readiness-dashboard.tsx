@@ -11,12 +11,65 @@ import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-t
 import { ScenarioCostStackChart } from '@/components/scenario-cost-stack-chart';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
 import { getReserveSeverity, getTippingPointSignalMeta, type TippingPointSignalTone } from '@/lib/market-signals';
+import { assumed, derived as derivedFigure, formatFigure, observed, type Figure } from '@/lib/figure';
+import { toPathwayCostRow } from '@/lib/pathways-read-model';
 import { toTippingPointReadModel, type AirlineDecisionResponse, type ReserveSignal, type TippingPointResponse } from '@/lib/product-read-model';
 
+const READINESS_SOURCE_ID = 'saf-tipping-model';
+
+function fossilJetFigure(
+  value: number, // figure-contract-lint-ignore: constructor input, not a display prop
+  asOf: string | null
+): Figure {
+  if (asOf) {
+    return observed({
+      value,
+      unit: 'USD/L',
+      sourceId: READINESS_SOURCE_ID,
+      asOf,
+      precision: 2
+    });
+  }
+  return assumed({
+    value,
+    unit: 'USD/L',
+    sourceId: READINESS_SOURCE_ID,
+    precision: 2,
+    method: 'transition-readiness fossil-jet input without source timestamp'
+  });
+}
+
+function effectiveFossilJetFigure(
+  value: number, // figure-contract-lint-ignore: constructor input, not a display prop
+  asOf: string | null
+): Figure {
+  return derivedFigure({
+    value,
+    unit: 'USD/L',
+    sourceId: READINESS_SOURCE_ID,
+    asOf,
+    precision: 2,
+    method:
+      'effective fossil jet = spot fossil jet + carbon price pressure at selected blend rate, minus subsidy (tipping-point model)'
+  });
+}
+
+function pathwayCostRows(tippingPoint: TippingPointResponse) {
+  const asOf = tippingPoint.generated_at ?? null;
+  const opts = asOf
+    ? ({ asOf, basis: 'observed' as const })
+    : ({
+        asOf: null,
+        basis: 'assumption' as const,
+        method: 'transition-readiness pathway cost without source timestamp'
+      });
+  return tippingPoint.pathways.map((row) => toPathwayCostRow(row, opts));
+}
+
 type PolicyTarget = {
-  year: number;
-  saf_share_pct: number;
-  synthetic_share_pct: number;
+  year: number; // figure-contract-lint-ignore: 日历年份，不是测量值
+  saf_share_pct: Figure;
+  synthetic_share_pct: Figure;
   label: string;
 };
 
@@ -115,8 +168,49 @@ export function TransitionReadinessDashboard({
   const [carbon, setCarbon] = useState(initialTippingPoint.inputs.carbon_price_eur_per_t);
   const [subsidy, setSubsidy] = useState(initialTippingPoint.inputs.subsidy_usd_per_l);
   const initialReserveWeeks = initialReserve?.coverage_weeks ?? 3;
-  const reserveIsScenarioDefault = initialReserve == null;
+  const reserveSeedFigure: Figure = initialReserve
+    ? initialReserve.source_type === 'official'
+      ? observed({
+          value: initialReserve.coverage_weeks,
+          unit: 'weeks',
+          sourceId: 'eu-reserve',
+          asOf: initialReserve.generated_at,
+          precision: 1
+        })
+      : initialReserve.source_type === 'derived'
+        ? derivedFigure({
+            value: initialReserve.coverage_weeks,
+            unit: 'weeks',
+            sourceId: 'eu-reserve',
+            asOf: initialReserve.generated_at,
+            precision: 1,
+            method: `derived reserve coverage from ${initialReserve.source_name}`
+          })
+        : assumed({
+            value: initialReserve.coverage_weeks,
+            unit: 'weeks',
+            sourceId: 'eu-reserve',
+            precision: 1,
+            method: `reserve coverage from ${initialReserve.source_name} (${initialReserve.source_type})`
+          })
+    : assumed({
+        value: 3,
+        unit: 'weeks',
+        sourceId: 'eu-reserve',
+        precision: 1,
+        method: '实时储备数据不可用；3.0w 仅为可编辑情景假设'
+      });
   const [reserveWeeks, setReserveWeeks] = useState(initialReserveWeeks);
+  const reserveFigure: Figure =
+    reserveSeedFigure.value != null && Math.abs(reserveSeedFigure.value - reserveWeeks) < 1e-9
+      ? reserveSeedFigure
+      : assumed({
+          value: reserveWeeks,
+          unit: 'weeks',
+          sourceId: reserveSeedFigure.sourceId,
+          precision: 1,
+          method: 'transition-readiness reserve-weeks control (user-adjusted scenario input)'
+        });
   const [selectedPathwayKey, setSelectedPathwayKey] = useState(initialDecision.inputs.pathway_key);
   const [tippingPoint, setTippingPoint] = useState(initialTippingPoint);
   const [decision, setDecision] = useState(initialDecision);
@@ -212,7 +306,7 @@ export function TransitionReadinessDashboard({
             onChange={setCarbon}
           />
           <SliderCard
-            label={reserveIsScenarioDefault ? '储备周数（假设）' : '储备周数'}
+            label={reserveSeedFigure.basis === 'assumption' ? '储备周数（假设）' : '储备周数'}
             value={`${reserveWeeks.toFixed(1)}w`}
             min={1}
             max={8}
@@ -257,7 +351,11 @@ export function TransitionReadinessDashboard({
         <SignalCard
           label="最优路径"
           value={derived.bestPathway?.display_name ?? '无数据'}
-          sub={derived.bestPathway ? `价差 ${derived.bestPathway.spread_low_pct.toFixed(1)}% 至 ${derived.bestPathway.spread_high_pct.toFixed(1)}%` : '等待路径数据'}
+          sub={
+            derived.bestPathway
+              ? `价差 ${derived.bestPathway.spread_low_pct.toFixed(1)}% 至 ${derived.bestPathway.spread_high_pct.toFixed(1)}%`
+              : '等待路径数据'
+          }
           tone="purple"
         />
         <SignalCard
@@ -276,39 +374,34 @@ export function TransitionReadinessDashboard({
 
       <div className="grid min-w-0 gap-6 xl:grid-cols-[1.12fr_0.88fr]">
         <FuelVsSafPriceChart
-          fossilJetUsdPerL={tippingPoint.inputs.fossil_jet_usd_per_l}
-          effectiveFossilJetUsdPerL={tippingPoint.effective_fossil_jet_usd_per_l}
-          pathways={tippingPoint.pathways}
+          fossilJetUsdPerL={fossilJetFigure(
+            tippingPoint.inputs.fossil_jet_usd_per_l,
+            tippingPoint.generated_at
+          )}
+          effectiveFossilJetUsdPerL={effectiveFossilJetFigure(
+            tippingPoint.effective_fossil_jet_usd_per_l,
+            tippingPoint.generated_at
+          )}
+          pathways={pathwayCostRows(tippingPoint)}
         />
         <TippingPointSimulator
-          tippingPoint={{
-            generatedAt: tippingPoint.generated_at,
-            effectiveFossilJetUsdPerL: tippingPoint.effective_fossil_jet_usd_per_l,
-            signal: tippingPoint.signal,
-            inputs: {
-              fossilJetUsdPerL: tippingPoint.inputs.fossil_jet_usd_per_l,
-              carbonPriceEurPerT: tippingPoint.inputs.carbon_price_eur_per_t,
-              subsidyUsdPerL: tippingPoint.inputs.subsidy_usd_per_l,
-              blendRatePct: tippingPoint.inputs.blend_rate_pct
-            },
-            pathways: tippingPoint.pathways
-          }}
+          tippingPoint={toTippingPointReadModel(tippingPoint)}
           decision={{
             signal: decision.signal,
             probabilities: decision.probabilities
           }}
-          reserveWeeks={reserveWeeks}
+          reserveWeeks={reserveFigure}
         />
       </div>
 
       <div className="grid min-w-0 gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <SafPathwayComparisonTable
-          pathways={tippingPoint.pathways}
+          pathways={pathwayCostRows(tippingPoint)}
           selectedPathwayKey={selectedPathwayKey}
         />
         <AirlineDecisionMatrix
           decision={decision}
-          reserveWeeks={reserveWeeks}
+          reserveWeeks={reserveFigure}
           pathwayKey={selectedPathwayKey}
         />
       </div>
@@ -379,7 +472,7 @@ export function TransitionReadinessDashboard({
                     <div className="text-sm font-medium text-ink">{item.headlineZh}</div>
                     <div className="text-xs text-muted">
                       {target
-                        ? `${item.detailZh} · SAF ${target.saf_share_pct}% / synthetic ${target.synthetic_share_pct}%`
+                        ? `${item.detailZh} · SAF ${formatFigure(target.saf_share_pct)} / synthetic ${formatFigure(target.synthetic_share_pct)}`
                         : item.detailZh}
                     </div>
                   </div>
@@ -484,7 +577,7 @@ function SliderCard({
 }: {
   label: string;
   value: string;
-  current: number;
+  current: number; // figure-contract-lint-ignore: 滑块位置，不是测量值
   min: number; // figure-contract-lint-ignore: slider bound, not a measurement
   max: number; // figure-contract-lint-ignore: slider bound, not a measurement
   step: number; // figure-contract-lint-ignore: slider step, not a measurement
