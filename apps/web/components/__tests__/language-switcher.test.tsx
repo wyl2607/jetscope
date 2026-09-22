@@ -68,7 +68,7 @@ describe('LanguageSwitcher', () => {
     expect(toChinesePath('/en/research')).toBe('/research');
     expect(toChinesePath('/en/crisis')).toBe('/crisis');
     expect(toChinesePath('/en/reports')).toBe('/reports');
-    expect(toChinesePath('/en/reports/tipping-point-analysis')).toBe('/reports/tipping-point-analysis');
+    expect(toChinesePath('/en/reports/tipping-point-analysis')).toBe('/crisis/saf-tipping-point');
     expect(toChinesePath('/en/admin')).toBe('/admin');
     expect(toChinesePath('/en/scenarios')).toBe('/scenarios');
     expect(toChinesePath('/de/sources')).toBe('/sources');
@@ -76,7 +76,7 @@ describe('LanguageSwitcher', () => {
     expect(toChinesePath('/de/research')).toBe('/research');
     expect(toChinesePath('/de/crisis')).toBe('/crisis');
     expect(toChinesePath('/de/reports')).toBe('/reports');
-    expect(toChinesePath('/de/reports/tipping-point-analysis')).toBe('/reports/tipping-point-analysis');
+    expect(toChinesePath('/de/reports/tipping-point-analysis')).toBe('/crisis/saf-tipping-point');
     expect(toChinesePath('/de/admin')).toBe('/admin');
     expect(toChinesePath('/de/scenarios')).toBe('/scenarios');
   });

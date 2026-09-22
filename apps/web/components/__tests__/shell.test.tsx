@@ -20,16 +20,15 @@ describe('Shell', () => {
       </Shell>
     );
 
+    expect(getByText('Startseite')).toBeTruthy();
     expect(getByText('Entscheidungscockpit')).toBeTruthy();
+    expect(getByText('SAF-Wendepunkt')).toBeTruthy();
+    expect(getByText('Krisenmonitor')).toBeTruthy();
     expect(getByText('Preise')).toBeTruthy();
-    expect(getByText('Quellen')).toBeTruthy();
-    expect(getByText('Bereitschaft')).toBeTruthy();
-    expect(getByText('Szenarien')).toBeTruthy();
-    expect(getByText('Berichte')).toBeTruthy();
-    expect(getByText('Forschung')).toBeTruthy();
     expect(getByText('Analyse')).toBeTruthy();
-    expect(getByText('FAQ')).toBeTruthy();
-    expect(queryByText('决策驾驶舱')).toBeNull();
+    expect(getByText('Quellen')).toBeTruthy();
+    expect(queryByText('Bereitschaft')).toBeNull();
+    expect(queryByText('Forschung')).toBeNull();
   });
 
   it('renders English navigation labels for English pages', () => {
@@ -39,15 +38,14 @@ describe('Shell', () => {
       </Shell>
     );
 
-    expect(getByText('Decision Cockpit')).toBeTruthy();
     expect(getByText('Home')).toBeTruthy();
-    expect(getByText('Sources')).toBeTruthy();
-    expect(getByText('Research')).toBeTruthy();
-    expect(getByText('Reports')).toBeTruthy();
-    expect(getByText('Admin')).toBeTruthy();
-    expect(getByText('Scenarios')).toBeTruthy();
+    expect(getByText('Decision Cockpit')).toBeTruthy();
+    expect(getByText('SAF Tipping Point')).toBeTruthy();
+    expect(getByText('Crisis Monitor')).toBeTruthy();
+    expect(getByText('Prices')).toBeTruthy();
     expect(getByText('Analysis')).toBeTruthy();
-    expect(getByText('FAQ')).toBeTruthy();
-    expect(queryByText('决策驾驶舱')).toBeNull();
+    expect(getByText('Sources')).toBeTruthy();
+    expect(queryByText('Research')).toBeNull();
+    expect(queryByText('Reports')).toBeNull();
   });
 });

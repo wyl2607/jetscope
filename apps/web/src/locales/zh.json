@@ -55,7 +55,7 @@
     "thesis": {
       "title": "产品论点",
       "why": "先判断 JetScope 的问题空间是否与你的工作相关，再决定进入驾驶舱、情景或来源复核。",
-      "headline": "欧洲 Jet-A 航油库存已连续六周徘徊在三周覆盖线附近。SAF 要到什么价格，才会成为经营理性选择？",
+      "headline": "当碳价与航油价格变化时，SAF 什么时候从合规成本变成经营上理性的选择？",
       "body": "JetScope 用实时市场数据与策略模型回答何时 SAF 不再只是合规成本，而是经营理性选择。"
     },
     "dual_domain": {
@@ -89,22 +89,10 @@
         "suffix": ""
       },
       {
-        "title": "研究信号台",
-        "description": "AI 信号流、双语摘要与置信度过滤，帮助快速筛选可行动线索。",
-        "navId": "research",
-        "suffix": ""
-      },
-      {
         "title": "路径推演",
         "description": "比较 SAF 路径与成本情景，判断何时 SAF 成为经营理性选择。",
         "navId": "crisis",
         "suffix": "/saf-tipping-point"
-      },
-      {
-        "title": "电网平价",
-        "description": "比较可再生 LCOE 与化石发电加 EU ETS 碳成本的交叉点。",
-        "navId": "grid",
-        "suffix": ""
       },
       {
         "title": "分析报告",
@@ -124,7 +112,8 @@
     },
     "limitations": [
       "首页是摘要与导航入口，不呈现每个数字的完整计算口径；请进入对应详情页复核。",
-      "空事件窗口不代表没有风险，研究接口未部署或异常也不代表没有市场变化。"
+      "空事件窗口不代表没有风险，研究接口未部署或异常也不代表没有市场变化。",
+      "价格数据带来源与状态标签，缺失的数据会明确标出。"
     ],
     "limitation_research_enabled": "研究信号是文章与流水线派生证据，不替代市场观测。",
     "limitation_research_disabled": "当前环境未启用 AI 研究流水线，首页明确展示这一边界。"

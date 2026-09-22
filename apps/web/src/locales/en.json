@@ -54,7 +54,7 @@
     "thesis": {
       "title": "Product thesis",
       "why": "Decide whether JetScope covers your problem space before choosing a detailed workflow.",
-      "headline": "When does SAF become an operating decision, not only a compliance cost?",
+      "headline": "When carbon and jet fuel prices change, when does SAF shift from a compliance cost to an operationally rational choice?",
       "body": "JetScope combines market snapshots, reserve stress, policy cost pressure, and research signals into a reviewable workflow."
     },
     "dual_domain": {
@@ -100,12 +100,6 @@
         "suffix": ""
       },
       {
-        "title": "Research workbench",
-        "description": "Pipeline status, empty-state honesty, signal counts, and evidence handoffs.",
-        "navId": "research",
-        "suffix": ""
-      },
-      {
         "title": "Report workbench",
         "description": "Source status, saved scenarios, risk signal, and launch posture.",
         "navId": "reports",
@@ -141,7 +135,8 @@
     },
     "limitations": [
       "The home page is a summary and navigation surface; full definitions remain on each detail page.",
-      "An empty event window does not mean there is no risk."
+      "An empty event window does not mean there is no risk.",
+      "Price data carries source and status tags; missing data is explicitly marked."
     ],
     "limitation_research_enabled": "Research signals are derived evidence, not direct market observations.",
     "limitation_research_disabled": "Research signals are derived evidence, not direct market observations."
