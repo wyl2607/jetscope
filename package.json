@@ -39,9 +39,9 @@
     "smoke:nginx-edge": "node scripts/nginx-edge-smoke.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.1",
-    "concurrently": "^10.0.4",
-    "undici": "^8.10.0"
+    "@playwright/test": "^1.63.0",
+    "concurrently": "^10.0.5",
+    "undici": "^8.10.2"
   },
   "engines": {
     "node": ">=22.0.0",
