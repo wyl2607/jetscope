@@ -33,7 +33,7 @@ def compute_tipping_point(
     pathway_key: str = "hefa",
 ) -> TippingPointAssessment:
     pathway = get_pathway_cost(pathway_key)
-    carbon_credit = carbon_credit_usd_per_l(carbon_price_eur_per_t, pathway.carbon_reduction_pct)
+    carbon_credit = carbon_credit_usd_per_l(carbon_price_eur_per_t)
     effective_support = (subsidy_usd_per_l + carbon_credit) * (blend_rate_pct / 100.0)
     net_saf_cost = effective_saf_cost(
         pathway_key,

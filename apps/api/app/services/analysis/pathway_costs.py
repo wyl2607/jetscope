@@ -77,10 +77,14 @@ def get_pathway_cost(pathway_key: str) -> PathwayCostBand:
     return PATHWAY_COSTS[normalized_key]
 
 
-def carbon_credit_usd_per_l(carbon_price_eur_per_t: float, carbon_reduction_pct: float) -> float:
-    carbon_price_usd_per_t = carbon_price_eur_per_t * EUR_TO_USD
-    avoided_tons_per_l = (FOSSIL_JET_EMISSIONS_KG_PER_L / 1000.0) * (carbon_reduction_pct / 100.0)
-    return carbon_price_usd_per_t * avoided_tons_per_l
+def carbon_credit_usd_per_l(carbon_price_eur_per_t: float) -> float:
+    """EU ETS value of one litre of SAF instead of fossil jet.
+
+    Eligible SAF is zero-rated under the EU ETS, so each litre avoids the
+    allowances for the full combustion factor. The pathway's lifecycle
+    reduction (carbon_reduction_pct) is an LCA figure and carries no ETS value.
+    """
+    return carbon_price_eur_per_t * EUR_TO_USD * (FOSSIL_JET_EMISSIONS_KG_PER_L / 1000.0)
 
 
 def effective_saf_cost(
@@ -91,7 +95,7 @@ def effective_saf_cost(
     blend_rate_pct: float = 100.0,
 ) -> float:
     pathway = get_pathway_cost(pathway_key)
-    carbon_credit = carbon_credit_usd_per_l(carbon_price_eur_per_t, pathway.carbon_reduction_pct)
+    carbon_credit = carbon_credit_usd_per_l(carbon_price_eur_per_t)
     effective_support = (subsidy_usd_per_l + carbon_credit) * (blend_rate_pct / 100.0)
     return pathway.midpoint_usd_per_l - effective_support
 

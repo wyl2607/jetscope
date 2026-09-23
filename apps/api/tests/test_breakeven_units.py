@@ -35,12 +35,7 @@ def test_compute_tipping_point_matches_expected_calculation() -> None:
     )
 
     pathway = get_pathway_cost("hefa")
-    expected_credit = (
-        carbon_price_eur_per_t
-        * EUR_TO_USD
-        * (FOSSIL_JET_EMISSIONS_KG_PER_L / 1000.0)
-        * (pathway.carbon_reduction_pct / 100.0)
-    )
+    expected_credit = carbon_price_eur_per_t * EUR_TO_USD * (FOSSIL_JET_EMISSIONS_KG_PER_L / 1000.0)
     expected_support = (subsidy_usd_per_l + expected_credit) * (blend_rate_pct / 100.0)
     expected_net_saf_cost = pathway.midpoint_usd_per_l - expected_support
     expected_spread = expected_net_saf_cost - fossil_jet_usd_per_l

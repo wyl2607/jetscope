@@ -46,20 +46,13 @@ class TestGetPathwayCost:
 
 class TestCarbonCreditUsdPerL:
     def test_zero_carbon_price_returns_zero(self):
-        assert carbon_credit_usd_per_l(0.0, 80.0) == 0.0
+        assert carbon_credit_usd_per_l(0.0) == 0.0
 
-    def test_zero_reduction_returns_zero(self):
-        assert carbon_credit_usd_per_l(100.0, 0.0) == 0.0
-
-    def test_hefa_typical_value(self):
-        credit = carbon_credit_usd_per_l(95.0, 70.0)
-        expected = 95.0 * EUR_TO_USD * (2.5 / 1000.0) * 0.70
-        assert credit == pytest.approx(expected, rel=1e-12)
-
-    def test_ptl_full_reduction(self):
-        credit = carbon_credit_usd_per_l(200.0, 95.0)
-        expected = 200.0 * EUR_TO_USD * (2.5 / 1000.0) * 0.95
-        assert credit == pytest.approx(expected, rel=1e-12)
+    def test_is_full_combustion_factor_not_lifecycle_share(self):
+        # EU ETS zero-rates eligible SAF: the allowance saved is the full 2.5 kg/L,
+        # whatever the pathway's LCA reduction.
+        credit = carbon_credit_usd_per_l(95.0)
+        assert credit == pytest.approx(95.0 * EUR_TO_USD * (2.5 / 1000.0), rel=1e-12)
 
 
 class TestEffectiveSafCost:
@@ -77,7 +70,7 @@ class TestEffectiveSafCost:
 
     def test_carbon_price_reduces_cost(self):
         cost = effective_saf_cost("atj", carbon_price_eur_per_t=100.0)
-        credit = 100.0 * EUR_TO_USD * (2.5 / 1000.0) * 0.65
+        credit = 100.0 * EUR_TO_USD * (2.5 / 1000.0)
         assert cost == pytest.approx(1.5 - credit, rel=1e-12)
 
     def test_unknown_pathway_raises_key_error(self):
