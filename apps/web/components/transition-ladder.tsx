@@ -109,10 +109,10 @@ export function TransitionLadder({ summary }: Props) {
           const color = lane.competitive ? '#34d399' : '#fbbf24';
           return (
             <g key={lane.key}>
-              <text x={0} y={y + 3} fontSize={11} fill="#cbd5e1">
+              <text x={0} y={y + 3} fontSize={11} fill="var(--js-muted)">
                 {lane.label}
               </text>
-              <line x1={LABEL_W} y1={y} x2={WIDTH - RIGHT_PAD} y2={y} stroke="#334155" strokeWidth={1} />
+              <line x1={LABEL_W} y1={y} x2={WIDTH - RIGHT_PAD} y2={y} stroke="var(--js-line-strong)" strokeWidth={1} />
               <circle cx={x(value)} cy={y} r={5} fill={color} />
               <foreignObject x={x(value) + 9} y={y - 10} width={120} height={22}>
                 <div className="text-[10px] leading-none" style={{ color }}>
@@ -125,7 +125,7 @@ export function TransitionLadder({ summary }: Props) {
 
         {axisTicks.map((tick) => (
           <g key={`tick-${tick}`}>
-            <text x={x(tick)} y={height - 8} textAnchor="middle" fontSize={9} fill="#64748b">
+            <text x={x(tick)} y={height - 8} textAnchor="middle" fontSize={9} fill="var(--js-subtle)">
               €{tick}
             </text>
           </g>
