@@ -356,6 +356,21 @@
       "The FAQ does not replace the current states and limitations on the Sources, Research, or Scenarios pages."
     ]
   },
+  "road_fuels": {
+    "title": "German road fuels and inflation",
+    "why": "Beyond jet fuel, the same middle-distillate squeeze is lifting pump prices and feeding straight into inflation.",
+    "euro95": "Euro-super 95",
+    "diesel": "Diesel",
+    "col_fuel": "Fuel",
+    "col_pump": "Pump price",
+    "col_ex_tax": "Ex tax",
+    "col_tax_share": "Tax share",
+    "col_4w": "4 weeks",
+    "col_52w": "52 weeks",
+    "pump_source": "National average, week of {week}. Source:",
+    "pump_missing": "EU Weekly Oil Bulletin data not loaded yet; no estimate is shown.",
+    "inflation_body": "{period}: German CPI {cpi}% YoY; motor fuels {fuels}% YoY at a weight of {weight}‰, a static direct contribution of about {contribution} percentage points; CPI excluding heating oil and motor fuels {ex}%. (Contribution = weight × change, a first-order estimate, not an official decomposition.) Source:"
+  },
   "prices": {
     "meta_title": "Germany Jet-Fuel Price Monitor",
     "meta_description": "English Germany jet-fuel market view for Brent, global jet fuel, EU jet proxy, carbon proxy, and 1d/7d/30d source-backed changes.",
