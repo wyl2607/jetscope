@@ -1309,6 +1309,11 @@
     ]
   },
   "tipping_point_report": {
+    "market_title": "SAF-Einkaufspreis vs. fossiles Kerosin",
+    "market_why": "Das Signal oben beruht auf dem Preis, den Airlines tatsächlich für SAF zahlen; die Pfadwerte sind Produktionskosten-Annahmen, keine Einkaufspreise.",
+    "market_body": "SAF-Einkaufsreferenz {saf} ({source}, Durchschnitt {period}, veröffentlicht {published}) gegenüber fossilem Kerosin inkl. EU-ETS-Kosten {fossil}: Aufschlag {premium}.",
+    "market_missing": "Keine datierte SAF-Einkaufspreisreferenz geladen; das Signal nutzt daher Produktionskosten-Annahmen.",
+    "market_basis_production": "Pfadkosten unten: Produktionskosten-Annahmen (manuell gepflegt, keine Handelspreise).",
     "meta_title": "Kipppunktbericht",
     "meta_description": "Deutscher JetScope-Berichtsdetailblick für SAF-Kipppunkt, Quellenvertrauen, Reservestress und Forschungsstatus.",
     "eyebrow": "Berichtsdetail",

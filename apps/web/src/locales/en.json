@@ -1308,6 +1308,11 @@
     ]
   },
   "tipping_point_report": {
+    "market_title": "SAF purchase price vs fossil jet",
+    "market_why": "The signal above uses what airlines actually pay for SAF; the pathway figures are production-cost assumptions, not purchase prices.",
+    "market_body": "SAF purchase reference {saf} ({source}, {period} average, published {published}) against fossil jet incl. EU ETS cost {fossil}: premium {premium}.",
+    "market_missing": "No dated SAF purchase-price reference is loaded, so the signal falls back to production-cost assumptions.",
+    "market_basis_production": "Pathway costs below: production-cost assumptions (curated manually, not traded prices).",
     "meta_title": "Tipping-Point Report",
     "meta_description": "English JetScope report detail for SAF tipping-point evidence, market source confidence, reserve stress, and research posture.",
     "eyebrow": "Report detail",
