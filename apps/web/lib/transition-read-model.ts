@@ -36,6 +36,7 @@ export async function loadTransitionSummary(
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(buildTransitionSummaryUrl(), {
+      next: { revalidate: 300 },
       signal: controller.signal,
       headers: { accept: 'application/json' }
     });

@@ -64,7 +64,7 @@ Initial public trust-pack documentation release for the current JetScope product
 - maintainer responsibilities in `MAINTAINERS.md`
 - vulnerability reporting and no-secrets policy in `SECURITY.md`
 - a conservative roadmap in `ROADMAP.md`
-- public-safe maintenance evidence in `docs/MAINTENANCE_LOG.md`
+- public-safe maintenance evidence in `docs/archive/MAINTENANCE_LOG.md`
 - GitHub issue templates for bugs and feature requests
 - an updated pull request template with validation, safety, and evidence fields
 

@@ -1,12 +1,13 @@
 from datetime import datetime, timezone
 import re
 
-from fastapi import APIRouter, Depends
-from sqlalchemy import text
+from fastapi import APIRouter, Depends, Request
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.db.session import get_db
+from app.models.tables import MarketRefreshRun
 from app.schemas.readiness import ReadinessAction, ReadinessCheck, ReadinessResponse
 from app.services.bootstrap import utcnow
 from app.services.market import build_market_snapshot_response
@@ -85,6 +86,39 @@ def _readiness_check(
     )
 
 
+_MISSING_REFRESH_TASK = object()
+
+
+def _market_refresh_task_running(request: Request | None) -> bool:
+    """Whether the background market refresh loop is alive.
+
+    Calls without an ASGI request only see the config switch. Served requests
+    read ``app.state.market_refresh_task`` owned by the API process.
+    """
+    if not settings.market_refresh_loop_enabled:
+        return False
+    if request is None:
+        return True
+    task = getattr(request.app.state, "market_refresh_task", _MISSING_REFRESH_TASK)
+    if task is _MISSING_REFRESH_TASK or task is None:
+        return False
+    done = getattr(task, "done", None)
+    if callable(done):
+        try:
+            if done():
+                return False
+        except Exception:
+            return False
+    cancelled = getattr(task, "cancelled", None)
+    if callable(cancelled):
+        try:
+            if cancelled():
+                return False
+        except Exception:
+            return False
+    return True
+
+
 @router.get("/health")
 def get_health() -> dict:
     return {
@@ -103,7 +137,7 @@ def get_health() -> dict:
 
 
 @router.get("/readiness", response_model=ReadinessResponse)
-def get_readiness(db: Session = Depends(get_db)) -> ReadinessResponse:
+def get_readiness(db: Session = Depends(get_db), request: Request = None) -> ReadinessResponse:
     checks: dict[str, ReadinessCheck] = {}
 
     try:
@@ -124,12 +158,29 @@ def get_readiness(db: Session = Depends(get_db)) -> ReadinessResponse:
     try:
         snapshot = build_market_snapshot_response(db)
         source_status = snapshot.source_status.overall
-        market_ok = bool(snapshot.values) and source_status in {"ok", "degraded", "seed"}
+        metric_count = sum(value is not None for value in snapshot.values.values())
+        completed_refresh = db.scalar(
+            select(MarketRefreshRun.id)
+            .where(
+                MarketRefreshRun.source_status.in_(("ok", "degraded")),
+                MarketRefreshRun.ingest != "seed",
+            )
+            .order_by(MarketRefreshRun.refreshed_at.desc())
+            .limit(1)
+        )
+        market_ok = metric_count > 0 and completed_refresh is not None and source_status in {"ok", "degraded"}
+        market_clean = market_ok and source_status == "ok"
+        market_reasons: list[str] = []
+        if metric_count == 0:
+            market_reasons.append("no non-null market metrics available")
+        if completed_refresh is None:
+            market_reasons.append("no successful market refresh recorded")
+        market_detail = "; ".join(market_reasons) if market_reasons else f"{metric_count} metrics available"
         checks["market_snapshot"] = _readiness_check(
             ok=market_ok,
-            status=source_status,
-            detail=f"{len(snapshot.values)} metrics available",
-            severity="ok" if market_ok and source_status == "ok" else ("review" if market_ok else "blocker"),
+            status=source_status if market_ok else "degraded",
+            detail=market_detail,
+            severity="ok" if market_clean else "review",
             action=_readiness_action(
                 "review_market_sources",
                 "/sources?filter=review" if source_status != "ok" else "/sources",
@@ -140,20 +191,22 @@ def get_readiness(db: Session = Depends(get_db)) -> ReadinessResponse:
             ok=False,
             status="error",
             detail=_error_detail(exc),
+            severity="review",
             action=_readiness_action("review_market_sources", "/sources?filter=review"),
         )
 
     try:
         coverage = build_source_coverage_response(db)
         coverage_ok = coverage.completeness > 0 and bool(coverage.metrics)
+        coverage_clean = coverage_ok and not coverage.degraded
         checks["source_coverage"] = _readiness_check(
             ok=coverage_ok,
-            status="degraded" if coverage.degraded else "ok",
+            status="ok" if coverage_clean else "degraded",
             detail=f"completeness={coverage.completeness:.3f}; metrics={len(coverage.metrics)}",
-            severity="ok" if coverage_ok and not coverage.degraded else ("review" if coverage_ok else "blocker"),
+            severity="ok" if coverage_clean else "review",
             action=_readiness_action(
                 "review_source_coverage",
-                "/sources?filter=review" if coverage.degraded or not coverage_ok else "/sources",
+                "/sources?filter=review" if not coverage_clean else "/sources",
             ),
         )
     except Exception as exc:
@@ -161,6 +214,7 @@ def get_readiness(db: Session = Depends(get_db)) -> ReadinessResponse:
             ok=False,
             status="error",
             detail=_error_detail(exc),
+            severity="review",
             action=_readiness_action("review_source_coverage", "/sources?filter=review"),
         )
 
@@ -181,52 +235,88 @@ def get_readiness(db: Session = Depends(get_db)) -> ReadinessResponse:
         ),
     )
 
-    if settings.ai_research_enabled:
-        ai_research_configured = settings.ai_research_mock_mode or _is_configured(settings.anthropic_api_key)
-        ai_status = "mock" if settings.ai_research_mock_mode else ("ok" if ai_research_configured else "missing_credentials")
-        if settings.ai_research_mock_mode:
-            ai_action = _readiness_action("review_ai_research_mock_mode", "/research", ["JETSCOPE_AI_RESEARCH_MOCK_MODE"])
-        elif ai_research_configured:
-            ai_action = _readiness_action("review_ai_research_pipeline", "/research")
-        else:
-            ai_action = _readiness_action(
-                "configure_ai_research_credentials",
-                "/research",
-                ["JETSCOPE_ANTHROPIC_API_KEY"],
+    if settings.ai_research_informational:
+        if settings.ai_research_enabled and settings.ai_research_mock_mode:
+            checks["ai_research_pipeline"] = _readiness_check(
+                ok=True,
+                status="mock",
+                detail="AI research enabled in mock mode",
+                severity="info",
+                action=_readiness_action(
+                    "review_ai_research_mock_mode",
+                    "/research",
+                    ["JETSCOPE_AI_RESEARCH_MOCK_MODE"],
+                ),
             )
-        ai_detail = (
-            "AI research enabled in mock mode"
-            if settings.ai_research_mock_mode
-            else (
+        else:
+            checks["ai_research_pipeline"] = _readiness_check(
+                ok=True,
+                status="disabled",
+                detail="JETSCOPE_AI_RESEARCH_ENABLED is false; research signal generation is disabled",
+                severity="info",
+                action=_readiness_action(
+                    "enable_ai_research",
+                    "/research",
+                    ["JETSCOPE_AI_RESEARCH_ENABLED"],
+                ),
+            )
+    else:
+        ai_research_configured = _is_configured(settings.anthropic_api_key)
+        checks["ai_research_pipeline"] = _readiness_check(
+            ok=ai_research_configured,
+            status="ok" if ai_research_configured else "missing_credentials",
+            detail=(
                 "AI research enabled with live extractor credentials"
                 if ai_research_configured
                 else "JETSCOPE_ANTHROPIC_API_KEY is required when mock mode is disabled"
-            )
-        )
-        checks["ai_research_pipeline"] = _readiness_check(
-            ok=ai_research_configured,
-            status=ai_status,
-            detail=ai_detail,
-            severity="review" if settings.ai_research_mock_mode else ("ok" if ai_research_configured else "blocker"),
-            action=ai_action,
-        )
-    else:
-        checks["ai_research_pipeline"] = _readiness_check(
-            ok=False,
-            status="disabled",
-            detail="JETSCOPE_AI_RESEARCH_ENABLED is false; research signal generation is disabled",
+            ),
+            severity="ok" if ai_research_configured else "blocker",
             action=_readiness_action(
-                "enable_ai_research",
+                "review_ai_research_pipeline" if ai_research_configured else "configure_ai_research_credentials",
                 "/research",
-                ["JETSCOPE_AI_RESEARCH_ENABLED"],
+                [] if ai_research_configured else ["JETSCOPE_ANTHROPIC_API_KEY"],
             ),
         )
 
-    ready = all(check.ok for check in checks.values())
-    degraded = any(check.severity == "review" for check in checks.values())
-    status = "not_ready"
-    if ready:
-        status = "degraded" if degraded else "ready"
+    refresh_running = _market_refresh_task_running(request)
+    if refresh_running:
+        refresh_status = "running"
+        refresh_detail = "market refresh loop is running"
+        refresh_action = _readiness_action("review_market_refresh", "/sources")
+    elif not settings.market_refresh_loop_enabled:
+        refresh_status = "disabled"
+        refresh_detail = (
+            "JETSCOPE_MARKET_REFRESH_INTERVAL_SECONDS is not positive; market refresh loop is disabled"
+        )
+        refresh_action = _readiness_action(
+            "enable_market_refresh",
+            "/admin",
+            ["JETSCOPE_MARKET_REFRESH_INTERVAL_SECONDS"],
+        )
+    else:
+        refresh_status = "stopped"
+        refresh_detail = "market refresh loop is not running"
+        refresh_action = _readiness_action(
+            "start_market_refresh",
+            "/admin",
+            ["JETSCOPE_MARKET_REFRESH_INTERVAL_SECONDS"],
+        )
+    checks["market_refresh_task"] = _readiness_check(
+        ok=refresh_running,
+        status=refresh_status,
+        detail=refresh_detail,
+        severity="ok" if refresh_running else "blocker",
+        action=refresh_action,
+    )
+
+    ready = checks["database"].ok and checks["admin_token"].ok and checks["market_refresh_task"].ok
+    degraded = checks["market_snapshot"].severity == "review" or checks["source_coverage"].severity == "review"
+    if not ready:
+        status = "not_ready"
+    elif degraded:
+        status = "degraded"
+    else:
+        status = "ready"
 
     return ReadinessResponse(
         ready=ready,

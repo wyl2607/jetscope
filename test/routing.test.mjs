@@ -65,8 +65,6 @@ test('localized sitemap includes published English and German route surfaces', a
   const source = await readFile(new URL('../apps/web/app/sitemap.ts', import.meta.url), 'utf8');
   const routes = [
     '/crisis',
-    '/grid',
-    '/heat',
     '/en/crisis',
     '/en/prices/germany-jet-fuel',
     '/en/lufthansa-saf-2026',
@@ -75,7 +73,6 @@ test('localized sitemap includes published English and German route surfaces', a
     '/de/faq',
     '/de/crisis',
     '/de/sources',
-    '/de/research',
     '/en/reports/tipping-point-analysis',
     '/de/reports',
     '/de/reports/tipping-point-analysis',
@@ -86,6 +83,10 @@ test('localized sitemap includes published English and German route surfaces', a
 
   for (const route of routes) {
     assert.match(source, new RegExp(`\\$\\{BASE_URL\\}${route}`), `sitemap should include ${route}`);
+  }
+
+  for (const retiredRoute of ['/grid', '/heat', '/research', '/en/grid', '/en/heat', '/en/research', '/de/grid', '/de/heat', '/de/research']) {
+    assert.doesNotMatch(source, new RegExp(`\\$\\{BASE_URL\\}${retiredRoute}(?:` + '`' + `|/)`));
   }
 });
 

@@ -12,6 +12,9 @@ export type MarketSourceDetail = {
   quote_kind?: string | null;
   product_id?: string | null;
   observed_at?: string | null;
+  as_of?: string | null;
+  method?: string | null;
+  unit?: string | null;
   published_at?: string | null;
   fetched_at?: string | null;
   fallback_used?: boolean | null;
@@ -34,6 +37,10 @@ export type MarketSnapshot = {
   };
   values: Record<string, number | null | undefined>;
   source_details?: Record<string, MarketSourceDetail>;
+  assumptions?: Record<
+    string,
+    { value: number; unit: string; kind: 'assumption'; as_of: string; note?: string | null }
+  >;
   derived?: Record<string, number | string>;
 };
 
@@ -145,16 +152,7 @@ export type MarketHistory = {
   metrics: Record<string, MarketHistoryMetric>;
 };
 
-/** Deterministic UI fallbacks aligned with API seed baselines (as of 2026-07-17). */
-export const FALLBACK_VALUES = {
-  brent_usd_per_bbl: 87.01,
-  jet_usd_per_l: 0.64,
-  rotterdam_jet_fuel_usd_per_l: 0.657,
-  jet_eu_proxy_usd_per_l: 0.657,
-  carbon_proxy_usd_per_t: 91.91
-} as const;
-
-export async function fetchJson<T>(path: string): Promise<T> {
+export async function fetchJson<T>(path: string, options: { fresh?: boolean } = {}): Promise<T> {
   const controller = new AbortController();
   const timeoutMs = Number(process.env.JETSCOPE_MARKET_FETCH_TIMEOUT_MS ?? DEFAULT_FETCH_TIMEOUT_MS);
   const timeout = setTimeout(
@@ -162,10 +160,10 @@ export async function fetchJson<T>(path: string): Promise<T> {
     Number.isFinite(timeoutMs) && timeoutMs >= 100 ? timeoutMs : DEFAULT_FETCH_TIMEOUT_MS
   );
   try {
-    const response = await fetch(buildApiUrl(path), {
-      cache: 'no-store',
-      signal: controller.signal
-    });
+    const cacheOptions = options.fresh
+      ? { cache: 'no-store' as const }
+      : { next: { revalidate: 300 } };
+    const response = await fetch(buildApiUrl(path), { ...cacheOptions, signal: controller.signal });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }

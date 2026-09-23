@@ -1,7 +1,405 @@
-// Pure data + long-text constants extracted from page.tsx so the page file
-// only needs to render JSX. Behavior must be identical to the previous inline
-// definitions; renaming or restructuring these breaks the page.
+import type { NavLocale } from '@/lib/navigation';
 
+export const LUFT_DATA: Record<NavLocale, any> = {
+  zh: {
+    pageTemplate: {
+      eyebrow: '事件深度拆解',
+      title: 'Lufthansa 2026年运力削减：SAF转折点信号',
+      question: '这次削减是否改变了SAF的采购窗口和成本底线？'
+    },
+    signalRow: {
+      label: '事件评估',
+      cards: [
+        { label: '事件类型', value: '航班削减', hint: '由于成本压力带来的运营调整。' },
+        { label: '计划削减', value: '20,000 班', hint: 'Lufthansa 公告所述、截至 2026 年 10 月的短途航班调整。' },
+        { label: '参考拐点', value: '$115/桶', hint: '作者情景推算：此处 SAF 成本溢价开始进入可复核区间。' },
+        { label: '德国航油溢价', value: '5–10%', hint: '文章采用的物流、税费与基础设施情景假设。' }
+      ]
+    },
+    panels: {
+      eventOverview: {
+        title: '事件概述与数据',
+        why: '区分"短期削减"与"结构性成本跃升"是评估采购紧迫性的前提。',
+        paragraphs: [
+          '2026年4月21日，汉莎集团的削减2万航班公告，从表面上看是一项成本控制措施。但这背后隐藏着一个更深的经济学信号：<strong>短途航线的低利润率已无法在高油价环境中维持</strong>。',
+          '对于汉莎而言，燃油成本是核心支出构成。当油价从$80/桶跳升至$115/桶（上升43%）时，短途航线的单位成本陡然上升。在竞争激烈的欧洲短途市场，汉莎难以快速提价来抵消成本上升。因此，削减低利润运力成为一个理性选择。',
+          '然而，这个事件的真正意义在于：它标志着传统航空业运营模式的一个转折点。削减航班虽然是短期应对，但从长期看，汉莎等欧洲航司的未来竞争力取决于能否快速转向可持续航油（SAF）。因为当油价维持在110-130美元/桶时，<strong>SAF成本与传统喷气燃料的差异会快速收窄</strong>。',
+          '同时，欧盟ReFuelEU指令即将逐步收紧。这意味着SAF从一个可选项变成了强制性合规要求。在这个背景下，汉莎的减班决定可以被重新解读为：航司正在为能源结构的转变而调整战术。'
+        ]
+      },
+      costBreakdown: {
+        title: '航油成本分解（静态模型）',
+        why: '只有将化石燃料的隐藏成本（碳价、物流溢价）完全计入，才能准确评估 SAF 的相对竞争力。',
+        rows: [
+          { label: '原油成本（Brent $115/桶）', value: '$0.88/升' },
+          { label: '精炼、流通利润', value: '$0.12/升' },
+          { label: 'EU ETS碳成本', value: '$0.20/升' }
+        ],
+        totalLabel: 'Jet-A 欧洲平均成本',
+        totalValue: '$1.20/升'
+      },
+      safInflection: {
+        title: 'SAF成本转折点数学',
+        why: '油价波动直接决定了SAF的溢价率，三档情景展示了采购决策对原油价格的敏感度。',
+        cards: [
+          { oil: '$80/桶', jet: '$0.95/升', saf: '$1.60–1.85/升', spread: '+70%', tone: 'border-danger bg-danger-soft text-danger' },
+          { oil: '$115/桶', jet: '$1.20/升', saf: '$1.60–1.85/升', spread: '+35–50%', tone: 'border-warning bg-warning-soft text-warning' },
+          { oil: '$150/桶', jet: '$1.60+/升', saf: '$1.20–1.40/升', spread: '接近平价', tone: 'border-success bg-success-soft text-success' }
+        ],
+        jetLabel: 'Jet-A 成本',
+        safLabel: 'SAF 成本',
+        spreadLabel: '价差',
+        summary: '碳敞口进一步收紧了这一对比，因为传统航油承担的政策成本高于合规 SAF。'
+      },
+      marketDrivers: {
+        title: '市场驱动因素：ReFuelEU 与碳价',
+        why: '强制掺混与碳成本决定采购窗口是否会在油价回落后仍然存在。',
+        refuelEuTitle: 'ReFuelEU 路线图 · 情景假设',
+        refuelEuRows: [
+          { year: '2025年1月1日', detail: 'SAF掺混比例0.7%' },
+          { year: '2027年', detail: 'SAF掺混比例1.0%' },
+          { year: '2030年', detail: 'SAF掺混比例6.0% (产业转折点)' },
+          { year: '2035年', detail: 'SAF掺混比例10%+' }
+        ],
+        etsTitle: 'EU ETS 驱动',
+        etsRows: [
+          { bold: '当前碳价：', text: '€80/吨CO2 ≈ $0.20/升航油成本' },
+          { bold: '2030年目标：', text: '€150+/吨CO2 ≈ $0.40-0.50/升航油成本' },
+          { bold: '含义：', text: '传统Jet-A的隐含成本逐年上升，而SAF（特别是用可再生电力生产的）的碳成本接近零，相对竞争力快速改善' },
+          { bold: '航司响应：', text: '2028-2030年间，经济学将从"强制采购SAF以合规"转向"主动采购SAF以节成本"' }
+        ]
+      },
+      germanyAdvantage: {
+        title: '德国制造优势与产业机遇',
+        why: '本地供应链只有在能持续降低 SAF 成本和交付风险时，才会改变 Lufthansa 的采购选择。',
+        conditionsTitle: '德国生产条件',
+        conditions: [
+          { bold: '完整的产业链：', text: '化工巨头拥有生物精炼与精细化工能力，可快速转向SAF生产。莱茵河流域的石油化工集群天然适合SAF生产。' },
+          { bold: '绿电成本优势：', text: '德国具备相对有利的陆上风电成本结构，这直接有助于降低SAF生产的能源成本。' },
+          { bold: '人才与技术：', text: '德国在生物技术、催化、碳捕获等核心技术上具备优势。' },
+          { bold: '航空运输枢纽：', text: '法兰克福是欧洲第二大航空枢纽，便利的场景测试与市场对接。' },
+          { bold: '政府支持：', text: '德国与欧盟正通过多种政策工具支持本土 SAF 产业发展。' }
+        ],
+        strategyTitle: 'Lufthansa 战略位置',
+        strategy: [
+          { bold: '本土供应链：', text: '可率先与德国SAF生产商建立长期合作协议，锁定成本优势与供应稳定性。' },
+          { bold: '成本竞争力：', text: '可能相较于其他欧洲航司在2028-2030年实现更低的燃油成本，形成新的竞争优势。' },
+          { bold: '品牌与ESG：', text: '调整运力同时加快SAF采购，展现汉莎的可持续承诺。' }
+        ]
+      },
+      outlook: {
+        title: '未来情景展望（2026–2030）',
+        why: '多情景比较能暴露结论对油价、政策和产能扩张假设的依赖。',
+        scenarios: [
+          { title: '基础情景：油价$110-130/桶', body: 'SAF与传统油的成本差异缩小至20-30%。ReFuelEU强制要求驱动SAF需求。汉莎与其他大型航司加快采购，预期投资回报率上升。' },
+          { title: '风险情景：油价下跌至$85/桶', body: 'SAF相对传统油贵40-60%，经济学驱动减弱。但ReFuelEU的强制性约束依然存在——航司仍需采购，规模经济逐步推动成本下降。' },
+          { title: '机遇情景：油价$140+/桶', body: '气候政策升级。油价高企推动SAF经济学逆转——航司主动采购SAF。产业规模快速扩张。' }
+        ],
+        insights: [
+          '汉莎削减航班的决定标志着产业升级的一个阶段。过去的航空竞争是"规模与成本优化"，未来的竞争将是"燃料转型与供应链"。',
+          '对德国产业链而言，这是一个窗口期。当前阶段探索SAF产业、绿电基础设施，可能在2030年后获得显著的成本与竞争优势。'
+        ]
+      },
+      actions: {
+        title: '建议执行动作',
+        why: '把静态结论转成来源复核与情景测试，而不是直接当成采购指令。',
+        items: [
+          '把该场景作为默认“事件冲击”模板放入 scenario registry。',
+          '在 sources 页面持续显示来源置信度、滞后与 fallback 说明。',
+          '每次重大航司事件后，复用同一页面模板发布可索引分析。'
+        ],
+        fastLinksLabel: '快速入口：',
+        scenarioLink: '/scenarios',
+        sourceLink: '/sources',
+        disclaimer: [
+          '本页用于“准实时研究支持”，不是交易系统或投资建议。当前航油数据仍包含代理源（例如 US Gulf / proxy feed），不等同于德国本地机场现货成交价。',
+          '当欧洲本土航油与 EU ETS 实时通道接入后，本页将更新为区域优先报价并保留代理源作为回退链路。',
+          '结论应结合航司实际对冲策略、税费结构和运力调整计划共同解读。'
+        ]
+      }
+    },
+    sourceFooter: {
+      sources: [
+        { id: 'lufthansa-newsroom', label: 'Lufthansa Group newsroom：2026 年夏季航班计划调整公告', href: 'https://newsroom.lufthansagroup.com/en/lufthansa-group-optimises-flight-offering-in-summer-across-all-six-hubs/', basis: 'observed' },
+        { id: 'author-cost-model', label: 'JetScope 作者成本拆解、拐点数学与 2026–2030 情景推算', basis: 'derived' },
+        { id: 'refueleu-targets', label: '文章引用的 ReFuelEU 掺混比例与政策目标', basis: 'assumption' }
+      ],
+      methodHref: '/sources',
+      methodLabel: '来源口径与方法清单',
+      limitations: [
+        '本页是基于 2026 年 4 月事件的署名静态分析，不随市场价格或航班计划自动更新。',
+        '除 Lufthansa 公告外，成本、溢价、投资需求和未来情景均为作者推算或政策假设，不是供应商报价。',
+        '实际采购还需复核实时市场输入、供应商报价、合同条款、套保头寸与航线盈利能力。'
+      ]
+    }
+  },
+  en: {
+    pageTemplate: {
+      eyebrow: 'Analysis · Lufthansa',
+      title: 'Lufthansa SAF Inflection Review',
+      question: 'Should this capacity cut move SAF procurement into active review now?'
+    },
+    signalRow: {
+      label: 'Procurement timing signals',
+      cards: [
+        { label: 'Procurement posture', value: 'Review now', valueClassName: 'text-warning', hint: 'The event opens a review window; it does not justify a purchase without current quotes.' },
+        { label: 'Short-haul cuts', value: '20,000', hint: 'Flights described in the April 2026 Lufthansa announcement.' },
+        { label: 'Model stress point', value: '$115/bbl', hint: 'Derived reference where the modeled SAF premium becomes reviewable.' },
+        { label: 'Germany premium', value: '5–10%', hint: 'Assumed logistics and infrastructure premium.' }
+      ]
+    },
+    panels: {
+      eventOverview: {
+        title: 'Signal read',
+        why: 'The operating cut matters only if it shows fuel transition pressure reaching real capacity decisions.',
+        paragraphs: [
+          'On April 21, 2026, the Lufthansa Group’s announcement to cut 20,000 flights appears as a cost control measure. But it carries a deeper economic signal: <strong>low margins on short-haul routes are unsustainable in a high-oil-price environment</strong>.',
+          'Fuel costs represent a core expenditure. When oil jumps from $80/bbl to $115/bbl (a 43% rise), unit costs on short-haul routes spike. Facing intense competition in the European short-haul market, it is difficult to quickly offset rising costs with ticket price hikes. Trimming capacity is a rational response.',
+          'The real significance is that this marks a turning point for traditional aviation models. While cutting flights is a short-term reaction, long-term competitiveness depends on a rapid transition to Sustainable Aviation Fuel (SAF). At $110-$130/bbl, <strong>the cost gap between SAF and conventional jet fuel narrows rapidly</strong>.',
+          'Concurrently, the EU ReFuelEU directive is phasing in. This turns SAF from an option to a mandatory compliance requirement. Lufthansa’s capacity adjustment can be interpreted as a tactical move preparing for an energy structural shift.'
+        ]
+      },
+      costBreakdown: {
+        title: 'Fuel Cost Breakdown (Static Model)',
+        why: 'Only by including hidden costs of fossil fuels (carbon, logistics) can SAF competitiveness be accurately assessed.',
+        rows: [
+          { label: 'Crude Oil (Brent $115/bbl)', value: '$0.88/L' },
+          { label: 'Refining & Transport', value: '$0.12/L' },
+          { label: 'EU ETS Carbon', value: '$0.20/L' }
+        ],
+        totalLabel: 'Jet-A EU Average Cost',
+        totalValue: '$1.20/L'
+      },
+      safInflection: {
+        title: 'Oil-price stress narrows the SAF spread',
+        why: 'The three bands make the decision’s sensitivity to the fossil-price assumption explicit.',
+        cards: [
+          { oil: '$80/bbl', jet: '$0.95/L', saf: '$1.60–1.85/L', spread: '+70%', tone: 'border-danger bg-danger-soft text-danger' },
+          { oil: '$115/bbl', jet: '$1.20/L', saf: '$1.60–1.85/L', spread: '+35–50%', tone: 'border-warning bg-warning-soft text-warning' },
+          { oil: '$150/bbl', jet: '$1.60+/L', saf: '$1.20–1.40/L', spread: 'near parity', tone: 'border-success bg-success-soft text-success' }
+        ],
+        jetLabel: 'Jet-A cost',
+        safLabel: 'SAF cost',
+        spreadLabel: 'Spread',
+        summary: 'Carbon exposure further tightens the comparison because conventional jet fuel carries more policy-cost pressure than compliant SAF blends.'
+      },
+      marketDrivers: {
+        title: 'Market Drivers: ReFuelEU and Carbon',
+        why: 'Mandates and carbon costs determine if the procurement window remains open.',
+        refuelEuTitle: 'ReFuelEU Roadmap',
+        refuelEuRows: [
+          { year: 'Jan 1, 2025', detail: 'SAF blend mandate 0.7%' },
+          { year: '2027', detail: 'SAF blend mandate 1.0%' },
+          { year: '2030', detail: 'SAF blend mandate 6.0% (Inflection point)' },
+          { year: '2035', detail: 'SAF blend mandate 10%+' }
+        ],
+        etsTitle: 'EU ETS Drivers',
+        etsRows: [
+          { bold: 'Current price:', text: '€80/tCO2 ≈ $0.20/L jet fuel cost' },
+          { bold: '2030 Target:', text: '€150+/tCO2 ≈ $0.40-0.50/L jet fuel cost' },
+          { bold: 'Implication:', text: 'The implicit cost of Jet-A rises annually, while SAF carbon costs approach zero.' },
+          { bold: 'Response:', text: 'Between 2028-2030, economics shift from mandatory compliance to active cost-saving procurement.' }
+        ]
+      },
+      germanyAdvantage: {
+        title: 'Germany supply-chain angle',
+        why: 'Local capacity changes procurement timing only when it can lower delivered cost and logistics exposure.',
+        conditionsTitle: 'Production Conditions',
+        conditions: [
+          { bold: 'Chemical clusters:', text: 'Chemical and refinery expertise can shorten SAF scale-up cycles.' },
+          { bold: 'Wind power cost:', text: 'Relatively favorable onshore wind cost structure reduces conversion costs.' },
+          { bold: 'Technology:', text: 'Advantage in core technologies like biotechnology and catalysis.' },
+          { bold: 'Hub proximity:', text: 'Frankfurt serves as a major hub for testing and market access.' },
+          { bold: 'Policy support:', text: 'Domestic offtake and policy support under ReFuelEU provide a visible ramp.' }
+        ],
+        strategyTitle: 'Lufthansa Strategy',
+        strategy: [
+          { bold: 'Local supply:', text: 'Establishing early long-term agreements could lock in cost advantages.' },
+          { bold: 'Competitiveness:', text: 'Potential to achieve lower fuel costs compared to other EU airlines by 2028-2030.' },
+          { bold: 'ESG alignment:', text: 'Accelerating SAF procurement while adjusting capacity demonstrates sustainability commitment.' }
+        ]
+      },
+      outlook: {
+        title: 'Scenarios (2026–2030)',
+        why: 'Scenario ranges expose the dependence on oil, policy, and capacity assumptions.',
+        scenarios: [
+          { title: 'Base: $110-130/bbl', body: 'The SAF cost gap narrows to 20-30%. Mandates drive demand. Lufthansa and others accelerate procurement.' },
+          { title: 'Risk: $85/bbl', body: 'SAF remains 40-60% more expensive, weakening the economic drive. But mandates persist, forcing procurement.' },
+          { title: 'Opportunity: $140+/bbl', body: 'Climate policies escalate. High oil prices invert the economics, prompting proactive SAF purchasing and rapid scale-up.' }
+        ],
+        insights: [
+          'Lufthansa’s capacity cut signals a phase of industry upgrade, moving from scale optimization to fuel transition and supply chain.',
+          'For the German supply chain, this is a window of opportunity to build infrastructure that may yield substantial cost advantages by 2030.'
+        ]
+      },
+      actions: {
+        title: 'Review actions',
+        why: 'Each next step moves the static event signal toward current, auditable evidence.',
+        items: [
+          'Save this event as a default scenario template in the registry.',
+          'Review source confidence and fallback status before taking procurement actions.',
+          'Reuse this template format for future major airline capacity events.'
+        ],
+        fastLinksLabel: 'Quick Links:',
+        scenarioLink: '/en/scenarios',
+        sourceLink: '/en/sources',
+        disclaimer: [
+          'This page is for near-real-time research support, not a trading system or investment advice.',
+          'Regional priority pricing will be enabled when EU ETS live feeds are integrated.',
+          'Interpret conclusions alongside actual hedge positions, tax structures, and route profitability.'
+        ]
+      }
+    },
+    sourceFooter: {
+      sources: [
+        { id: 'lufthansa-newsroom', label: 'Lufthansa Group newsroom: 2026 summer schedule adjustment', href: 'https://newsroom.lufthansagroup.com/en/lufthansa-group-optimises-flight-offering-in-summer-across-all-six-hubs/', basis: 'observed' },
+        { id: 'author-cost-model', label: 'JetScope cost-spread, fuel-saving, and procurement-timing analysis', basis: 'derived' },
+        { id: 'refueleu-targets', label: 'ReFuelEU blending targets as used by this article', basis: 'assumption' }
+      ],
+      methodHref: '/en/sources',
+      methodLabel: 'Source and method registry',
+      limitations: [
+        'This is a signed, static April 2026 event analysis and does not update with market prices.',
+        'Cost bands, advantages, and the procurement posture are estimates or derived scenarios, not supplier quotes.',
+        'Operational use requires current market inputs, supplier terms, hedge posture, and route profitability.'
+      ]
+    }
+  },
+  de: {
+    pageTemplate: {
+      eyebrow: 'Tiefenanalyse · Deutsch',
+      title: 'Lufthansa kürzt 20.000 Flüge: Wendepunkt für SAF?',
+      question: 'Verändert diese Kapazitätskürzung den richtigen Zeitpunkt für die SAF-Beschaffung?'
+    },
+    signalRow: {
+      label: 'Beschaffungszeitpunkt',
+      cards: [
+        { label: 'Beschaffungshaltung', value: 'Jetzt überprüfen', valueClassName: 'text-warning', hint: 'Der Kostendruck rechtfertigt eine Prüfung, aber noch keine Bestellung.' },
+        { label: 'Geplante Kürzung', value: '20.000 Flüge', hint: 'Angekündigte Kurzstreckenanpassung bis Oktober 2026.' },
+        { label: 'Modellierter Kipppunkt', value: '$115/Fass', hint: 'Abgeleitete Schwelle des statischen Kostenmodells.' },
+        { label: 'DE-Aufschlag', value: '5–10%', hint: 'Angenommener Infrastruktur- und Logistikaufschlag.' }
+      ]
+    },
+    panels: {
+      eventOverview: {
+        title: 'Ereignis und strategische Tiefe',
+        why: 'Die Ankündigung zeigt, ob Treibstoffdruck bereits operative Kapazitätsentscheidungen verändert.',
+        paragraphs: [
+          'Am 21. April 2026 kündigt Lufthansa die Streichung von 20.000 Flügen an. Oberflächlich eine Kostenmaßnahme, aber auch ein tieferes Signal: <strong>Margenschwache Kurzstrecken sind bei hohem Ölpreis unrentabel</strong>.',
+          'Treibstoff ist ein Kernkostenfaktor. Wenn Öl von $80 auf $115/Fass springt (+43%), steigen die Stückkosten drastisch. Im Wettbewerb mit Billigfliegern lassen sich Ticketpreise nicht beliebig schnell erhöhen. Eine Kürzung ist die rationale Reaktion.',
+          'Langfristig hängt die Wettbewerbsfähigkeit von der Umstellung auf Sustainable Aviation Fuel (SAF) ab. Bei $110-$130/Fass <strong>verringert sich der Kostenabstand zwischen SAF und fossilem Kerosin schnell</strong>.',
+          'Zudem greift die ReFuelEU-Verordnung. Aus der Option wird eine Compliance-Pflicht. Die Kapazitätskürzung ist somit auch eine Anpassung an diesen strukturellen Energiewandel.'
+        ]
+      },
+      costBreakdown: {
+        title: 'Kerosin-Kostenstruktur 2026',
+        why: 'Die Kostenblöcke zeigen, wie weit der fossile Referenzpreis vom modellierten SAF-Bereich entfernt ist.',
+        rows: [
+          { label: 'Rohöl (Brent $115/Fass)', value: '$0,88/L' },
+          { label: 'Raffination & Transport', value: '$0,12/L' },
+          { label: 'EU-ETS Kohlenstoff', value: '$0,20/L' }
+        ],
+        totalLabel: 'Jet-A Europa Durchschnitt',
+        totalValue: '$1,20/L'
+      },
+      safInflection: {
+        title: 'Die tiefere Logik: SAF-Inflexion',
+        why: 'Die Szenarien zeigen, wie empfindlich der Beschaffungszeitpunkt gegenüber dem fossilen Referenzpreis ist.',
+        cards: [
+          { oil: '$80/Fass', jet: '$0,95/L', saf: '$1,60–1,85/L', spread: '+70%', tone: 'border-danger bg-danger-soft text-danger' },
+          { oil: '$115/Fass', jet: '$1,20/L', saf: '$1,60–1,85/L', spread: '+35–50%', tone: 'border-warning bg-warning-soft text-warning' },
+          { oil: '$150/Fass', jet: '$1,60+/L', saf: '$1,20–1,40/L', spread: 'fast Parität', tone: 'border-success bg-success-soft text-success' }
+        ],
+        jetLabel: 'Jet-A Kosten',
+        safLabel: 'SAF Kosten',
+        spreadLabel: 'Aufschlag',
+        summary: 'Das CO2-Risiko verengt den Vergleich zusätzlich, da herkömmliches Kerosin höhere politische Kosten trägt.'
+      },
+      marketDrivers: {
+        title: 'ReFuelEU und CO2-Preise',
+        why: 'Verpflichtende Beimischung hält Beschaffungsbedarf aufrecht, auch wenn Ölpreise fallen.',
+        refuelEuTitle: 'ReFuelEU-Roadmap',
+        refuelEuRows: [
+          { year: '1. Jan. 2025', detail: '0,7% SAF-Quote' },
+          { year: '2027', detail: '1,0% SAF-Quote' },
+          { year: '2030', detail: '6,0% SAF-Quote (Wendepunkt)' },
+          { year: '2035', detail: '10%+ SAF-Quote' }
+        ],
+        etsTitle: 'EU ETS Treiber',
+        etsRows: [
+          { bold: 'Aktuell:', text: '€80/tCO2 ≈ $0,20/L Aufschlag' },
+          { bold: 'Ziel 2030:', text: '€150+/tCO2 ≈ $0,40-0,50/L Aufschlag' },
+          { bold: 'Bedeutung:', text: 'Jet-A-Kosten steigen jährlich, SAF-CO2-Kosten bleiben fast null.' },
+          { bold: 'Reaktion:', text: 'Bis 2030 wandelt sich Pflichtkauf in aktive Kostenoptimierung.' }
+        ]
+      },
+      germanyAdvantage: {
+        title: 'Deutschland als SAF-Fabrik',
+        why: 'Lokale Kosten- und Lieferkettenvorteile bestimmen, ob Lufthansa langfristige Abnahmeverträge prüfen sollte.',
+        conditionsTitle: 'Produktionsvorteile',
+        conditions: [
+          { bold: 'Chemie-Cluster:', text: 'Bestehendes Raffinerie-Know-how beschleunigt Skalierung.' },
+          { bold: 'Grünstrom:', text: 'Vorteilhafte Windkraftkosten senken den Energiebedarf der Produktion.' },
+          { bold: 'Technologie:', text: 'Führend in Bio- und Katalysetechnologien.' },
+          { bold: 'Drehkreuze:', text: 'Frankfurt und München bieten direkte Marktanbindung.' },
+          { bold: 'Politik:', text: 'Unterstützung durch nationale und EU-Förderprogramme.' }
+        ],
+        strategyTitle: 'Lufthansa Strategie',
+        strategy: [
+          { bold: 'Lokale Verträge:', text: 'Frühe Absicherung durch lokale Abnahmeverträge.' },
+          { bold: 'Kostenvorteil:', text: 'Potenzial für niedrigere Treibstoffkosten bis 2030 im EU-Vergleich.' },
+          { bold: 'Nachhaltigkeit:', text: 'Kapazitätsanpassung kombiniert mit SAF stärkt das ESG-Profil.' }
+        ]
+      },
+      outlook: {
+        title: 'Drei Szenarien für 2030',
+        why: 'Die Bandbreite verhindert, dass ein einzelner Ölpreispfad als sichere Prognose gelesen wird.',
+        scenarios: [
+          { title: 'Basis ($110–130/Fass)', body: 'SAF-Spreads schrumpfen auf 20–30%. ReFuelEU treibt Nachfrage. Lufthansa beschleunigt Beschaffung.' },
+          { title: 'Risiko ($85/Fass)', body: 'SAF bleibt teuer. ReFuelEU-Annahmen halten die Nachfrage dennoch aufrecht.' },
+          { title: 'Chance ($140+/Fass)', body: 'Klimapolitik und Ölpreise machen SAF wirtschaftlich überlegen.' }
+        ],
+        insights: [
+          'Lufthansas Flugkürzungen sind ein Signal strategischer Transformation, nicht nur Kostenkontrolle.',
+          'Für den Standort Deutschland öffnet sich ein Fenster, SAF-Infrastruktur als Wettbewerbsvorteil aufzubauen.'
+        ]
+      },
+      actions: {
+        title: 'Empfohlene Aktionen',
+        why: 'Die Seite empfiehlt eine erneute Prüfung des Timings, nicht den ungeprüften Abschluss eines Vertrags.',
+        items: [
+          'Speichern Sie dieses Ereignis als Referenzszenario.',
+          'Überprüfen Sie die Zuverlässigkeit der Quellen vor Beschaffungsentscheidungen.',
+          'Nutzen Sie diese Analysevorlage für künftige Kapazitätsereignisse.'
+        ],
+        fastLinksLabel: 'Schnellzugriff:',
+        scenarioLink: '/de/scenarios',
+        sourceLink: '/de/sources',
+        disclaimer: [
+          'Keine Handels- oder Anlageberatung, sondern forschungsunterstützte Analyse.',
+          'Regionale Preise werden aktiviert, sobald Live-ETS-Feeds verfügbar sind.',
+          'Die tatsächliche Beschaffung benötigt aktuelle Angebote, Verträge und Streckendaten.'
+        ]
+      }
+    },
+    sourceFooter: {
+      sources: [
+        { id: 'lufthansa-newsroom', label: 'Lufthansa Group Newsroom: Anpassung des Sommerflugplans 2026', href: 'https://newsroom.lufthansagroup.com/en/lufthansa-group-optimises-flight-offering-in-summer-across-all-six-hubs/', basis: 'observed' },
+        { id: 'author-cost-model', label: 'JetScope-Kostenzerlegung und Kipppunkt-Szenarien', basis: 'derived' },
+        { id: 'refueleu-targets', label: 'Im Artikel verwendete ReFuelEU-Beimischungsziele', basis: 'assumption' }
+      ],
+      methodHref: '/de/sources',
+      methodLabel: 'Quellen- und Methodenliste',
+      limitations: [
+        'Diese Ereignisanalyse ist auf April 2026 fixiert und wird nicht mit Marktpreisen aktualisiert.',
+        'Kosten-, Margen- und Kipppunktwerte sind Modellannahmen, keine Lieferantenangebote.',
+        'Beschaffungsentscheidungen benötigen zusätzlich aktuelle Angebote, Vertragsbedingungen und Hedge-Positionen.'
+      ]
+    }
+  }
+} as const;
+
+// Restored for test compatibility
 export const FACTS = [
   '2026-04-21：Lufthansa Group 公告，至 2026 年 10 月将削减约 20,000 班短途航班。',
   '公告披露该动作预计可节省约 40,000 吨航油。',
@@ -19,173 +417,3 @@ export const LUFTHANSA_SHOCK_2026Q2 = {
   carbonPriceUsdPerTonne: 115,
   subsidyUsdPerLiter: 0.55
 } as const;
-
-export const NAV_ITEMS = [
-  { href: '#event-overview', label: '事件概述与数据' },
-  { href: '#fuel-cost-breakdown', label: '航油成本分解' },
-  { href: '#saf-inflection', label: 'SAF成本转折点' },
-  { href: '#market-drivers', label: '市场驱动因素' },
-  { href: '#germany-advantage', label: '德国制造优势' },
-  { href: '#outlook', label: '未来情景展望' }
-] as const;
-
-export const JET_A1_COSTS = [
-  { label: '原油成本（Brent $115/桶）', value: '$0.88/升' },
-  { label: '精炼、流通利润', value: '$0.12/升' },
-  { label: 'EU ETS碳成本', value: '$0.20/升' }
-] as const;
-
-// Bullet rows where part of the line is bold-emphasized via <strong>.
-type BoldBullet = { bold: string; text: string };
-
-export const GERMAN_PRESSURES: readonly BoldBullet[] = [
-  {
-    bold: '地理位置劣势：',
-    text: '法兰克福、慕尼黑等主要枢纽离海港远，运输成本高。相比荷兰鹿特丹港或比利时安特卫普港，德国机场的航油成本溢价5-10%'
-  },
-  { bold: '高税环境：', text: '德国能源税率欧洲最高之一，这直接增加了航油终端价格' },
-  {
-    bold: '短途运力占比高：',
-    text: '汉莎集团的运力结构中，欧洲短途航线贡献了大部分航班数但利润率最低。短途飞行中，燃油成本占比30%左右（长途为20-25%）'
-  },
-  { bold: '竞争激烈：', text: '欧洲短途市场被廉价航空公司（瑞安、易捷等）垄断，价格战已经压低了票价，汉莎难以快速调整' }
-] as const;
-
-export const ATJ_COSTS = [
-  { label: '原料（甘蔗/甜菜）', value: '$0.35-0.50/升' },
-  { label: '能源（发酵、蒸馏）', value: '$0.40-0.70/升' },
-  { label: '精炼与处理', value: '$0.20-0.30/升' },
-  { label: '物流与利润', value: '$0.15-0.25/升' }
-] as const;
-
-export const GREEN_ELECTRICITY_BENEFITS = [
-  '使用绿电的SAF生产成本可降至 $1.25-1.50/升',
-  '相比其他欧洲进口SAF便宜10-20%',
-  '这给汉莎等德国航司采购本土SAF的经济理由'
-] as const;
-
-export const REFUEL_EU_ROADMAP = [
-  { year: '2025年1月1日', detail: 'SAF掺混比例0.7% → 年需求约4.9万吨（欧洲）' },
-  { year: '2027年', detail: 'SAF掺混比例1.0% → 年需求约7万吨' },
-  { year: '2030年', detail: 'SAF掺混比例6.0% → 年需求约42万吨 (产业转折点)' },
-  { year: '2035年', detail: 'SAF掺混比例10%+ → 年需求70万吨以上' }
-] as const;
-
-export const ETS_DRIVERS: readonly BoldBullet[] = [
-  { bold: '当前碳价：', text: '€80/吨CO2 ≈ $0.20/升航油成本' },
-  { bold: '2030年目标：', text: '€150+/吨CO2 ≈ $0.40-0.50/升航油成本' },
-  {
-    bold: '含义：',
-    text: '传统Jet-A的隐含成本逐年上升，而SAF（特别是用可再生电力生产的）的碳成本接近零，相对竞争力快速改善'
-  },
-  { bold: '航司响应：', text: '2028-2030年间，经济学将从"强制采购SAF以合规"转向"主动采购SAF以节成本"' }
-] as const;
-
-export const GERMANY_ADVANTAGES: readonly BoldBullet[] = [
-  {
-    bold: '完整的产业链：',
-    text: '德国化工巨头（巴斯夫、科万塔）拥有生物精炼与精细化工能力，可快速转向SAF生产。莱茵河流域的石油化工集群天然适合SAF生产。'
-  },
-  {
-    bold: '绿电成本优势：',
-    text: '德国陆上风电成本€50-80/MWh（全球最低）。这直接降低SAF生产的能源成本15-20%。'
-  },
-  { bold: '人才与技术：', text: '德国在生物技术、催化、碳捕获等核心技术上全球领先，这些都是SAF生产的关键。' },
-  { bold: '航空运输枢纽：', text: '法兰克福是欧洲第二大航空枢纽，便利的场景测试与市场对接。' },
-  { bold: '政府支持：', text: '德国与欧盟都通过贷款、补贴、税收优惠支持本土SAF。2024-2030年投入预期超100亿欧元。' }
-] as const;
-
-export const LUFTHANSA_STRATEGIC: readonly BoldBullet[] = [
-  {
-    bold: '本土供应链：',
-    text: '可率先与德国SAF生产商建立长期合作协议，锁定成本优势与供应稳定性。'
-  },
-  {
-    bold: '成本竞争力：',
-    text: '使用德国本土生产的绿电SAF，汉莎可在2028-2030年实现比其他欧洲航司更低的燃油成本，形成新的竞争优势。'
-  },
-  { bold: '品牌与ESG：', text: '削减运力同时加快SAF采购，展现汉莎的可持续承诺，改善企业形象与投资者评分。' }
-] as const;
-
-export const OUTLOOK_SCENARIOS = [
-  {
-    title: '基础情景：油价$110-130/桶，SAF逐步主流化',
-    body:
-      '地缘冲突持续，OPEC+维持减产。SAF与传统油的成本差异缩小至20-30%。ReFuelEU强制要求驱动SAF需求。到2030年，欧洲SAF年产能达40-50万吨。汉莎与其他大型航司加快采购。德国SAF生产商获得市场领导地位。预期投资回报率15-20%/年。'
-  },
-  {
-    title: '风险情景：油价下跌至$85/桶',
-    body:
-      '地缘冲突缓解或全球经济衰退。SAF相对传统油贵40-60%，经济学驱动减弱。但ReFuelEU的强制性约束依然存在——航司被迫采购。这实际上加强了SAF的需求确定性。规模经济快速推动成本下降10-15%。产业成熟加快。'
-  },
-  {
-    title: '机遇情景：油价$140+/桶，能源转型加速',
-    body:
-      '气候政策升级、碳定价加速、可再生能源投资倍增。油价高企推动SAF经济学逆转——SAF成本$1.20/升 vs 传统油$1.60+/升。航司主动采购SAF。产业规模快速扩张。德国制造业与绿色技术出口成为新增长极。这也是最有利于SAF产业的长期趋势。'
-  }
-] as const;
-
-export const ACTION_ITEMS = [
-  '把该场景作为默认“事件冲击”模板放入 scenario registry。',
-  '在 sources 页面持续显示来源置信度、滞后与 fallback 说明。',
-  '每次重大航司事件后，复用同一页面模板发布可索引分析。'
-] as const;
-
-export const DE_LH_ANNOUNCEMENT = [
-  '20.000 Kurzstreckenflüge',
-  '40.000 Tonnen Treibstoff/Jahr',
-  'Grund: Kerosin $115/Fass'
-] as const;
-
-export const DE_KEROSENE_BREAKDOWN = [
-  { label: 'Rohöl (Brent $115/Fass)', value: '$0,88/L' },
-  { label: 'Raffination & Transport', value: '$0,12/L' },
-  { label: 'EU-ETS Kohlenstoff', value: '$0,15/L' }
-] as const;
-
-export const DE_ADVANTAGES = [
-  '✓ Chemie-Cluster: BASF, Covestro',
-  '✓ Grünstrom: €50-80/MWh',
-  '✓ Biotechnologie & Katalytik'
-] as const;
-
-// Paragraphs with optional <strong> spans. Each paragraph is an array of segments;
-// segments with `b: true` render inside <strong>, otherwise as plain text.
-export type RichSegment = { t: string; b?: true };
-export type RichParagraph = readonly RichSegment[];
-
-export const EVENT_OVERVIEW: readonly RichParagraph[] = [
-  [
-    { t: '2026年4月21日，汉莎集团的削减2万航班公告，从表面上看是一项成本控制措施。但这背后隐藏着一个更深的经济学信号：' },
-    { t: '短途航线的低利润率已无法在高油价环境中维持', b: true },
-    { t: '。' }
-  ],
-  [
-    { t: '对于汉莎而言，燃油成本占总运营成本的20-30%。当油价从$80/桶跳升至$115/桶（上升43%）时，短途航线的单位成本陡然上升30-35%。在竞争激烈的欧洲短途市场，廉价航空公司（如瑞安航空）已经通过规模与效率压低票价，汉莎难以快速提价来抵消成本上升。因此，削减低利润运力成为一个理性但痛苦的选择。' }
-  ],
-  [
-    { t: '然而，这个事件的真正意义在于：它标志着传统航空业运营模式的一个转折点。削减航班虽然是短期应对，但从长期看，汉莎等欧洲航司的未来竞争力取决于能否快速转向可持续航油（SAF）。因为当油价维持在110-130美元/桶时，' },
-    { t: 'SAF成本与传统喷气燃料的差异会快速收窄', b: true },
-    { t: '，这将打开一扇新的成本优化之门。' }
-  ],
-  [
-    { t: '同时，欧盟ReFuelEU指令即将在2025年生效，要求航空燃油中SAF掺混比例从2025年的0.7%逐步升至2030年的6%。这意味着SAF从一个可选项变成了强制性合规要求。在这个背景下，汉莎的减班决定可以被重新解读为：航司正在为能源结构的转变而调整战术。' }
-  ]
-] as const;
-
-export const KEY_INSIGHTS = [
-  '汉莎2026年4月的削减航班决定，不是航空业衰退的信号，而是产业升级的开始。过去的航空竞争是"规模与成本优化"，未来的竞争将是"燃料转型与供应链"。那些能够快速采购SAF、建立本土产业链、掌握绿电技术的航空企业和国家，将在2030年后获得显著的成本与竞争优势。',
-  '对德国而言，这是一个黄金机遇窗口。现在投资SAF产业、绿电基础设施与相关技术，到2030年可实现全球领导地位。这也解释了为什么汉莎选择削减短途（利润微薄）而投资SAF——这是对未来能源结构的战略赌注。'
-] as const;
-
-export const DISCLAIMER_PARAGRAPHS = [
-  '本页用于“准实时研究支持”，不是交易系统或投资建议。当前航油数据仍包含代理源（例如 US Gulf / proxy feed），不等同于德国本地机场现货成交价。',
-  '当欧洲本土航油与 EU ETS 实时通道接入后，本页将更新为区域优先报价并保留代理源作为回退链路。',
-  '结论应结合航司实际对冲策略、税费结构和运力调整计划共同解读。'
-] as const;
-
-export const SAF_INFLECTION_MATH = [
-  '油价$80/桶 → Jet-A $0.95/升 → SAF贵70% (不经济)',
-  '油价$115/桶 → Jet-A $1.20/升 → SAF贵25-40% (可接受边界)',
-  '油价$150/桶 → Jet-A $1.50/升 → SAF成本接近或相等 (无差异)'
-] as const;

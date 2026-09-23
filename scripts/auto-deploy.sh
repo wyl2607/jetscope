@@ -321,6 +321,15 @@ start_api_container() {
         echo "[$(date -Iseconds)] ERROR: jetscope-api.service must stay inactive; API is owned by docker-compose.prod.yml" | tee -a "$LOG"
         return 1
     fi
+    # The API's SQLite file lives on the host volume mounted by docker-compose.prod.yml.
+    # Refuse to recreate the container before that file exists: `down` would discard a
+    # database that still lives only inside the old container. The one-time migration is
+    # scripts/deploy-usa-vps.sh (see docs/DEPLOY-2026-09-refactor.md).
+    local host_db="${JETSCOPE_HOST_DATA_DIR:-/opt/jetscope/data}/market.db"
+    if [ ! -s "$host_db" ] && [ "${JETSCOPE_ALLOW_EMPTY_DB:-0}" != "1" ]; then
+        echo "[$(date -Iseconds)] ERROR: $host_db is missing or empty; run the one-time SQLite migration (scripts/deploy-usa-vps.sh) first, or set JETSCOPE_ALLOW_EMPTY_DB=1 for an intentional empty start" | tee -a "$LOG"
+        return 1
+    fi
     docker-compose -f docker-compose.prod.yml down >> "$LOG" 2>&1 || true
     remove_stale_compose_api_containers
     docker rm -f jetscope-api >> "$LOG" 2>&1 || true

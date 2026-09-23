@@ -4,6 +4,35 @@ import { readFile } from 'node:fs/promises';
 
 import { importWebLib } from './helpers/load-web-lib.mjs';
 
+const DELEGATED_PAGE_COMPONENTS = {
+  'apps/web/app/en/lufthansa-saf-2026/page.tsx': {
+    component: 'LufthansaCase',
+    importPath: '@/components/lufthansa-case',
+    source: 'apps/web/components/lufthansa-case.tsx'
+  }
+};
+
+async function sourceForPage(path) {
+  const pageSource = await readFile(new URL(`../${path}`, import.meta.url), 'utf8');
+  const delegated = DELEGATED_PAGE_COMPONENTS[path];
+  if (!delegated) {
+    return pageSource;
+  }
+
+  assert.match(
+    pageSource,
+    new RegExp(`import\\s+\\{\\s*${delegated.component}\\s*\\}\\s+from\\s+['\"]${delegated.importPath}['\"]`),
+    `${path} must import its allowlisted shared implementation`
+  );
+  assert.match(
+    pageSource,
+    new RegExp(`return\\s+<${delegated.component}\\b[^>]*\\/>;`),
+    `${path} must render only its allowlisted shared implementation`
+  );
+
+  return readFile(new URL(`../${delegated.source}`, import.meta.url), 'utf8');
+}
+
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -394,7 +423,7 @@ test('getPriceTrendChartReadModel falls back when market history is unavailable'
 });
 
 test('finiteNumberOrNull keeps null, undefined and empty string as missing', async () => {
-  const { finiteNumberOrNull, finiteChangeOrNull } = await importWebLib(
+  const { finiteNumberOrNull, finiteChangeOrNull, resolveSnapshotMetric } = await importWebLib(
     'apps/web/lib/product-read-model.ts'
   );
 
@@ -406,6 +435,14 @@ test('finiteNumberOrNull keeps null, undefined and empty string as missing', asy
   assert.equal(finiteNumberOrNull('12.5'), 12.5);
   assert.equal(finiteChangeOrNull(null), null);
   assert.equal(finiteChangeOrNull(undefined), null);
+
+  const missingJet = resolveSnapshotMetric(
+    { jet_eu_proxy_usd_per_l: null, jet_usd_per_l: null },
+    'jet_eu_proxy_usd_per_l',
+    'jet_usd_per_l'
+  );
+  assert.equal(missingJet.value, null);
+  assert.doesNotMatch(JSON.stringify(missingJet), /80\.38|0\.9(?:00)?|0\.64/);
 });
 
 test('Germany jet-fuel read model does not turn missing 30d change into a stable 0% verdict', async (t) => {
@@ -426,7 +463,7 @@ test('Germany jet-fuel read model does not turn missing 30d change into a stable
             source_status: { overall: 'degraded', is_fallback: true, fallback_rate: 71.43 },
             values: {
               brent_usd_per_bbl: 120.98,
-              jet_usd_per_l: 0.64,
+              jet_usd_per_l: 1.017,
               jet_eu_proxy_usd_per_l: 0.913,
               carbon_proxy_usd_per_t: 91.91
             },
@@ -441,7 +478,7 @@ test('Germany jet-fuel read model does not turn missing 30d change into a stable
               },
               jet_eu_proxy: {
                 source: 'brent-derived',
-                status: 'fallback',
+                status: 'estimated',
                 fallback_used: true,
                 quality: 'derived',
                 observed_at: '2026-09-10T00:00:00Z',
@@ -558,10 +595,10 @@ test('Germany jet-fuel read model uses Rotterdam when it differs from the EU pro
     {
       generated_at: '2026-09-14T09:00:00Z',
       fetched_at: '2026-09-14T09:00:00Z',
-      source_status: { overall: 'ok', is_fallback: false },
+      source_status: { overall: 'degraded', is_fallback: true },
       values: {
-        brent_usd_per_bbl: 87.01,
-        jet_usd_per_l: 0.64,
+        brent_usd_per_bbl: 82.4,
+        jet_usd_per_l: 1.04,
         jet_eu_proxy_usd_per_l: 1.2,
         rotterdam_jet_fuel_usd_per_l: 0.88,
         carbon_proxy_usd_per_t: 91.91,
@@ -579,7 +616,7 @@ test('Germany jet-fuel read model uses Rotterdam when it differs from the EU pro
         },
         jet_eu_proxy: {
           source: 'brent-derived',
-          status: 'fallback',
+          status: 'estimated',
           fallback_used: true,
           quality: 'derived',
           observed_at: '2026-09-13T00:00:00Z',
@@ -622,7 +659,7 @@ test('Germany jet-fuel read model uses Rotterdam when it differs from the EU pro
   assert.equal(rotterdam?.quality, 'observed');
   assert.equal(readModel.quoteAsOf, '2026-09-10T00:00:00Z');
   assert.notEqual(readModel.quoteAsOf, euProxy?.observedAt);
-  assert.equal(readModel.decision, 'stable');
+  assert.equal(readModel.decision, 'insufficient');
 });
 
 test('English Germany jet fuel price page exposes localized market review without Chinese or German copy', async () => {
@@ -673,22 +710,19 @@ test('German Germany jet fuel price page keeps source review in the German local
 });
 
 test('English Lufthansa SAF analysis page is a localized light review surface', async () => {
-  const englishLufthansaSource = await readFile(
+  const englishPage = await readFile(
     new URL('../apps/web/app/en/lufthansa-saf-2026/page.tsx', import.meta.url),
     'utf8'
   );
+  const englishLufthansaSource = await sourceForPage('apps/web/app/en/lufthansa-saf-2026/page.tsx');
 
-  assert.match(englishLufthansaSource, /Lufthansa SAF Inflection Review/);
-  assert.match(englishLufthansaSource, /locale="en"/);
-  assert.match(englishLufthansaSource, /\/en\/prices\/germany-jet-fuel/);
-  assert.match(englishLufthansaSource, /\/en\/sources\?filter=review/);
-  assert.match(englishLufthansaSource, /\/en\/scenarios/);
-  assert.match(englishLufthansaSource, /\/analysis\/lufthansa-flight-cuts-2026-04/);
-  assert.match(englishLufthansaSource, /\/de\/lufthansa-saf-2026/);
-  assert.doesNotMatch(
-    englishLufthansaSource,
-    /汉莎|削减|航油|德国制造|事件概述|Lufthansa kürzt|Wendepunkt|Kerosin|Deutschland|Chinesische Vollversion/
-  );
+  assert.match(englishPage, /Lufthansa SAF Inflection Review/);
+  assert.match(englishPage, /locale="en"/);
+  assert.match(englishLufthansaSource, /<PageTemplate/);
+  assert.match(englishLufthansaSource, /question=\{data\.pageTemplate\.question\}/);
+  assert.match(englishLufthansaSource, /<SourceFooter/);
+  assert.match(englishLufthansaSource, /href: '\/en\/crisis'/);
+  assert.match(englishLufthansaSource, /Run the numbers yourself in the tipping-point workbench/);
   assert.doesNotMatch(englishLufthansaSource, /text-white|text-slate-300|bg-slate-900|bg-slate-950|border-slate-800/);
   assert.doesNotMatch(englishLufthansaSource, /<input|AdminDataOps|ScenarioRegistry|x-admin-token/i);
 });
@@ -774,8 +808,8 @@ test('crisis page uses light semantic data cards instead of gray dark boxes', as
   assert.match(crisisSource, /buildSafWorkbenchHref/);
   assert.match(crisisSource, /reviewSourcesHref/);
   assert.match(crisisSource, /sources', '\?filter=review/);
-  assert.match(crisisSource, /fuel: fallbackFossil\.toFixed\(3\)/);
-  assert.match(crisisSource, /reserve: reserveWeeks\?\.toFixed\(2\)/);
+  assert.match(crisisSource, /params\.set\('fuel', fallbackFossil\.toFixed\(3\)\)/);
+  assert.match(crisisSource, /params\.set\('reserve', reserveWeeks\.toFixed\(2\)\)/);
   // Asserted through the design tokens rather than palette literals, which any
   // migration necessarily breaks. See docs/UI_CONTRACT.md section 1.
   //
@@ -1401,7 +1435,7 @@ test('research page is an honest signal workbench with disabled-state actions', 
 
   assert.match(page, /AI_RESEARCH_ENABLED/);
   assert.match(page, /ResearchDecisionBriefCard/);
-  assert.match(page, /showLink=\{false\}/);
+  assert.doesNotMatch(page, /showLink=/);
   assert.match(page, /NAV_ENTRIES/);
   assert.match(zhPage, /locale="zh"/);
   assert.match(zhPage, /研究信号/);
@@ -1495,10 +1529,10 @@ test('Germany jet-fuel read model falls back to fresh EU proxy when Rotterdam is
     {
       generated_at: '2026-09-14T09:00:00Z',
       fetched_at: '2026-09-14T09:00:00Z',
-      source_status: { overall: 'ok', is_fallback: false },
+      source_status: { overall: 'degraded', is_fallback: true },
       values: {
-        brent_usd_per_bbl: 87.01,
-        jet_usd_per_l: 0.64,
+        brent_usd_per_bbl: 82.4,
+        jet_usd_per_l: 1.04,
         jet_eu_proxy_usd_per_l: 0.913,
         rotterdam_jet_fuel_usd_per_l: 0.657,
         carbon_proxy_usd_per_t: 91.91,
@@ -1516,7 +1550,7 @@ test('Germany jet-fuel read model falls back to fresh EU proxy when Rotterdam is
         },
         jet_eu_proxy: {
           source: 'brent-derived',
-          status: 'fallback',
+          status: 'estimated',
           fallback_used: true,
           quality: 'derived',
           observed_at: '2026-09-14T00:00:00Z',

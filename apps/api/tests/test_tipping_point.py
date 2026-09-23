@@ -7,6 +7,8 @@ import pytest
 
 from app.services.analysis.tipping_point import TippingPointEngine
 
+_DEFAULT_CARBON = object()
+
 
 class MockSession:
     def __init__(
@@ -14,10 +16,16 @@ class MockSession:
         fossil_price: float | None = None,
         fossil_payload: dict | None = None,
         fossil_rows: dict[str, tuple[float, dict]] | None = None,
+        carbon_row: tuple[float, dict] | None | object = _DEFAULT_CARBON,
     ) -> None:
         self.fossil_price = fossil_price
         self.fossil_payload = fossil_payload
         self.fossil_rows = fossil_rows
+        self.carbon_row = (
+            (0.0, {"quality": "observed", "observed_at": "2026-04-23T11:00:00+00:00"})
+            if carbon_row is _DEFAULT_CARBON
+            else carbon_row
+        )
         self.recorded_events: list[SimpleNamespace] = []
         self.added: list[object] = []
         self.committed = False
@@ -36,6 +44,11 @@ class MockSession:
             for condition in where_items:
                 if getattr(getattr(condition, "left", None), "key", None) == "metric_key":
                     metric_key = getattr(getattr(condition, "right", None), "value", None)
+            if metric_key == "eu_ets_price_eur_per_t":
+                if self.carbon_row is None:
+                    return None
+                value, payload = self.carbon_row
+                return SimpleNamespace(value=value, payload=dict(payload))
             if self.fossil_rows is not None:
                 row = self.fossil_rows.get(metric_key) if metric_key else None
                 if row is None:
@@ -105,7 +118,10 @@ def _event_for_pathway(events, pathway: str):  # noqa: ANN001
 
 
 def test_evaluate_emits_crossover_for_positive_gap(now: datetime) -> None:
-    session = MockSession(fossil_price=1.40)
+    session = MockSession(
+        fossil_price=1.40,
+        carbon_row=(80.0, {"quality": "observed", "observed_at": "2026-04-23T11:00:00+00:00"}),
+    )
     engine = TippingPointEngine()
 
     events = engine.evaluate(now=now, db=session)
@@ -114,6 +130,43 @@ def test_evaluate_emits_crossover_for_positive_gap(now: datetime) -> None:
     assert hefa_event is not None
     assert hefa_event.event_type == "CROSSOVER"
     assert hefa_event.gap_usd_per_litre > 0
+
+
+def test_evaluate_uses_usable_market_carbon_price(now: datetime, monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: list[float] = []
+
+    def fake_effective_saf_cost(pathway: str, *, carbon_price_eur_per_t: float) -> float:
+        captured.append(carbon_price_eur_per_t)
+        return 1.25
+
+    monkeypatch.setattr("app.services.analysis.tipping_point.effective_saf_cost", fake_effective_saf_cost)
+    session = MockSession(
+        fossil_price=1.40,
+        carbon_row=(82.5, {"quality": "stale", "observed_at": "2026-04-23T11:00:00+00:00"}),
+    )
+
+    events = TippingPointEngine().evaluate(now=now, db=session)
+
+    assert events
+    assert captured == [82.5] * len(TippingPointEngine.PATHWAY_PRIORITY)
+    assert all(event.metadata_["carbon_price_eur_per_t"] == 82.5 for event in events)
+
+
+def test_evaluate_skips_when_carbon_input_is_missing(now: datetime, monkeypatch: pytest.MonkeyPatch) -> None:
+    called = False
+
+    def fake_effective_saf_cost(pathway: str, *, carbon_price_eur_per_t: float) -> float:
+        nonlocal called
+        called = True
+        return 1.25
+
+    monkeypatch.setattr("app.services.analysis.tipping_point.effective_saf_cost", fake_effective_saf_cost)
+    session = MockSession(fossil_price=1.40, carbon_row=None)
+
+    events = TippingPointEngine().evaluate(now=now, db=session)
+
+    assert events == []
+    assert called is False
 
 
 def test_evaluate_emits_critical_for_gap_inside_5_cents(now: datetime) -> None:

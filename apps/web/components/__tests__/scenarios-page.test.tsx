@@ -37,9 +37,9 @@ function makeReadModel(overrides: Partial<DashboardReadModel> = {}): DashboardRe
       },
       values: {
         brent_usd_per_bbl: 80,
-        jet_usd_per_l: 0.64,
-        jet_eu_proxy_usd_per_l: 0.657,
-        carbon_proxy_usd_per_t: 91.91
+        jet_usd_per_l: 0.73,
+        jet_eu_proxy_usd_per_l: 0.74,
+        carbon_proxy_usd_per_t: 93.4
       }
     },
     reserve: {
@@ -89,7 +89,8 @@ function makeReadModel(overrides: Partial<DashboardReadModel> = {}): DashboardRe
       fossilJetUsdPerL: 1.2,
       carbonPriceEurPerT: 95,
       reserveWeeks: 5,
-      jetSourceKey: 'rotterdam'
+      jetSourceKey: 'rotterdam',
+      missingReason: null
     },
     scenarioCount: 2,
     recentScenarioNames: ['Spring hedge', '春季对冲'],
@@ -220,7 +221,7 @@ describe('ScenariosPage', () => {
         market: {
           generated_at: '2026-08-01T00:00:00Z',
           source_status: { overall: 'offline', confidence: 0, freshness_minutes: null, fallback_rate: 100, is_fallback: true },
-          values: { brent_usd_per_bbl: 87.01, jet_usd_per_l: 0.64, jet_eu_proxy_usd_per_l: 0.657, carbon_proxy_usd_per_t: 91.91 }
+          values: { brent_usd_per_bbl: 86.4, jet_usd_per_l: 0.73, jet_eu_proxy_usd_per_l: 0.74, carbon_proxy_usd_per_t: 93.4 }
         }
       })
     );

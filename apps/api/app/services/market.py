@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models.tables import MarketRefreshRun, MarketSnapshot
 from app.schemas.market import (
+    MarketAssumption,
     MarketHealthResponse,
     MarketHistoryPoint,
     MarketHistoryResponse,
@@ -45,6 +46,8 @@ MARKET_SOURCE_URLS = {
     "cbam_price": "https://taxation-customs.ec.europa.eu/carbon-border-adjustment-mechanism/price-cbam-certificates_en",
     "ecb_eur_usd": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
     "eu_ets_eex": "https://www.eex.com/en/market-data/environmental-markets/spot-market",
+    # Official EEX primary-market auction workbook. No API key. Year is filled at fetch time.
+    "eu_ets_auction_xlsx": "https://public.eex-group.com/eex/eua-auction-report/emission-spot-primary-market-auction-report-{year}-data.xlsx",
     "yahoo_chart": "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range={range}&interval=1d",
 }
 
@@ -133,6 +136,36 @@ SOURCE_DETAIL_TO_METRIC_KEY = {
     "ecb": "usd_per_eur",
 }
 
+# Quote age policy lives in one place.
+# max_age: a successful external read is `live` only when the observation is this fresh.
+# stale_limit: a failed read may reuse an earlier real observation this fresh, never a seed.
+# FRED jet (DJFUELUSGULF) publishes with lag, so its live window is 10 days.
+DEFAULT_STALE_LIMIT_DAYS = 14
+METRIC_QUOTE_AGE_DAYS: dict[str, dict[str, int]] = {
+    "brent": {"max_age_days": 10, "stale_limit_days": DEFAULT_STALE_LIMIT_DAYS},
+    "jet": {"max_age_days": 10, "stale_limit_days": DEFAULT_STALE_LIMIT_DAYS},
+    "carbon": {"max_age_days": 10, "stale_limit_days": DEFAULT_STALE_LIMIT_DAYS},
+    "jet_eu_proxy": {"max_age_days": 10, "stale_limit_days": DEFAULT_STALE_LIMIT_DAYS},
+    "rotterdam_jet_fuel": {"max_age_days": 10, "stale_limit_days": DEFAULT_STALE_LIMIT_DAYS},
+    "eu_ets": {"max_age_days": 10, "stale_limit_days": DEFAULT_STALE_LIMIT_DAYS},
+    "germany_premium": {"max_age_days": 14, "stale_limit_days": DEFAULT_STALE_LIMIT_DAYS},
+    "ecb": {"max_age_days": 5, "stale_limit_days": DEFAULT_STALE_LIMIT_DAYS},
+}
+PUBLIC_QUOTE_STATUSES = ("live", "stale", "estimated", "missing")
+CORE_HEALTH_DETAILS = ("jet", "brent")
+# Qualities that count as a previous real fetch. Seeds and unlabeled rows do not.
+REAL_OBSERVATION_QUALITIES = frozenset({"observed", "stale"})
+ROTTERDAM_FROM_BRENT_METHOD = (
+    "Rotterdam jet USD/L = Brent USD/bbl / 158.987294928 L/bbl × 1.20 "
+    "(public EU jet crack and ARA basis multiplier)"
+)
+JET_EU_FROM_BRENT_METHOD = (
+    "EU jet proxy USD/L = Brent USD/bbl / 158.987294928 L/bbl × 1.20 "
+    "(public EU jet crack and ARA basis multiplier)"
+)
+CARBON_FROM_EUA_FX_METHOD = "carbon proxy USD/t = EU ETS auction EUR/t × ECB USD per EUR"
+EXCEL_SERIAL_EPOCH = datetime(1899, 12, 30, tzinfo=timezone.utc)
+
 MARKET_REFRESH_LOCK_KEY = 24041801
 DEFAULT_MARKET_SOURCE_TIMEOUT_SECONDS = 12.0
 MIN_MARKET_SOURCE_TIMEOUT_SECONDS = 0.1
@@ -186,6 +219,13 @@ SOURCE_CONTEXT: dict[str, dict[str, object]] = {
         "lag_minutes": 60,
         "confidence_score": 0.9,
         "note": "European Energy Exchange EU ETS spot price; highly liquid market.",
+    },
+    "eex-eua-auction": {
+        "region": "eu",
+        "market_scope": "carbon_ets_primary_auction",
+        "lag_minutes": 1440,
+        "confidence_score": 0.9,
+        "note": "EEX EUA primary-market auction clearing price (EUR/tCO2), published workbook. Not a continuous secondary spot.",
     },
     "germany-premium-db": {
         "region": "de",
@@ -730,16 +770,17 @@ def _ingest_carbon_market_value(
             details,
             "carbon",
             source="cbam+ecb",
-            status="fallback",
+            status="ok",
             value=carbon_value,
             extra={
-                "quality": "derived",
+                "quality": "observed",
                 "quote_kind": "proxy",
                 "product_id": "CBAM certificate proxy",
                 "cbam_eur": _round(cbam_eur, 2),
                 "usd_per_eur": _round(rate, 4),
-                "note": "CBAM certificate proxy, not an aviation EUA settlement.",
-                "fallback_used": True,
+                "observed_at": isoformat_z(utcnow()),
+                "note": "CBAM certificate proxy from the public price page, not an aviation EUA settlement.",
+                "fallback_used": False,
             },
         )
         return carbon_value
@@ -753,7 +794,7 @@ def _ingest_jet_eu_market_value(
     *,
     brent_value: float | None,
     seed_by_key: dict[str, float],
-) -> float:
+) -> float | None:
     try:
         ara_html = _fetch_text(MARKET_SOURCE_URLS["jet_ara_rotterdam"])
         ara_usd_per_metric_ton, ara_observed = _parse_ara_rotterdam_quote(ara_html)
@@ -786,7 +827,7 @@ def _ingest_jet_eu_market_value(
                 details,
                 "jet_eu_proxy",
                 source="brent-derived",
-                status="fallback",
+                status="estimated",
                 value=derived_value,
                 extra={
                     "quality": "derived",
@@ -795,31 +836,31 @@ def _ingest_jet_eu_market_value(
                     "observed_at": brent_observed,
                     "published_at": brent_published,
                     "input_observed_at": {"brent": brent_observed},
-                    "note": "ARA/Rotterdam public quote unavailable; fell back to Brent-derived EU proxy.",
+                    "method": JET_EU_FROM_BRENT_METHOD,
+                    "note": JET_EU_FROM_BRENT_METHOD,
                     "primary_error": primary_error_text,
                     "fallback_used": True,
                 },
             )
             return derived_value
 
-        seed_value = float(seed_by_key["jet_eu_proxy_usd_per_l"])
         _set_source_detail(
             details,
             "jet_eu_proxy",
-            source="seed-baseline",
-            status="fallback",
-            value=seed_value,
+            source="brent-derived",
+            status="missing",
             extra={
-                "quality": "seed",
-                "quote_kind": "assumption",
-                "product_id": "seed EU jet proxy",
-                "note": "ARA/Rotterdam and Brent unavailable; fell back to seeded EU proxy baseline.",
+                "quality": "missing",
+                "quote_kind": "proxy",
+                "product_id": "Brent-derived EU jet proxy",
+                "method": None,
+                "note": "ARA/Rotterdam quote and Brent input are both unavailable.",
                 "primary_error": primary_error_text,
-                "confidence_score": DETERMINISTIC_FALLBACK_CONFIDENCE,
                 "fallback_used": True,
+                "confidence_score": 0.0,
             },
         )
-        return seed_value
+        return None
 
 
 def _ingest_rotterdam_jet_fuel_value(
@@ -887,13 +928,49 @@ def _parse_eu_ets_price_eur(html: str) -> float:
     raise ValueError("EU ETS price not found in EEX payload")
 
 
+def _ingest_eu_ets_auction_workbook(details: dict[str, object]) -> float:
+    last_error: Exception | None = None
+    for year in (utcnow().year, utcnow().year - 1):
+        url = MARKET_SOURCE_URLS["eu_ets_auction_xlsx"].format(year=year)
+        try:
+            payload = _fetch_bytes(url)
+            price, observed, auction_name = _parse_eex_eua_auction_xlsx(payload)
+            ets_value = _round(price, 2)
+            _set_source_detail(
+                details,
+                "eu_ets",
+                source="eex-eua-auction",
+                status="ok",
+                value=ets_value,
+                extra={
+                    "quality": "observed",
+                    "quote_kind": "auction",
+                    "product_id": auction_name,
+                    "raw_eur_per_t": ets_value,
+                    "observed_at": isoformat_z(observed),
+                    "published_at": isoformat_z(observed),
+                    "note": f"EEX primary auction clearing price from {auction_name}.",
+                    "source_url": url,
+                },
+            )
+            return ets_value
+        except Exception as error:
+            last_error = error
+    raise last_error or ValueError("EEX EUA auction workbook unavailable")
+
+
 def _ingest_eu_ets_price(
     details: dict[str, object],
     *,
     ecb_usd_per_eur: float | None = None,
     seed_by_key: dict[str, float],
 ) -> float | None:
-    """EU ETS spot price from EEX; return EUR/tCO2. Failure does not mint a seed quote."""
+    """EU ETS EUR/tCO2. Prefer the public EEX auction workbook; HTML failure does not mint a seed."""
+    del seed_by_key
+    try:
+        return _ingest_eu_ets_auction_workbook(details)
+    except Exception:
+        pass
     try:
         ets_html = _fetch_text(MARKET_SOURCE_URLS["eu_ets_eex"])
         eu_ets_eur = _parse_eu_ets_price_eur(ets_html)
@@ -1369,6 +1446,578 @@ def backfill_market_history_from_public_sources(db: Session, *, days: int = 30) 
     }
 
 
+def _metric_unit(metric_key: str) -> str:
+    for item in DEFAULT_MARKET_METRICS:
+        if item["metric_key"] == metric_key:
+            return str(item["unit"])
+    return ""
+
+
+def _quote_age_limits(detail_key: str) -> tuple[int, int]:
+    policy = METRIC_QUOTE_AGE_DAYS.get(detail_key) or {
+        "max_age_days": 10,
+        "stale_limit_days": DEFAULT_STALE_LIMIT_DAYS,
+    }
+    return int(policy["max_age_days"]), int(policy["stale_limit_days"])
+
+
+def _age_days(observed: datetime | None, now: datetime) -> float | None:
+    if observed is None:
+        return None
+    delta = _ensure_utc_datetime(now) - _ensure_utc_datetime(observed)
+    return max(0.0, delta.total_seconds() / 86400.0)
+
+
+def _detail_observation(detail: dict[str, object]) -> datetime | None:
+    return (
+        parse_iso_datetime(detail.get("as_of"))
+        or parse_iso_datetime(detail.get("observed_at"))
+        or parse_iso_datetime(detail.get("published_at"))
+    )
+
+
+def _is_seed_detail(detail: dict[str, object]) -> bool:
+    status = str(detail.get("status") or "").strip().lower()
+    quality = str(detail.get("quality") or "").strip().lower()
+    source = str(detail.get("source") or "").strip().lower()
+    return status == "seed" or quality == "seed" or source == "seed-baseline"
+
+
+def _copy_source_context(detail: dict[str, object]) -> dict[str, object]:
+    source_name = str(detail.get("source") or "unavailable")
+    context = SOURCE_CONTEXT.get(
+        source_name,
+        {
+            "region": "global",
+            "market_scope": "unknown",
+            "lag_minutes": None,
+            "confidence_score": 0.0,
+            "note": "Source context not classified yet.",
+        },
+    )
+    return {
+        "source": source_name,
+        "region": detail.get("region") or context["region"],
+        "market_scope": detail.get("market_scope") or context["market_scope"],
+        "lag_minutes": detail.get("lag_minutes") if detail.get("lag_minutes") is not None else context["lag_minutes"],
+        "confidence_score": float(detail.get("confidence_score") if detail.get("confidence_score") is not None else context["confidence_score"]),
+        "note": detail.get("note") or context["note"],
+        "quote_kind": detail.get("quote_kind"),
+        "product_id": detail.get("product_id"),
+        "error": detail.get("error"),
+        "cbam_eur": detail.get("cbam_eur"),
+        "usd_per_eur": detail.get("usd_per_eur"),
+        "raw_usd_per_metric_ton": detail.get("raw_usd_per_metric_ton"),
+        "raw_eur_per_t": detail.get("raw_eur_per_t"),
+        "usd_per_t": detail.get("usd_per_t"),
+        "fetched_at": detail.get("fetched_at") or isoformat_z(utcnow()),
+    }
+
+
+def _public_detail(
+    detail_key: str,
+    *,
+    status: str,
+    value: float | None,
+    observed: datetime | None,
+    source_fields: dict[str, object],
+    method: str | None,
+    note: str | None,
+    now: datetime,
+) -> dict[str, object]:
+    metric_key = SOURCE_DETAIL_TO_METRIC_KEY[detail_key]
+    if status == "missing":
+        value = None
+        observed = None
+        method = None
+    quality = {"live": "observed", "stale": "stale", "estimated": "derived", "missing": "missing"}[status]
+    as_of_text = isoformat_z(observed) if observed is not None else None
+    published = {
+        **source_fields,
+        "status": status,
+        "value": value,
+        "unit": _metric_unit(metric_key),
+        "as_of": as_of_text,
+        "observed_at": as_of_text,
+        "method": method,
+        "quality": quality,
+        "fallback_used": status != "live",
+        "fetched_at": source_fields.get("fetched_at") or isoformat_z(now),
+    }
+    if note:
+        published["note"] = note
+    return published
+
+
+def _last_real_snapshot(
+    db: Session,
+    metric_key: str,
+    *,
+    now: datetime,
+    stale_limit_days: int,
+) -> MarketSnapshot | None:
+    cutoff = _ensure_utc_datetime(now) - timedelta(days=stale_limit_days)
+    rows = list(
+        db.scalars(
+            select(MarketSnapshot)
+            .where(MarketSnapshot.metric_key == metric_key)
+            .order_by(MarketSnapshot.as_of.desc(), MarketSnapshot.id.desc())
+            .limit(40)
+        ).all()
+    )
+    for row in rows:
+        payload = row.payload if isinstance(row.payload, dict) else {}
+        if snapshot_quality(payload) not in REAL_OBSERVATION_QUALITIES:
+            continue
+        observed = parse_iso_datetime(payload.get("observed_at")) or _ensure_utc_datetime(row.as_of)
+        if observed < cutoff:
+            continue
+        return row
+    return None
+
+
+def _direct_fetch_succeeded(detail: dict[str, object]) -> bool:
+    if _is_seed_detail(detail):
+        return False
+    status = str(detail.get("status") or "").strip().lower()
+    quality = str(detail.get("quality") or "").strip().lower()
+    source = str(detail.get("source") or "")
+    if status in {"estimated", "missing", "error", "fallback", "seed", "stale"}:
+        return False
+    if quality in {"derived", "seed", "missing"}:
+        return False
+    if source in {"brent-derived", "eua+ecb", "seed-baseline"}:
+        return False
+    if detail.get("value") is None:
+        return False
+    return status in {"ok", "live"}
+
+
+def _classify_direct_detail(
+    db: Session,
+    detail_key: str,
+    raw: dict[str, object] | None,
+    *,
+    now: datetime,
+) -> dict[str, object]:
+    detail = dict(raw or {})
+    fields = _copy_source_context(detail)
+    max_age, stale_limit = _quote_age_limits(detail_key)
+    metric_key = SOURCE_DETAIL_TO_METRIC_KEY[detail_key]
+    observed = _detail_observation(detail)
+    age = _age_days(observed, now)
+    value = detail.get("value")
+
+    if _direct_fetch_succeeded(detail) and observed is not None and age is not None:
+        number = float(value)  # type: ignore[arg-type]
+        if age <= max_age:
+            return _public_detail(
+                detail_key,
+                status="live",
+                value=number,
+                observed=observed,
+                source_fields=fields,
+                method=None,
+                note=str(fields.get("note") or ""),
+                now=now,
+            )
+        if age <= stale_limit:
+            return _public_detail(
+                detail_key,
+                status="stale",
+                value=number,
+                observed=observed,
+                source_fields=fields,
+                method=None,
+                note="外部源返回了真实观测，但已超过该指标的 live 窗口。",
+                now=now,
+            )
+
+    if str(detail.get("status") or "").lower() == "stale" and not _is_seed_detail(detail) and value is not None and observed is not None and age is not None and age <= stale_limit:
+        return _public_detail(
+            detail_key,
+            status="stale",
+            value=float(value),
+            observed=observed,
+            source_fields=fields,
+            method=None,
+            note=str(detail.get("note") or "沿用此前真实观测。"),
+            now=now,
+        )
+
+    row = _last_real_snapshot(db, metric_key, now=now, stale_limit_days=stale_limit)
+    if row is not None:
+        payload = row.payload if isinstance(row.payload, dict) else {}
+        observed_at = parse_iso_datetime(payload.get("observed_at")) or _ensure_utc_datetime(row.as_of)
+        prior_fields = _copy_source_context(
+            {
+                "source": payload.get("source") or detail.get("source") or row.source_key,
+                "region": detail.get("region"),
+                "market_scope": detail.get("market_scope"),
+                "quote_kind": payload.get("quote_kind") or detail.get("quote_kind"),
+                "product_id": payload.get("product_id") or detail.get("product_id"),
+                "note": payload.get("note"),
+            }
+        )
+        return _public_detail(
+            detail_key,
+            status="stale",
+            value=float(row.value),
+            observed=observed_at,
+            source_fields=prior_fields,
+            method=None,
+            note="本次刷新未取得新值，沿用数据库中此前的真实抓取。",
+            now=now,
+        )
+
+    return _public_detail(
+        detail_key,
+        status="missing",
+        value=None,
+        observed=None,
+        source_fields=fields,
+        method=None,
+        note=str(detail.get("note") or "没有可用的实时或未过期真实观测。"),
+        now=now,
+    )
+
+
+def _oldest_as_of(*details: dict[str, object]) -> datetime | None:
+    return earliest_datetime(*(detail.get("as_of") or detail.get("observed_at") for detail in details))
+
+
+def _estimate_from_inputs(
+    detail_key: str,
+    *,
+    inputs: list[dict[str, object]],
+    value: float,
+    method: str,
+    source: str,
+    now: datetime,
+    base: dict[str, object],
+) -> dict[str, object]:
+    if any(str(item.get("status") or "") == "missing" or item.get("value") is None for item in inputs):
+        return _public_detail(
+            detail_key,
+            status="missing",
+            value=None,
+            observed=None,
+            source_fields=base,
+            method=None,
+            note="推导输入缺失，结果也为缺失。",
+            now=now,
+        )
+    observed = _oldest_as_of(*inputs)
+    fields = _copy_source_context({**base, "source": source})
+    return _public_detail(
+        detail_key,
+        status="estimated",
+        value=value,
+        observed=observed,
+        source_fields=fields,
+        method=method,
+        note=method,
+        now=now,
+    )
+
+
+def _apply_public_quote_policy(
+    db: Session,
+    sources: dict[str, object] | None,
+    *,
+    now: datetime | None = None,
+) -> tuple[dict[str, float | None], dict[str, dict[str, object]]]:
+    """Map a refresh payload onto live/stale/estimated/missing. Seeds never become values."""
+    clock = _ensure_utc_datetime(now or utcnow())
+    raw_sources = sources if isinstance(sources, dict) else {}
+    published: dict[str, dict[str, object]] = {}
+    for detail_key in ("brent", "jet", "ecb", "eu_ets", "germany_premium"):
+        raw = raw_sources.get(detail_key)
+        published[detail_key] = _classify_direct_detail(
+            db,
+            detail_key,
+            raw if isinstance(raw, dict) else {},
+            now=clock,
+        )
+
+    for detail_key in ("rotterdam_jet_fuel", "jet_eu_proxy"):
+        raw = raw_sources.get(detail_key)
+        direct = _classify_direct_detail(
+            db,
+            detail_key,
+            raw if isinstance(raw, dict) else {},
+            now=clock,
+        )
+        if direct["status"] in {"live", "stale"}:
+            published[detail_key] = direct
+            continue
+        brent = published["brent"]
+        brent_value = brent.get("value")
+        if brent["status"] in {"live", "stale"} and isinstance(brent_value, (int, float)):
+            derived = _round(
+                _derive_jet_eu_proxy_usd_per_l_from_brent(float(brent_value)),
+                3,
+            )
+            method = ROTTERDAM_FROM_BRENT_METHOD if detail_key == "rotterdam_jet_fuel" else JET_EU_FROM_BRENT_METHOD
+            published[detail_key] = _estimate_from_inputs(
+                detail_key,
+                inputs=[brent],
+                value=derived,
+                method=method,
+                source="brent-derived",
+                now=clock,
+                base=direct,
+            )
+        else:
+            published[detail_key] = direct
+
+    carbon_raw = raw_sources.get("carbon")
+    carbon_direct = _classify_direct_detail(
+        db,
+        "carbon",
+        carbon_raw if isinstance(carbon_raw, dict) else {},
+        now=clock,
+    )
+    eu_ets = published["eu_ets"]
+    fx = published["ecb"]
+    eu_value = eu_ets.get("value")
+    fx_value = fx.get("value")
+    inputs_ready = (
+        eu_ets["status"] in {"live", "stale"}
+        and fx["status"] in {"live", "stale"}
+        and isinstance(eu_value, (int, float))
+        and isinstance(fx_value, (int, float))
+    )
+    if carbon_direct["status"] == "live":
+        published["carbon"] = carbon_direct
+    elif inputs_ready:
+        published["carbon"] = _estimate_from_inputs(
+            "carbon",
+            inputs=[eu_ets, fx],
+            value=_round(float(eu_value) * float(fx_value), 2),
+            method=CARBON_FROM_EUA_FX_METHOD,
+            source="eua+ecb",
+            now=clock,
+            base=carbon_direct,
+        )
+    else:
+        published["carbon"] = carbon_direct
+
+    values: dict[str, float | None] = {}
+    for detail_key, detail in published.items():
+        metric_key = SOURCE_DETAIL_TO_METRIC_KEY[detail_key]
+        if detail.get("status") == "missing" or detail.get("value") is None:
+            detail["value"] = None
+            values[metric_key] = None
+        else:
+            values[metric_key] = float(detail["value"])  # type: ignore[arg-type]
+    return values, published
+
+
+def _public_overall_status(published: dict[str, dict[str, object]]) -> str:
+    statuses = [str(item.get("status") or "missing") for item in published.values()]
+    if statuses and all(status == "live" for status in statuses):
+        return "ok"
+    if any(status == "live" for status in statuses):
+        return "degraded"
+    if any(status in {"stale", "estimated"} for status in statuses):
+        return "degraded"
+    return "error"
+
+
+def _status_counts(published: dict[str, dict[str, object]]) -> dict[str, int]:
+    counts = {status: 0 for status in PUBLIC_QUOTE_STATUSES}
+    for detail in published.values():
+        status = str(detail.get("status") or "missing")
+        if status not in counts:
+            status = "missing"
+        counts[status] += 1
+    return counts
+
+
+def _market_assumptions() -> dict[str, MarketAssumption]:
+    assumptions: dict[str, MarketAssumption] = {}
+    for item in DEFAULT_MARKET_METRICS:
+        assumptions[str(item["metric_key"])] = MarketAssumption(
+            value=float(item["value"]),
+            unit=str(item["unit"]),
+            kind="assumption",
+            as_of=DEFAULT_MARKET_SEED_AS_OF,
+            note="Workbench default only. Not a market observation.",
+        )
+    return assumptions
+
+
+def _materialize_public_details(
+    existing: dict[str, MarketSourceDetail],
+    published: dict[str, dict[str, object]],
+    *,
+    refreshed_at: datetime,
+) -> dict[str, MarketSourceDetail]:
+    merged: dict[str, MarketSourceDetail] = {}
+    for key, raw in published.items():
+        base = existing.get(key)
+        as_of = parse_iso_datetime(raw.get("as_of") or raw.get("observed_at"))
+        status = str(raw.get("status") or "missing")
+        value = None if status == "missing" or raw.get("value") is None else float(raw["value"])  # type: ignore[arg-type]
+        updates: dict[str, object] = {
+            "source": str(raw.get("source") or (base.source if base else "unavailable")),
+            "status": status,
+            "value": value,
+            "unit": str(raw.get("unit") or _metric_unit(SOURCE_DETAIL_TO_METRIC_KEY[key])),
+            "as_of": as_of,
+            "observed_at": as_of,
+            "fetched_at": parse_iso_datetime(raw.get("fetched_at")) or _ensure_utc_datetime(refreshed_at),
+            "method": str(raw["method"]) if raw.get("method") else None,
+            "note": str(raw.get("note") or (base.note if base and base.note else "") or ""),
+            "quality": str(raw.get("quality") or "missing"),
+            "fallback_used": status != "live",
+            "region": str(raw.get("region") or (base.region if base else "global")),
+            "market_scope": str(raw.get("market_scope") or (base.market_scope if base else "unavailable")),
+            "confidence_score": float(
+                raw.get("confidence_score") if raw.get("confidence_score") is not None else (base.confidence_score if base else 0.0)
+            ),
+            "lag_minutes": int(raw["lag_minutes"]) if raw.get("lag_minutes") is not None else (base.lag_minutes if base else None),
+        }
+        if base is not None:
+            merged[key] = base.model_copy(update=updates)
+            continue
+        merged[key] = MarketSourceDetail(
+            source=str(updates["source"]),
+            status=status,
+            value=value,
+            unit=str(updates["unit"]),
+            as_of=as_of,
+            method=updates["method"] if isinstance(updates["method"], str) else None,
+            error=_public_source_error(status, status != "live", raw.get("error")),
+            note=str(updates["note"]) or None,
+            region=str(updates["region"]),
+            market_scope=str(updates["market_scope"]),
+            lag_minutes=updates["lag_minutes"] if isinstance(updates["lag_minutes"], int) else None,
+            confidence_score=float(updates["confidence_score"]),
+            fallback_used=status != "live",
+            quality=str(updates["quality"]),
+            observed_at=as_of,
+            fetched_at=updates["fetched_at"] if isinstance(updates["fetched_at"], datetime) else _ensure_utc_datetime(refreshed_at),
+            cbam_eur=float(raw["cbam_eur"]) if raw.get("cbam_eur") is not None else None,
+            usd_per_eur=float(raw["usd_per_eur"]) if raw.get("usd_per_eur") is not None else None,
+            raw_usd_per_metric_ton=float(raw["raw_usd_per_metric_ton"]) if raw.get("raw_usd_per_metric_ton") is not None else None,
+            raw_eur_per_t=float(raw["raw_eur_per_t"]) if raw.get("raw_eur_per_t") is not None else None,
+            usd_per_t=float(raw["usd_per_t"]) if raw.get("usd_per_t") is not None else None,
+            quote_kind=str(raw["quote_kind"]) if raw.get("quote_kind") is not None else None,
+            product_id=str(raw["product_id"]) if raw.get("product_id") is not None else None,
+        )
+    return merged
+
+
+def _fetch_bytes(url: str, timeout_s: float | None = None) -> bytes:
+    effective_timeout_s = timeout_s if timeout_s is not None else _market_source_timeout_seconds()
+    response = httpx.get(
+        url,
+        timeout=effective_timeout_s,
+        headers={"User-Agent": "JetScope API/0.1 (+fastapi vertical slice)"},
+        follow_redirects=True,
+    )
+    response.raise_for_status()
+    return response.content
+
+
+def _excel_serial_to_datetime(serial: float) -> datetime:
+    return EXCEL_SERIAL_EPOCH + timedelta(days=float(serial))
+
+
+def _xlsx_cell_map(payload: bytes) -> dict[int, dict[int, str]]:
+    import zipfile
+    from xml.etree import ElementTree as ET
+
+    ns = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+    with zipfile.ZipFile(__import__("io").BytesIO(payload)) as workbook:
+        shared: list[str] = []
+        if "xl/sharedStrings.xml" in workbook.namelist():
+            root = ET.fromstring(workbook.read("xl/sharedStrings.xml"))
+            for item in root.findall(f"{ns}si"):
+                shared.append("".join(text.text or "" for text in item.iter(f"{ns}t")))
+        sheet_name = next((name for name in workbook.namelist() if name.startswith("xl/worksheets/sheet")), None)
+        if sheet_name is None:
+            raise ValueError("EUA auction workbook has no worksheet")
+        sheet = ET.fromstring(workbook.read(sheet_name))
+    rows: dict[int, dict[int, str]] = {}
+
+    def column_index(ref: str) -> tuple[int, int]:
+        letters = ""
+        digits = ""
+        for char in ref:
+            if char.isalpha():
+                letters += char
+            elif char.isdigit():
+                digits += char
+        index = 0
+        for char in letters:
+            index = index * 26 + ord(char.upper()) - 64
+        return index, int(digits or "0")
+
+    for cell in sheet.iter(f"{ns}c"):
+        ref = cell.attrib.get("r")
+        if not ref:
+            continue
+        column, row_number = column_index(ref)
+        node = cell.find(f"{ns}v")
+        if node is None or node.text is None:
+            continue
+        if cell.attrib.get("t") == "s":
+            value = shared[int(node.text)]
+        else:
+            value = node.text
+        rows.setdefault(row_number, {})[column] = value
+    return rows
+
+
+def _parse_eex_eua_auction_xlsx(payload: bytes) -> tuple[float, datetime, str]:
+    """Latest successful EEX primary auction clearing price from the public workbook."""
+    rows = _xlsx_cell_map(payload)
+    header_row = None
+    columns: dict[str, int] = {}
+    for row_number, cells in rows.items():
+        labels = {text.strip(): column for column, text in cells.items()}
+        date_column = next((column for label, column in labels.items() if label == "Date"), None)
+        price_column = next((column for label, column in labels.items() if label.startswith("Auction Price")), None)
+        status_column = next((column for label, column in labels.items() if label == "Status"), None)
+        name_column = next((column for label, column in labels.items() if label == "Auction Name"), None)
+        if date_column and price_column and status_column:
+            header_row = row_number
+            columns = {
+                "date": date_column,
+                "price": price_column,
+                "status": status_column,
+                "name": name_column or 0,
+            }
+            break
+    if header_row is None:
+        raise ValueError("EUA auction workbook is missing Date/Auction Price/Status headers")
+
+    latest: tuple[datetime, float, str] | None = None
+    for row_number, cells in rows.items():
+        if row_number <= header_row:
+            continue
+        status = str(cells.get(columns["status"]) or "").strip().lower()
+        if status != "successful":
+            continue
+        try:
+            observed = _excel_serial_to_datetime(float(cells[columns["date"]]))
+            price = float(cells[columns["price"]])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if not 1.0 <= price <= 500.0:
+            continue
+        auction_name = str(cells.get(columns["name"]) or "EEX EUA primary auction")
+        if latest is None or observed > latest[0]:
+            latest = (observed, price, auction_name)
+    if latest is None:
+        raise ValueError("EUA auction workbook has no successful clearing price")
+    observed, price, auction_name = latest
+    return price, observed, auction_name
+
+
 def seed_market_snapshot_set(db: Session, as_of: datetime | None = None) -> datetime:
     seed_values = {metric["metric_key"]: float(metric["value"]) for metric in DEFAULT_MARKET_METRICS}
     seed_sources = {
@@ -1413,11 +2062,20 @@ def refresh_market_snapshot_set(db: Session) -> tuple[datetime, str]:
             return utcnow(), "skipped-lock"
 
         values, overall, details = _ingest_live_market_values()
+        _public_values, published = _apply_public_quote_policy(db, details.get("sources", {}))
+        del _public_values
+        details["sources"] = published
+        overall = _public_overall_status(published)
+        persist_values = {
+            SOURCE_DETAIL_TO_METRIC_KEY[detail_key]: float(detail["value"])
+            for detail_key, detail in published.items()
+            if detail.get("status") in {"live", "estimated"} and detail.get("value") is not None
+        }
         refreshed_at = _persist_market_snapshot_set(
             db,
-            values,
+            persist_values,
             source_status=overall,
-            sources=details.get("sources", {}),
+            sources=published,
             ingest="live-refresh",
             payload={"lock": "advisory" if lock_supported else "none"},
         )
@@ -1444,13 +2102,10 @@ def _required_snapshot_metric_keys() -> list[str]:
 
 def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
     latest_by_metric = _latest_market_snapshots_by_metric(db)
-
-    if any(key not in latest_by_metric for key in _required_snapshot_metric_keys()):
-        seeded_at = seed_market_snapshot_set(db)
-        latest_by_metric = _latest_market_snapshots_by_metric(db)
-        generated_at = seeded_at
-    else:
+    if latest_by_metric:
         generated_at = max(row.as_of for row in latest_by_metric.values())
+    else:
+        generated_at = utcnow()
 
     values: dict[str, float | None] = {}
     for metric in DEFAULT_MARKET_METRICS:
@@ -1592,10 +2247,42 @@ def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
                 capped[key] = detail
         typed_source_details = capped
 
+    public_values, published = _apply_public_quote_policy(
+        db,
+        source_details if isinstance(source_details, dict) else {},
+        now=utcnow(),
+    )
+    values = public_values
+    typed_source_details = _materialize_public_details(
+        typed_source_details,
+        published,
+        refreshed_at=refreshed_at,
+    )
+    if latest_run is None:
+        # A produced book with no refresh run is degraded, not an empty error.
+        # Readiness treats overall "error" as a blocker; missing quotes stay
+        # on each metric instead of being filled with seeds.
+        overall_status = "degraded"
+    if freshness_minutes >= STALE_SNAPSHOT_SOFT_MINUTES and typed_source_details:
+        recapped: dict[str, MarketSourceDetail] = {}
+        for key, detail in typed_source_details.items():
+            if detail.status != "live":
+                recapped[key] = detail.model_copy(
+                    update={
+                        "confidence_score": min(float(detail.confidence_score), STALE_SOURCE_CONFIDENCE_CAP)
+                    }
+                )
+            else:
+                recapped[key] = detail
+        typed_source_details = recapped
+
+    counts = _status_counts(published)
+    total_quotes = sum(counts.values())
+    non_live = total_quotes - counts.get("live", 0)
     confidence_values = [detail.confidence_score for detail in typed_source_details.values()]
-    fallback_count = sum(1 for detail in typed_source_details.values() if detail.fallback_used)
     confidence = _round(sum(confidence_values) / len(confidence_values), 3) if confidence_values else 1.0
-    fallback_rate = _round((fallback_count / len(typed_source_details)) * 100.0, 2) if typed_source_details else 0.0
+    fallback_rate = _round((non_live / total_quotes) * 100.0, 2) if total_quotes else 0.0
+    is_fallback = non_live > 0
 
     germany_detail = typed_source_details.get("germany_premium")
     if germany_detail is not None and (
@@ -1646,12 +2333,14 @@ def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
             confidence=confidence,
             freshness_minutes=freshness_minutes,
             fallback_rate=fallback_rate,
-            is_fallback=fallback_count > 0,
+            is_fallback=is_fallback,
+            status_counts=counts,
             quote_coverage_rate=quote_coverage_rate,
             fetched_at=_ensure_utc_datetime(refreshed_at),
         ),
         values=values,
         source_details=typed_source_details,
+        assumptions=_market_assumptions(),
         derived=derived,
     )
 
@@ -1710,22 +2399,43 @@ def build_market_health_response(db: Session, *, runs_window: int = 10) -> Marke
             observed_count = sum(1 for quality in qualities if quality in {"observed", "stale"})
             quote_coverage_rate = round(observed_count / len(qualities), 3)
 
+    reasons: list[str] = []
+    core_status = {"jet": "missing", "brent": "missing"}
+    if runs:
+        _core_values, core_published = _apply_public_quote_policy(
+            db,
+            runs[0].sources if isinstance(runs[0].sources, dict) else {},
+            now=now,
+        )
+        del _core_values
+        for name in CORE_HEALTH_DETAILS:
+            core_status[name] = str(core_published.get(name, {}).get("status") or "missing")
+
+    task_ok = False
     if latest is None:
-        healthy = False
+        reasons.append("no_refresh_run")
         note = "No market refresh runs recorded yet. Start API with refresh loop or POST /v1/market/refresh."
-    elif latest.source_status == "error":
-        healthy = False
-        note = "Latest refresh status is error."
+    elif latest.source_status == "error" or latest.ingest == "seed":
+        reasons.append("refresh_task_failed" if latest.source_status == "error" else "refresh_was_seed")
+        note = "Latest refresh did not succeed."
     elif interval > 0 and age_seconds is not None and age_seconds > interval * 2:
-        healthy = False
+        reasons.append("refresh_task_overdue")
         note = f"Latest refresh is stale (age {age_seconds}s > 2× interval {interval}s)."
     else:
-        healthy = True
+        task_ok = True
         coverage_pct = f"{quote_coverage_rate:.0%}" if quote_coverage_rate is not None else "n/a"
         note = (
             "Refresh loop is producing snapshots. "
             f"Task success is not quote coverage (latest quote coverage {coverage_pct})."
         )
+
+    for name in CORE_HEALTH_DETAILS:
+        status = core_status[name]
+        if status not in {"live", "stale"}:
+            reasons.append(f"{name}_{status}")
+    healthy = task_ok and not any(item.startswith("jet_") or item.startswith("brent_") for item in reasons)
+    if not healthy and task_ok:
+        note = "Latest refresh ran, but core jet/brent quotes are not live or stale: " + ", ".join(reasons)
 
     return MarketHealthResponse(
         generated_at=now,
@@ -1741,6 +2451,7 @@ def build_market_health_response(db: Session, *, runs_window: int = 10) -> Marke
         success_rate=round(success_rate, 3) if success_rate is not None else None,
         quote_coverage_rate=quote_coverage_rate,
         healthy=healthy,
+        reasons=reasons,
         note=note,
         recent_runs=summaries,
     )

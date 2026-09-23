@@ -28,6 +28,7 @@ jobs:
             "/v1/health"
             "/v1/market/health"
             "/v1/market/snapshot"
+            "/v1/events"
             "/v1/events/lufthansa-q2-2026-earnings"
             "/dashboard"
           )
@@ -40,3 +41,76 @@ jobs:
               "${BASE_URL}${endpoint}"
             echo "::endgroup::"
           done
+
+      - name: Assert curated events and a non-seed market snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          curl --fail --silent --show-error --location \
+            --connect-timeout 10 --max-time 20 \
+            --output "$tmp/events.json" \
+            "${BASE_URL}/v1/events"
+          curl --fail --silent --show-error --location \
+            --connect-timeout 10 --max-time 20 \
+            --output "$tmp/snapshot.json" \
+            "${BASE_URL}/v1/market/snapshot"
+          python3 - "$tmp/events.json" "$tmp/snapshot.json" <<'PY'
+          import json
+          import sys
+
+          events = json.load(open(sys.argv[1], encoding="utf-8"))
+          snapshot = json.load(open(sys.argv[2], encoding="utf-8"))
+
+          count = events.get("count")
+          if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+              raise SystemExit(f"FAIL /v1/events count={count!r}; expected integer >= 1")
+          listed = events.get("events")
+          if isinstance(listed, list) and len(listed) < 1:
+              raise SystemExit("FAIL /v1/events count>=1 but events is empty")
+          print(f"OK /v1/events count={count}")
+
+          values = snapshot.get("values")
+          if not isinstance(values, dict):
+              raise SystemExit("FAIL /v1/market/snapshot has no values object")
+
+          # Deterministic seed baselines in apps/api/app/services/market.py.
+          # A missing metric is null in values and is a legal response.
+          seeds = (0.64, 80.38)
+
+          def is_seed(value):
+              if isinstance(value, bool) or not isinstance(value, (int, float)):
+                  return False
+              return any(abs(float(value) - seed) < 1e-9 for seed in seeds)
+
+          offenders = []
+          missing = []
+          for key, value in values.items():
+              if value is None:
+                  missing.append(key)
+                  continue
+              if is_seed(value):
+                  offenders.append(f"values.{key}={value}")
+
+          details = snapshot.get("source_details") or {}
+          if isinstance(details, dict):
+              for key, detail in details.items():
+                  if not isinstance(detail, dict):
+                      continue
+                  value = detail.get("value")
+                  if value is None:
+                      continue
+                  if is_seed(value):
+                      offenders.append(f"source_details.{key}.value={value}")
+
+          if offenders:
+              raise SystemExit(
+                  "FAIL /v1/market/snapshot still serves seed constants 0.64 or 80.38:\n  "
+                  + "\n  ".join(offenders)
+              )
+          print(
+              "OK /v1/market/snapshot has no seed constants 0.64 or 80.38; "
+              f"missing(null)={missing or 'none'}"
+          )
+          PY

@@ -50,6 +50,7 @@ def _install_import_shims_for_bare_python():
 
         fastapi.APIRouter = APIRouter
         fastapi.Depends = lambda dependency=None: dependency
+        fastapi.Request = object
         sys.modules["fastapi"] = fastapi
 
     if importlib.util.find_spec("sqlalchemy") is None:
@@ -106,6 +107,9 @@ class FakeDb:
 
     def execute(self, statement):
         self.executed.append(statement)
+
+    def scalar(self, _statement):
+        return "refresh-run"
 
 
 def test_get_health_returns_liveness_payload_with_capabilities(monkeypatch):
@@ -213,8 +217,8 @@ def test_get_readiness_reports_degraded_when_passing_check_is_degraded(monkeypat
     assert response.ready is True
     assert response.status == "degraded"
     assert response.degraded is True
-    assert response.checks["market_snapshot"].ok is True
-    assert response.checks["market_snapshot"].status == "seed"
+    assert response.checks["market_snapshot"].ok is False
+    assert response.checks["market_snapshot"].status == "degraded"
     assert response.checks["market_snapshot"].severity == "review"
     assert response.checks["market_snapshot"].action.key == "review_market_sources"
     assert response.checks["source_coverage"].ok is True
@@ -223,7 +227,9 @@ def test_get_readiness_reports_degraded_when_passing_check_is_degraded(monkeypat
     assert response.checks["source_coverage"].action.href == "/sources?filter=review"
     assert response.checks["admin_token"].status == "ok"
     assert response.checks["ai_research_pipeline"].status == "mock"
-    assert response.checks["ai_research_pipeline"].severity == "review"
+    assert response.checks["ai_research_pipeline"].severity == "info"
+    assert response.checks["ai_research_pipeline"].blocking is False
+    assert response.checks["ai_research_pipeline"].ok is True
 
 
 def test_get_readiness_degraded_uses_review_severity_for_seed_market(monkeypatch):
@@ -260,7 +266,7 @@ def test_get_readiness_degraded_uses_review_severity_for_seed_market(monkeypatch
     assert response.checks["market_snapshot"].severity == "review"
 
 
-def test_get_readiness_blocks_launch_when_admin_or_research_config_missing(monkeypatch):
+def test_get_readiness_blocks_when_admin_missing_and_disabled_ai_is_info(monkeypatch):
     db = FakeDb()
 
     monkeypatch.setattr(health, "text", lambda sql: sql)
@@ -295,15 +301,15 @@ def test_get_readiness_blocks_launch_when_admin_or_research_config_missing(monke
     assert response.checks["admin_token"].blocking is True
     assert response.checks["admin_token"].action.key == "configure_admin_token"
     assert response.checks["admin_token"].action.config_keys == ["JETSCOPE_ADMIN_TOKEN"]
-    assert response.checks["ai_research_pipeline"].ok is False
+    assert response.checks["ai_research_pipeline"].ok is True
     assert response.checks["ai_research_pipeline"].status == "disabled"
     assert "JETSCOPE_AI_RESEARCH_ENABLED" in (response.checks["ai_research_pipeline"].detail or "")
-    assert response.checks["ai_research_pipeline"].severity == "blocker"
-    assert response.checks["ai_research_pipeline"].blocking is True
+    assert response.checks["ai_research_pipeline"].severity == "info"
+    assert response.checks["ai_research_pipeline"].blocking is False
     assert response.checks["ai_research_pipeline"].action.key == "enable_ai_research"
 
 
-def test_get_readiness_requires_ai_credentials_when_live_research_enabled(monkeypatch):
+def test_get_readiness_live_ai_missing_credentials_does_not_gate_ready(monkeypatch):
     db = FakeDb()
 
     monkeypatch.setattr(health, "text", lambda sql: sql)
@@ -331,9 +337,12 @@ def test_get_readiness_requires_ai_credentials_when_live_research_enabled(monkey
 
     response = health.get_readiness(db)
 
-    assert response.ready is False
+    assert response.ready is True
+    assert response.status == "ready"
     assert response.checks["admin_token"].ok is True
     assert response.checks["ai_research_pipeline"].ok is False
+    assert response.checks["ai_research_pipeline"].severity == "blocker"
+    assert response.checks["ai_research_pipeline"].blocking is True
     assert response.checks["ai_research_pipeline"].status == "missing_credentials"
     assert "JETSCOPE_ANTHROPIC_API_KEY" in (response.checks["ai_research_pipeline"].detail or "")
     assert response.checks["ai_research_pipeline"].action.key == "configure_ai_research_credentials"
@@ -361,7 +370,7 @@ def test_get_readiness_reports_errors_without_raising(monkeypatch):
 
     assert response.ready is False
     assert response.status == "not_ready"
-    assert response.degraded is False
+    assert response.degraded is True
     assert response.checks["database"].ok is False
     assert response.checks["database"].status == "error"
     assert response.checks["database"].detail == "cannot execute SELECT 1"
@@ -369,9 +378,11 @@ def test_get_readiness_reports_errors_without_raising(monkeypatch):
     assert response.checks["database"].blocking is True
     assert response.checks["database"].action.key == "inspect_database"
     assert response.checks["market_snapshot"].detail == "market source offline"
-    assert response.checks["market_snapshot"].severity == "blocker"
+    assert response.checks["market_snapshot"].severity == "review"
+    assert response.checks["market_snapshot"].blocking is False
     assert response.checks["source_coverage"].detail == "coverage source missing"
-    assert response.checks["source_coverage"].severity == "blocker"
+    assert response.checks["source_coverage"].severity == "review"
+    assert response.checks["source_coverage"].blocking is False
 
 
 def test_get_readiness_redacts_secret_like_values_from_error_details(monkeypatch):
@@ -410,7 +421,7 @@ def test_get_readiness_redacts_secret_like_values_from_error_details(monkeypatch
 
     assert response.ready is False
     assert response.status == "not_ready"
-    assert response.degraded is False
+    assert response.degraded is True
     assert dummy_admin not in (response.checks["admin_token"].detail or "")
     assert dummy_api_key not in (response.checks["market_snapshot"].detail or "")
     assert dummy_newsapi not in (response.checks["market_snapshot"].detail or "")
@@ -419,3 +430,168 @@ def test_get_readiness_redacts_secret_like_values_from_error_details(monkeypatch
     assert "leaked-key" not in (response.checks["source_coverage"].detail or "")
     assert response.checks["database"].action.config_keys == ["JETSCOPE_DATABASE_URL", "JETSCOPE_SCHEMA_BOOTSTRAP_MODE"]
     assert response.checks["database"].status == "error"
+
+
+class _RefreshState:
+    def __init__(self, task):
+        if task is not _ABSENT:
+            self.market_refresh_task = task
+
+
+class _RefreshApp:
+    def __init__(self, task):
+        self.state = _RefreshState(task)
+
+
+class _RefreshRequest:
+    def __init__(self, task):
+        self.app = _RefreshApp(task)
+
+
+class _LiveTask:
+    def done(self):
+        return False
+
+    def cancelled(self):
+        return False
+
+
+class _StoppedTask:
+    def done(self):
+        return True
+
+    def cancelled(self):
+        return False
+
+
+_ABSENT = object()
+
+
+def _healthy_market_stubs(monkeypatch, *, market_status="ok", coverage_degraded=False, coverage_complete=True):
+    monkeypatch.setattr(health, "text", lambda sql: sql)
+    monkeypatch.setattr(
+        health,
+        "build_market_snapshot_response",
+        lambda received_db: SimpleNamespace(
+            values={"jet_fuel_usd_per_l": 1.24},
+            source_status=SimpleNamespace(overall=market_status),
+        ),
+    )
+    metrics = [SimpleNamespace(metric_key="jet_fuel_usd_per_l")] if coverage_complete else []
+    monkeypatch.setattr(
+        health,
+        "build_source_coverage_response",
+        lambda received_db: SimpleNamespace(
+            completeness=1.0 if coverage_complete else 0.0,
+            degraded=coverage_degraded,
+            metrics=metrics,
+        ),
+    )
+
+
+def test_disabled_and_mock_ai_research_are_info_and_do_not_block_ready(monkeypatch):
+    db = FakeDb()
+    _healthy_market_stubs(monkeypatch)
+    monkeypatch.setattr(health.settings, "admin_token", "configured-token")
+
+    monkeypatch.setattr(health.settings, "ai_research_enabled", False)
+    monkeypatch.setattr(health.settings, "ai_research_mock_mode", True)
+    disabled = health.get_readiness(db)
+    assert disabled.ready is True
+    assert disabled.status == "ready"
+    assert disabled.checks["ai_research_pipeline"].severity == "info"
+    assert disabled.checks["ai_research_pipeline"].blocking is False
+    assert disabled.checks["ai_research_pipeline"].status == "disabled"
+    assert disabled.checks["ai_research_pipeline"].ok is True
+
+    monkeypatch.setattr(health.settings, "ai_research_enabled", True)
+    monkeypatch.setattr(health.settings, "ai_research_mock_mode", True)
+    mocked = health.get_readiness(db)
+    assert mocked.ready is True
+    assert mocked.status == "ready"
+    assert mocked.checks["ai_research_pipeline"].severity == "info"
+    assert mocked.checks["ai_research_pipeline"].blocking is False
+    assert mocked.checks["ai_research_pipeline"].status == "mock"
+
+
+def test_market_data_degradation_warns_without_blocking_ready(monkeypatch):
+    db = FakeDb()
+    _healthy_market_stubs(monkeypatch, market_status="degraded", coverage_degraded=True)
+    monkeypatch.setattr(health.settings, "admin_token", "configured-token")
+    monkeypatch.setattr(health.settings, "ai_research_enabled", False)
+
+    response = health.get_readiness(db)
+
+    assert response.ready is True
+    assert response.status == "degraded"
+    assert response.degraded is True
+    assert response.checks["market_snapshot"].severity == "review"
+    assert response.checks["market_snapshot"].blocking is False
+    assert response.checks["source_coverage"].severity == "review"
+    assert response.checks["source_coverage"].blocking is False
+    assert response.checks["market_refresh_task"].ok is True
+
+
+def test_readiness_not_ready_when_refresh_task_is_stopped(monkeypatch):
+    db = FakeDb()
+    _healthy_market_stubs(monkeypatch)
+    monkeypatch.setattr(health.settings, "admin_token", "configured-token")
+    monkeypatch.setattr(health.settings, "ai_research_enabled", False)
+
+    response = health.get_readiness(db, _RefreshRequest(None))
+
+    assert response.ready is False
+    assert response.status == "not_ready"
+    assert response.checks["database"].ok is True
+    assert response.checks["admin_token"].ok is True
+    assert response.checks["market_refresh_task"].ok is False
+    assert response.checks["market_refresh_task"].status == "stopped"
+    assert response.checks["market_refresh_task"].severity == "blocker"
+    assert response.checks["market_refresh_task"].blocking is True
+
+
+def test_readiness_not_ready_when_refresh_interval_disables_loop(monkeypatch):
+    db = FakeDb()
+    _healthy_market_stubs(monkeypatch)
+    monkeypatch.setattr(health.settings, "admin_token", "configured-token")
+    monkeypatch.setattr(health.settings, "market_refresh_interval_seconds", 0)
+
+    response = health.get_readiness(db, _RefreshRequest(_LiveTask()))
+
+    assert response.ready is False
+    assert response.status == "not_ready"
+    assert response.checks["market_refresh_task"].ok is False
+    assert response.checks["market_refresh_task"].status == "disabled"
+    assert response.checks["market_refresh_task"].blocking is True
+    assert "JETSCOPE_MARKET_REFRESH_INTERVAL_SECONDS" in (response.checks["market_refresh_task"].detail or "")
+
+
+def test_readiness_ready_when_database_admin_and_refresh_task_are_up(monkeypatch):
+    db = FakeDb()
+    _healthy_market_stubs(monkeypatch, market_status="error", coverage_complete=False)
+    monkeypatch.setattr(health.settings, "admin_token", "configured-token")
+    monkeypatch.setattr(health.settings, "ai_research_enabled", False)
+
+    response = health.get_readiness(db, _RefreshRequest(_LiveTask()))
+
+    assert response.checks["database"].ok is True
+    assert response.checks["admin_token"].ok is True
+    assert response.checks["market_refresh_task"].status == "running"
+    assert response.checks["market_refresh_task"].blocking is False
+    assert response.checks["market_snapshot"].blocking is False
+    assert response.checks["source_coverage"].blocking is False
+    assert response.ready is True
+    assert response.status == "degraded"
+    assert response.degraded is True
+
+
+def test_finished_refresh_task_is_not_running(monkeypatch):
+    db = FakeDb()
+    _healthy_market_stubs(monkeypatch)
+    monkeypatch.setattr(health.settings, "admin_token", "configured-token")
+
+    response = health.get_readiness(db, _RefreshRequest(_StoppedTask()))
+
+    assert response.ready is False
+    assert response.checks["market_refresh_task"].status == "stopped"
+    assert response.checks["market_refresh_task"].blocking is True

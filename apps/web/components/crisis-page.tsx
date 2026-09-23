@@ -8,7 +8,7 @@ import { SourceFooter, type SourceRef } from '@/components/source-footer';
 import { TippingEventTimeline } from '@/components/tipping-event-timeline';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
 import { getCrisisBriefReadModel, type CrisisBriefReadModel } from '@/lib/crisis-brief-read-model';
-import { assumed, derived, observed, type Figure } from '@/lib/figure';
+import { assumed, derived, missing, observed, type Figure } from '@/lib/figure';
 import { messagesFor, type CrisisMessages, type Locale } from '@/lib/i18n';
 import { NAV_ENTRIES } from '@/lib/navigation';
 import { getEuReserveCoverage, getTippingPointEvents } from '@/lib/portfolio-read-model';
@@ -64,11 +64,14 @@ function isoDaysAgo(days: number): string { // figure-contract-lint-ignore: look
 }
 
 function fossilJetFigure(
-  value: number, // figure-contract-lint-ignore: constructor input, not a display prop
+  value: number | null, // figure-contract-lint-ignore: constructor input, not a display prop
   asOf: string | null,
   isAssumed: boolean,
   method: string
 ): Figure {
+  if (value == null) {
+    return missing({ unit: 'USD/L', sourceId: CRISIS_CHART_SOURCE_ID, reason: 'API unavailable' });
+  }
   if (isAssumed || !asOf) {
     return assumed({
       value,
@@ -88,11 +91,14 @@ function fossilJetFigure(
 }
 
 function effectiveFossilJetFigure(
-  value: number, // figure-contract-lint-ignore: constructor input, not a display prop
+  value: number | null, // figure-contract-lint-ignore: constructor input, not a display prop
   asOf: string | null,
   method: string,
   isAssumed: boolean
 ): Figure {
+  if (value == null) {
+    return missing({ unit: 'USD/L', sourceId: CRISIS_CHART_SOURCE_ID, reason: 'API unavailable' });
+  }
   if (isAssumed) {
     return assumed({
       value,
@@ -117,18 +123,18 @@ function buildSafWorkbenchHref({
   carbonPriceEurPerT,
   reserveWeeks
 }: {
-  fallbackFossil: number; // figure-contract-lint-ignore: constructor input, not a display prop
-  carbonPriceEurPerT: number; // figure-contract-lint-ignore: constructor input, not a display prop
+  fallbackFossil: number | null; // figure-contract-lint-ignore: constructor input, not a display prop
+  carbonPriceEurPerT: number | null; // figure-contract-lint-ignore: constructor input, not a display prop
   reserveWeeks: number | null; // figure-contract-lint-ignore: constructor input, not a display prop
 }): Route {
   const params = new URLSearchParams({
-    fuel: fallbackFossil.toFixed(3),
-    carbon: carbonPriceEurPerT.toFixed(2),
     subsidy: '0.000',
     blend: '6.00',
-    reserve: reserveWeeks?.toFixed(2) ?? '3.00',
     pathway: 'hefa'
   });
+  if (fallbackFossil != null) params.set('fuel', fallbackFossil.toFixed(3));
+  if (carbonPriceEurPerT != null) params.set('carbon', carbonPriceEurPerT.toFixed(2));
+  if (reserveWeeks != null) params.set('reserve', reserveWeeks.toFixed(2));
   return `${ZH_WORKBENCH_PATH}?${params.toString()}` as Route;
 }
 
@@ -309,13 +315,7 @@ function reserveWeeksFigure(
       method: methods.reserve_dashboard
     });
   }
-  return assumed({
-    value: 3,
-    unit: 'weeks',
-    sourceId: 'eu-reserve',
-    precision: 1,
-    method: methods.reserve_baseline
-  });
+  return missing({ unit: 'weeks', sourceId: 'eu-reserve', reason: methods.reserve_baseline });
 }
 
 async function CrisisMonitor({ locale, copy }: { locale: Locale; copy: CrisisMessages }) {
@@ -331,7 +331,7 @@ async function CrisisMonitor({ locale, copy }: { locale: Locale; copy: CrisisMes
   const fallbackFossil =
     dashboardReadModel.market.values.jet_eu_proxy_usd_per_l ??
     dashboardReadModel.market.values.jet_usd_per_l ??
-    0.657;
+    dashboardReadModel.analysisInputs.fossilJetUsdPerL;
   const researchBrief = buildResearchDecisionBrief(researchSignals);
   const reserveWeeks = reserve?.coverage_weeks ?? dashboardReadModel.reserve?.coverage_weeks ?? null;
   const reserveStatus = reserve ? copy.monitor.reserve_connected : copy.monitor.reserve_baseline;
@@ -342,13 +342,9 @@ async function CrisisMonitor({ locale, copy }: { locale: Locale; copy: CrisisMes
     !dashboardReadModel.isFallback && typeof marketConfidence === 'number'
       ? `${Math.round(marketConfidence * 100)}%`
       : copy.confidence.unavailable;
-  const usdPerEur = dashboardReadModel.market.values.usd_per_eur;
-  const carbonPriceEurPerT = Number(
-    (
-      (dashboardReadModel.market.values.carbon_proxy_usd_per_t ?? 102.6) /
-      (typeof usdPerEur === 'number' && usdPerEur > 0 ? usdPerEur : 1.1435)
-    ).toFixed(2)
-  );
+  const carbonPriceEurPerT =
+    dashboardReadModel.market.values.eu_ets_price_eur_per_t ??
+    dashboardReadModel.analysisInputs.carbonPriceEurPerT;
   const marketSnapshotUsesFallback =
     dashboardReadModel.isFallback ||
     (dashboardReadModel.market.values.jet_eu_proxy_usd_per_l == null &&
@@ -402,7 +398,7 @@ async function CrisisMonitor({ locale, copy }: { locale: Locale; copy: CrisisMes
           valueClassName={signalTextTone(tippingPoint?.signal)}
           hint={fill(copy.monitor.decision_hint, {
             status: reserveStatus,
-            price: fallbackFossil.toFixed(2)
+            price: fallbackFossil !== null ? fallbackFossil.toFixed(2) : '—（数据缺失）'
           })}
         />
         <MetricCard
@@ -518,8 +514,8 @@ async function CrisisMonitor({ locale, copy }: { locale: Locale; copy: CrisisMes
           {
             id: 'market-snapshot',
             label: fill(copy.footer.market_snapshot, {
-              price: fallbackFossil.toFixed(2),
-              carbon: carbonPriceEurPerT.toFixed(2)
+              price: fallbackFossil?.toFixed(2) ?? copy.na,
+              carbon: carbonPriceEurPerT?.toFixed(2) ?? copy.na
             }),
             asOf: marketSnapshotUsesFallback ? null : dashboardReadModel.market.generated_at,
             basis: marketSnapshotUsesFallback ? 'assumption' : 'derived'

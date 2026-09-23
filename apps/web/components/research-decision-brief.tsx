@@ -1,13 +1,8 @@
 import type { ResearchDecisionBrief } from '@/lib/research-signals-read-model';
-import type { Route } from 'next';
-import Link from 'next/link';
-
-const RESEARCH_ROUTE = '/research' as Route;
 
 type Props = {
   brief: ResearchDecisionBrief;
   compact?: boolean;
-  showLink?: boolean;
 };
 
 function statusTone(status: ResearchDecisionBrief['status']): string {
@@ -28,7 +23,7 @@ function impactLabel(value: ResearchDecisionBrief['topSignals'][number]['impact_
   return '未知';
 }
 
-export function ResearchDecisionBriefCard({ brief, compact = false, showLink = true }: Props) {
+export function ResearchDecisionBriefCard({ brief, compact = false }: Props) {
   return (
     // The one artifact that keeps a container of its own: the tint IS the
     // research posture (error / not deployed / empty / live). Stripping it to
@@ -39,11 +34,6 @@ export function ResearchDecisionBriefCard({ brief, compact = false, showLink = t
         <div>
           <h3 className="text-lg font-medium text-ink">{brief.headline}</h3>
         </div>
-        {showLink ? (
-          <Link href={RESEARCH_ROUTE} className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-semibold text-ink transition hover:border-accent hover:text-accent">
-            打开信号
-          </Link>
-        ) : null}
       </div>
 
       <p className="mt-4 text-sm leading-7 text-ink">{brief.whyMatters}</p>

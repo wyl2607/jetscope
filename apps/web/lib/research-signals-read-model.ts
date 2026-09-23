@@ -109,7 +109,7 @@ async function fetchJsonWithStatus<T>(path: string): Promise<{ status: number; d
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(buildApiUrl(path), {
-      cache: 'no-store',
+      next: { revalidate: 300 },
       signal: controller.signal
     });
 
@@ -188,7 +188,10 @@ export async function getResearchSignals(): Promise<ResearchSignalsResult> {
 
     const signals = rawSignals
       .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
-      .map((item, index) => normalizeSignal(item, index));
+      .map((item, index) => normalizeSignal(item, index))
+      // An undated signal is valid evidence, but cannot substantiate a
+      // recency claim. Keep it after signals whose publication date is known.
+      .sort((left, right) => publishedAtTime(right.published_at) - publishedAtTime(left.published_at));
 
     return {
       status: 'ok',

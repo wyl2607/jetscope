@@ -74,20 +74,31 @@ class TestParserContract:
         data = response.json()
         brent = data["values"].get("brent_usd_per_bbl", 0)
         jet = data["values"].get("jet_usd_per_l", 0)
+        details = data.get("source_details") or {}
 
-        assert isinstance(brent, (int, float)), "brent must be numeric"
-        assert brent >= 0, "brent cannot be negative"
-        assert isinstance(jet, (int, float)), "jet must be numeric"
-        assert jet >= 0, "jet cannot be negative"
+        if brent is None:
+            assert details.get("brent", {}).get("status") == "missing"
+        else:
+            assert isinstance(brent, (int, float)), "brent must be numeric"
+            assert brent >= 0, "brent cannot be negative"
+        if jet is None:
+            assert details.get("jet", {}).get("status") == "missing"
+        else:
+            assert isinstance(jet, (int, float)), "jet must be numeric"
+            assert jet >= 0, "jet cannot be negative"
 
     def test_carbon_intensity_metric_valid(self, client: TestClient):
         """C3: carbon_proxy >= 0."""
         response = client.get("/v1/market/snapshot")
         data = response.json()
         carbon = data["values"].get("carbon_proxy_usd_per_t", 0)
+        details = data.get("source_details") or {}
 
-        assert isinstance(carbon, (int, float)), "carbon_proxy must be numeric"
-        assert carbon >= 0, "carbon_proxy cannot be negative"
+        if carbon is None:
+            assert details.get("carbon", {}).get("status") == "missing"
+        else:
+            assert isinstance(carbon, (int, float)), "carbon_proxy must be numeric"
+            assert carbon >= 0, "carbon_proxy cannot be negative"
 
     def test_freshness_metric_not_null(self, client: TestClient):
         """C4: All metrics present and valid."""

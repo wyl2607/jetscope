@@ -24,16 +24,18 @@ class TippingPointEngine:
     DEDUPE_WINDOW = timedelta(hours=24)
     JET_PROXY_SLOPE = 0.0082
     JET_PROXY_INTERCEPT = 0.12
+    CARBON_METRIC_KEY = "eu_ets_price_eur_per_t"
 
     def evaluate(self, now: datetime, db: Session) -> list[TippingEvent]:
         now_utc = self._as_utc(now)
         fossil_price = self._latest_fossil_price(db, now_utc)
-        if fossil_price is None:
+        carbon_price = self._latest_carbon_price(db, now_utc)
+        if fossil_price is None or carbon_price is None:
             return []
 
         events: list[TippingEvent] = []
         for pathway in self.PATHWAY_PRIORITY:
-            saf_effective = effective_saf_cost(pathway)
+            saf_effective = effective_saf_cost(pathway, carbon_price_eur_per_t=carbon_price)
             gap = fossil_price - saf_effective
             event_type = self._event_type_for_gap(gap)
             if event_type is None:
@@ -58,6 +60,7 @@ class TippingPointEngine:
                         "breakeven_oil_price_usd_per_bbl": round(float(breakeven_oil), 4),
                         "jet_proxy_slope": self.JET_PROXY_SLOPE,
                         "jet_proxy_intercept": self.JET_PROXY_INTERCEPT,
+                        "carbon_price_eur_per_t": round(float(carbon_price), 4),
                     },
                 )
             )
@@ -123,6 +126,35 @@ class TippingPointEngine:
             return None
         ranked.sort()
         return ranked[0][1]
+
+    def _latest_carbon_price(self, db: Session, now: datetime) -> float | None:
+        latest = db.scalar(
+            select(MarketSnapshot)
+            .where(MarketSnapshot.metric_key == self.CARBON_METRIC_KEY)
+            .order_by(MarketSnapshot.as_of.desc())
+            .limit(1)
+        )
+        if latest is None or float(latest.value) < 0:
+            return None
+
+        from app.services.market_quality import (
+            observation_from_detail,
+            quote_freshness,
+            snapshot_quality,
+            usable_for_signal,
+        )
+
+        payload = latest.payload if isinstance(getattr(latest, "payload", None), dict) else {}
+        quality = snapshot_quality(payload)
+        freshness = quote_freshness(
+            quality=quality,
+            observed_at=observation_from_detail(payload),
+            lag_minutes=payload.get("lag_minutes"),
+            now=now,
+        )
+        if not usable_for_signal(quality, freshness):
+            return None
+        return float(latest.value)
 
     def _seen_recent_event(
         self,

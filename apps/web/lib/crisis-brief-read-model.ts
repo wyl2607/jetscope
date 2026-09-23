@@ -58,7 +58,7 @@ export type CrisisBriefResponse = {
 export type CrisisBriefReadModel = {
   generatedAt: string | null;
   marketGeneratedAt: string | null;
-  fossilJetUsdPerL: number;
+  fossilJetUsdPerL: number | null;
   sourceStatus: CrisisBriefResponse['source_status'];
   reserve: CrisisBriefReserve | null;
   tippingEvents: CrisisBriefEvent[];
@@ -95,7 +95,7 @@ function fallbackReadModel(error: unknown): CrisisBriefReadModel {
   return {
     generatedAt: null,
     marketGeneratedAt: null,
-    fossilJetUsdPerL: 0.657,
+    fossilJetUsdPerL: null,
     sourceStatus: {
       overall: 'degraded',
       confidence: 0,
@@ -126,7 +126,7 @@ export async function getCrisisBriefReadModel(
   try {
     const search = new URLSearchParams({ limit: String(limit) });
     const response = await fetch(buildApiUrl(`/analysis/crisis-brief?${search.toString()}`), {
-      cache: 'no-store',
+      next: { revalidate: 300 },
       signal: controller.signal
     });
     if (!response.ok) {

@@ -7,7 +7,11 @@ import { INDUSTRY_COUNTRIES } from '@core/industry/countries';
 import { POLICY_MILESTONES } from '@core/industry/policyTimeline';
 import { AirlineDecisionMatrix } from '@/components/airline-decision-matrix';
 import { FuelVsSafPriceChart } from '@/components/fuel-vs-saf-price-chart';
-import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
+import {
+  pathwayDetailsFromComparison,
+  SafPathwayComparisonTable,
+  type PathwayDetailsByKey
+} from '@/components/saf-pathway-comparison-table';
 import { ScenarioCostStackChart } from '@/components/scenario-cost-stack-chart';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
 import { getReserveSeverity, getTippingPointSignalMeta, type TippingPointSignalTone } from '@/lib/market-signals';
@@ -79,6 +83,8 @@ type Props = {
   initialReserve: ReserveSignal | null;
   policyTargets: PolicyTarget[];
 };
+
+type PathwayComparisonResponse = Parameters<typeof pathwayDetailsFromComparison>[0];
 
 function toneClasses(tone: 'teal' | 'amber' | 'blue' | 'red' | 'purple') {
   switch (tone) {
@@ -214,6 +220,7 @@ export function TransitionReadinessDashboard({
   const [selectedPathwayKey, setSelectedPathwayKey] = useState(initialDecision.inputs.pathway_key);
   const [tippingPoint, setTippingPoint] = useState(initialTippingPoint);
   const [decision, setDecision] = useState(initialDecision);
+  const [pathwayDetails, setPathwayDetails] = useState<PathwayDetailsByKey>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -236,13 +243,18 @@ export function TransitionReadinessDashboard({
       setLoading(true);
       setError(null);
       try {
-        const [nextTippingPoint, nextDecision] = await Promise.all([
+        const [nextTippingPoint, nextDecision, nextPathwayComparison] = await Promise.all([
           fetchJson<TippingPointResponse>(`/api/analysis/tipping-point?${query.toString()}`, controller.signal),
-          fetchJson<AirlineDecisionResponse>(`/api/analysis/airline-decision?${decisionQuery.toString()}`, controller.signal)
+          fetchJson<AirlineDecisionResponse>(`/api/analysis/airline-decision?${decisionQuery.toString()}`, controller.signal),
+          fetchJson<PathwayComparisonResponse>(
+            `/api/pathways/compare?${query.toString()}`,
+            controller.signal
+          ).catch(() => ({ rows: [] }))
         ]);
         startTransition(() => {
           setTippingPoint(nextTippingPoint);
           setDecision(nextDecision);
+          setPathwayDetails(pathwayDetailsFromComparison(nextPathwayComparison));
         });
       } catch (nextError) {
         if (!controller.signal.aborted) {
@@ -398,6 +410,7 @@ export function TransitionReadinessDashboard({
         <SafPathwayComparisonTable
           pathways={pathwayCostRows(tippingPoint)}
           selectedPathwayKey={selectedPathwayKey}
+          pathwayDetails={pathwayDetails}
         />
         <AirlineDecisionMatrix
           decision={decision}

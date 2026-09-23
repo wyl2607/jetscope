@@ -89,6 +89,7 @@ export async function loadEuEtsPressure(
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(`${buildApiUrl('/policies/eu-ets-pressure')}?${params.toString()}`, {
+      next: { revalidate: 300 },
       signal: controller.signal,
       headers: { accept: 'application/json' }
     });

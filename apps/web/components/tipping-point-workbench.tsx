@@ -8,7 +8,7 @@ import { FuelVsSafPriceChart } from '@/components/fuel-vs-saf-price-chart';
 import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
 import { ScenarioCostStackChart } from '@/components/scenario-cost-stack-chart';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
-import { assumed, derived, missing, observed, type Figure } from '@/lib/figure';
+import { assumed, derived, missing, type Figure } from '@/lib/figure';
 import {
   type AirlineDecisionResponse,
   type DecisionReadModel,
@@ -17,6 +17,7 @@ import {
   toDecisionReadModel,
   toTippingPointReadModel
 } from '@/lib/product-read-model';
+import { useCopyToClipboard } from '@/components/use-copy-to-clipboard';
 
 const WORKBENCH_SOURCE_ID = 'saf-tipping-model';
 
@@ -31,35 +32,30 @@ function figureControlSeed(figure: Figure): number | null {
 
 function fossilJetFigure(
   value: number, // figure-contract-lint-ignore: constructor input, not a display prop
-  asOf: string | null
+  seed: Figure,
+  userControlled: boolean
 ): Figure {
-  if (asOf) {
-    return observed({
-      value,
-      unit: 'USD/L',
-      sourceId: WORKBENCH_SOURCE_ID,
-      asOf,
-      precision: 2
-    });
+  if (!userControlled && seed.value != null && Math.abs(seed.value - value) < 1e-9) {
+    return seed;
   }
   return assumed({
     value,
     unit: 'USD/L',
     sourceId: WORKBENCH_SOURCE_ID,
     precision: 2,
-    method: 'workbench fossil-jet input (slider or live default without source timestamp)'
+    method: '你的输入（假设值）'
   });
 }
 
 function effectiveFossilJetFigure(
   value: number, // figure-contract-lint-ignore: constructor input, not a display prop
-  asOf: string | null
+  fossilJet: Figure
 ): Figure {
   return derived({
     value,
     unit: 'USD/L',
     sourceId: WORKBENCH_SOURCE_ID,
-    asOf,
+    asOf: fossilJet.basis === 'assumption' ? null : fossilJet.asOf,
     precision: 2,
     method:
       'effective fossil jet = spot fossil jet + carbon price pressure at selected blend rate, minus subsidy (tipping-point model)'
@@ -107,9 +103,10 @@ type Props = {
 
 const PATHWAY_KEYS = ['hefa', 'atj', 'ft', 'ptl'] as const;
 
-function finiteNumber(value: string | null, fallback: number): number { // figure-contract-lint-ignore: input parsing helper, not a prop
+function finiteNumber(value: string | null, fallback: number, min = 0, max = Number.POSITIVE_INFINITY): number { // figure-contract-lint-ignore: input parsing helper, not a prop
+  if (value === null) return fallback;
   const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+  return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : fallback;
 }
 
 function boundedNumber(value: string, fallback: number, min: number, max = Number.POSITIVE_INFINITY): number { // figure-contract-lint-ignore: input clamping helper, not a prop
@@ -139,6 +136,7 @@ export function TippingPointWorkbench({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const { isCopied, copyText, copy, dismissError } = useCopyToClipboard();
 
   const fossilSeed = figureControlSeed(liveDefaults.fossilJetUsdPerL);
   const carbonSeed = figureControlSeed(liveDefaults.carbonPriceEurPerT);
@@ -148,8 +146,14 @@ export function TippingPointWorkbench({
     figureControlSeed(liveDefaults.reserveWeeks) ?? figureControlSeed(initialReserveWeeks);
 
   const [fossilJetUsdPerL, setFossilJetUsdPerL] = useState(() =>
-    fossilSeed == null ? finiteNumber(searchParams.get('fuel'), Number.NaN) : finiteNumber(searchParams.get('fuel'), fossilSeed)
+    fossilSeed == null ? finiteNumber(searchParams.get('fuel'), Number.NaN, 0.1) : finiteNumber(searchParams.get('fuel'), fossilSeed, 0.1)
   );
+  const [fossilJetUserControlled, setFossilJetUserControlled] = useState(() => {
+    const raw = searchParams.get('fuel');
+    if (raw === null) return false;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) && parsed >= 0.1;
+  });
   const [carbonPriceEurPerT, setCarbonPriceEurPerT] = useState(() =>
     carbonSeed == null ? finiteNumber(searchParams.get('carbon'), Number.NaN) : finiteNumber(searchParams.get('carbon'), carbonSeed)
   );
@@ -157,15 +161,12 @@ export function TippingPointWorkbench({
     subsidySeed == null ? finiteNumber(searchParams.get('subsidy'), Number.NaN) : finiteNumber(searchParams.get('subsidy'), subsidySeed)
   );
   const [blendRatePct, setBlendRatePct] = useState(() =>
-    Math.min(
-      100,
-      blendSeed == null ? finiteNumber(searchParams.get('blend'), Number.NaN) : finiteNumber(searchParams.get('blend'), blendSeed)
-    )
+    blendSeed == null ? finiteNumber(searchParams.get('blend'), Number.NaN, 0, 100) : finiteNumber(searchParams.get('blend'), blendSeed, 0, 100)
   );
   const [reserveWeeks, setReserveWeeks] = useState(() =>
     reserveSeed == null
-      ? finiteNumber(searchParams.get('reserve'), Number.NaN)
-      : finiteNumber(searchParams.get('reserve'), reserveSeed)
+      ? finiteNumber(searchParams.get('reserve'), Number.NaN, 0.1)
+      : finiteNumber(searchParams.get('reserve'), reserveSeed, 0.1)
   );
   const [pathwayKey, setPathwayKey] = useState(() => {
     const raw = searchParams.get('pathway') ?? liveDefaults.pathwayKey;
@@ -200,7 +201,7 @@ export function TippingPointWorkbench({
       startTransition(() => {
         router.replace(`/crisis/saf-tipping-point?${query}` as Route, { scroll: false });
       });
-    }, 250);
+    }, 300);
     return () => window.clearTimeout(timeout);
   }, [query, router, startTransition]);
 
@@ -253,7 +254,10 @@ export function TippingPointWorkbench({
     const nextSubsidy = figureControlSeed(liveDefaults.subsidyUsdPerL);
     const nextBlend = figureControlSeed(liveDefaults.blendRatePct);
     const nextReserve = figureControlSeed(liveDefaults.reserveWeeks);
-    if (nextFuel != null) setFossilJetUsdPerL(nextFuel);
+    if (nextFuel != null) {
+      setFossilJetUsdPerL(nextFuel);
+      setFossilJetUserControlled(false);
+    }
     if (nextCarbon != null) setCarbonPriceEurPerT(nextCarbon);
     if (nextSubsidy != null) setSubsidyUsdPerL(nextSubsidy);
     if (nextBlend != null) setBlendRatePct(nextBlend);
@@ -294,7 +298,7 @@ export function TippingPointWorkbench({
           crudeSource: 'manual',
           carbonSource: 'manual',
           benchmarkMode: 'live-jet-spot',
-          carbonPriceUsdPerTonne: Number((carbonPriceEurPerT * 1.1435 /* seed EURUSD aligned market.DEFAULT_EUR_USD 2026-07-17 */).toFixed(2)),
+          carbonPriceEurPerTonne: carbonPriceEurPerT,
           subsidyUsdPerLiter: subsidyUsdPerL,
           tippingPoint: {
             fossilJetUsdPerL,
@@ -351,6 +355,13 @@ export function TippingPointWorkbench({
             >
               使用实时值
             </button>
+            <button
+              type="button"
+              className="rounded-xl border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink transition hover:border-accent hover:bg-accent-soft"
+              onClick={() => copy(window.location.href)}
+            >
+              {isCopied ? '已复制' : '复制分享链接'}
+            </button>
             <span className="rounded-xl border border-line bg-surface-muted px-3 py-2 text-xs text-muted" aria-live="polite">
               {isPending ? '正在更新 URL...' : status}
             </span>
@@ -363,20 +374,50 @@ export function TippingPointWorkbench({
           </p>
         ) : null}
 
+        {copyText ? (
+          <div className="mb-4 flex items-center justify-between rounded-xl border border-warning bg-warning-soft px-3 py-2 text-xs text-warning">
+            <span>您的浏览器不支持自动复制，请手动复制以下链接：</span>
+            <input
+              readOnly
+              value={copyText}
+              className="ml-2 flex-1 rounded bg-surface px-2 py-1 text-ink"
+              onFocus={(e) => e.target.select()}
+            />
+            <button
+              type="button"
+              onClick={dismissError}
+              className="ml-2 text-warning hover:text-ink"
+            >
+              关闭
+            </button>
+          </div>
+        ) : null}
+
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           <label className="text-xs uppercase tracking-[0.18em] text-muted">
-            化石航油 USD/L
+            <span>化石航油 USD/L</span>
+            {fossilJetUserControlled ? (
+              <span className="ml-2 normal-case tracking-normal text-warning">你的输入（假设值）</span>
+            ) : liveDefaults.fossilJetUsdPerL.basis === 'assumption' ? (
+              <span className="ml-2 normal-case tracking-normal text-warning">假设值</span>
+            ) : null}
             <input
               className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink transition hover:border-accent hover:bg-accent-soft"
               type="number"
               min="0.1"
               step="0.01"
               value={fossilJetUsdPerL}
-              onChange={(event) => setFossilJetUsdPerL((current) => boundedNumber(event.target.value, current, 0.1))}
+              onChange={(event) => {
+                setFossilJetUserControlled(true);
+                setFossilJetUsdPerL((current) => boundedNumber(event.target.value, current, 0.1));
+              }}
             />
           </label>
           <label className="text-xs uppercase tracking-[0.18em] text-muted">
-            碳价 EUR/t
+            <span>碳价 EUR/t</span>
+            {liveDefaults.carbonPriceEurPerT.basis === 'assumption' ? (
+              <span className="ml-2 normal-case tracking-normal text-warning">假设值</span>
+            ) : null}
             <input
               className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink transition hover:border-accent hover:bg-accent-soft"
               type="number"
@@ -475,11 +516,16 @@ export function TippingPointWorkbench({
         <FuelVsSafPriceChart
           fossilJetUsdPerL={fossilJetFigure(
             tippingPoint?.inputs.fossilJetUsdPerL ?? fossilJetUsdPerL,
-            tippingPoint?.generatedAt ?? null
+            liveDefaults.fossilJetUsdPerL,
+            fossilJetUserControlled
           )}
           effectiveFossilJetUsdPerL={effectiveFossilJetFigure(
             tippingPoint?.effectiveFossilJetUsdPerL ?? fossilJetUsdPerL,
-            tippingPoint?.generatedAt ?? null
+            fossilJetFigure(
+              tippingPoint?.inputs.fossilJetUsdPerL ?? fossilJetUsdPerL,
+              liveDefaults.fossilJetUsdPerL,
+              fossilJetUserControlled
+            )
           )}
           pathways={pathways}
         />

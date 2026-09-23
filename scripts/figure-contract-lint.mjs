@@ -43,6 +43,16 @@ import { readdir } from 'node:fs/promises';
 import { join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+/** Read a listed file; a file that vanished after listing (ENOENT) is skipped, any other error is fatal. */
+function readListedFile(path) {
+  try {
+    return readFileSync(path, 'utf8');
+  } catch (error) {
+    if (error && error.code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const BASELINE_PATH = join(ROOT, 'scripts', 'figure-contract-baseline.json');
 
@@ -116,7 +126,8 @@ function ignored(lines, index) {
 }
 
 function scanFile(rel, { props }) {
-  const source = readFileSync(join(ROOT, rel), 'utf8');
+  const source = readListedFile(join(ROOT, rel));
+  if (source === null) return [];
   const lines = source.split('\n');
   const hits = [];
 
@@ -144,7 +155,8 @@ function hardRules(files) {
 
   for (const rel of files) {
     if (rel === contractModule) continue;
-    const source = readFileSync(join(ROOT, rel), 'utf8');
+    const source = readListedFile(join(ROOT, rel));
+    if (source === null) continue;
 
     // A local `type Figure` shadows the contract one and every guarantee that
     // comes with it, while still type-checking and still reading correctly in

@@ -1,9 +1,13 @@
-import { render } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { render, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TransitionReadinessDashboard } from '@/components/transition-readiness-dashboard';
 import { derived } from '@/lib/figure';
 
 describe('TransitionReadinessDashboard', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('renders without crashing', () => {
     const { container } = render(
       <TransitionReadinessDashboard
@@ -83,5 +87,60 @@ describe('TransitionReadinessDashboard', () => {
     );
 
     expect(container.firstChild).not.toBeNull();
+  });
+
+  it('loads pathway metadata from the existing comparison API', async () => {
+    const fetchMock = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith('/api/pathways/compare')) {
+        return { ok: true, json: async () => ({ rows: [] }) };
+      }
+      if (url.startsWith('/api/analysis/tipping-point')) {
+        return {
+          ok: true,
+          json: async () => ({
+            generated_at: null,
+            signal: 'fossil_still_advantaged',
+            inputs: { fossil_jet_usd_per_l: 1.2, carbon_price_eur_per_t: 80, subsidy_usd_per_l: 0.2, blend_rate_pct: 2 },
+            effective_fossil_jet_usd_per_l: 1.3,
+            pathways: []
+          })
+        };
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          generated_at: null,
+          signal: 'incremental_adjustment',
+          inputs: { fossil_jet_usd_per_l: 1.2, reserve_weeks: 4, carbon_price_eur_per_t: 80, pathway_key: 'hefa' },
+          probabilities: { raise_fares: 0.2, cut_capacity: 0.3, buy_spot_saf: 0.1, sign_long_term_offtake: 0.25, ground_routes: 0.15 }
+        })
+      };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <TransitionReadinessDashboard
+        initialTippingPoint={{
+          generated_at: null,
+          signal: 'fossil_still_advantaged',
+          inputs: { fossil_jet_usd_per_l: 1.2, carbon_price_eur_per_t: 80, subsidy_usd_per_l: 0.2, blend_rate_pct: 2 },
+          effective_fossil_jet_usd_per_l: 1.3,
+          pathways: []
+        }}
+        initialDecision={{
+          generated_at: null,
+          signal: 'incremental_adjustment',
+          inputs: { fossil_jet_usd_per_l: 1.2, reserve_weeks: 4, carbon_price_eur_per_t: 80, pathway_key: 'hefa' },
+          probabilities: { raise_fares: 0.2, cut_capacity: 0.3, buy_spot_saf: 0.1, sign_long_term_offtake: 0.25, ground_routes: 0.15 }
+        }}
+        initialReserve={null}
+        policyTargets={[]}
+      />
+    );
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith('/api/pathways/compare'))).toBe(true);
+    });
   });
 });

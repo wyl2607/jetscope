@@ -160,6 +160,40 @@ describe('DashboardPage', () => {
     });
   });
 
+  it('renders missing data without any market seed values when the API fallback is active', async () => {
+    getDashboardReadModel.mockResolvedValue({
+      ...mockReadModel(),
+      market: {
+        generated_at: null,
+        source_status: { overall: 'degraded', is_fallback: true },
+        values: {
+          brent_usd_per_bbl: null,
+          jet_usd_per_l: null,
+          rotterdam_jet_fuel_usd_per_l: null,
+          jet_eu_proxy_usd_per_l: null,
+          carbon_proxy_usd_per_t: null
+        }
+      },
+      analysisInputs: {
+        fossilJetUsdPerL: null,
+        carbonPriceEurPerT: null,
+        reserveWeeks: null,
+        jetSourceKey: 'unavailable',
+        missingReason: 'API unavailable'
+      },
+      isFallback: true,
+      error: 'API unavailable'
+    });
+
+    render(await DashboardPage({ locale: 'zh' }));
+
+    expect(screen.getByText(/—（数据缺失）/)).toBeInTheDocument();
+    const rendered = document.body.textContent ?? '';
+    for (const forbidden of ['87.01', '0.64', '0.657', '91.91', '92.5', '80.38', '1.1435']) {
+      expect(rendered).not.toContain(forbidden);
+    }
+  });
+
   it.each(LOCALES)('renders %s copy from the locale file', async (locale) => {
     const copy = messagesFor(locale).dashboard;
     render(await DashboardPage({ locale }));
@@ -300,6 +334,45 @@ describe('DashboardPage', () => {
 
     render(await DashboardPage({ locale: 'zh' }));
     expect(screen.queryByTestId('page-as-of')).toBeNull();
+  });
+
+  it('renders missing jet and carbon without seed prices or pathway calculations', async () => {
+    getDashboardReadModel.mockResolvedValue({
+      ...mockReadModel(),
+      market: {
+        ...mockReadModel().market,
+        source_status: {
+          overall: 'degraded',
+          confidence: 0,
+          freshness_minutes: 5,
+          fallback_rate: 100,
+          is_fallback: true
+        },
+        values: {
+          brent_usd_per_bbl: 80,
+          jet_usd_per_l: null,
+          jet_eu_proxy_usd_per_l: null,
+          carbon_proxy_usd_per_t: null,
+          eu_ets_price_eur_per_t: null,
+          usd_per_eur: null
+        }
+      },
+      analysisInputs: {
+        fossilJetUsdPerL: 0.9,
+        carbonPriceEurPerT: 82.4,
+        reserveWeeks: 3,
+        jetSourceKey: 'seed_fallback'
+      },
+      isFallback: false
+    });
+
+    const { container } = render(await DashboardPage({ locale: 'zh' }));
+    const text = container.textContent ?? '';
+
+    expect(text).toContain('数据缺失');
+    expect(text).not.toMatch(/80\.38|0\.900|0\.9|0\.64/);
+    expect(loadPathwayComparison).not.toHaveBeenCalled();
+    expect(loadEuEtsPressure).not.toHaveBeenCalled();
   });
 
   it('does not bleed copy across locale files', () => {

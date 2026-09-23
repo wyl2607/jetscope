@@ -17,7 +17,7 @@ describe('FigureValue', () => {
   it('marks an assumption visibly and in warning, never like a measurement', () => {
     render(
       <FigureValue
-        figure={assumed({ value: 0.657, unit: 'USD/L', sourceId: 'jet-price', method: '内置默认值' })}
+        figure={assumed({ value: 0.73, unit: 'USD/L', sourceId: 'jet-price', method: '测试假设' })}
       />
     );
     const mark = screen.getByTestId('figure-basis-assumption');
@@ -28,7 +28,7 @@ describe('FigureValue', () => {
   it('does not colour an observation - the semantic palette is for problems', () => {
     render(
       <FigureValue
-        figure={observed({ value: 0.657, unit: 'USD/L', asOf: '2026-08-05T09:00:00Z', sourceId: 'jet-price' })}
+        figure={observed({ value: 0.73, unit: 'USD/L', asOf: '2026-08-05T09:00:00Z', sourceId: 'jet-price' })}
       />
     );
     const mark = screen.getByTestId('figure-basis-observed');

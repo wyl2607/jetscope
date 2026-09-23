@@ -39,7 +39,7 @@ async function fetchJsonWithStatus<T>(path: string): Promise<{ status: number; d
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(buildApiUrl(path), {
-      cache: 'no-store',
+      next: { revalidate: 300 },
       signal: controller.signal
     });
 

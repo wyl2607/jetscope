@@ -33,6 +33,7 @@ function makeReadModel(overrides: Partial<SourcesReadModel> = {}): SourcesReadMo
     alertLevel: 'normal',
     sparkline: '',
     note: '回退',
+    quoteTitle: null,
     reviewAction: {
       label: '刷新并复核回退',
       detail: '配置 JETSCOPE_ADMIN_TOKEN 后触发刷新。',

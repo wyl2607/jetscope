@@ -40,7 +40,8 @@ function fakeReadModel(overrides: Partial<DashboardReadModel> = {}): DashboardRe
       fossilJetUsdPerL: 0.7,
       carbonPriceEurPerT: 90,
       reserveWeeks: 4,
-      jetSourceKey: 'test'
+      jetSourceKey: 'test',
+      missingReason: null
     },
     scenarioCount: 0,
     recentScenarioNames: [],

@@ -140,6 +140,30 @@ describe('GermanyJetFuelPage', () => {
     expect(screen.getByText(messagesFor('zh').prices.decision_review_source)).toBeInTheDocument();
   });
 
+  it('renders no market numbers when the API is unavailable', async () => {
+    getGermanyJetFuelReadModel.mockResolvedValue({
+      ...liveReadModel(),
+      generatedAt: null,
+      isFallback: true,
+      error: 'API unavailable',
+      metrics: liveReadModel().metrics.map((item) => ({
+        ...item,
+        value: null,
+        changePct1d: null,
+        changePct7d: null,
+        changePct30d: null,
+        quality: 'missing'
+      }))
+    });
+
+    render(await GermanyJetFuelPage({ locale: 'zh' }));
+
+    const rendered = document.body.textContent ?? '';
+    for (const forbidden of ['87.01', '0.64', '0.657', '91.91', '92.5', '80.38', '1.1435']) {
+      expect(rendered).not.toContain(forbidden);
+    }
+  });
+
   it('does not bleed copy across locale files', () => {
     const zh = JSON.stringify(messagesFor('zh').prices);
     const de = JSON.stringify(messagesFor('de').prices);

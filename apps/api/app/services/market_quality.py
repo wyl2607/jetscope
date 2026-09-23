@@ -122,6 +122,14 @@ def quality_from_detail(detail: Mapping[str, Any] | None) -> Quality:
     status = str(detail.get("status") or "").strip().lower()
     source = str(detail.get("source") or "").strip().lower()
     fallback_used = bool(detail.get("fallback_used"))
+    if status == "live":
+        return "observed"
+    if status == "stale":
+        return "stale"
+    if status == "estimated":
+        return "derived"
+    if status == "missing":
+        return "missing"
     if status in {"missing", "error"} and detail.get("value") is None:
         return "missing"
     if status == "missing":

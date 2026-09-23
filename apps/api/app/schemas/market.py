@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -10,6 +11,8 @@ class SourceStatus(BaseModel):
     fallback_rate: float | None = Field(default=None, ge=0.0, le=100.0)
     is_fallback: bool | None = None
     quote_coverage_rate: float | None = Field(default=None, ge=0.0, le=1.0)
+    # Counts of live / stale / estimated / missing metrics in this snapshot.
+    status_counts: dict[str, int] = Field(default_factory=dict)
     fetched_at: datetime | None = None
 
 
@@ -17,6 +20,10 @@ class MarketSourceDetail(BaseModel):
     source: str
     status: str
     value: float | None = None
+    unit: str | None = None
+    # Observation date of the quote (not the fetch time).
+    as_of: datetime | None = None
+    method: str | None = None
     error: str | None = None
     note: str | None = None
     region: str
@@ -38,11 +45,22 @@ class MarketSourceDetail(BaseModel):
     fetched_at: datetime | None = None
 
 
+class MarketAssumption(BaseModel):
+    """Workbench slider seed. Never a market observation."""
+
+    value: float
+    unit: str
+    kind: Literal["assumption"] = "assumption"
+    as_of: str
+    note: str | None = None
+
+
 class MarketSnapshotResponse(BaseModel):
     generated_at: datetime
     source_status: SourceStatus
     values: dict[str, float | None]
     source_details: dict[str, MarketSourceDetail] = Field(default_factory=dict)
+    assumptions: dict[str, MarketAssumption] = Field(default_factory=dict)
     # Pure arithmetic from values already in the snapshot; never invents prices.
     derived: dict[str, float | str | bool | None] = Field(default_factory=dict)
     fetched_at: datetime | None = None
@@ -114,5 +132,6 @@ class MarketHealthResponse(BaseModel):
     success_rate: float | None = Field(default=None, ge=0.0, le=1.0)
     quote_coverage_rate: float | None = Field(default=None, ge=0.0, le=1.0)
     healthy: bool
+    reasons: list[str] = Field(default_factory=list)
     note: str
     recent_runs: list[MarketRefreshRunSummary] = Field(default_factory=list)

@@ -51,9 +51,11 @@ async function importSourcesReadModel() {
   const contractUrl = new URL('../apps/web/lib/source-coverage-contract.ts', import.meta.url).href;
   const apiConfigUrl = new URL('../apps/web/lib/api-config.ts', import.meta.url).href;
   const figureUrl = new URL('../apps/web/lib/figure.ts', import.meta.url).href;
+  const quoteUrl = new URL('../apps/web/lib/market-quote-read-model.ts', import.meta.url).href;
   const rewritten = source
     .replaceAll("'@/lib/api-config'", `'${apiConfigUrl}'`)
     .replaceAll("'@/lib/figure'", `'${figureUrl}'`)
+    .replaceAll("'@/lib/market-quote-read-model'", `'${quoteUrl}'`)
     .replaceAll("'./source-coverage-contract'", `'${contractUrl}'`);
   const tempDir = await mkdtemp(path.join(tmpdir(), 'jetscope-sources-read-model-'));
   const tempPath = path.join(tempDir, 'sources-read-model.ts');
