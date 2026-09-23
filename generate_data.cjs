@@ -1,4 +1,5 @@
-import type { NavLocale } from '@/lib/navigation';
+const fs = require('fs');
+const content = `import type { NavLocale } from '@/lib/navigation';
 
 export const LUFT_DATA: Record<NavLocale, any> = {
   zh: {
@@ -398,22 +399,5 @@ export const LUFT_DATA: Record<NavLocale, any> = {
     }
   }
 } as const;
-
-// Restored for test compatibility
-export const FACTS = [
-  '2026-04-21：Lufthansa Group 公告，至 2026 年 10 月将削减约 20,000 班短途航班。',
-  '公告披露该动作预计可节省约 40,000 吨航油。',
-  '公告同时指出：伊朗冲突以来，航油价格已显著上行（文中表述为翻倍）。'
-] as const;
-
-export const BASELINE = {
-  crudeUsdPerBarrel: 80,
-  carbonPriceUsdPerTonne: 90,
-  subsidyUsdPerLiter: 0.5
-} as const;
-
-export const LUFTHANSA_SHOCK_2026Q2 = {
-  crudeUsdPerBarrel: 115,
-  carbonPriceUsdPerTonne: 115,
-  subsidyUsdPerLiter: 0.55
-} as const;
+`;
+fs.writeFileSync('apps/web/app/analysis/lufthansa-flight-cuts-2026-04/data.ts', content);

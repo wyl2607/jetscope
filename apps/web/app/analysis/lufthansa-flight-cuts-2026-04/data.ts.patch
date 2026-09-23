@@ -1,0 +1,10 @@
+--- apps/web/app/analysis/lufthansa-flight-cuts-2026-04/data.ts
++++ apps/web/app/analysis/lufthansa-flight-cuts-2026-04/data.ts
+@@ -1,7 +1,7 @@
+ import type { NavLocale } from '@/lib/navigation';
+ 
+-export const LUFT_DATA = {
++export const LUFT_DATA: Record<NavLocale, any> = {
+   zh: {
+     pageTemplate: {
+       eyebrow: '事件深度拆解',
