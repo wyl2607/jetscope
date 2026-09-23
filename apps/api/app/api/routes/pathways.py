@@ -8,6 +8,7 @@ from app.schemas.analysis import PathwayComparisonResponse
 from app.schemas.pathways import PathwaySummary, PathwayUpsert
 from app.security import require_admin_token
 from app.services.analysis.dashboard_contracts import build_pathway_comparison_response
+from app.services.analysis.pathway_costs import FOSSIL_JET_EMISSIONS_KG_PER_L, list_pathway_costs
 
 router = APIRouter()
 
@@ -49,39 +50,28 @@ def compare_pathways_endpoint(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-DEFAULT_PATHWAYS = [
-    {
-        "pathway_id": "sugar-atj",
-        "name": "Sugar ATJ-SPK",
-        "pathway": "Sugar -> Ethanol -> Jet",
-        "base_cost_usd_per_l": 1.6,
-        "co2_savings_kg_per_l": 1.5,
-        "category": "saf",
-    },
-    {
-        "pathway_id": "reed-hefa",
-        "name": "Reed HEFA",
-        "pathway": "Reed / Carinata -> HEFA",
-        "base_cost_usd_per_l": 1.85,
-        "co2_savings_kg_per_l": 1.8,
-        "category": "saf",
-    },
-    {
-        "pathway_id": "ptl-esaf",
-        "name": "PtL e-SAF",
-        "pathway": "CO2 + H2 -> FT",
-        "base_cost_usd_per_l": 4.5,
-        "co2_savings_kg_per_l": 2.4,
-        "category": "saf",
-    },
-]
+def _default_pathways() -> list[dict]:
+    return [
+        {
+            "pathway_id": pathway.pathway_key,
+            "name": pathway.name,
+            "pathway": pathway.name,
+            "base_cost_usd_per_l": pathway.midpoint_usd_per_l,
+            "co2_savings_kg_per_l": (
+                FOSSIL_JET_EMISSIONS_KG_PER_L * pathway.carbon_reduction_pct / 100
+            ),
+            "category": "saf",
+        }
+        for pathway in list_pathway_costs()
+        if pathway.pathway_key != "fossil_jet_crisis"
+    ]
 
 
 def _seed_pathways_if_needed(db: Session) -> None:
     existing = db.scalar(select(RouteCatalog.pathway_id).limit(1))
     if existing is not None:
         return
-    for row in DEFAULT_PATHWAYS:
+    for row in _default_pathways():
         db.add(RouteCatalog(**row))
     db.commit()
 
