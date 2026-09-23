@@ -1,6 +1,9 @@
 # JetScope 重构版上线手册 (2026-09)
 
-本文档是针对 2026-09 重构版本的部署指南。在执行前，请确保您有目标 VPS 的 SSH 访问权限，并在 `jr-W3b` 仓库的根目录下执行操作。
+本文档是针对 2026-09 重构版本的部署指南。在执行前，请确保您有目标 VPS 的 SSH 访问权限，并在 jetscope 仓库根目录下执行操作。
+
+
+> **与正式发布路径的关系（必读）**：`OPERATIONS.md` 的正式路径是 `scripts/release.sh` → VPS 上的 `scripts/auto-deploy.sh`。自本次重构起，`auto-deploy.sh` 在重建 API 容器前会检查宿主卷 `${JETSCOPE_HOST_DATA_DIR:-/opt/jetscope/data}/market.db`：**文件不存在或为空时直接失败退出**，以免 `docker-compose down` 丢弃仍只存在于旧容器里的数据库。因此**首次上线必须先按本手册用 `scripts/deploy-usa-vps.sh` 完成一次性迁移**，之后的日常发布照常走 `release.sh`。只有在明确要空库启动时才设置 `JETSCOPE_ALLOW_EMPTY_DB=1`。
 
 ## 1. 前置检查清单
 
