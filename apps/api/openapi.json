@@ -2625,9 +2625,31 @@
             "title": "Fallback Used",
             "type": "boolean"
           },
+          "source_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Name"
+          },
           "source_type": {
             "title": "Source Type",
             "type": "string"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
           },
           "updated_at": {
             "title": "Updated At",

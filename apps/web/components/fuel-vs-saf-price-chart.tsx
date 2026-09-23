@@ -97,9 +97,12 @@ export function FuelVsSafPriceChart({
             const low = pathway.netCostLow.value;
             const high = pathway.netCostHigh.value;
             const widthLow = low != null ? Math.max(4, (low / maxValue) * 100) : null;
+            // A single-point band (EASA gives HEFA one production-cost figure) must not be drawn as a range.
             const widthHigh =
               high != null
-                ? Math.max(widthLow != null ? widthLow + 4 : 4, (high / maxValue) * 100)
+                ? low === high && widthLow != null
+                  ? widthLow
+                  : Math.max(widthLow != null ? widthLow + 4 : 4, (high / maxValue) * 100)
                 : null;
             const color = pathwayColorMap[pathway.pathway_key] ?? 'bg-line-strong';
             const statusColor =
@@ -117,7 +120,9 @@ export function FuelVsSafPriceChart({
                     <p className={`mt-1 text-xs uppercase tracking-[0.18em] ${statusColor}`}>{pathway.status}</p>
                   </div>
                   <p className="text-sm text-ink">
-                    {formatFigure(pathway.netCostLow)} 至 {formatFigure(pathway.netCostHigh)}
+                    {low != null && low === high
+                      ? formatFigure(pathway.netCostLow)
+                      : `${formatFigure(pathway.netCostLow)} 至 ${formatFigure(pathway.netCostHigh)}`}
                   </p>
                 </div>
                 <div className="mt-3 h-3 overflow-hidden rounded-full bg-line">

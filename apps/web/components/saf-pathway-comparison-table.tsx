@@ -142,6 +142,11 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, pathwa
                             {sources[pathway.pathway_key].freshnessLabel}
                             {sources[pathway.pathway_key].fallbackUsed ? ' · 回退' : ''}
                           </div>
+                          {sources[pathway.pathway_key].sourceUrl ? (
+                            <a className="text-xs underline" href={sources[pathway.pathway_key].sourceUrl ?? undefined}>
+                              {sources[pathway.pathway_key].sourceName ?? sources[pathway.pathway_key].sourceUrl}
+                            </a>
+                          ) : null}
                         </div>
                       ) : (
                         <span className="text-subtle">无数据</span>

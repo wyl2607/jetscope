@@ -1,6 +1,8 @@
+import json
 import math
 
 from app.schemas.analysis import PathwayCostBand
+from app.services.curated_events import curated_dir
 
 # Seed FX must match market.DEFAULT_EUR_USD (ECB eurofxref baseline).
 # Live market paths refresh via market.py adapters; this is analysis fallback only.
@@ -9,48 +11,51 @@ EUR_TO_USD_AS_OF = "2026-07-17"
 EUR_TO_USD_SOURCE = "ECB eurofxref daily (seed aligned with market.DEFAULT_EUR_USD)"
 FOSSIL_JET_EMISSIONS_KG_PER_L = 2.5
 
-# Canonical Phase 1 calibrated SAF ranges. These values were retained because
-# they are the sourced analysis inputs used by tipping-point and breakeven
-# models (with provenance/freshness tracked in pathway_sources.py). The former
-# pathways-route seed values were unsourced, covered only three ad-hoc variants,
-# and disagreed with these ranges, so they must be derived from this table.
+# Jet reference density 0.8 kg/L, the same one the Rotterdam USD/t conversion uses.
+JET_LITRES_PER_TONNE = 1250.0
+
+# SAF production-cost bands come from EASA's 2025 reference prices
+# (data/curated/market/easa_reference_prices.json). EASA does not split
+# advanced aviation biofuels by technology, so ATJ and FT share one band, and
+# HEFA has a single production-cost point (its buyer price is the market index).
+EASA_REFERENCE_FILE = "easa_reference_prices.json"
+_PATHWAY_PROFILE = {
+    "hefa": ("HEFA", 70.0, "commercial"),
+    "atj": ("ATJ", 65.0, "early_commercial"),
+    "ft": ("Fischer-Tropsch", 80.0, "scaling"),
+    "ptl": ("Power-to-Liquid", 95.0, "demonstration"),
+}
+
+
+def load_easa_reference_prices() -> dict:
+    with (curated_dir() / "market" / EASA_REFERENCE_FILE).open(encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def eur_per_t_to_usd_per_l(eur_per_t: float) -> float:
+    return eur_per_t / JET_LITRES_PER_TONNE * EUR_TO_USD
+
+
+def _easa_bands() -> dict[str, PathwayCostBand]:
+    reference = load_easa_reference_prices()
+    bands: dict[str, PathwayCostBand] = {}
+    for pathway_key, (name, carbon_reduction_pct, maturity_level) in _PATHWAY_PROFILE.items():
+        subcategory = reference["subcategories"][reference["pathway_production_cost"][pathway_key]]
+        average = subcategory["production_cost_eur_per_t"]
+        bands[pathway_key] = PathwayCostBand(
+            pathway_key=pathway_key,
+            name=name,
+            min_usd_per_l=round(eur_per_t_to_usd_per_l(subcategory.get("low_eur_per_t", average)), 4),
+            max_usd_per_l=round(eur_per_t_to_usd_per_l(subcategory.get("high_eur_per_t", average)), 4),
+            midpoint_usd_per_l=round(eur_per_t_to_usd_per_l(average), 4),
+            carbon_reduction_pct=carbon_reduction_pct,
+            maturity_level=maturity_level,
+        )
+    return bands
+
+
 PATHWAY_COSTS: dict[str, PathwayCostBand] = {
-    "hefa": PathwayCostBand(
-        pathway_key="hefa",
-        name="HEFA",
-        min_usd_per_l=1.0,
-        max_usd_per_l=1.5,
-        midpoint_usd_per_l=1.25,
-        carbon_reduction_pct=70.0,
-        maturity_level="commercial",
-    ),
-    "atj": PathwayCostBand(
-        pathway_key="atj",
-        name="ATJ",
-        min_usd_per_l=1.3,
-        max_usd_per_l=1.7,
-        midpoint_usd_per_l=1.5,
-        carbon_reduction_pct=65.0,
-        maturity_level="early_commercial",
-    ),
-    "ft": PathwayCostBand(
-        pathway_key="ft",
-        name="Fischer-Tropsch",
-        min_usd_per_l=1.5,
-        max_usd_per_l=2.3,
-        midpoint_usd_per_l=1.9,
-        carbon_reduction_pct=80.0,
-        maturity_level="scaling",
-    ),
-    "ptl": PathwayCostBand(
-        pathway_key="ptl",
-        name="Power-to-Liquid",
-        min_usd_per_l=3.0,
-        max_usd_per_l=5.0,
-        midpoint_usd_per_l=4.0,
-        carbon_reduction_pct=95.0,
-        maturity_level="demonstration",
-    ),
+    **_easa_bands(),
     "fossil_jet_crisis": PathwayCostBand(
         pathway_key="fossil_jet_crisis",
         name="Fossil Jet (Crisis Range)",
