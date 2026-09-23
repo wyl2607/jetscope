@@ -1,0 +1,19 @@
+{
+  "note": "German household electricity prices, transcribed from the named publications. Both include VAT, taxes, levies and the proportional standing charge. BDEW covers new-customer tariffs only (tariff products + basic supply, population-weighted, 3,500 kWh/a); Destatis is the average paid by all private consumers.",
+  "primary": {
+    "eur_per_kwh": 0.370,
+    "period": "2026 Jan–Aug",
+    "published_at": "2026-08-21",
+    "basis": "Average new-customer tariff, 3,500 kWh/a, incl. VAT and standing charge",
+    "source_name": "BDEW-Strompreisanalyse August 2026, p. 4",
+    "source_url": "https://www.bdew.de/media/documents/BDEW_Strompreisanalyse_082026.pdf"
+  },
+  "reference": {
+    "eur_per_kwh": 0.4055,
+    "period": "2025-H2",
+    "published_at": "2026-03-31",
+    "basis": "Average paid by all private consumers, incl. taxes, levies and standing charge",
+    "source_name": "Destatis press release 111/2026: Household electricity prices, 2nd half 2025",
+    "source_url": "https://www.destatis.de/DE/Presse/Pressemitteilungen/2026/03/PD26_111_61243.html"
+  }
+}

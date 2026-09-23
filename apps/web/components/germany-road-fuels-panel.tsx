@@ -1,6 +1,6 @@
 import { Panel } from '@/components/panel';
 import { messagesFor, type Locale } from '@/lib/i18n';
-import type { FuelPumpPrice, RoadFuelsGermany } from '@/lib/road-fuels-read-model';
+import type { ElectricityPrice, FuelPumpPrice, RoadFuelsGermany } from '@/lib/road-fuels-read-model';
 
 function tag(locale: Locale): string {
   return locale === 'de' ? 'de-DE' : locale === 'zh' ? 'zh-CN' : 'en-GB';
@@ -20,6 +20,7 @@ export function GermanyRoadFuelsPanel({ locale, data }: { locale: Locale; data: 
   const copy = messagesFor(locale).road_fuels;
   const pump = data?.pump ?? null;
   const inflation = data?.inflation ?? null;
+  const costs = data?.cost_per_100km ?? null;
   const rows: [string, FuelPumpPrice][] = pump
     ? [
         [copy.euro95, pump.euro95],
@@ -66,6 +67,7 @@ export function GermanyRoadFuelsPanel({ locale, data }: { locale: Locale; data: 
         ) : (
           <p>{copy.pump_missing}</p>
         )}
+        {costs ? <CostPer100km locale={locale} costs={costs} /> : null}
         {inflation ? (
           <p>
             {copy.inflation_body
@@ -82,5 +84,98 @@ export function GermanyRoadFuelsPanel({ locale, data }: { locale: Locale; data: 
         ) : null}
       </div>
     </Panel>
+  );
+}
+
+type Costs = RoadFuelsGermany['cost_per_100km'];
+
+function sourceLine(template: string, price: ElectricityPrice, locale: Locale): string {
+  // Keep the published precision (BDEW 37,0 vs Destatis 40,55 ct/kWh).
+  const cents = Math.round(price.eur_per_kwh * 10000) / 100;
+  return template
+    .replace('{price}', num(cents, locale, Number.isInteger(cents * 10) ? 1 : 2))
+    .replace('{period}', price.period)
+    .replace('{published}', price.published_at);
+}
+
+function CostPer100km({ locale, costs }: { locale: Locale; costs: Costs }) {
+  const copy = messagesFor(locale).road_fuels;
+  const { assumptions, electricity, electricity_reference: reference } = costs;
+  const rows: [string, number, string, number | null][] = [
+    [copy.diesel, assumptions.diesel_l_per_100km, 'L', costs.diesel_eur],
+    [copy.euro95, assumptions.petrol_l_per_100km, 'L', costs.petrol_eur],
+    [copy.ev_home, assumptions.ev_kwh_per_100km, 'kWh', costs.ev_home_eur]
+  ];
+  const fields: [string, string, number, number][] = [
+    ['diesel_l', copy.input_diesel, assumptions.diesel_l_per_100km, 30],
+    ['petrol_l', copy.input_petrol, assumptions.petrol_l_per_100km, 30],
+    ['ev_kwh', copy.input_ev, assumptions.ev_kwh_per_100km, 60]
+  ];
+
+  return (
+    <div className="space-y-3 border-t border-line pt-4">
+      <h3 className="font-semibold text-ink">{copy.cost_title}</h3>
+      <table className="w-full text-left tabular-nums">
+        <thead>
+          <tr className="text-ink">
+            <th className="py-2 pr-4">{copy.col_vehicle}</th>
+            <th className="py-2 pr-4">{copy.col_consumption}</th>
+            <th className="py-2 pr-4">{copy.col_cost_100km}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(([label, amount, unit, cost]) => (
+            <tr key={label}>
+              <td className="py-2 pr-4 text-ink">{label}</td>
+              <td className="py-2 pr-4">
+                {num(amount, locale, 1)} {unit}
+              </td>
+              <td className="py-2 pr-4 text-ink">{cost == null ? '—' : `€${num(cost, locale, 2)}`}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p>{copy.cost_assumption_note}</p>
+      {electricity ? (
+        <p>
+          {sourceLine(copy.electricity_source, electricity, locale)}{' '}
+          <a className="underline" href={electricity.source_url}>
+            {electricity.source_name}
+          </a>
+        </p>
+      ) : (
+        <p>{copy.electricity_missing}</p>
+      )}
+      {reference && costs.ev_home_reference_eur != null ? (
+        <p>
+          {sourceLine(copy.electricity_reference, reference, locale).replace(
+            '{cost}',
+            num(costs.ev_home_reference_eur, locale, 2)
+          )}{' '}
+          <a className="underline" href={reference.source_url}>
+            {reference.source_name}
+          </a>
+        </p>
+      ) : null}
+      <form method="get" className="grid gap-3 sm:grid-cols-4 sm:items-end">
+        {fields.map(([name, label, value, max]) => (
+          <label key={name} className="text-sm text-muted">
+            {label}
+            <input
+              className="mt-1 w-full border border-line bg-surface px-3 py-2 text-ink hover:border-line-strong"
+              type="number"
+              name={name}
+              min={0.1}
+              max={max}
+              step={0.1}
+              defaultValue={value}
+            />
+          </label>
+        ))}
+        <button type="submit" className="border border-line-strong bg-surface px-3 py-2 text-ink hover:border-ink">
+          {copy.recalculate}
+        </button>
+      </form>
+    </div>
   );
 }

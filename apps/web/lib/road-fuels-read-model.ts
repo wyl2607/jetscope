@@ -9,6 +9,21 @@ export type FuelPumpPrice = {
   change_52w_pct: number | null;
 };
 
+export type ElectricityPrice = {
+  eur_per_kwh: number;
+  period: string;
+  published_at: string;
+  basis: string;
+  source_name: string;
+  source_url: string;
+};
+
+export type ConsumptionAssumptions = {
+  diesel_l_per_100km: number;
+  petrol_l_per_100km: number;
+  ev_kwh_per_100km: number;
+};
+
 export type RoadFuelsGermany = {
   generated_at: string;
   pump: {
@@ -32,8 +47,40 @@ export type RoadFuelsGermany = {
     source_name: string;
     source_url: string;
   } | null;
+  cost_per_100km: {
+    assumptions: ConsumptionAssumptions;
+    diesel_eur: number | null;
+    petrol_eur: number | null;
+    ev_home_eur: number | null;
+    ev_home_reference_eur: number | null;
+    electricity: ElectricityPrice | null;
+    electricity_reference: ElectricityPrice | null;
+  };
 };
 
-export async function getRoadFuelsGermany(): Promise<RoadFuelsGermany | null> {
-  return fetchJson<RoadFuelsGermany>('/road-fuels/germany').catch(() => null);
+// Reader-adjustable consumptions carried in the page URL (?diesel_l=&petrol_l=&ev_kwh=).
+// Bounds mirror the API's Query limits; anything else falls back to the API default.
+const CONSUMPTION_PARAMS = [
+  ['diesel_l', 'diesel_l_per_100km', 30],
+  ['petrol_l', 'petrol_l_per_100km', 30],
+  ['ev_kwh', 'ev_kwh_per_100km', 60]
+] as const;
+
+export type SearchParams = Record<string, string | string[] | undefined>;
+
+export function consumptionQuery(searchParams: SearchParams | undefined): string {
+  const query = new URLSearchParams();
+  for (const [param, apiName, max] of CONSUMPTION_PARAMS) {
+    const raw = searchParams?.[param];
+    const value = Number(Array.isArray(raw) ? raw[0] : raw);
+    if (raw != null && Number.isFinite(value) && value > 0 && value <= max) {
+      query.set(apiName, String(value));
+    }
+  }
+  const text = query.toString();
+  return text ? `?${text}` : '';
+}
+
+export async function getRoadFuelsGermany(searchParams?: SearchParams): Promise<RoadFuelsGermany | null> {
+  return fetchJson<RoadFuelsGermany>(`/road-fuels/germany${consumptionQuery(searchParams)}`).catch(() => null);
 }

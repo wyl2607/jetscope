@@ -346,7 +346,20 @@
     "col_52w": "52 周",
     "pump_source": "{week} 当周全国均价，来源：",
     "pump_missing": "暂未取得欧盟 Weekly Oil Bulletin 数据；不显示估算值。",
-    "inflation_body": "{period} 德国 CPI 同比 {cpi}%，其中机动车燃料同比 {fuels}%、权重 {weight}‰，静态估算直接贡献约 {contribution} 个百分点；剔除取暖油和燃料后 CPI 为 {ex}%。（贡献为权重×涨幅的一阶估算，非官方分解）来源："
+    "inflation_body": "{period} 德国 CPI 同比 {cpi}%，其中机动车燃料同比 {fuels}%、权重 {weight}‰，静态估算直接贡献约 {contribution} 个百分点；剔除取暖油和燃料后 CPI 为 {ex}%。（贡献为权重×涨幅的一阶估算，非官方分解）来源：",
+    "cost_title": "每 100 公里成本：柴油 vs 汽油 vs 电车（家庭充电）",
+    "col_vehicle": "车型",
+    "col_consumption": "能耗（假设）",
+    "col_cost_100km": "每 100 公里成本",
+    "ev_home": "电动车，家庭充电",
+    "cost_assumption_note": "能耗是可修改的示例假设，不是实测数据；电车指从电网取电量（含充电损耗）。燃油成本使用上方本周含税油价；不含公共快充，因为没有可核实的公开价格来源。",
+    "electricity_source": "家庭电价 {price} ct/kWh（{period}，发布于 {published}）。来源：",
+    "electricity_reference": "参考：全体家庭平均电价 {price} ct/kWh（{period}，发布于 {published}），对应每 100 公里 €{cost}。来源：",
+    "electricity_missing": "尚未加载有来源的家庭电价，不显示电车成本。",
+    "input_diesel": "柴油，L/100 km",
+    "input_petrol": "汽油（E95），L/100 km",
+    "input_ev": "电车，kWh/100 km",
+    "recalculate": "重新计算"
   },
   "prices": {
     "meta_title": "德国航油价格",

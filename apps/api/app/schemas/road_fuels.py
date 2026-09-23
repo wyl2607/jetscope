@@ -35,7 +35,36 @@ class CpiPassThrough(BaseModel):
     source_url: str
 
 
+class ElectricityPrice(BaseModel):
+    eur_per_kwh: float
+    period: str
+    published_at: date
+    basis: str
+    source_name: str
+    source_url: str
+
+
+class ConsumptionAssumptions(BaseModel):
+    # Reader-adjustable examples, not measured data.
+    diesel_l_per_100km: float
+    petrol_l_per_100km: float
+    ev_kwh_per_100km: float
+
+
+class CostPer100km(BaseModel):
+    assumptions: ConsumptionAssumptions
+    # Diesel uses the diesel pump price, petrol the Euro-super 95 one (both incl. tax).
+    diesel_eur: float | None
+    petrol_eur: float | None
+    # Home charging only: no public fast-charging price with a verifiable public source.
+    ev_home_eur: float | None
+    ev_home_reference_eur: float | None
+    electricity: ElectricityPrice | None
+    electricity_reference: ElectricityPrice | None
+
+
 class RoadFuelsGermanyResponse(BaseModel):
     generated_at: datetime
     pump: PumpPrices | None
     inflation: CpiPassThrough | None
+    cost_per_100km: CostPer100km
