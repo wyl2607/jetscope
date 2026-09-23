@@ -1,6 +1,6 @@
 # Fuel Complex & SAF market layer (2026-09)
 
-Status: Phase A in progress. Owner: Claude (design/review), user (merge/deploy).
+Status: Phase A A0–A3 live (98bbdf3); A4 in review. Owner: Claude (design/review), user (merge/deploy).
 
 ## Goal
 
@@ -53,7 +53,7 @@ changes, with every number dated and sourced.
 | A1 | history never publishes seed/missing rows as latest | #377 |
 | A2 | SAF market layer: `data/curated/market/saf_market_prices.json` + loader; buyer cost for HEFA = market reference when one exists, production cost otherwise; `market_check` block on tipping-point; headline `signal` and engine events use buyer cost | #378 |
 | A3 | Carbon: compliance value = zero-rating (2.5 kg/L × EUA) everywhere; `carbon_reduction_pct` stays an LCA figure with no money attached | #378 |
-| A4 | Jet crack from same-date EIA spot table (Brent + Gulf jet); EU proxy uses the actual ratio when both are observed that day, fixed 1.20 only as fallback | next |
+| A4 | Jet crack from same-date EIA spot table (Brent + Gulf jet); EU proxy uses the actual ratio when both are observed that day, fixed 1.20 only as fallback (ratio used while ≤ 21 days old; 2026-09-23: 1.51, EU proxy 0.867 → 1.092 USD/L) | this branch |
 
 Done when: with the production inputs above, the tipping-point signal is not
 `switch_window_opening`, the engine emits no HEFA CROSSOVER, the response

@@ -221,3 +221,68 @@ def test_jet_ingest_falls_back_to_eia_when_fred_fails(monkeypatch: pytest.Monkey
     assert jet["source"] == "eia"
     assert jet["status"] == "ok"
     assert jet["observed_at"].startswith("2026-09-14")
+
+
+EIA_SPOT_WITH_BRENT_HTML = """
+<tr> <th class="Series5">09/14/26</th> <th class="Series5">09/15/26</th> <th class="Series5">09/16/26</th> </tr>
+<tr class="DataRow"> <td class="DataStub"> <table class="data2"> <tr>
+<td class="DataStub1">Brent - Europe</td> </tr> </table> </td>
+<td class="DataB">121.25</td> <td class="DataB">130.80</td> <td class="Current2">128.00</td> </tr>
+<tr class="DataRow"> <td class="DataStub2">Kerosene-Type Jet Fuel<br> </td> </tr>
+<tr class="DataRow"> <td class="DataStub"> <table class="data2"> <tr>
+<td class="DataStub1">U.S. Gulf Coast</td> </tr> </table> </td>
+<td class="DataB">4.488</td> <td class="DataB">4.705</td> <td class="Current2">NA</td> </tr>
+"""
+
+
+def test_jet_brent_ratio_uses_latest_day_eia_prints_both() -> None:
+    ratio, day = market._parse_eia_spot_jet_brent_ratio(EIA_SPOT_WITH_BRENT_HTML)
+
+    assert day == datetime(2026, 9, 15, tzinfo=UTC)
+    assert ratio == pytest.approx((4.705 / market.LITERS_PER_US_GALLON) / (130.80 / market.LITERS_PER_BARREL))
+
+
+def test_jet_eu_proxy_uses_same_day_ratio_instead_of_fixed_multiplier(monkeypatch: pytest.MonkeyPatch) -> None:
+    # 2026-09-23: EIA Gulf jet/Brent was 1.51; the fixed 1.20 put the EU proxy at
+    # 0.867 USD/L while US Gulf jet traded at 1.243.
+    monkeypatch.setattr(market, "_fetch_text", lambda _url: (_ for _ in ()).throw(RuntimeError("ARA down")))
+    details: dict[str, object] = {"sources": {}}
+    observed = datetime(2026, 9, 15, tzinfo=UTC)
+
+    result = market._ingest_jet_eu_market_value(
+        details,
+        brent_value=114.89,
+        seed_by_key={},
+        jet_brent_ratio=(1.5108, observed),
+    )
+
+    detail = details["sources"]["jet_eu_proxy"]
+    assert result == round(114.89 / market.LITERS_PER_BARREL * 1.5108, 3)
+    assert detail["jet_brent_ratio"] == pytest.approx(1.5108)
+    assert "1.511" in detail["method"] and "2026-09-15" in detail["method"]
+
+    now = datetime.now(UTC)
+    sources = {
+        "brent": {"source": "eia", "status": "ok", "quality": "observed", "value": 114.89, "observed_at": now.isoformat()},
+        "jet_eu_proxy": detail,
+        "rotterdam_jet_fuel": {"source": "rotterdam-jet-direct", "status": "error", "quality": "missing"},
+    }
+    engine = create_engine("sqlite:///:memory:", future=True)
+    Base.metadata.create_all(bind=engine)
+    with Session(engine) as db:
+        _values, published = market._apply_public_quote_policy(db, sources, now=now)
+        # The snapshot endpoint re-publishes the persisted run on every read.
+        _values, republished = market._apply_public_quote_policy(db, published, now=now)
+
+    for result in (published, republished):
+        for key in ("jet_eu_proxy", "rotterdam_jet_fuel"):
+            assert result[key]["status"] == "estimated"
+            assert result[key]["value"] == round(114.89 / market.LITERS_PER_BARREL * 1.5108, 3)
+            assert "1.511" in result[key]["method"]
+
+
+def test_stale_jet_brent_ratio_falls_back_to_fixed_multiplier(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(market, "_fetch_text", lambda _url: EIA_SPOT_WITH_BRENT_HTML)
+    monkeypatch.setattr(market, "utcnow", lambda: datetime(2026, 10, 30, tzinfo=UTC))
+
+    assert market._ingest_jet_brent_ratio() is None
