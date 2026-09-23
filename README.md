@@ -117,7 +117,7 @@ repository stays reproducible without credentials.
 More detail lives in `docs/API_CONTRACT_V1.md`, `docs/DATA_CONTRACT_V1.md`, `docs/AI_PIPELINE.md`, and `docs/REFACTORING_STRATEGY.md`.
 The grid LCOE and dual-domain crossover methodology lives in `docs/GRID_LCOE_METHODOLOGY.md`.
 
-Contributor and maintainer documents live in `CONTRIBUTING.md`, `MAINTAINERS.md`, `SECURITY.md`, `ROADMAP.md`, `CHANGELOG.md`, and `docs/MAINTENANCE_LOG.md`.
+Contributor and maintainer documents live in `CONTRIBUTING.md`, `MAINTAINERS.md`, `SECURITY.md`, `ROADMAP.md`, `CHANGELOG.md`, and `docs/archive/MAINTENANCE_LOG.md`.
 
 ### Localized Frontend Entrypoints
 

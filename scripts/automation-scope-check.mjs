@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
-const defaultPlanPath = 'docs/automation-safe-local-task-example.json';
+const defaultPlanPath = 'docs/archive/automation-safe-local-task-example.json';
 
 function fail(message) {
   console.error(message);
