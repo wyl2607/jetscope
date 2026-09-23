@@ -108,6 +108,13 @@ class MockSession:
         self.committed = True
 
 
+@pytest.fixture(autouse=True)
+def production_cost_basis(monkeypatch: pytest.MonkeyPatch) -> None:
+    # These cases do arithmetic on the production-cost band; the market-reference
+    # path has its own test below.
+    monkeypatch.setattr("app.services.analysis.saf_market.latest_saf_market_reference", lambda: None)
+
+
 @pytest.fixture
 def now() -> datetime:
     return datetime(2026, 4, 23, 12, 0, tzinfo=timezone.utc)
@@ -135,11 +142,11 @@ def test_evaluate_emits_crossover_for_positive_gap(now: datetime) -> None:
 def test_evaluate_uses_usable_market_carbon_price(now: datetime, monkeypatch: pytest.MonkeyPatch) -> None:
     captured: list[float] = []
 
-    def fake_effective_saf_cost(pathway: str, *, carbon_price_eur_per_t: float) -> float:
+    def fake_carbon_credit(carbon_price_eur_per_t: float) -> float:
         captured.append(carbon_price_eur_per_t)
-        return 1.25
+        return 0.0
 
-    monkeypatch.setattr("app.services.analysis.tipping_point.effective_saf_cost", fake_effective_saf_cost)
+    monkeypatch.setattr("app.services.analysis.tipping_point.carbon_credit_usd_per_l", fake_carbon_credit)
     session = MockSession(
         fossil_price=1.40,
         carbon_row=(82.5, {"quality": "stale", "observed_at": "2026-04-23T11:00:00+00:00"}),
@@ -155,12 +162,12 @@ def test_evaluate_uses_usable_market_carbon_price(now: datetime, monkeypatch: py
 def test_evaluate_skips_when_carbon_input_is_missing(now: datetime, monkeypatch: pytest.MonkeyPatch) -> None:
     called = False
 
-    def fake_effective_saf_cost(pathway: str, *, carbon_price_eur_per_t: float) -> float:
+    def fake_carbon_credit(carbon_price_eur_per_t: float) -> float:
         nonlocal called
         called = True
-        return 1.25
+        return 0.0
 
-    monkeypatch.setattr("app.services.analysis.tipping_point.effective_saf_cost", fake_effective_saf_cost)
+    monkeypatch.setattr("app.services.analysis.tipping_point.carbon_credit_usd_per_l", fake_carbon_credit)
     session = MockSession(fossil_price=1.40, carbon_row=None)
 
     events = TippingPointEngine().evaluate(now=now, db=session)
@@ -289,3 +296,32 @@ def test_evaluate_falls_back_to_fresh_proxy_when_rotterdam_expired(now: datetime
     assert hefa_event is not None
     assert hefa_event.event_type == "CROSSOVER"
     assert hefa_event.fossil_price == pytest.approx(1.40)
+
+
+def test_hefa_uses_market_reference_not_production_seed(now: datetime, monkeypatch: pytest.MonkeyPatch) -> None:
+    # Production inputs 2026-09-23: jet 1.243 USD/L live, EUA 85.53. Against the
+    # 1.25 production seed HEFA read as CROSSOVER; buyers paid ~1,925 EUR/t (EASA 2025).
+    from datetime import date
+
+    from app.services.analysis import saf_market
+
+    reference = saf_market.SafMarketReference(
+        reference_id="easa-2025",
+        kind="realized_average",
+        region="EU",
+        period="2025",
+        published_at=date(2026, 9, 17),
+        saf_eur_per_t=1925.0,
+        source_name="EASA",
+        source_url="https://www.easa.europa.eu/",
+    )
+    monkeypatch.setattr(saf_market, "latest_saf_market_reference", lambda: reference)
+    session = MockSession(
+        fossil_price=1.243,
+        carbon_row=(85.53, {"quality": "observed", "observed_at": "2026-04-23T11:00:00+00:00"}),
+    )
+
+    hefa_event = _event_for_pathway(TippingPointEngine().evaluate(now=now, db=session), "hefa")
+
+    # 1.243 − (1.761 − 0.245 ETS) = −0.27 USD/L: not even an ALERT.
+    assert hefa_event is None

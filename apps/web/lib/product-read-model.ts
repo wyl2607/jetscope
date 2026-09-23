@@ -107,7 +107,26 @@ export type TippingPointResponse = {
   };
   effective_fossil_jet_usd_per_l: number;
   pathways: TippingPointPathway[];
+  market_check?: SafMarketCheck | null;
   signal: string;
+  signal_basis?: 'market_reference' | 'production_cost';
+};
+
+// Dated SAF purchase price vs fossil jet plus its EU ETS cost (API SafMarketCheck).
+export type SafMarketCheck = {
+  reference_id: string;
+  kind: string;
+  region: string;
+  period: string;
+  published_at: string;
+  source_name: string;
+  source_url: string;
+  pathway_key: string;
+  saf_eur_per_t: number;
+  saf_usd_per_l: number;
+  fossil_with_ets_usd_per_l: number;
+  premium_pct: number;
+  status: 'competitive' | 'inflection' | 'premium';
 };
 
 export type AirlineDecisionResponse = {

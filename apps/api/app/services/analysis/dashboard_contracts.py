@@ -3,12 +3,15 @@ from app.schemas.analysis import (
     AirlineDecisionInputs,
     AirlineDecisionResponse,
     PathwayTippingPoint,
+    SafMarketCheck,
     TippingPointAssessment,
     TippingPointInputs,
     TippingPointResponse,
 )
 from app.schemas.reserves import ReserveSignalResponse
 from app.services.analysis.breakeven import EUR_TO_USD, FOSSIL_JET_EMISSIONS_KG_PER_L, compute_tipping_point
+from app.services.analysis.pathway_costs import carbon_credit_usd_per_l
+from app.services.analysis.saf_market import MARKET_REFERENCE_PATHWAY, latest_saf_market_reference
 from app.services.analysis.decision_matrix import compute_airline_decision
 from app.services.analysis.pathway_costs import get_pathway_cost, list_pathway_costs
 from app.services.analysis.reserve_stress import get_eu_reserve_stress
@@ -53,6 +56,30 @@ def _pathway_row(
     )
 
 
+def _saf_market_check(fossil_jet_usd_per_l: float, carbon_price_eur_per_t: float) -> SafMarketCheck | None:
+    reference = latest_saf_market_reference()
+    if reference is None:
+        return None
+    # Per litre, independent of blend: SAF is zero-rated, fossil jet carries its ETS cost.
+    fossil_with_ets = fossil_jet_usd_per_l + carbon_credit_usd_per_l(carbon_price_eur_per_t)
+    saf_usd_per_l = reference.saf_usd_per_l
+    return SafMarketCheck(
+        reference_id=reference.reference_id,
+        kind=reference.kind,
+        region=reference.region,
+        period=reference.period,
+        published_at=reference.published_at,
+        source_name=reference.source_name,
+        source_url=reference.source_url,
+        pathway_key=MARKET_REFERENCE_PATHWAY,
+        saf_eur_per_t=reference.saf_eur_per_t,
+        saf_usd_per_l=round(saf_usd_per_l, 4),
+        fossil_with_ets_usd_per_l=round(fossil_with_ets, 4),
+        premium_pct=round((saf_usd_per_l - fossil_with_ets) / fossil_with_ets * 100.0, 2),
+        status=_pathway_status(fossil_with_ets, saf_usd_per_l, saf_usd_per_l),
+    )
+
+
 def build_tipping_point_response(
     *,
     fossil_jet_usd_per_l: float,
@@ -80,9 +107,18 @@ def build_tipping_point_response(
         for pathway_key in pathway_keys
     ]
 
-    if any(pathway.status == "competitive" for pathway in pathways):
+    market_check = _saf_market_check(fossil_jet_usd_per_l, carbon_price_eur_per_t)
+    if market_check is not None:
+        # What airlines actually pay decides the headline; production-cost bands
+        # stay in `pathways` as the investment view.
+        statuses = [market_check.status]
+        signal_basis = "market_reference"
+    else:
+        statuses = [pathway.status for pathway in pathways]
+        signal_basis = "production_cost"
+    if "competitive" in statuses:
         signal = "saf_cost_advantaged"
-    elif any(pathway.status == "inflection" for pathway in pathways):
+    elif "inflection" in statuses:
         signal = "switch_window_opening"
     else:
         signal = "fossil_still_advantaged"
@@ -97,7 +133,9 @@ def build_tipping_point_response(
         ),
         effective_fossil_jet_usd_per_l=round(effective_fossil, 4),
         pathways=pathways,
+        market_check=market_check,
         signal=signal,
+        signal_basis=signal_basis,
     )
 
 

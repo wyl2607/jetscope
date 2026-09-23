@@ -1284,6 +1284,11 @@
     ]
   },
   "tipping_point_report": {
+    "market_title": "SAF 采购价 vs 化石航油",
+    "market_why": "上面的信号按航空公司实际采购 SAF 的价格判断；各路线的数字是生产成本假设，不是采购价。",
+    "market_body": "SAF 采购参考价 {saf}（{source}，{period} 年均价，{published} 发布），化石航油含 EU ETS 成本 {fossil}，溢价 {premium}。",
+    "market_missing": "暂无带日期的 SAF 采购价参考，信号按生产成本假设计算。",
+    "market_basis_production": "下方路线成本：生产成本假设（人工录入，非市场成交价）。",
     "meta_title": "临界点报告",
     "meta_description": "以数据支撑的 JetScope 报告页，解释欧洲航油压力与 SAF 切换经济性。",
     "eyebrow": "报告页",

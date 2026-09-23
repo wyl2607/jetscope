@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.models.tables import MarketSnapshot, TippingEvent
 from app.services.analysis.breakeven import compute_breakeven_oil_price
-from app.services.analysis.pathway_costs import effective_saf_cost
+from app.services.analysis.pathway_costs import carbon_credit_usd_per_l
+from app.services.analysis.saf_market import saf_buyer_cost_usd_per_l
 from app.services.market_quality import SIGNAL_QUALITIES
 
 TippingEventType = Literal["CRITICAL", "ALERT", "CROSSOVER"]
@@ -35,7 +36,8 @@ class TippingPointEngine:
 
         events: list[TippingEvent] = []
         for pathway in self.PATHWAY_PRIORITY:
-            saf_effective = effective_saf_cost(pathway, carbon_price_eur_per_t=carbon_price)
+            saf_cost, saf_cost_basis = saf_buyer_cost_usd_per_l(pathway)
+            saf_effective = saf_cost - carbon_credit_usd_per_l(carbon_price)
             gap = fossil_price - saf_effective
             event_type = self._event_type_for_gap(gap)
             if event_type is None:
@@ -61,6 +63,7 @@ class TippingPointEngine:
                         "jet_proxy_slope": self.JET_PROXY_SLOPE,
                         "jet_proxy_intercept": self.JET_PROXY_INTERCEPT,
                         "carbon_price_eur_per_t": round(float(carbon_price), 4),
+                        "saf_cost_basis": saf_cost_basis,
                     },
                 )
             )

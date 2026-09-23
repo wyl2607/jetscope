@@ -2393,6 +2393,12 @@
       },
       "PathwayTippingPoint": {
         "properties": {
+          "cost_basis": {
+            "const": "production_cost",
+            "default": "production_cost",
+            "title": "Cost Basis",
+            "type": "string"
+          },
           "display_name": {
             "title": "Display Name",
             "type": "string"
@@ -3045,6 +3051,89 @@
         "title": "RouteEditPayload",
         "type": "object"
       },
+      "SafMarketCheck": {
+        "description": "Dated SAF purchase price against fossil jet plus its EU ETS cost.",
+        "properties": {
+          "fossil_with_ets_usd_per_l": {
+            "exclusiveMinimum": 0.0,
+            "title": "Fossil With Ets Usd Per L",
+            "type": "number"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "pathway_key": {
+            "title": "Pathway Key",
+            "type": "string"
+          },
+          "period": {
+            "title": "Period",
+            "type": "string"
+          },
+          "premium_pct": {
+            "title": "Premium Pct",
+            "type": "number"
+          },
+          "published_at": {
+            "format": "date",
+            "title": "Published At",
+            "type": "string"
+          },
+          "reference_id": {
+            "title": "Reference Id",
+            "type": "string"
+          },
+          "region": {
+            "title": "Region",
+            "type": "string"
+          },
+          "saf_eur_per_t": {
+            "exclusiveMinimum": 0.0,
+            "title": "Saf Eur Per T",
+            "type": "number"
+          },
+          "saf_usd_per_l": {
+            "exclusiveMinimum": 0.0,
+            "title": "Saf Usd Per L",
+            "type": "number"
+          },
+          "source_name": {
+            "title": "Source Name",
+            "type": "string"
+          },
+          "source_url": {
+            "title": "Source Url",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "competitive",
+              "inflection",
+              "premium"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reference_id",
+          "kind",
+          "region",
+          "period",
+          "published_at",
+          "source_name",
+          "source_url",
+          "pathway_key",
+          "saf_eur_per_t",
+          "saf_usd_per_l",
+          "fossil_with_ets_usd_per_l",
+          "premium_pct",
+          "status"
+        ],
+        "title": "SafMarketCheck",
+        "type": "object"
+      },
       "ScenarioCreate": {
         "properties": {
           "name": {
@@ -3448,6 +3537,16 @@
           "inputs": {
             "$ref": "#/components/schemas/TippingPointInputs"
           },
+          "market_check": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SafMarketCheck"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "pathways": {
             "items": {
               "$ref": "#/components/schemas/PathwayTippingPoint"
@@ -3463,6 +3562,14 @@
             ],
             "title": "Signal",
             "type": "string"
+          },
+          "signal_basis": {
+            "enum": [
+              "market_reference",
+              "production_cost"
+            ],
+            "title": "Signal Basis",
+            "type": "string"
           }
         },
         "required": [
@@ -3470,7 +3577,8 @@
           "inputs",
           "effective_fossil_jet_usd_per_l",
           "pathways",
-          "signal"
+          "signal",
+          "signal_basis"
         ],
         "title": "TippingPointResponse",
         "type": "object"

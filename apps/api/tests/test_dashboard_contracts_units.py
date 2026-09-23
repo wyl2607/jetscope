@@ -30,6 +30,7 @@ def test_tipping_point_response_orders_known_pathways_and_sets_advantaged_signal
     unknown = _pathway("unknown", "Unknown", 0.50, 0.60)
 
     monkeypatch.setattr(contracts, "list_pathway_costs", lambda: [ptl, unknown, hefa])
+    monkeypatch.setattr(contracts, "latest_saf_market_reference", lambda: None)
 
     def fake_compute_tipping_point(**kwargs):
         pathway = {"hefa": hefa, "ptl": ptl}[kwargs["pathway_key"]]
@@ -63,6 +64,29 @@ def test_tipping_point_response_orders_known_pathways_and_sets_advantaged_signal
     assert response.pathways[0].status == "competitive"
     assert response.pathways[0].spread_low_pct == pytest.approx(-10.0)
     assert response.signal == "saf_cost_advantaged"
+    assert response.signal_basis == "production_cost"
+    assert response.market_check is None
+
+
+def test_market_reference_decides_the_headline_over_production_bands() -> None:
+    # Production 2026-09-23 inputs: EU jet proxy 0.877 USD/L, EUA 85.53 EUR/t.
+    # Production bands alone returned switch_window_opening (HEFA "inflection").
+    response = contracts.build_tipping_point_response(
+        fossil_jet_usd_per_l=0.877,
+        carbon_price_eur_per_t=85.53,
+        subsidy_usd_per_l=0.0,
+        blend_rate_pct=0.0,
+    )
+
+    check = response.market_check
+    assert check is not None
+    assert check.reference_id == "easa-refueleu-atr-2026-avg-2025"
+    assert check.saf_usd_per_l == pytest.approx(1925 / 1250 * 1.1435, abs=1e-4)
+    assert check.fossil_with_ets_usd_per_l == pytest.approx(0.877 + 85.53 * 1.1435 * 0.0025, abs=1e-4)
+    assert check.status == "premium"
+    assert response.signal == "fossil_still_advantaged"
+    assert response.signal_basis == "market_reference"
+    assert {row.cost_basis for row in response.pathways} == {"production_cost"}
 
 
 def test_airline_decision_response_uses_real_signal_mapping_and_preserves_inputs(monkeypatch) -> None:

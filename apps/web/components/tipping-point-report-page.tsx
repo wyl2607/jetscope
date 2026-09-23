@@ -13,7 +13,8 @@ import { getEuReserveCoverage, getTippingPointEvents } from '@/lib/portfolio-rea
 import {
   getDashboardReadModel,
   toTippingPointReadModel,
-  type DashboardReadModel
+  type DashboardReadModel,
+  type SafMarketCheck
 } from '@/lib/product-read-model';
 import { AI_RESEARCH_ENABLED, buildResearchDecisionBrief, getResearchSignals } from '@/lib/research-signals-read-model';
 import type { Route } from 'next';
@@ -134,6 +135,22 @@ function formatPercent(
 ): string {
   if (!Number.isFinite(value ?? NaN)) return unavailable;
   return `${Number(value).toFixed(0)}%`;
+}
+
+function marketCheckText(
+  check: SafMarketCheck | null,
+  locale: Locale,
+  copy: TippingPointReportMessages
+): string {
+  if (!check) return copy.market_missing;
+  const premium = `${check.premium_pct >= 0 ? '+' : ''}${check.premium_pct.toFixed(0)}%`;
+  return copy.market_body
+    .replace('{saf}', `${formatNumber(check.saf_eur_per_t, locale, 0, copy.number_unavailable)} EUR/t ≈ ${formatPrice(check.saf_usd_per_l, locale, copy.number_unavailable)}`)
+    .replace('{source}', check.source_name)
+    .replace('{period}', check.period)
+    .replace('{published}', check.published_at)
+    .replace('{fossil}', formatPrice(check.fossil_with_ets_usd_per_l, locale, copy.number_unavailable))
+    .replace('{premium}', premium);
 }
 
 function sourceStatusLabel(status: string, copy: TippingPointReportMessages): string {
@@ -386,6 +403,13 @@ export async function TippingPointReportPage({ locale }: { locale: Locale }) {
             />
           </div>
         )}
+      </Panel>
+
+      <Panel locale={locale} title={copy.market_title} why={copy.market_why}>
+        <div className="space-y-4 text-sm leading-7 text-muted">
+          <p>{marketCheckText(readModel.tippingPoint?.market_check ?? null, locale, copy)}</p>
+          <p>{copy.market_basis_production}</p>
+        </div>
       </Panel>
 
       {features.reservesStrip ? (

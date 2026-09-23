@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -11,6 +11,7 @@ BreakevenStatus = Literal["uneconomic", "inflection", "marginal_switch", "domina
 TippingPointSignal = Literal["saf_cost_advantaged", "switch_window_opening", "fossil_still_advantaged"]
 AirlineDecisionSignal = Literal["switch_window_opening", "capacity_stress_dominant", "incremental_adjustment"]
 TippingEventType = Literal["CRITICAL", "ALERT", "CROSSOVER"]
+SafCostBasis = Literal["market_reference", "production_cost"]
 
 
 class PathwayCostBand(BaseModel):
@@ -74,6 +75,25 @@ class PathwayTippingPoint(BaseModel):
     spread_low_pct: float
     spread_high_pct: float
     status: Literal["competitive", "inflection", "premium"]
+    cost_basis: Literal["production_cost"] = "production_cost"
+
+
+class SafMarketCheck(BaseModel):
+    """Dated SAF purchase price against fossil jet plus its EU ETS cost."""
+
+    reference_id: str
+    kind: str
+    region: str
+    period: str
+    published_at: date
+    source_name: str
+    source_url: str
+    pathway_key: str
+    saf_eur_per_t: float = Field(gt=0)
+    saf_usd_per_l: float = Field(gt=0)
+    fossil_with_ets_usd_per_l: float = Field(gt=0)
+    premium_pct: float
+    status: Literal["competitive", "inflection", "premium"]
 
 
 class TippingPointResponse(BaseModel):
@@ -81,7 +101,9 @@ class TippingPointResponse(BaseModel):
     inputs: TippingPointInputs
     effective_fossil_jet_usd_per_l: float = Field(gt=0)
     pathways: list[PathwayTippingPoint]
+    market_check: SafMarketCheck | None = None
     signal: TippingPointSignal
+    signal_basis: SafCostBasis
 
 
 class AirlineDecisionInputs(BaseModel):
