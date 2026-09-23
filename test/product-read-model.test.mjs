@@ -1018,7 +1018,7 @@ test('reports landing page is a live report workbench instead of a static index'
   assert.match(zh.source.label, /来源状态/);
   assert.match(zh.scenarios.label, /情景数量/);
   assert.match(zh.actions.review_sources.label, /复核来源/);
-  assert.match(zhPage, /dynamic = 'force-dynamic'/);
+  assert.match(zhPage, /revalidate = 300/);
   assert.match(zhPage, /报告工作台/);
   assert.match(zhPage, /locale="zh"/);
   assert.match(page, /getDashboardReadModel\(locale\)/);

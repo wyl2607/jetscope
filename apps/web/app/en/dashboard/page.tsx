@@ -2,7 +2,7 @@ import { DashboardPage } from '@/components/dashboard-page';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
 export const metadata: Metadata = buildPageMetadata({
   title: 'Decision Cockpit',

@@ -10,7 +10,7 @@ import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata, Route } from 'next';
 import Link from 'next/link';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
 export const metadata: Metadata = buildPageMetadata({
   title: 'EU 航油储备危机监测',
