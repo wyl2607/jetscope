@@ -328,18 +328,26 @@ echo "cwd=\$(pwd)"
 echo "deployed_commit=\$(cat .deploy-commit 2>/dev/null || echo unknown)"
 test -f data/curated/lufthansa_q2_2026.json && echo "OK curated LH event present" || echo "MISSING curated LH event"
 
-if curl -fsS --max-time 8 http://127.0.0.1:8000/v1/health >/dev/null 2>&1; then
-  echo "API health OK"
-  curl -fsS --max-time 8 http://127.0.0.1:8000/v1/market/health | head -c 500 || echo "market/health not yet deployed"
-  echo
-  curl -fsS --max-time 8 http://127.0.0.1:8000/v1/events/lufthansa-q2-2026-earnings | head -c 300 || echo "events route not yet deployed"
-  echo
-  curl -fsS --max-time 8 http://127.0.0.1:8000/v1/reserves/eu | head -c 300 || true
-  echo
-else
-  echo "API not healthy on :8000 — start/rebuild with: bash scripts/deploy-usa-vps.sh --rebuild"
-  exit 1
-fi
+attempt=0
+max_attempts=30
+while [ \$attempt -lt \$max_attempts ]; do
+  attempt=\$((attempt + 1))
+  if curl -fsS --max-time 5 http://127.0.0.1:8000/v1/health >/dev/null 2>&1; then
+    echo "API health OK after \$attempt attempt(s)"
+    curl -fsS --max-time 8 http://127.0.0.1:8000/v1/market/health | head -c 500 || echo "market/health not yet deployed"
+    echo
+    curl -fsS --max-time 8 http://127.0.0.1:8000/v1/events/lufthansa-q2-2026-earnings | head -c 300 || echo "events route not yet deployed"
+    echo
+    curl -fsS --max-time 8 http://127.0.0.1:8000/v1/reserves/eu | head -c 300 || true
+    echo
+    break
+  fi
+  if [ \$attempt -eq \$max_attempts ]; then
+    echo "API not healthy on :8000 — start/rebuild with: bash scripts/deploy-usa-vps.sh --rebuild"
+    exit 1
+  fi
+  sleep 2
+done
 
 # --- Web -------------------------------------------------------------------
 # A status code proves nothing here. Every page is force-dynamic and fetches on
