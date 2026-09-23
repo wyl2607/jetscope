@@ -1,4 +1,5 @@
 import { MetricCard } from '@/components/cards';
+import { FeedstockSqueezePanel } from '@/components/feedstock-squeeze-panel';
 import { FuelVsSafPriceChart } from '@/components/fuel-vs-saf-price-chart';
 import { PageTemplate, SignalRow } from '@/components/page-template';
 import { Panel } from '@/components/panel';
@@ -6,6 +7,7 @@ import { ResearchDecisionBriefCard } from '@/components/research-decision-brief'
 import { ReservesCoverageStrip } from '@/components/reserves-coverage-strip';
 import { SourceFooter } from '@/components/source-footer';
 import { TippingEventTimeline } from '@/components/tipping-event-timeline';
+import { getFeedstockSqueeze } from '@/lib/feedstock-read-model';
 import { assumed, derived, missing, observed, type Figure } from '@/lib/figure';
 import { messagesFor, type Locale, type TippingPointReportMessages } from '@/lib/i18n';
 import { NAV_ENTRIES } from '@/lib/navigation';
@@ -329,11 +331,12 @@ function HighlightedCopy({
 export async function TippingPointReportPage({ locale }: { locale: Locale }) {
   const copy = messagesFor(locale).tipping_point_report;
   const features = featuresFor(locale);
-  const [readModel, reserve, events, research] = await Promise.all([
+  const [readModel, reserve, events, research, feedstock] = await Promise.all([
     getDashboardReadModel(locale),
     getEuReserveCoverage(),
     getTippingPointEvents({ since: isoDaysAgo(42), limit: 20 }),
-    getResearchSignals()
+    getResearchSignals(),
+    getFeedstockSqueeze()
   ]);
   const allowance = allowanceText(
     readModel.tippingPoint?.market_check ?? null,
@@ -450,6 +453,8 @@ export async function TippingPointReportPage({ locale }: { locale: Locale }) {
           <p>{copy.market_basis_production}</p>
         </div>
       </Panel>
+
+      <FeedstockSqueezePanel locale={locale} data={feedstock} />
 
       {features.reservesStrip ? (
         <Panel locale={locale} title={copy.reserves_title} why={copy.reserves_why}>
