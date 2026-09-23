@@ -60,6 +60,9 @@ LITERS_PER_METRIC_TON_JET = 1000.0 / JET_FUEL_REFERENCE_DENSITY_KG_PER_L
 # EU jet proxy = Brent (USD/bbl -> USD/L) * premium factor.
 # Premium approximates jet crack + ARA/Europe logistics basis in one stable multiplier.
 EU_JET_PROXY_BRENT_PREMIUM_MULTIPLIER = 1.20
+# A same-day EIA jet/Brent ratio replaces the fixed multiplier while it is this fresh.
+# EIA's spot table lags about a week; a crack spread moves slower than that.
+JET_BRENT_RATIO_MAX_AGE_DAYS = 21
 # Deterministic seed baselines refreshed from public spot references (2026-07-17):
 # - Brent: Yahoo Finance BZ=F close (~87 USD/bbl)
 # - EUR/USD: ECB eurofxref daily (1.1435)
@@ -157,14 +160,8 @@ PUBLIC_QUOTE_STATUSES = ("live", "stale", "estimated", "missing")
 CORE_HEALTH_DETAILS = ("jet", "brent")
 # Qualities that count as a previous real fetch. Seeds and unlabeled rows do not.
 REAL_OBSERVATION_QUALITIES = frozenset({"observed", "stale"})
-ROTTERDAM_FROM_BRENT_METHOD = (
-    "Rotterdam jet USD/L = Brent USD/bbl / 158.987294928 L/bbl × 1.20 "
-    "(public EU jet crack and ARA basis multiplier)"
-)
-JET_EU_FROM_BRENT_METHOD = (
-    "EU jet proxy USD/L = Brent USD/bbl / 158.987294928 L/bbl × 1.20 "
-    "(public EU jet crack and ARA basis multiplier)"
-)
+ROTTERDAM_FROM_BRENT_PREFIX = "Rotterdam jet USD/L = Brent USD/bbl / 158.987294928 L/bbl"
+JET_EU_FROM_BRENT_PREFIX = "EU jet proxy USD/L = Brent USD/bbl / 158.987294928 L/bbl"
 CARBON_FROM_EUA_FX_METHOD = "carbon proxy USD/t = EU ETS auction EUR/t × ECB USD per EUR"
 EXCEL_SERIAL_EPOCH = datetime(1899, 12, 30, tzinfo=timezone.utc)
 
@@ -295,8 +292,18 @@ def _to_usd_per_l_from_usd_per_metric_ton(value: float) -> float:
     return value / LITERS_PER_METRIC_TON_JET
 
 
-def _derive_jet_eu_proxy_usd_per_l_from_brent(brent_usd_per_bbl: float) -> float:
-    return _to_usd_per_l_from_usd_per_bbl(brent_usd_per_bbl) * EU_JET_PROXY_BRENT_PREMIUM_MULTIPLIER
+def _derive_jet_eu_proxy_usd_per_l_from_brent(brent_usd_per_bbl: float, ratio: float | None = None) -> float:
+    multiplier = ratio if ratio is not None else EU_JET_PROXY_BRENT_PREMIUM_MULTIPLIER
+    return _to_usd_per_l_from_usd_per_bbl(brent_usd_per_bbl) * multiplier
+
+
+def _jet_proxy_method(prefix: str, ratio: float | None, ratio_observed_at: object) -> str:
+    if ratio is None:
+        return f"{prefix} × 1.20 (public EU jet crack and ARA basis multiplier)"
+    return (
+        f"{prefix} × {ratio:.3f} (EIA U.S. Gulf Coast jet ÷ Brent, same day "
+        f"{str(ratio_observed_at)[:10]}; fixed 1.20 only when EIA has no recent day)"
+    )
 
 
 def _coerce_positive_timeout(raw: str, *, scale: float = 1.0) -> float | None:
@@ -471,27 +478,49 @@ def _parse_eia_brent_quote(html: str) -> tuple[float, datetime | None] | None:
     return value, header_dates[0] if header_dates else None
 
 
-def _parse_eia_spot_jet_gulf_coast(html: str) -> tuple[float, datetime]:
-    """Latest U.S. Gulf Coast kerosene-type jet fuel price (USD/gal) and its date."""
+def _eia_spot_row(html: str, stub: str, *, section: str | None = None) -> list[tuple[datetime, float]]:
+    """Dated numeric cells of one row of EIA's daily spot table (NA cells dropped)."""
     import re
 
     normalized = " ".join(html.split())
     dates = re.findall(r'class="Series5"[^>]*>\s*([0-9]{2}/[0-9]{2}/[0-9]{2})\s*<', normalized)
-    section = normalized.find("Kerosene-Type Jet Fuel")
-    row_start = normalized.find('class="DataStub1">U.S. Gulf Coast<', section) if section >= 0 else -1
+    start = normalized.find(section) if section is not None else 0
+    row_start = normalized.find(f'class="DataStub1">{stub}<', start) if start >= 0 else -1
     if not dates or row_start < 0:
-        raise ValueError("Jet fuel Gulf Coast row not found on EIA spot page")
+        raise ValueError(f"{stub} row not found on EIA spot page")
     row = normalized[row_start : normalized.find("</tr>", normalized.find("</table>", row_start))]
     cells = re.findall(r'class="(?:DataB|Current2)">\s*([^<]*?)\s*<', row)
     if len(cells) != len(dates):
         raise ValueError("EIA spot page columns do not line up with its dates")
-    for raw, day in reversed(list(zip(cells, dates))):
+    series: list[tuple[datetime, float]] = []
+    for raw, day in zip(cells, dates):
         try:
             value = float(raw)
         except ValueError:
             continue
-        return value, datetime.strptime(day, "%m/%d/%y").replace(tzinfo=timezone.utc)
-    raise ValueError("No numeric jet fuel price on EIA spot page")
+        series.append((datetime.strptime(day, "%m/%d/%y").replace(tzinfo=timezone.utc), value))
+    return series
+
+
+def _parse_eia_spot_jet_gulf_coast(html: str) -> tuple[float, datetime]:
+    """Latest U.S. Gulf Coast kerosene-type jet fuel price (USD/gal) and its date."""
+    series = _eia_spot_row(html, "U.S. Gulf Coast", section="Kerosene-Type Jet Fuel")
+    if not series:
+        raise ValueError("No numeric jet fuel price on EIA spot page")
+    observed_at, value = series[-1]
+    return value, observed_at
+
+
+def _parse_eia_spot_jet_brent_ratio(html: str) -> tuple[float, datetime]:
+    """Gulf Coast jet ÷ Brent per litre on the latest day EIA prints both."""
+    jet = dict(_eia_spot_row(html, "U.S. Gulf Coast", section="Kerosene-Type Jet Fuel"))
+    brent = dict(_eia_spot_row(html, "Brent - Europe"))
+    common = sorted(set(jet) & set(brent))
+    if not common:
+        raise ValueError("EIA spot page has no day with both jet and Brent")
+    day = common[-1]
+    ratio = _to_usd_per_l_from_usd_per_gal(jet[day]) / _to_usd_per_l_from_usd_per_bbl(brent[day])
+    return ratio, day
 
 
 def _parse_cbam_eur_per_tonne(html: str) -> float:
@@ -745,6 +774,17 @@ def _ingest_jet_market_value(details: dict[str, object]) -> float | None:
     return jet_value
 
 
+def _ingest_jet_brent_ratio() -> tuple[float, datetime] | None:
+    """Same-day jet/Brent ratio from EIA's spot table, or None to keep the fixed multiplier."""
+    try:
+        ratio, observed_at = _parse_eia_spot_jet_brent_ratio(_fetch_text(MARKET_SOURCE_URLS["jet_eia_spot"]))
+    except Exception:
+        return None
+    if utcnow() - observed_at > timedelta(days=JET_BRENT_RATIO_MAX_AGE_DAYS):
+        return None
+    return ratio, observed_at
+
+
 def _ingest_ecb_usd_per_eur(details: dict[str, object]) -> float | None:
     try:
         ecb_xml = _fetch_text(MARKET_SOURCE_URLS["ecb_eur_usd"])
@@ -840,6 +880,7 @@ def _ingest_jet_eu_market_value(
     *,
     brent_value: float | None,
     seed_by_key: dict[str, float],
+    jet_brent_ratio: tuple[float, datetime] | None = None,
 ) -> float | None:
     try:
         ara_html = _fetch_text(MARKET_SOURCE_URLS["jet_ara_rotterdam"])
@@ -865,7 +906,9 @@ def _ingest_jet_eu_market_value(
     except Exception as primary_error:
         primary_error_text = str(primary_error)
         if brent_value is not None:
-            derived_value = _round(_derive_jet_eu_proxy_usd_per_l_from_brent(brent_value), 3)
+            ratio, ratio_observed_at = jet_brent_ratio if jet_brent_ratio is not None else (None, None)
+            derived_value = _round(_derive_jet_eu_proxy_usd_per_l_from_brent(brent_value, ratio), 3)
+            method = _jet_proxy_method(JET_EU_FROM_BRENT_PREFIX, ratio, isoformat_z(ratio_observed_at) if ratio_observed_at else None)
             brent_detail = details.get("sources", {}).get("brent", {}) if isinstance(details.get("sources"), dict) else {}
             brent_observed = brent_detail.get("observed_at") if isinstance(brent_detail, dict) else None
             brent_published = brent_detail.get("published_at") if isinstance(brent_detail, dict) else brent_observed
@@ -882,8 +925,10 @@ def _ingest_jet_eu_market_value(
                     "observed_at": brent_observed,
                     "published_at": brent_published,
                     "input_observed_at": {"brent": brent_observed},
-                    "method": JET_EU_FROM_BRENT_METHOD,
-                    "note": JET_EU_FROM_BRENT_METHOD,
+                    "method": method,
+                    "note": method,
+                    "jet_brent_ratio": _round(ratio, 4) if ratio is not None else None,
+                    "jet_brent_ratio_observed_at": isoformat_z(ratio_observed_at) if ratio_observed_at else None,
                     "primary_error": primary_error_text,
                     "fallback_used": True,
                 },
@@ -1109,6 +1154,7 @@ def _ingest_live_market_values() -> tuple[dict[str, float | None], str, dict[str
         details,
         brent_value=brent_value,
         seed_by_key=seed_by_key,
+        jet_brent_ratio=_ingest_jet_brent_ratio(),
     )
     rotterdam_value = _ingest_rotterdam_jet_fuel_value(
         details,
@@ -1800,11 +1846,16 @@ def _apply_public_quote_policy(
         brent = published["brent"]
         brent_value = brent.get("value")
         if brent["status"] in {"live", "stale"} and isinstance(brent_value, (int, float)):
+            proxy_raw = raw_sources.get("jet_eu_proxy")
+            proxy_raw = proxy_raw if isinstance(proxy_raw, dict) else {}
+            ratio_value = proxy_raw.get("jet_brent_ratio")
+            ratio = float(ratio_value) if isinstance(ratio_value, (int, float)) else None
             derived = _round(
-                _derive_jet_eu_proxy_usd_per_l_from_brent(float(brent_value)),
+                _derive_jet_eu_proxy_usd_per_l_from_brent(float(brent_value), ratio),
                 3,
             )
-            method = ROTTERDAM_FROM_BRENT_METHOD if detail_key == "rotterdam_jet_fuel" else JET_EU_FROM_BRENT_METHOD
+            prefix = ROTTERDAM_FROM_BRENT_PREFIX if detail_key == "rotterdam_jet_fuel" else JET_EU_FROM_BRENT_PREFIX
+            method = _jet_proxy_method(prefix, ratio, proxy_raw.get("jet_brent_ratio_observed_at"))
             published[detail_key] = _estimate_from_inputs(
                 detail_key,
                 inputs=[brent],
@@ -1814,6 +1865,10 @@ def _apply_public_quote_policy(
                 now=clock,
                 base=direct,
             )
+            if detail_key == "jet_eu_proxy" and ratio is not None:
+                # Persisted runs are re-published on every read; the ratio must survive that.
+                published[detail_key]["jet_brent_ratio"] = ratio
+                published[detail_key]["jet_brent_ratio_observed_at"] = proxy_raw.get("jet_brent_ratio_observed_at")
         else:
             published[detail_key] = direct
 
