@@ -43,6 +43,8 @@ MARKET_SOURCE_URLS = {
     "jet_fred": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DJFUELUSGULF",
     "jet_ara_rotterdam": "https://www.investing.com/commodities/jet-fuel-cargoes-cif-nwe-futures",
     "brent_eia": "https://www.eia.gov/todayinenergy/prices.php",
+    # EIA daily spot table; FRED DJFUELUSGULF republishes the same Gulf Coast jet series.
+    "jet_eia_spot": "https://www.eia.gov/dnav/pet/pet_pri_spt_s1_d.htm",
     "cbam_price": "https://taxation-customs.ec.europa.eu/carbon-border-adjustment-mechanism/price-cbam-certificates_en",
     "ecb_eur_usd": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
     "eu_ets_eex": "https://www.eex.com/en/market-data/environmental-markets/spot-market",
@@ -430,8 +432,10 @@ def _parse_eia_brent(html: str) -> float | None:
 def _parse_eia_header_dates(html: str) -> list[datetime]:
     import re
 
+    # The Brent row sits in the table titled "Wholesale Spot Petroleum Prices, 9/21/26 Close";
+    # the date lives only in that title, never in a data cell.
     dates: list[datetime] = []
-    for match in re.finditer(r'<td class="d1">\s*([0-9]{1,2}/[0-9]{1,2}/[0-9]{2,4})\s*<', html):
+    for match in re.finditer(r"Wholesale Spot Petroleum Prices,\s*([0-9]{1,2}/[0-9]{1,2}/[0-9]{2,4})", html):
         raw = match.group(1)
         for fmt in ("%m/%d/%Y", "%m/%d/%y"):
             try:
@@ -465,6 +469,29 @@ def _parse_eia_brent_quote(html: str) -> tuple[float, datetime | None] | None:
         return None
     header_dates = _parse_eia_header_dates(html)
     return value, header_dates[0] if header_dates else None
+
+
+def _parse_eia_spot_jet_gulf_coast(html: str) -> tuple[float, datetime]:
+    """Latest U.S. Gulf Coast kerosene-type jet fuel price (USD/gal) and its date."""
+    import re
+
+    normalized = " ".join(html.split())
+    dates = re.findall(r'class="Series5"[^>]*>\s*([0-9]{2}/[0-9]{2}/[0-9]{2})\s*<', normalized)
+    section = normalized.find("Kerosene-Type Jet Fuel")
+    row_start = normalized.find('class="DataStub1">U.S. Gulf Coast<', section) if section >= 0 else -1
+    if not dates or row_start < 0:
+        raise ValueError("Jet fuel Gulf Coast row not found on EIA spot page")
+    row = normalized[row_start : normalized.find("</tr>", normalized.find("</table>", row_start))]
+    cells = re.findall(r'class="(?:DataB|Current2)">\s*([^<]*?)\s*<', row)
+    if len(cells) != len(dates):
+        raise ValueError("EIA spot page columns do not line up with its dates")
+    for raw, day in reversed(list(zip(cells, dates))):
+        try:
+            value = float(raw)
+        except ValueError:
+            continue
+        return value, datetime.strptime(day, "%m/%d/%y").replace(tzinfo=timezone.utc)
+    raise ValueError("No numeric jet fuel price on EIA spot page")
 
 
 def _parse_cbam_eur_per_tonne(html: str) -> float:
@@ -696,6 +723,25 @@ def _ingest_jet_market_value(details: dict[str, object]) -> float | None:
         )
     except Exception as error:
         _set_source_detail(details, "jet", source="fred", status="error", error=str(error))
+        try:
+            jet_usd_per_gal, observed_at = _parse_eia_spot_jet_gulf_coast(_fetch_text(MARKET_SOURCE_URLS["jet_eia_spot"]))
+            jet_value = _round(_to_usd_per_l_from_usd_per_gal(jet_usd_per_gal), 3)
+            _set_source_detail(
+                details,
+                "jet",
+                source="eia",
+                status="ok",
+                value=jet_value,
+                extra={
+                    "quality": "observed",
+                    "quote_kind": "spot",
+                    "product_id": "EIA U.S. Gulf Coast Kerosene-Type Jet Fuel",
+                    "region": "us",
+                    "observed_at": isoformat_z(observed_at),
+                },
+            )
+        except Exception as fallback_error:
+            _set_source_detail(details, "jet", source="eia", status="error", error=str(fallback_error))
     return jet_value
 
 

@@ -172,3 +172,52 @@ def test_latest_market_snapshots_query_returns_one_row_per_metric() -> None:
 
     assert set(latest) == {item["metric_key"] for item in market.DEFAULT_MARKET_METRICS}
     assert all(float(row.value) == 2.0 for row in latest.values())
+
+
+# Trimmed from https://www.eia.gov/todayinenergy/prices.php as served on 2026-09-23.
+EIA_PRICES_HTML = """
+<table summary="Spot Petroleum Prices" class="t2 basic-table">
+<tr class="prices_table_title"> <td colspan="4"> <b>Wholesale Spot Petroleum Prices, 9/21/26 Close</b> </td> </tr>
+<tr valign="top"> <td class="s1" rowspan="3">Crude Oil<br> ($/barrel)</td>
+<td class="s2">WTI</td> <td class="d1">96.97</td> <td class="dn">-4.4</td> </tr>
+<tr> <td class="s2">Brent</td> <td class="d1">116.15</td> <td class="dn">-2.9</td> </tr>
+</table>
+<b> Retail Petroleum Prices (<a href="http://www.fuelgaugereport.com/">AAA</a>), 9/20/26 ($/gallon) </b>
+"""
+
+
+def test_parse_eia_brent_quote_reads_date_from_wholesale_table_title() -> None:
+    assert market._parse_eia_brent_quote(EIA_PRICES_HTML) == (116.15, datetime(2026, 9, 21, tzinfo=UTC))
+
+
+# Trimmed from https://www.eia.gov/dnav/pet/pet_pri_spt_s1_d.htm as served on 2026-09-23.
+EIA_SPOT_HTML = """
+<tr> <th class="Series5">09/11/26</th> <th class="Series5">09/14/26</th> <th class="Series5">09/15/26</th> </tr>
+<tr class="DataRow"> <td class="DataStub2">Kerosene-Type Jet Fuel<br> </td> </tr>
+<tr class="DataRow"> <td width="228" class="DataStub"> <table class="data2"> <tr> <td width="3"></td>
+<td class="DataStub1">U.S. Gulf Coast</td> </tr> </table> </td>
+<td width="76" class="DataB">4.521</td> <td width="76" class="DataB">4.488</td> <td width="76" class="Current2">NA</td>
+<td width="76" class="DataHist"><a href="./hist/LeafHandler.ashx" class="Hist">1990-2026</a></td> </tr>
+"""
+
+
+def test_parse_eia_spot_jet_skips_na_and_keeps_its_own_date() -> None:
+    assert market._parse_eia_spot_jet_gulf_coast(EIA_SPOT_HTML) == (4.488, datetime(2026, 9, 14, tzinfo=UTC))
+
+
+def test_jet_ingest_falls_back_to_eia_when_fred_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_fetch(url: str, timeout_s: float | None = None) -> str:
+        if "fred" in url:
+            raise TimeoutError("The read operation timed out")
+        return EIA_SPOT_HTML
+
+    monkeypatch.setattr(market, "_fetch_text", fake_fetch)
+    details: dict[str, object] = {"sources": {}}
+
+    value = market._ingest_jet_market_value(details)
+
+    jet = details["sources"]["jet"]  # type: ignore[index]
+    assert value == pytest.approx(round(4.488 / 3.785411784, 3))
+    assert jet["source"] == "eia"
+    assert jet["status"] == "ok"
+    assert jet["observed_at"].startswith("2026-09-14")
