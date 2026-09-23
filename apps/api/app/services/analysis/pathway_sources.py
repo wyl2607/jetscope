@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 
-from app.services.analysis.pathway_costs import PATHWAY_COSTS
+from app.services.analysis.pathway_costs import PATHWAY_COSTS, load_easa_reference_prices
 
 _ALLOWED_SOURCE_TYPES = {"official", "market_primary", "public_proxy", "derived", "manual"}
 _MATURITY_CONFIDENCE = {
@@ -26,17 +26,36 @@ _CADENCE_MAX_AGE_DAYS = {
 # Cap confidence for stale curated SAF pathway proxies (DATA_CONTRACT weak/stale band).
 STALE_CONFIDENCE_CAP = 0.49
 
-_PATHWAY_SOURCES: dict[str, dict] = {
-    pathway_key: {
-        "source_type": "manual",
-        "confidence_score": _MATURITY_CONFIDENCE[pathway.maturity_level],
-        "cadence": "quarterly",
-        # Keep within quarterly freshness window (~100d) relative to wall clock.
-        "updated_at": "2026-07-15",
-        "fallback_used": False,
-    }
-    for pathway_key, pathway in PATHWAY_COSTS.items()
-}
+def _build_pathway_sources() -> dict[str, dict]:
+    easa = load_easa_reference_prices()
+    sources: dict[str, dict] = {}
+    for pathway_key, pathway in PATHWAY_COSTS.items():
+        confidence = _MATURITY_CONFIDENCE[pathway.maturity_level]
+        if pathway_key in easa["pathway_production_cost"]:
+            # EASA publishes once a year (reference year n-1, briefing note in Q1).
+            sources[pathway_key] = {
+                "source_type": "official",
+                "confidence_score": confidence,
+                "cadence": "annual",
+                "updated_at": easa["published_at"],
+                "fallback_used": False,
+                "source_name": easa["source_name"],
+                "source_url": easa["source_url"],
+            }
+        else:
+            sources[pathway_key] = {
+                "source_type": "manual",
+                "confidence_score": confidence,
+                "cadence": "quarterly",
+                "updated_at": "2026-07-15",
+                "fallback_used": False,
+                "source_name": None,
+                "source_url": None,
+            }
+    return sources
+
+
+_PATHWAY_SOURCES: dict[str, dict] = _build_pathway_sources()
 
 
 def _parse_updated_at(raw: str) -> date:

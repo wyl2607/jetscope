@@ -177,8 +177,9 @@ SAF and jet-proxy values are not claimed as paid primary feeds. Labelling must s
 | Live public jet quote available (for example ARA/Rotterdam parser) | `ara-rotterdam-public` / `rotterdam-jet-direct` | `false` | `0.70-0.89` | Display as public-source backed. |
 | Live quote unavailable; Brent-derived EU jet proxy used | `brent-derived` | `true` | `0.50-0.69` | Display with derived-proxy / fallback note. |
 | Live and derived inputs unavailable; seeded baseline used | `seed-baseline` | `true` | `0.00-0.29` | Display degraded / offline deterministic fallback. |
-| Curated SAF pathway cost bands within update cadence | `manual` pathway source | `false` | maturity map (`0.50-0.80`) | Display as curated manual proxy, not a live SAF market print. |
-| Curated SAF pathway cost bands past cadence (stale) | `manual` pathway source | `true` | capped at `0.30-0.49` | Display warning; treat band as weak/stale. |
+| SAF pathway cost bands (HEFA/ATJ/FT/PtL) within the annual EASA cadence | `official` pathway source (EASA reference prices, `source_name`/`source_url` set) | `false` | maturity map (`0.50-0.80`) | Display as EASA production-cost estimate (Class 5, −50 %/+100 %), not a SAF market print. |
+| SAF pathway cost bands past the annual cadence (400 days) | `official` pathway source | `true` | capped at `0.30-0.49` | Display warning; treat band as weak/stale until the next EASA note is curated. |
+| Fossil crisis band (`fossil_jet_crisis`) | `manual` pathway source, quarterly | `false` / `true` when stale | maturity map, capped when stale | Display as curated manual range. |
 | Market refresh run older than the soft stale window and row is already fallback/seed | snapshot read model | remains `true` | capped at `0.30-0.49` | Keep freshness and fallback visible together. |
 
 Rules:
@@ -186,7 +187,7 @@ Rules:
 1. Fallback state must remain visible in API responses (`source_details[].fallback_used`, `source_status.is_fallback` / `fallback_rate`, and pathway `source.fallback_used`).
 2. Confidence scores must stay inside the Source Confidence Semantics bands above.
 3. Deterministic seed values are allowed only when labelled as fallback with low confidence.
-4. Product copy must not present manual pathway midpoints or Brent-derived proxies as live SAF exchange prints.
+4. Product copy must not present pathway midpoints (EASA production-cost estimates) or Brent-derived proxies as live SAF exchange prints.
 ## Versioning Rules
 
 Patch updates may clarify documentation or add examples. Minor updates may add optional fields, new metrics, or new read endpoints. Major updates are required for deleting fields, renaming fields, changing field types, or changing enum semantics.

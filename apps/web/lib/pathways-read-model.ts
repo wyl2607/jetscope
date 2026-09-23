@@ -132,6 +132,8 @@ export type PathwaySourceMeta = {
   cadence: string;
   updated_at: string;
   fallback_used: boolean;
+  source_name?: string | null;
+  source_url?: string | null;
 };
 
 export type PathwayComparisonRow = {
@@ -174,6 +176,8 @@ export type PathwaySourceView = {
   confidenceLabel: string;
   freshnessLabel: string;
   fallbackUsed: boolean;
+  sourceName: string | null;
+  sourceUrl: string | null;
 };
 
 export type PathwayComparisonViewModel = {
@@ -213,7 +217,9 @@ export function toSourceView(source: PathwaySourceMeta): PathwaySourceView {
     confidencePct: Math.round(source.confidence_score * 100),
     confidenceLabel: confidenceLabel(source.confidence_score),
     freshnessLabel: freshnessLabel(source.updated_at, source.cadence),
-    fallbackUsed: source.fallback_used
+    fallbackUsed: source.fallback_used,
+    sourceName: source.source_name ?? null,
+    sourceUrl: source.source_url ?? null
   };
 }
 

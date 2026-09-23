@@ -62,17 +62,38 @@ class TestEffectiveSafCost:
 
     def test_subsidy_reduces_cost(self):
         cost = effective_saf_cost("hefa", subsidy_usd_per_l=0.50)
-        assert cost == pytest.approx(1.25 - 0.50, rel=1e-12)
+        assert cost == pytest.approx(PATHWAY_COSTS["hefa"].midpoint_usd_per_l - 0.50, rel=1e-12)
 
     def test_blend_rate_scales_support(self):
         cost = effective_saf_cost("hefa", subsidy_usd_per_l=0.50, blend_rate_pct=50.0)
-        assert cost == pytest.approx(1.25 - 0.50 * 0.50, rel=1e-12)
+        assert cost == pytest.approx(PATHWAY_COSTS["hefa"].midpoint_usd_per_l - 0.50 * 0.50, rel=1e-12)
 
     def test_carbon_price_reduces_cost(self):
         cost = effective_saf_cost("atj", carbon_price_eur_per_t=100.0)
         credit = 100.0 * EUR_TO_USD * (2.5 / 1000.0)
-        assert cost == pytest.approx(1.5 - credit, rel=1e-12)
+        assert cost == pytest.approx(PATHWAY_COSTS["atj"].midpoint_usd_per_l - credit, rel=1e-12)
 
     def test_unknown_pathway_raises_key_error(self):
         with pytest.raises(KeyError):
             effective_saf_cost("bogus")
+
+
+class TestEasaReferenceBands:
+    def test_bands_are_easa_2025_reference_prices_converted_per_litre(self):
+        # EUR/t / 1250 L/t x 1.1435 USD/EUR (EASA 2026 briefing note, Table 1).
+        def usd_per_l(eur_per_t: float) -> float:
+            return round(eur_per_t / 1250 * 1.1435, 4)
+
+        ptl = PATHWAY_COSTS["ptl"]
+        assert (ptl.min_usd_per_l, ptl.midpoint_usd_per_l, ptl.max_usd_per_l) == (
+            usd_per_l(6710), usd_per_l(7520), usd_per_l(9525),
+        )
+        # EASA does not split advanced aviation biofuels by technology.
+        for key in ("atj", "ft"):
+            band = PATHWAY_COSTS[key]
+            assert (band.min_usd_per_l, band.midpoint_usd_per_l, band.max_usd_per_l) == (
+                usd_per_l(1790), usd_per_l(2760), usd_per_l(3130),
+            )
+        # HEFA: one production-cost point; its buyer price is the market index.
+        hefa = PATHWAY_COSTS["hefa"]
+        assert hefa.min_usd_per_l == hefa.midpoint_usd_per_l == hefa.max_usd_per_l == usd_per_l(1630)
