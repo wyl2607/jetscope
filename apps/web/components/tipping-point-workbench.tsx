@@ -373,13 +373,13 @@ export function TippingPointWorkbench({
         {copyText ? (
           <div className="mb-4 flex items-center justify-between rounded-xl border border-warning bg-warning-soft px-3 py-2 text-xs text-warning">
             <span>您的浏览器不支持自动复制，请手动复制以下链接：</span>
-            <input 
-              readOnly 
-              value={copyText} 
+            <input
+              readOnly
+              value={copyText}
               className="ml-2 flex-1 rounded bg-surface px-2 py-1 text-ink"
               onFocus={(e) => e.target.select()}
             />
-            <button 
+            <button
               type="button"
               onClick={dismissError}
               className="ml-2 text-warning hover:text-ink"
