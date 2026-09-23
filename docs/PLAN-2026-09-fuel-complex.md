@@ -63,7 +63,7 @@ compliance-adjusted gap separately, and API/web suites are green.
 ## Phase B — road fuels & macro
 
 - German pump prices: EU Weekly Oil Bulletin (free, weekly, incl. taxes) for
-  Euro-super 95 and diesel; Tankerkönig only if the user supplies an API key.
+  Euro-super 95 and diesel; Tankerkönig only once the user provides access credentials.
 - Diesel–HVO100 spread (HVO curated from public station prices, dated).
 - Inflation pass-through panel: Destatis motor-fuel CPI weight × fuel YoY
   (Aug 2026: +27.7 % YoY; weight to be verified from Destatis before use).
