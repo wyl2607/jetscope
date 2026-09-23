@@ -20,7 +20,7 @@ function formatGeneratedAt(value: string | null): string {
   if (!value) return '未知';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '未知';
-  return date.toLocaleString('zh-CN');
+  return date.toLocaleString('zh-CN', { timeZone: 'UTC', timeZoneName: 'short' });
 }
 
 function trustTone(summary: SourcesReadModel['summary']): string {

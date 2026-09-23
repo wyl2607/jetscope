@@ -444,7 +444,7 @@ function buildRows(
         const raw = historyMetric?.latest_as_of || snapshot.generated_at;
         if (!raw) return 'n/a';
         const parsed = new Date(raw);
-        return Number.isNaN(parsed.getTime()) ? String(raw) : parsed.toLocaleString();
+        return Number.isNaN(parsed.getTime()) ? String(raw) : parsed.toLocaleString(undefined, { timeZone: 'UTC', timeZoneName: 'short' });
       })(),
       trustState: getSourceCoverageTrustState(metric),
       degradedReason: degradedReasonFor(metric),

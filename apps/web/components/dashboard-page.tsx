@@ -79,7 +79,7 @@ function formatStamp(value: string | null, locale: Locale, fallback: string): st
   if (!value) return fallback;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return fallback;
-  return date.toLocaleString(dateLocale(locale));
+  return date.toLocaleString(dateLocale(locale), { timeZone: 'UTC', timeZoneName: 'short' });
 }
 
 // figure-contract-lint-ignore: internal formatter parameter, not a prop

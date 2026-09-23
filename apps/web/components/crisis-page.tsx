@@ -165,7 +165,9 @@ function formatBriefAsOf(value: string | null | undefined, locale: Locale, unava
     month: 'short',
     day: '2-digit',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    timeZone: 'UTC',
+    timeZoneName: 'short'
   });
 }
 
