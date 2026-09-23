@@ -188,6 +188,70 @@
         "title": "AirlineDecisionResponse",
         "type": "object"
       },
+      "CpiPassThrough": {
+        "properties": {
+          "cpi_ex_heating_oil_and_motor_fuels_yoy_pct": {
+            "title": "Cpi Ex Heating Oil And Motor Fuels Yoy Pct",
+            "type": "number"
+          },
+          "cpi_yoy_pct": {
+            "title": "Cpi Yoy Pct",
+            "type": "number"
+          },
+          "energy_yoy_pct": {
+            "title": "Energy Yoy Pct",
+            "type": "number"
+          },
+          "heating_oil_yoy_pct": {
+            "title": "Heating Oil Yoy Pct",
+            "type": "number"
+          },
+          "motor_fuels_contribution_pp": {
+            "title": "Motor Fuels Contribution Pp",
+            "type": "number"
+          },
+          "motor_fuels_weight_per_mille": {
+            "title": "Motor Fuels Weight Per Mille",
+            "type": "number"
+          },
+          "motor_fuels_yoy_pct": {
+            "title": "Motor Fuels Yoy Pct",
+            "type": "number"
+          },
+          "period": {
+            "title": "Period",
+            "type": "string"
+          },
+          "published_at": {
+            "format": "date",
+            "title": "Published At",
+            "type": "string"
+          },
+          "source_name": {
+            "title": "Source Name",
+            "type": "string"
+          },
+          "source_url": {
+            "title": "Source Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "period",
+          "published_at",
+          "cpi_yoy_pct",
+          "energy_yoy_pct",
+          "motor_fuels_yoy_pct",
+          "heating_oil_yoy_pct",
+          "cpi_ex_heating_oil_and_motor_fuels_yoy_pct",
+          "motor_fuels_weight_per_mille",
+          "motor_fuels_contribution_pp",
+          "source_name",
+          "source_url"
+        ],
+        "title": "CpiPassThrough",
+        "type": "object"
+      },
       "CrisisBriefAction": {
         "properties": {
           "href": {
@@ -539,6 +603,53 @@
           "marginal_cost_eur_per_mwh"
         ],
         "title": "FossilReference",
+        "type": "object"
+      },
+      "FuelPumpPrice": {
+        "properties": {
+          "change_4w_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change 4W Pct"
+          },
+          "change_52w_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change 52W Pct"
+          },
+          "ex_tax_eur_per_l": {
+            "title": "Ex Tax Eur Per L",
+            "type": "number"
+          },
+          "tax_share_pct": {
+            "title": "Tax Share Pct",
+            "type": "number"
+          },
+          "with_tax_eur_per_l": {
+            "title": "With Tax Eur Per L",
+            "type": "number"
+          }
+        },
+        "required": [
+          "with_tax_eur_per_l",
+          "ex_tax_eur_per_l",
+          "tax_share_pct",
+          "change_4w_pct",
+          "change_52w_pct"
+        ],
+        "title": "FuelPumpPrice",
         "type": "object"
       },
       "GasBoilerReference": {
@@ -2647,6 +2758,44 @@
         "title": "PreferencesPayload",
         "type": "object"
       },
+      "PumpPrices": {
+        "properties": {
+          "diesel": {
+            "$ref": "#/components/schemas/FuelPumpPrice"
+          },
+          "euro95": {
+            "$ref": "#/components/schemas/FuelPumpPrice"
+          },
+          "fetched_at": {
+            "format": "date-time",
+            "title": "Fetched At",
+            "type": "string"
+          },
+          "source_name": {
+            "title": "Source Name",
+            "type": "string"
+          },
+          "source_url": {
+            "title": "Source Url",
+            "type": "string"
+          },
+          "week": {
+            "format": "date",
+            "title": "Week",
+            "type": "string"
+          }
+        },
+        "required": [
+          "week",
+          "fetched_at",
+          "source_name",
+          "source_url",
+          "euro95",
+          "diesel"
+        ],
+        "title": "PumpPrices",
+        "type": "object"
+      },
       "ReadinessAction": {
         "properties": {
           "config_keys": {
@@ -2998,6 +3147,42 @@
           "confidence_score"
         ],
         "title": "ReserveSignalResponse",
+        "type": "object"
+      },
+      "RoadFuelsGermanyResponse": {
+        "properties": {
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "inflation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CpiPassThrough"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pump": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PumpPrices"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "generated_at",
+          "pump",
+          "inflation"
+        ],
+        "title": "RoadFuelsGermanyResponse",
         "type": "object"
       },
       "RouteEditPayload": {
@@ -5384,6 +5569,27 @@
         "summary": "Get Eu Reserve Signal",
         "tags": [
           "reserves"
+        ]
+      }
+    },
+    "/v1/road-fuels/germany": {
+      "get": {
+        "operationId": "get_germany_road_fuels_v1_road_fuels_germany_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoadFuelsGermanyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Germany Road Fuels",
+        "tags": [
+          "road-fuels"
         ]
       }
     },

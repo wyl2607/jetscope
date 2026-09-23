@@ -1,0 +1,17 @@
+{
+  "note": "Destatis CPI press releases, transcribed. Contribution = weight x YoY is a static first-order estimate, not an official Destatis decomposition.",
+  "releases": [
+    {
+      "period": "2026-08",
+      "published_at": "2026-09-10",
+      "cpi_yoy_pct": 2.9,
+      "energy_yoy_pct": 10.5,
+      "motor_fuels_yoy_pct": 27.7,
+      "heating_oil_yoy_pct": 49.6,
+      "cpi_ex_heating_oil_and_motor_fuels_yoy_pct": 2.0,
+      "motor_fuels_weight_per_mille": 30.46,
+      "source_name": "Destatis press release 320/2026: Inflation rate at +2.9% in August 2026",
+      "source_url": "https://www.destatis.de/EN/Press/2026/09/PE26_320_611.html"
+    }
+  ]
+}
