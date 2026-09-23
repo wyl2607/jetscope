@@ -413,6 +413,7 @@
     "trend_why": "Ein einzelner Preis ist nur ein Punkt. Erst die 1T-, 7T- und 30T-Fenster zeigen, ob die Abweichung Vertrag oder Hedging neu prüfen lässt.",
     "source_read_model": "Deutschland-Jet-Fuel-Read-Model (Brent, Jet-Fuel, EU-Jet-Proxy und Carbon-Proxy)",
     "source_read_model_fallback": "Deutschland-Jet-Fuel-Read-Model nicht verfügbar; Fallback-Schätzungen werden verwendet ({error})",
+    "source_read_model_degraded": "Deutschland-Jet-Fuel-Read-Model geladen: {live} von {total} Quellen live, der Rest geschätzt oder fehlend",
     "source_unknown_error": "unbekannter Grund",
     "source_brent": "Brent-Quellenstatus",
     "source_jet": "Globaler Jet-Quellenstatus",

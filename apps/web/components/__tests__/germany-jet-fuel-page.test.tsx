@@ -164,6 +164,47 @@ describe('GermanyJetFuelPage', () => {
     }
   });
 
+  it('labels a reachable but degraded read model with its live-source count', async () => {
+    const copy = messagesFor('zh').prices;
+    const live = liveReadModel();
+    getGermanyJetFuelReadModel.mockResolvedValue({
+      ...live,
+      overallStatus: 'degraded',
+      sourceHealth: { live: 4, total: 8 },
+      metrics: live.metrics.map((item) => ({
+        ...item,
+        quality: item.metricKey.includes('proxy') ? 'derived' : 'observed',
+        sourceStatus: item.metricKey.includes('proxy') ? 'estimated' : 'live'
+      }))
+    });
+    render(await GermanyJetFuelPage({ locale: 'zh' }));
+
+    const footer = screen.getByRole('contentinfo');
+    const text = footer.textContent ?? '';
+    expect(text).toContain('德国航油价格读模型已加载：4/8 个来源为实时数据');
+    expect(text).not.toContain(copy.source_unknown_error);
+    expect(screen.getByTestId('page-as-of')).toBeInTheDocument();
+
+    const basisOf = (label: string) =>
+      screen.getByRole('link', { name: label }).closest('li')?.textContent ?? '';
+    expect(basisOf(copy.source_brent)).toContain('实测');
+    expect(basisOf(copy.source_jet_eu)).toContain('推导');
+    expect(basisOf(copy.source_brent)).not.toContain('情景假设');
+  });
+
+  it('keeps the fetch-failure copy with its error when the API is unreachable', async () => {
+    getGermanyJetFuelReadModel.mockResolvedValue({
+      ...liveReadModel(),
+      isFallback: true,
+      sourceHealth: null,
+      error: 'HTTP 502'
+    });
+    render(await GermanyJetFuelPage({ locale: 'en' }));
+
+    const text = screen.getByRole('contentinfo').textContent ?? '';
+    expect(text).toContain('Germany jet-fuel read model unavailable; fallback estimates are in use (HTTP 502)');
+  });
+
   it('does not bleed copy across locale files', () => {
     const zh = JSON.stringify(messagesFor('zh').prices);
     const de = JSON.stringify(messagesFor('de').prices);

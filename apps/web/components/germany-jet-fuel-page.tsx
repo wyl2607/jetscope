@@ -3,7 +3,12 @@ import { GermanyRoadFuelsPanel } from '@/components/germany-road-fuels-panel';
 import { PageTemplate } from '@/components/page-template';
 import { SourceFooter, type SourceRef } from '@/components/source-footer';
 import { germanyJetFuelCopy } from '@/lib/germany-jet-fuel-copy';
-import { getGermanyJetFuelReadModel } from '@/lib/germany-jet-fuel-read-model';
+import {
+  getGermanyJetFuelReadModel,
+  isLiveSourceStatus,
+  type GermanyJetFuelMetric,
+  type GermanyJetFuelReadModel
+} from '@/lib/germany-jet-fuel-read-model';
 import { messagesFor, type Locale } from '@/lib/i18n';
 import { NAV_ENTRIES } from '@/lib/navigation';
 import { getPriceTrendChartReadModel } from '@/lib/price-trend-chart-read-model';
@@ -32,11 +37,41 @@ function fill(template: string, vars: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (_, key: string) => vars[key] ?? '');
 }
 
-function sourceBasis(sourceKey: string, isFallback: boolean): SourceRef['basis'] {
-  if (isFallback) return 'assumption';
-  // The price read model does not expose source_type. Proxy keys are explicit;
-  // every other unmapped source follows the contract's assumption default.
-  return sourceKey.includes('proxy') ? 'derived' : 'assumption';
+function sourceBasis(metric: GermanyJetFuelMetric | undefined, fetchFailed: boolean): SourceRef['basis'] {
+  if (fetchFailed || !metric || metric.value == null) return 'assumption';
+  if (metric.quality === 'missing' || metric.quality === 'seed') return 'assumption';
+  if (isLiveSourceStatus(metric.sourceStatus) && metric.quality === 'observed' && metric.sourceMetricKey === metric.metricKey) {
+    return 'observed';
+  }
+  return 'derived';
+}
+
+function readModelSource(
+  readModel: GermanyJetFuelReadModel,
+  copy: ReturnType<typeof messagesFor>['prices'],
+  asOf: string | null
+): SourceRef {
+  const { sourceHealth } = readModel;
+  if (readModel.isFallback && !sourceHealth) {
+    return {
+      id: 'germany-jet-fuel-read-model',
+      label: fill(copy.source_read_model_fallback, { error: readModel.error ?? copy.source_unknown_error }),
+      asOf,
+      basis: 'assumption'
+    };
+  }
+  const degraded = sourceHealth != null && sourceHealth.live < sourceHealth.total;
+  return {
+    id: 'germany-jet-fuel-read-model',
+    label: degraded
+      ? fill(copy.source_read_model_degraded, {
+          live: String(sourceHealth.live),
+          total: String(sourceHealth.total)
+        })
+      : copy.source_read_model,
+    asOf,
+    basis: readModel.isFallback ? 'assumption' : 'observed'
+  };
 }
 
 function sourcesHref(locale: Locale, focus?: string): Route {
@@ -80,6 +115,7 @@ export async function GermanyJetFuelPage({
       .pop() ??
     readModel.generatedAt;
   const asOf = readModel.isFallback ? null : observedAsOf;
+  const fetchFailed = readModel.isFallback && !readModel.sourceHealth;
 
   return (
     <PageTemplate
@@ -109,25 +145,17 @@ export async function GermanyJetFuelPage({
       <SourceFooter
         locale={locale}
         sources={[
-          {
-            id: 'germany-jet-fuel-read-model',
-            label: readModel.isFallback
-              ? fill(copy.source_read_model_fallback, {
-                  error: readModel.error ?? copy.source_unknown_error
-                })
-              : copy.source_read_model,
-            asOf,
-            basis: readModel.isFallback ? 'assumption' : 'observed'
-          },
-          ...SOURCE_KEYS.map((key) => ({
-            id: key,
-            label: sourceLinkLabel(key, copy),
-            href: sourcesHref(locale, key),
-            asOf: readModel.isFallback
-              ? null
-              : readModel.metrics.find((metric) => metric.metricKey === key)?.latestAsOf ?? null,
-            basis: sourceBasis(key, readModel.isFallback)
-          })),
+          readModelSource(readModel, copy, asOf),
+          ...SOURCE_KEYS.map((key) => {
+            const metric = readModel.metrics.find((item) => item.metricKey === key);
+            return {
+              id: key,
+              label: sourceLinkLabel(key, copy),
+              href: sourcesHref(locale, key),
+              asOf: fetchFailed ? null : metric?.latestAsOf ?? null,
+              basis: sourceBasis(metric, fetchFailed)
+            };
+          }),
           ...(copy.show_trend_chart && priceChartData
             ? [
                 {

@@ -412,6 +412,7 @@
     "trend_why": "A single print is one point. Only the 1d, 7d, and 30d windows show whether the move is large enough to revisit a contract or hedge.",
     "source_read_model": "Source Review: Germany jet-fuel read model (Brent, global jet fuel, EU jet proxy, and carbon proxy)",
     "source_read_model_fallback": "Germany jet-fuel read model unavailable; fallback estimates are in use ({error})",
+    "source_read_model_degraded": "Germany jet-fuel read model loaded: {live} of {total} sources live, the rest estimated or missing",
     "source_unknown_error": "unknown reason",
     "source_brent": "Brent source status",
     "source_jet": "Global jet-fuel source status",

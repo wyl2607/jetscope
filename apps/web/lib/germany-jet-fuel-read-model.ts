@@ -38,8 +38,15 @@ export type GermanyJetFuelMetric = {
   changePct7d: number | null;
   changePct30d: number | null;
   quality: string;
+  /** Source status from the snapshot detail (live / stale / estimated / missing). */
+  sourceStatus: string | null;
   quoteKind: string | null;
   note: string | null;
+};
+
+export type GermanyJetFuelSourceHealth = {
+  live: number;
+  total: number;
 };
 
 export type GermanyJetFuelReadModel = {
@@ -48,7 +55,10 @@ export type GermanyJetFuelReadModel = {
   quoteAsOf: string | null;
   overallStatus: string;
   metrics: GermanyJetFuelMetric[];
+  /** True only when no live data backs the page: the fetch failed or no source is live. */
   isFallback: boolean;
+  /** Live-source count from the snapshot; null when the fetch failed. */
+  sourceHealth: GermanyJetFuelSourceHealth | null;
   decision: GermanyDecisionKind;
   usdPerEur: number | null;
   usdPerEurQuality: string;
@@ -169,6 +179,7 @@ function buildGermanyMetric(
     changePct7d: finiteChangeOrNull(history.metric?.change_pct_7d),
     changePct30d: finiteChangeOrNull(history.metric?.change_pct_30d),
     quality,
+    sourceStatus: detail?.status ?? null,
     quoteKind: detail?.quote_kind ?? null,
     note
   };
@@ -189,6 +200,7 @@ function emptyMetrics(locale: DisplayLocale): GermanyJetFuelMetric[] {
     changePct7d: null,
     changePct30d: null,
     quality: 'missing',
+    sourceStatus: null,
     quoteKind: null,
     note: 'API unavailable'
   }));
@@ -203,6 +215,7 @@ function fallbackGermanyJetFuelReadModel(error: unknown, locale: DisplayLocale):
     overallStatus: 'degraded',
     metrics,
     isFallback: true,
+    sourceHealth: null,
     decision: 'insufficient',
     usdPerEur: null,
     usdPerEurQuality: 'missing',
@@ -214,6 +227,19 @@ function fallbackGermanyJetFuelReadModel(error: unknown, locale: DisplayLocale):
     germanyPremiumNote: null,
     error: error instanceof Error ? error.message : 'unknown error'
   };
+}
+
+/** Mirrors the API's live check (apps/api/app/services/market.py): 'ok' is the legacy spelling. */
+export function isLiveSourceStatus(status: string | null | undefined): boolean {
+  return status === 'live' || status === 'ok';
+}
+
+function summarizeSourceHealth(
+  details: Record<string, MarketSourceDetail> | undefined
+): GermanyJetFuelSourceHealth | null {
+  const statuses = Object.values(details ?? {}).map((detail) => detail.status);
+  if (statuses.length === 0) return null;
+  return { live: statuses.filter(isLiveSourceStatus).length, total: statuses.length };
 }
 
 export function buildGermanyJetFuelReadModelFromPayload(
@@ -230,7 +256,10 @@ export function buildGermanyJetFuelReadModelFromPayload(
       detailFor(market.source_details, config.detailKey, config.metricKey)
     )
   );
-  const isFallback = Boolean(market.source_status?.is_fallback);
+  // The API flags is_fallback as soon as any source is estimated, so a partly
+  // live snapshot is degraded, not a fallback. Only zero live sources is.
+  const sourceHealth = summarizeSourceHealth(market.source_details);
+  const isFallback = sourceHealth ? sourceHealth.live === 0 : Boolean(market.source_status?.is_fallback);
   const clockRaw = market.fetched_at ?? market.generated_at;
   const clock = clockRaw && !Number.isNaN(Date.parse(clockRaw)) ? new Date(clockRaw) : undefined;
   const selectedJet = selectFossilJetBenchmark(market.values, market.source_details ?? {}, clock);
@@ -247,10 +276,12 @@ export function buildGermanyJetFuelReadModelFromPayload(
     overallStatus: market.source_status?.overall ?? 'unknown',
     metrics,
     isFallback,
+    sourceHealth,
     decision: decisionFromChange(
       selectedMetric?.changePct30d ?? null,
       decisionQuality,
-      isFallback || !selectedJet.usableForSignal
+      // The decision stays conservative: any API-flagged fallback blocks the signal.
+      isFallback || Boolean(market.source_status?.is_fallback) || !selectedJet.usableForSignal
     ),
     usdPerEur: fx.value,
     usdPerEurQuality: fx.quality,
