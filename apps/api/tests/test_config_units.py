@@ -52,7 +52,11 @@ def test_settings_defaults_when_env_missing(clear_config_env: None) -> None:
     assert settings.schema_bootstrap_mode == "alembic"
     assert settings.market_source_timeout_seconds == 12.0
     assert settings.ai_research_daily_token_budget == 500000
+    assert settings.ai_research_enabled is False
     assert settings.ai_research_mock_mode is True
+    assert settings.ai_research_informational is True
+    assert settings.market_refresh_interval_seconds == 600
+    assert settings.market_refresh_loop_enabled is True
 
 
 def test_settings_reads_prefixed_env_vars(clear_config_env: None, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -100,3 +104,21 @@ def test_module_level_settings_uses_env_at_import_time(
 
     assert reloaded.settings.workspace_slug == "module-reload-slug"
     assert reloaded.settings.api_prefix == "/v1"
+
+
+def test_readiness_switches_follow_ai_and_refresh_interval(clear_config_env: None, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("JETSCOPE_AI_RESEARCH_ENABLED", "true")
+    monkeypatch.setenv("JETSCOPE_AI_RESEARCH_MOCK_MODE", "true")
+    monkeypatch.setenv("JETSCOPE_MARKET_REFRESH_INTERVAL_SECONDS", "0")
+
+    mocked = Settings(_env_file=None)
+    assert mocked.ai_research_informational is True
+    assert mocked.market_refresh_loop_enabled is False
+
+    monkeypatch.setenv("JETSCOPE_AI_RESEARCH_MOCK_MODE", "false")
+    monkeypatch.setenv("JETSCOPE_MARKET_REFRESH_INTERVAL_SECONDS", "30")
+    live = Settings(_env_file=None)
+    assert live.ai_research_enabled is True
+    assert live.ai_research_mock_mode is False
+    assert live.ai_research_informational is False
+    assert live.market_refresh_loop_enabled is True

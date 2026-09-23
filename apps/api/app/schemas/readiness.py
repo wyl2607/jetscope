@@ -4,7 +4,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-ReadinessSeverity = Literal["ok", "review", "blocker"]
+ReadinessSeverity = Literal["ok", "info", "review", "blocker"]
 
 
 class ReadinessAction(BaseModel):
