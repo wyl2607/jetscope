@@ -388,6 +388,70 @@ def test_snapshot_generated_at_is_the_latest_refresh_not_a_row_date() -> None:
     assert snapshot.generated_at == refreshed_at
 
 
+def test_history_never_publishes_placeholder_rows_as_latest() -> None:
+    # Production 2026-09-23: /v1/market/history returned latest_value 0.64 / 80.38 / 8.0,
+    # the seed constants, because it fell back to the last row of any quality.
+    now = datetime.now(UTC)
+    engine = create_engine("sqlite:///:memory:", future=True)
+    Base.metadata.create_all(bind=engine)
+    with Session(engine) as db:
+        for metric_key, source_key, value, unit, quality in (
+            ("jet_usd_per_l", "jet_fred_proxy", 0.64, "USD/L", "missing"),
+            ("eu_ets_price_eur_per_t", "eu_ets_eex", 80.38, "EUR/tCO2", "seed"),
+            ("germany_premium_pct", "germany_premium", 8.0, "%", "unknown"),
+        ):
+            db.add(
+                MarketSnapshot(
+                    source_key=source_key,
+                    metric_key=metric_key,
+                    value=value,
+                    unit=unit,
+                    as_of=now - timedelta(hours=1),
+                    payload={"quality": quality, "legacy": True},
+                )
+            )
+        db.commit()
+        history = market_service.build_market_history_response(db)
+
+    for metric_key in ("jet_usd_per_l", "eu_ets_price_eur_per_t", "germany_premium_pct"):
+        assert history.metrics[metric_key].latest_value is None
+    assert [p.value for p in history.metrics["jet_usd_per_l"].points] == []
+    assert [p.value for p in history.metrics["eu_ets_price_eur_per_t"].points] == []
+    assert [p.quality for p in history.metrics["germany_premium_pct"].points] == ["unknown"]
+
+
+def test_history_day_keeps_observed_quote_over_later_legacy_row() -> None:
+    day = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
+    engine = create_engine("sqlite:///:memory:", future=True)
+    Base.metadata.create_all(bind=engine)
+    with Session(engine) as db:
+        db.add(
+            MarketSnapshot(
+                source_key="brent_eia",
+                metric_key="brent_usd_per_bbl",
+                value=116.15,
+                unit="USD/bbl",
+                as_of=day,
+                payload={"quality": "observed", "observed_at": day.isoformat()},
+            )
+        )
+        db.add(
+            MarketSnapshot(
+                source_key="brent_eia",
+                metric_key="brent_usd_per_bbl",
+                value=87.01,
+                unit="USD/bbl",
+                as_of=day + timedelta(hours=23),
+                payload={"quality": "unknown", "legacy": True},
+            )
+        )
+        db.commit()
+        brent = market_service.build_market_history_response(db).metrics["brent_usd_per_bbl"]
+
+    assert brent.latest_value == pytest.approx(116.15)
+    assert [p.value for p in brent.points] == [pytest.approx(116.15)]
+
+
 def test_history_does_not_mix_spot_and_futures_returns() -> None:
     engine = create_engine("sqlite:///:memory:", future=True)
     Base.metadata.create_all(bind=engine)

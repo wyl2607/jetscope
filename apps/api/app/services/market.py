@@ -2533,9 +2533,14 @@ HistoryRow = tuple[datetime, float, str, str, str | None, str | None, str | None
 
 
 def _daily_aggregate(rows: list[HistoryRow]) -> list[HistoryRow]:
+    # One point per day, the best-quality row of that day (later wins a tie): a
+    # legacy fetch-time row stamped 23:00 must not bury that day's observed quote.
     by_day: dict[str, HistoryRow] = {}
     for as_of, value, unit, quality, source, quote_kind, product_id in rows:
         day_key = _ensure_utc_datetime(as_of).date().isoformat()
+        current = by_day.get(day_key)
+        if current is not None and QUALITY_RANK.get(quality, 99) > QUALITY_RANK.get(current[3], 99):
+            continue
         by_day[day_key] = (
             _ensure_utc_datetime(as_of),
             value,
@@ -2546,6 +2551,20 @@ def _daily_aggregate(rows: list[HistoryRow]) -> list[HistoryRow]:
             product_id,
         )
     return [by_day[key] for key in sorted(by_day)]
+
+
+def _history_points(rows: list[HistoryRow]) -> list[MarketHistoryPoint]:
+    return [
+        MarketHistoryPoint(
+            as_of=_ensure_utc_datetime(as_of),
+            value=float(value),
+            quality=quality,
+            source=point_source,
+            quote_kind=point_kind,
+            product_id=point_product,
+        )
+        for as_of, value, _unit, quality, point_source, point_kind, point_product in rows
+    ]
 
 
 def build_market_history_response(
@@ -2596,9 +2615,8 @@ def build_market_history_response(
                     fields["product_id"],
                 )
             )
-        aggregated = _daily_aggregate(rows)
-        non_seed = [row for row in aggregated if row[3] != "seed"]
-        return non_seed or aggregated
+        # Seed and missing rows hold placeholder constants, never market values.
+        return _daily_aggregate([row for row in rows if row[3] not in {"seed", "missing"}])
 
     def _load_latest_row(metric_key: str) -> HistoryRow | None:
         row = db.scalar(
@@ -2686,7 +2704,21 @@ def build_market_history_response(
             )
             continue
         series_rows = [row for row in metric_rows if row[3] in SIGNAL_QUALITIES]
-        window_latest = series_rows[-1] if series_rows else metric_rows[-1]
+        if not series_rows:
+            # Undated legacy rows still plot, labelled, but are not a latest quote.
+            metrics[metric_key] = MarketMetricHistory(
+                metric_key=metric_key,
+                unit=metric_rows[-1][2],
+                latest_value=None,
+                latest_as_of=None,
+                change_pct_1d=None,
+                change_pct_7d=None,
+                change_pct_30d=None,
+                points=_history_points(metric_rows[-points_limit_per_metric:]),
+                quality=metric_rows[-1][3],
+            )
+            continue
+        window_latest = series_rows[-1]
         latest_as_of, latest_value, latest_unit, latest_quality, source, quote_kind, product_id = window_latest
         change_1d = _pct_change(
             latest_value,
@@ -2701,17 +2733,7 @@ def build_market_history_response(
             _baseline_same_series(metric_rows, latest_as_of=latest_as_of, latest_row=window_latest, days=30),
         )
 
-        points = [
-            MarketHistoryPoint(
-                as_of=_ensure_utc_datetime(as_of),
-                value=float(value),
-                quality=quality,
-                source=point_source,
-                quote_kind=point_kind,
-                product_id=point_product,
-            )
-            for as_of, value, _unit, quality, point_source, point_kind, point_product in metric_rows[-points_limit_per_metric:]
-        ]
+        points = _history_points(metric_rows[-points_limit_per_metric:])
 
         metrics[metric_key] = MarketMetricHistory(
             metric_key=metric_key,
