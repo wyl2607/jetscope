@@ -62,12 +62,21 @@ compliance-adjusted gap separately, and API/web suites are green.
 
 ## Phase B — road fuels & macro
 
-- German pump prices: EU Weekly Oil Bulletin (free, weekly, incl. taxes) for
-  Euro-super 95 and diesel; Tankerkönig only once the user provides access credentials.
-- Diesel–HVO100 spread (HVO curated from public station prices, dated).
-- Inflation pass-through panel: Destatis motor-fuel CPI weight × fuel YoY
-  (Aug 2026: +27.7 % YoY; weight to be verified from Destatis before use).
-- EV vs diesel vs petrol cost per 100 km as a road-electrification reference.
+- B1 (this branch): German pump prices from the EU Weekly Oil Bulletin
+  **history workbook** (Germany, Euro-super 95 and diesel, with and without
+  taxes, weekly), fetched once a day, served at `/v1/road-fuels/germany`.
+  On 2026-09-23 the Bulletin's "latest prices with taxes" download served the
+  same ex-tax file as "without taxes" (Germany E95 1,170 EUR/1000 L), so only
+  the history workbook is used. Week of 2026-09-21: E95 2.348, diesel 2.457
+  EUR/L incl. tax (52-week change +36.9 % / +55.1 %).
+- B3 (this branch): CPI pass-through from Destatis (Aug 2026, published
+  2026-09-10): CPI +2.9 %, motor fuels +27.7 % at a weight of 30.46 per mille,
+  so a static direct contribution of about 0.84 pp; CPI excluding heating oil
+  and motor fuels +2.0 %. Curated in `data/curated/market/destatis_cpi.json`.
+- B2 (next): Diesel–HVO100 spread, only once a dated public HVO source is
+  verified; a single station page is not a national price.
+- B4 (next): EV vs diesel vs petrol cost per 100 km, once a sourced household
+  electricity price is curated. Consumption figures are labelled assumptions.
 
 ## Phase C — supply side
 
