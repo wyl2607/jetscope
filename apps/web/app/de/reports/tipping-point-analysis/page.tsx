@@ -2,7 +2,7 @@ import { TippingPointReportPage } from '@/components/tipping-point-report-page';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
 export const metadata: Metadata = buildPageMetadata({
   title: 'Kipppunktbericht',

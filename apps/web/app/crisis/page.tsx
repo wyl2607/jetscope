@@ -2,7 +2,7 @@ import { CrisisPage } from '@/components/crisis-page';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
 export const metadata: Metadata = buildPageMetadata({
   title: '危机监测',
