@@ -9,6 +9,9 @@ const localeLabels = {
 } as const;
 
 export function toGermanPath(pathname: string): string {
+  if (pathname === '/crisis/saf-tipping-point') {
+    return '/de/reports/tipping-point-analysis';
+  }
   if (pathname === '/') {
     return '/de';
   }
@@ -92,7 +95,7 @@ export function toChinesePath(pathname: string): string {
     return '/reports';
   }
   if (pathname === '/en/reports/tipping-point-analysis') {
-    return '/reports/tipping-point-analysis';
+    return '/crisis/saf-tipping-point';
   }
   if (pathname === '/en/admin') {
     return '/admin';
@@ -131,7 +134,7 @@ export function toChinesePath(pathname: string): string {
     return '/reports';
   }
   if (pathname === '/de/reports/tipping-point-analysis') {
-    return '/reports/tipping-point-analysis';
+    return '/crisis/saf-tipping-point';
   }
   if (pathname === '/de/admin') {
     return '/admin';
@@ -152,6 +155,9 @@ export function toChinesePath(pathname: string): string {
 }
 
 export function toEnglishPath(pathname: string): string {
+  if (pathname === '/crisis/saf-tipping-point') {
+    return '/en/reports/tipping-point-analysis';
+  }
   if (pathname === '/' || pathname === '/de') {
     return '/en';
   }

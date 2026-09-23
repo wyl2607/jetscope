@@ -31,12 +31,17 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
   {
     id: 'dashboard',
     path: { zh: '/dashboard', de: '/de/dashboard', en: '/en/dashboard' },
-    label: { zh: '决策驾驶舱', de: 'Entscheidungscockpit', en: 'Decision Cockpit' }
+    label: { zh: '驾驶舱', de: 'Entscheidungscockpit', en: 'Decision Cockpit' }
+  },
+  {
+    id: 'saf-tipping-point',
+    path: { zh: '/crisis/saf-tipping-point', de: '/de/reports/tipping-point-analysis', en: '/en/reports/tipping-point-analysis' },
+    label: { zh: 'SAF 临界点', de: 'SAF-Wendepunkt', en: 'SAF Tipping Point' }
   },
   {
     id: 'crisis',
     path: { zh: '/crisis', de: '/de/crisis', en: '/en/crisis' },
-    label: { zh: '危机监测', de: 'Krisenmonitor', en: 'Crisis Monitor' }
+    label: { zh: '危机概览', de: 'Krisenmonitor', en: 'Crisis Monitor' }
   },
   {
     id: 'prices',
@@ -45,7 +50,7 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
       de: '/de/prices/germany-jet-fuel',
       en: '/en/prices/germany-jet-fuel'
     },
-    label: { zh: '价格', de: 'Preise', en: 'Prices' }
+    label: { zh: '德国航油价格', de: 'Preise', en: 'Prices' }
   },
   {
     // Grid and heat parity exist only in the default locale today.
@@ -83,7 +88,7 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
     // /analysis in the default locale.
     id: 'analysis',
     path: { zh: '/analysis', de: '/de/lufthansa-saf-2026', en: '/en/lufthansa-saf-2026' },
-    label: { zh: '专题分析', de: 'Analyse', en: 'Analysis' }
+    label: { zh: '案例分析', de: 'Analyse', en: 'Analysis' }
   },
   {
     id: 'admin',
@@ -99,7 +104,8 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
 
 /** Nav items available in a locale, in canonical order. */
 export function navigationFor(locale: NavLocale): readonly NavItem[] {
-  return NAV_ENTRIES.flatMap((entry) => {
+  const allowedIds = ['home', 'dashboard', 'saf-tipping-point', 'crisis', 'prices', 'analysis', 'sources'];
+  return NAV_ENTRIES.filter(entry => allowedIds.includes(entry.id)).flatMap((entry) => {
     const href = entry.path[locale];
     return href === null ? [] : [{ href, label: entry.label[locale] } as const];
   });
