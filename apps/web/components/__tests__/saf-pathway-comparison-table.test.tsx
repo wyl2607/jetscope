@@ -1,5 +1,5 @@
-import { render } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
 import { toPathwayCostRow } from '@/lib/pathways-read-model';
 
@@ -17,6 +17,10 @@ const hefaFixture = toPathwayCostRow(
 );
 
 describe('SafPathwayComparisonTable', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('renders without crashing', () => {
     const { container } = render(
       <SafPathwayComparisonTable selectedPathwayKey="hefa" pathways={[hefaFixture]} />
@@ -44,5 +48,29 @@ describe('SafPathwayComparisonTable', () => {
 
     expect(getByText('来源可信度')).not.toBeNull();
     expect(getByText(/market_feed/)).not.toBeNull();
+  });
+
+  it('renders pathway attributes from mocked API data', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        rows: [
+          {
+            pathway_key: 'hefa',
+            carbon_reduction_pct: 73,
+            maturity_level: 'commercial'
+          }
+        ]
+      })
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<SafPathwayComparisonTable selectedPathwayKey="hefa" pathways={[hefaFixture]} />);
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([url]) => String(url) === '/api/pathways/compare?fossil_jet_usd_per_l=1')).toBe(true);
+    });
+    expect(screen.getByText('73%')).toBeInTheDocument();
+    expect(screen.getByText('商业化')).toBeInTheDocument();
   });
 });

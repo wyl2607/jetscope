@@ -9,7 +9,11 @@ EUR_TO_USD_AS_OF = "2026-07-17"
 EUR_TO_USD_SOURCE = "ECB eurofxref daily (seed aligned with market.DEFAULT_EUR_USD)"
 FOSSIL_JET_EMISSIONS_KG_PER_L = 2.5
 
-
+# Canonical Phase 1 calibrated SAF ranges. These values were retained because
+# they are the sourced analysis inputs used by tipping-point and breakeven
+# models (with provenance/freshness tracked in pathway_sources.py). The former
+# pathways-route seed values were unsourced, covered only three ad-hoc variants,
+# and disagreed with these ranges, so they must be derived from this table.
 PATHWAY_COSTS: dict[str, PathwayCostBand] = {
     "hefa": PathwayCostBand(
         pathway_key="hefa",
