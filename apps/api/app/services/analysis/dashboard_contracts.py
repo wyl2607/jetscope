@@ -3,6 +3,7 @@ from app.schemas.analysis import (
     AirlineDecisionInputs,
     AirlineDecisionResponse,
     PathwayTippingPoint,
+    SafAllowanceBasis,
     SafMarketCheck,
     TippingPointAssessment,
     TippingPointInputs,
@@ -11,6 +12,12 @@ from app.schemas.analysis import (
 from app.schemas.reserves import ReserveSignalResponse
 from app.services.analysis.breakeven import EUR_TO_USD, FOSSIL_JET_EMISSIONS_KG_PER_L, compute_tipping_point
 from app.services.analysis.pathway_costs import carbon_credit_usd_per_l
+from app.services.analysis.saf_allowance import (
+    SafAllowanceMode,
+    allowance_support_usd_per_l,
+    coverage_pct,
+    load_saf_allowance_rules,
+)
 from app.services.analysis.saf_market import MARKET_REFERENCE_PATHWAY, latest_saf_market_reference
 from app.services.analysis.decision_matrix import compute_airline_decision
 from app.services.analysis.pathway_costs import get_pathway_cost, list_pathway_costs
@@ -35,14 +42,26 @@ def _pathway_status(effective_fossil_jet_usd_per_l: float, net_low_usd_per_l: fl
     return "premium"
 
 
+def _status_with_allowance(fossil: float, low: float, high: float, high_end_support: float) -> str:
+    # An allowance only closes part or all of a gap; parity it creates is not a cost advantage.
+    status = _pathway_status(fossil, low, high)
+    return "inflection" if status == "competitive" and high_end_support > 0 else status
+
+
 def _pathway_row(
     assessment: TippingPointAssessment,
     *,
     effective_fossil_jet_usd_per_l: float,
+    allowance_rules: dict | None = None,
+    allowance_mode: SafAllowanceMode = "none",
 ) -> PathwayTippingPoint:
     pathway = assessment.pathway
     net_low_usd_per_l = max(0.0001, pathway.min_usd_per_l - assessment.effective_support_usd_per_l)
     net_high_usd_per_l = max(net_low_usd_per_l, pathway.max_usd_per_l - assessment.effective_support_usd_per_l)
+    allowance_pct = coverage_pct(allowance_rules, allowance_mode, pathway.pathway_key)
+    net_low_usd_per_l -= allowance_support_usd_per_l(net_low_usd_per_l, effective_fossil_jet_usd_per_l, allowance_pct)
+    high_end_support = allowance_support_usd_per_l(net_high_usd_per_l, effective_fossil_jet_usd_per_l, allowance_pct)
+    net_high_usd_per_l -= high_end_support
     spread_low_pct = ((net_low_usd_per_l - effective_fossil_jet_usd_per_l) / effective_fossil_jet_usd_per_l) * 100.0
     spread_high_pct = ((net_high_usd_per_l - effective_fossil_jet_usd_per_l) / effective_fossil_jet_usd_per_l) * 100.0
     return PathwayTippingPoint(
@@ -52,17 +71,46 @@ def _pathway_row(
         net_cost_high_usd_per_l=round(net_high_usd_per_l, 4),
         spread_low_pct=round(spread_low_pct, 2),
         spread_high_pct=round(spread_high_pct, 2),
-        status=_pathway_status(effective_fossil_jet_usd_per_l, net_low_usd_per_l, net_high_usd_per_l),
+        status=_status_with_allowance(
+            effective_fossil_jet_usd_per_l, net_low_usd_per_l, net_high_usd_per_l, high_end_support
+        ),
+        allowance_coverage_pct=allowance_pct,
+        allowance_category_assumed=bool(
+            allowance_mode == "statutory"
+            and (allowance_rules or {}).get("pathway_categories", {}).get(pathway.pathway_key, {}).get("assumption")
+        ),
     )
 
 
-def _saf_market_check(fossil_jet_usd_per_l: float, carbon_price_eur_per_t: float) -> SafMarketCheck | None:
+def _premium_pct(saf_usd_per_l: float, fossil_usd_per_l: float) -> float:
+    return round((saf_usd_per_l - fossil_usd_per_l) / fossil_usd_per_l * 100.0, 2)
+
+
+def _saf_market_check(
+    fossil_jet_usd_per_l: float,
+    carbon_price_eur_per_t: float,
+    allowance_rules: dict | None = None,
+    allowance_mode: SafAllowanceMode = "none",
+) -> SafMarketCheck | None:
     reference = latest_saf_market_reference()
     if reference is None:
         return None
     # Per litre, independent of blend: SAF is zero-rated, fossil jet carries its ETS cost.
     fossil_with_ets = fossil_jet_usd_per_l + carbon_credit_usd_per_l(carbon_price_eur_per_t)
-    saf_usd_per_l = reference.saf_usd_per_l
+    # The allowance covers a share of the gap left after that carbon incentive.
+    allowance_pct = coverage_pct(allowance_rules, allowance_mode, MARKET_REFERENCE_PATHWAY)
+    support = allowance_support_usd_per_l(reference.saf_usd_per_l, fossil_with_ets, allowance_pct)
+    saf_usd_per_l = reference.saf_usd_per_l - support
+    statutory_pct = coverage_pct(allowance_rules, "statutory", MARKET_REFERENCE_PATHWAY) if allowance_rules else None
+    statutory_premium = (
+        _premium_pct(
+            reference.saf_usd_per_l
+            - allowance_support_usd_per_l(reference.saf_usd_per_l, fossil_with_ets, statutory_pct),
+            fossil_with_ets,
+        )
+        if statutory_pct is not None
+        else None
+    )
     return SafMarketCheck(
         reference_id=reference.reference_id,
         kind=reference.kind,
@@ -73,10 +121,34 @@ def _saf_market_check(fossil_jet_usd_per_l: float, carbon_price_eur_per_t: float
         source_url=reference.source_url,
         pathway_key=MARKET_REFERENCE_PATHWAY,
         saf_eur_per_t=reference.saf_eur_per_t,
-        saf_usd_per_l=round(saf_usd_per_l, 4),
+        saf_usd_per_l=round(reference.saf_usd_per_l, 4),
         fossil_with_ets_usd_per_l=round(fossil_with_ets, 4),
-        premium_pct=round((saf_usd_per_l - fossil_with_ets) / fossil_with_ets * 100.0, 2),
-        status=_pathway_status(fossil_with_ets, saf_usd_per_l, saf_usd_per_l),
+        premium_pct=_premium_pct(saf_usd_per_l, fossil_with_ets),
+        status=_status_with_allowance(fossil_with_ets, saf_usd_per_l, saf_usd_per_l, support),
+        allowance_coverage_pct=allowance_pct,
+        allowance_support_usd_per_l=round(support, 4),
+        statutory_allowance_coverage_pct=statutory_pct,
+        statutory_allowance_premium_pct=statutory_premium,
+    )
+
+
+def _saf_allowance_basis(rules: dict | None) -> SafAllowanceBasis | None:
+    if rules is None:
+        return None
+    legal, latest = rules["legal_basis"], rules["latest_allocation"]
+    return SafAllowanceBasis(
+        legal_basis_name=legal["name"],
+        legal_basis_url=legal["url"],
+        period=legal["period"],
+        reserve_allowances=legal["reserve_allowances"],
+        rates_pct=rules["rates_pct"],
+        latest_fuel_year=latest["fuel_year"],
+        latest_published_at=latest["published_at"],
+        latest_allowances=latest["allowances"],
+        latest_value_eur=latest["value_eur"],
+        latest_saf_tonnes=latest["saf_tonnes"],
+        latest_source_name=latest["source_name"],
+        latest_source_url=latest["source_url"],
     )
 
 
@@ -86,8 +158,10 @@ def build_tipping_point_response(
     carbon_price_eur_per_t: float,
     subsidy_usd_per_l: float,
     blend_rate_pct: float,
+    saf_allowance: SafAllowanceMode = "none",
 ) -> TippingPointResponse:
     effective_fossil = _effective_fossil_jet_usd_per_l(fossil_jet_usd_per_l, carbon_price_eur_per_t, blend_rate_pct)
+    allowance_rules = load_saf_allowance_rules()
     pathway_keys = [
         pathway.pathway_key
         for pathway in sorted(list_pathway_costs(), key=lambda item: _PATHWAY_ORDER.get(item.pathway_key, 99))
@@ -103,11 +177,13 @@ def build_tipping_point_response(
                 pathway_key=pathway_key,
             ),
             effective_fossil_jet_usd_per_l=effective_fossil,
+            allowance_rules=allowance_rules,
+            allowance_mode=saf_allowance,
         )
         for pathway_key in pathway_keys
     ]
 
-    market_check = _saf_market_check(fossil_jet_usd_per_l, carbon_price_eur_per_t)
+    market_check = _saf_market_check(fossil_jet_usd_per_l, carbon_price_eur_per_t, allowance_rules, saf_allowance)
     if market_check is not None:
         # What airlines actually pay decides the headline; production-cost bands
         # stay in `pathways` as the investment view.
@@ -130,10 +206,12 @@ def build_tipping_point_response(
             carbon_price_eur_per_t=carbon_price_eur_per_t,
             subsidy_usd_per_l=subsidy_usd_per_l,
             blend_rate_pct=blend_rate_pct,
+            saf_allowance=saf_allowance,
         ),
         effective_fossil_jet_usd_per_l=round(effective_fossil, 4),
         pathways=pathways,
         market_check=market_check,
+        saf_allowance=_saf_allowance_basis(allowance_rules),
         signal=signal,
         signal_basis=signal_basis,
     )

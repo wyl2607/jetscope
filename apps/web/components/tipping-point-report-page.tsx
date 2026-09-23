@@ -14,6 +14,7 @@ import {
   getDashboardReadModel,
   toTippingPointReadModel,
   type DashboardReadModel,
+  type SafAllowanceBasis,
   type SafMarketCheck
 } from '@/lib/product-read-model';
 import { AI_RESEARCH_ENABLED, buildResearchDecisionBrief, getResearchSignals } from '@/lib/research-signals-read-model';
@@ -151,6 +152,26 @@ function marketCheckText(
     .replace('{published}', check.published_at)
     .replace('{fossil}', formatPrice(check.fossil_with_ets_usd_per_l, locale, copy.number_unavailable))
     .replace('{premium}', premium);
+}
+
+function allowanceText(
+  check: SafMarketCheck | null,
+  basis: SafAllowanceBasis | null,
+  locale: Locale,
+  copy: TippingPointReportMessages
+): string | null {
+  if (!check || !basis || check.statutory_allowance_premium_pct == null || check.statutory_allowance_coverage_pct == null) {
+    return null;
+  }
+  const premium = check.statutory_allowance_premium_pct;
+  return copy.market_allowance
+    .replace('{coverage}', check.statutory_allowance_coverage_pct.toFixed(0))
+    .replace('{premium}', `${premium >= 0 ? '+' : ''}${premium.toFixed(0)}%`)
+    .replace('{reserve}', formatNumber(basis.reserve_allowances / 1e6, locale, 0, copy.number_unavailable))
+    .replace('{period}', basis.period)
+    .replace('{year}', String(basis.latest_fuel_year))
+    .replace('{allowances}', formatNumber(basis.latest_allowances / 1e6, locale, 1, copy.number_unavailable))
+    .replace('{value}', formatNumber(basis.latest_value_eur / 1e6, locale, 0, copy.number_unavailable));
 }
 
 function sourceStatusLabel(status: string, copy: TippingPointReportMessages): string {
@@ -314,6 +335,12 @@ export async function TippingPointReportPage({ locale }: { locale: Locale }) {
     getTippingPointEvents({ since: isoDaysAgo(42), limit: 20 }),
     getResearchSignals()
   ]);
+  const allowance = allowanceText(
+    readModel.tippingPoint?.market_check ?? null,
+    readModel.tippingPoint?.saf_allowance ?? null,
+    locale,
+    copy
+  );
 
   const zhFossil = features.assumedFossilFallback ? resolveZhFossil(readModel) : null;
   const evidenceFossil = features.assumedFossilFallback ? null : resolveEvidenceFossil(readModel);
@@ -408,6 +435,18 @@ export async function TippingPointReportPage({ locale }: { locale: Locale }) {
       <Panel locale={locale} title={copy.market_title} why={copy.market_why}>
         <div className="space-y-4 text-sm leading-7 text-muted">
           <p>{marketCheckText(readModel.tippingPoint?.market_check ?? null, locale, copy)}</p>
+          {allowance ? (
+            <p>
+              {allowance}{' '}
+              <a className="underline" href={readModel.tippingPoint?.saf_allowance?.legal_basis_url}>
+                {readModel.tippingPoint?.saf_allowance?.legal_basis_name}
+              </a>
+              {' · '}
+              <a className="underline" href={readModel.tippingPoint?.saf_allowance?.latest_source_url}>
+                {readModel.tippingPoint?.saf_allowance?.latest_source_name}
+              </a>
+            </p>
+          ) : null}
           <p>{copy.market_basis_production}</p>
         </div>
       </Panel>

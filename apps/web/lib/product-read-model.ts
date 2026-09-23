@@ -65,6 +65,27 @@ export type TippingPointPathway = {
   spread_low_pct: number;
   spread_high_pct: number;
   status: string;
+  allowance_coverage_pct?: number;
+  allowance_category_assumed?: boolean;
+};
+
+export type SafAllowanceMode = 'none' | 'statutory' | 'remote_airport';
+export const SAF_ALLOWANCE_MODES: readonly SafAllowanceMode[] = ['none', 'statutory', 'remote_airport'];
+
+// EU ETS SAF allowance rules behind the toggle (API SafAllowanceBasis).
+export type SafAllowanceBasis = {
+  legal_basis_name: string;
+  legal_basis_url: string;
+  period: string;
+  reserve_allowances: number;
+  rates_pct: Record<string, number>;
+  latest_fuel_year: number;
+  latest_published_at: string;
+  latest_allowances: number;
+  latest_value_eur: number;
+  latest_saf_tonnes: number;
+  latest_source_name: string;
+  latest_source_url: string;
 };
 
 export type TippingPointReadModel = {
@@ -104,10 +125,12 @@ export type TippingPointResponse = {
     carbon_price_eur_per_t: number;
     subsidy_usd_per_l: number;
     blend_rate_pct: number;
+    saf_allowance?: SafAllowanceMode;
   };
   effective_fossil_jet_usd_per_l: number;
   pathways: TippingPointPathway[];
   market_check?: SafMarketCheck | null;
+  saf_allowance?: SafAllowanceBasis | null;
   signal: string;
   signal_basis?: 'market_reference' | 'production_cost';
 };
@@ -127,6 +150,10 @@ export type SafMarketCheck = {
   fossil_with_ets_usd_per_l: number;
   premium_pct: number;
   status: 'competitive' | 'inflection' | 'premium';
+  allowance_coverage_pct?: number;
+  allowance_support_usd_per_l?: number;
+  statutory_allowance_coverage_pct?: number | null;
+  statutory_allowance_premium_pct?: number | null;
 };
 
 export type AirlineDecisionResponse = {

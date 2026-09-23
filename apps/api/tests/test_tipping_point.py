@@ -325,3 +325,16 @@ def test_hefa_uses_market_reference_not_production_seed(now: datetime, monkeypat
 
     # 1.243 − (1.761 − 0.245 ETS) = −0.27 USD/L: not even an ALERT.
     assert hefa_event is None
+
+
+def test_tipping_point_route_accepts_only_known_saf_allowance_modes() -> None:
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    client = TestClient(app)
+    base = {"fossil_jet_usd_per_l": 1.092, "carbon_price_eur_per_t": 70}
+    body = client.get("/v1/analysis/tipping-point", params={**base, "saf_allowance": "statutory"}).json()
+    assert body["inputs"]["saf_allowance"] == "statutory"
+    assert body["market_check"]["allowance_coverage_pct"] == 50.0
+    assert client.get("/v1/analysis/tipping-point", params={**base, "saf_allowance": "all"}).status_code == 422

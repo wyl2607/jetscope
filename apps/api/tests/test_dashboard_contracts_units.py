@@ -228,3 +228,67 @@ def test_pathway_comparison_response_attaches_sources_sweep_and_signal(monkeypat
     assert response.rows[0].source.source_type == "manual"
     assert [point.carbon_price_eur_per_t for point in response.carbon_sweep] == [0.0, 50.0]
     assert response.carbon_sweep[1].pathways[0].effective_saf_cost_usd_per_l == pytest.approx(0.85)
+
+
+def _live_inputs(**kwargs):
+    # Production 2026-09-23 16:30Z: EU jet proxy 1.092 USD/L, EUA 70 EUR/t.
+    return contracts.build_tipping_point_response(
+        fossil_jet_usd_per_l=1.092, carbon_price_eur_per_t=70.0, subsidy_usd_per_l=0.0, blend_rate_pct=0.0, **kwargs
+    )
+
+
+def test_saf_allowance_is_off_by_default_but_reports_the_statutory_what_if() -> None:
+    response = _live_inputs()
+
+    check = response.market_check
+    assert response.inputs.saf_allowance == "none"
+    assert check.allowance_coverage_pct == 0.0 and check.allowance_support_usd_per_l == 0.0
+    gap = check.saf_usd_per_l - check.fossil_with_ets_usd_per_l
+    assert check.premium_pct == pytest.approx(gap / check.fossil_with_ets_usd_per_l * 100, abs=0.01)
+    # HEFA from UCO/tallow is not an Annex IX Part A advanced biofuel: 50 % of the gap.
+    assert check.statutory_allowance_coverage_pct == 50.0
+    assert check.statutory_allowance_premium_pct == pytest.approx(check.premium_pct / 2, abs=0.01)
+    assert {row.allowance_coverage_pct for row in response.pathways} == {0.0}
+    assert response.saf_allowance.reserve_allowances == 20_000_000
+    assert response.saf_allowance.rates_pct == {
+        "other": 50, "advanced_biofuel_or_renewable_hydrogen": 70, "rfnbo": 95, "remote_airport": 100,
+    }
+    assert response.saf_allowance.latest_allowances == 5_200_000
+
+
+def test_statutory_allowance_covers_a_share_of_the_remaining_gap_per_pathway() -> None:
+    baseline = _live_inputs()
+    response = _live_inputs(saf_allowance="statutory")
+
+    check = response.market_check
+    base_gap = baseline.market_check.saf_usd_per_l - baseline.market_check.fossil_with_ets_usd_per_l
+    assert check.allowance_coverage_pct == 50.0
+    assert check.allowance_support_usd_per_l == pytest.approx(base_gap / 2, abs=1e-4)
+    assert check.premium_pct == pytest.approx(baseline.market_check.premium_pct / 2, abs=0.01)
+    # Still above the 15 % inflection band: the headline does not flip.
+    assert check.status == "premium" and response.signal == "fossil_still_advantaged"
+
+    rows = {row.pathway_key: row for row in response.pathways}
+    base_rows = {row.pathway_key: row for row in baseline.pathways}
+    fossil = response.effective_fossil_jet_usd_per_l
+    expected = {"hefa": 50, "atj": 50, "ft": 70, "ptl": 95}
+    for key, pct in expected.items():
+        assert rows[key].allowance_coverage_pct == pct
+        base_high = base_rows[key].net_cost_high_usd_per_l
+        assert rows[key].net_cost_high_usd_per_l == pytest.approx(
+            base_high - max(0.0, base_high - fossil) * pct / 100, abs=1e-4
+        )
+    assert rows["atj"].allowance_category_assumed and rows["ft"].allowance_category_assumed
+    assert not rows["hefa"].allowance_category_assumed and not rows["ptl"].allowance_category_assumed
+
+
+def test_remote_airport_allowance_closes_the_whole_gap() -> None:
+    response = _live_inputs(saf_allowance="remote_airport")
+
+    assert response.market_check.allowance_coverage_pct == 100.0
+    assert response.market_check.premium_pct == pytest.approx(0.0, abs=0.01)
+    assert all(row.net_cost_high_usd_per_l <= response.effective_fossil_jet_usd_per_l + 1e-4 for row in response.pathways)
+    # Parity bought by the allowance is a switch window, never "SAF cheaper".
+    assert response.market_check.status == "inflection"
+    assert {row.status for row in response.pathways} == {"inflection"}
+    assert response.signal == "switch_window_opening"

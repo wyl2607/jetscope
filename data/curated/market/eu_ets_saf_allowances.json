@@ -1,0 +1,31 @@
+{
+  "note": "EU ETS SAF allowances (Directive 2003/87/EC Art. 3c(6), inserted by Directive (EU) 2023/958). Rates transcribed from the Official Journal text. Pathway categories for ATJ and FT depend on feedstock and are assumptions.",
+  "legal_basis": {
+    "name": "Directive (EU) 2023/958, Article 3c(6) of Directive 2003/87/EC",
+    "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32023L0958",
+    "period": "2024-2030",
+    "reserve_allowances": 20000000,
+    "basis": "Share of the remaining price differential between fossil kerosene and the eligible fuel, after the carbon-price incentive; allocated yearly and ex post, reduced uniformly if demand exceeds the reserve."
+  },
+  "rates_pct": {
+    "other": 50,
+    "advanced_biofuel_or_renewable_hydrogen": 70,
+    "rfnbo": 95,
+    "remote_airport": 100
+  },
+  "pathway_categories": {
+    "hefa": {"category": "other", "assumption": false, "note": "UCO / tallow are RED Annex IX Part B, not advanced biofuels."},
+    "atj": {"category": "other", "assumption": true, "note": "Assumes crop-based ethanol; Annex IX Part A feedstock would qualify for 70 %."},
+    "ft": {"category": "advanced_biofuel_or_renewable_hydrogen", "assumption": true, "note": "Assumes Annex IX Part A residues (e.g. forestry, agricultural waste)."},
+    "ptl": {"category": "rfnbo", "assumption": false, "note": "Synthetic kerosene from renewable hydrogen is an RFNBO."}
+  },
+  "latest_allocation": {
+    "fuel_year": 2025,
+    "published_at": "2026-09-15",
+    "allowances": 5200000,
+    "value_eur": 430000000,
+    "saf_tonnes": 530000,
+    "source_name": "European Commission: Over EUR 400 million in EU ETS support given to airlines for using sustainable aviation fuels in 2025",
+    "source_url": "https://climate.ec.europa.eu/news-other-reads/news/over-eur400-million-eu-ets-support-given-airlines-using-sustainable-aviation-fuels-2025-2026-09-15_en"
+  }
+}
