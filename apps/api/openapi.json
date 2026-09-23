@@ -2648,6 +2648,18 @@
       },
       "PathwayTippingPoint": {
         "properties": {
+          "allowance_category_assumed": {
+            "default": false,
+            "title": "Allowance Category Assumed",
+            "type": "boolean"
+          },
+          "allowance_coverage_pct": {
+            "default": 0.0,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Allowance Coverage Pct",
+            "type": "number"
+          },
           "cost_basis": {
             "const": "production_cost",
             "default": "production_cost",
@@ -3384,9 +3396,95 @@
         "title": "RouteEditPayload",
         "type": "object"
       },
+      "SafAllowanceBasis": {
+        "description": "Where the allowance rates come from and how far they reach.",
+        "properties": {
+          "latest_allowances": {
+            "title": "Latest Allowances",
+            "type": "integer"
+          },
+          "latest_fuel_year": {
+            "title": "Latest Fuel Year",
+            "type": "integer"
+          },
+          "latest_published_at": {
+            "format": "date",
+            "title": "Latest Published At",
+            "type": "string"
+          },
+          "latest_saf_tonnes": {
+            "title": "Latest Saf Tonnes",
+            "type": "number"
+          },
+          "latest_source_name": {
+            "title": "Latest Source Name",
+            "type": "string"
+          },
+          "latest_source_url": {
+            "title": "Latest Source Url",
+            "type": "string"
+          },
+          "latest_value_eur": {
+            "title": "Latest Value Eur",
+            "type": "number"
+          },
+          "legal_basis_name": {
+            "title": "Legal Basis Name",
+            "type": "string"
+          },
+          "legal_basis_url": {
+            "title": "Legal Basis Url",
+            "type": "string"
+          },
+          "period": {
+            "title": "Period",
+            "type": "string"
+          },
+          "rates_pct": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Rates Pct",
+            "type": "object"
+          },
+          "reserve_allowances": {
+            "title": "Reserve Allowances",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "legal_basis_name",
+          "legal_basis_url",
+          "period",
+          "reserve_allowances",
+          "rates_pct",
+          "latest_fuel_year",
+          "latest_published_at",
+          "latest_allowances",
+          "latest_value_eur",
+          "latest_saf_tonnes",
+          "latest_source_name",
+          "latest_source_url"
+        ],
+        "title": "SafAllowanceBasis",
+        "type": "object"
+      },
       "SafMarketCheck": {
         "description": "Dated SAF purchase price against fossil jet plus its EU ETS cost.",
         "properties": {
+          "allowance_coverage_pct": {
+            "default": 0.0,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Allowance Coverage Pct",
+            "type": "number"
+          },
+          "allowance_support_usd_per_l": {
+            "default": 0.0,
+            "minimum": 0.0,
+            "title": "Allowance Support Usd Per L",
+            "type": "number"
+          },
           "fossil_with_ets_usd_per_l": {
             "exclusiveMinimum": 0.0,
             "title": "Fossil With Ets Usd Per L",
@@ -3447,6 +3545,28 @@
             ],
             "title": "Status",
             "type": "string"
+          },
+          "statutory_allowance_coverage_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Statutory Allowance Coverage Pct"
+          },
+          "statutory_allowance_premium_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Statutory Allowance Premium Pct"
           }
         },
         "required": [
@@ -3840,6 +3960,16 @@
             "title": "Fossil Jet Usd Per L",
             "type": "number"
           },
+          "saf_allowance": {
+            "default": "none",
+            "enum": [
+              "none",
+              "statutory",
+              "remote_airport"
+            ],
+            "title": "Saf Allowance",
+            "type": "string"
+          },
           "subsidy_usd_per_l": {
             "minimum": 0.0,
             "title": "Subsidy Usd Per L",
@@ -3886,6 +4016,16 @@
             },
             "title": "Pathways",
             "type": "array"
+          },
+          "saf_allowance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SafAllowanceBasis"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "signal": {
             "enum": [
@@ -4671,6 +4811,23 @@
               "minimum": 0,
               "title": "Blend Rate Pct",
               "type": "number"
+            }
+          },
+          {
+            "description": "EU ETS SAF allowances (Directive 2003/87/EC Art. 3c(6)): none, statutory per-pathway rate, or 100 % at remote airports",
+            "in": "query",
+            "name": "saf_allowance",
+            "required": false,
+            "schema": {
+              "default": "none",
+              "description": "EU ETS SAF allowances (Directive 2003/87/EC Art. 3c(6)): none, statutory per-pathway rate, or 100 % at remote airports",
+              "enum": [
+                "none",
+                "statutory",
+                "remote_airport"
+              ],
+              "title": "Saf Allowance",
+              "type": "string"
             }
           }
         ],

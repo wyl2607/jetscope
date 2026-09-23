@@ -10,8 +10,11 @@ import { ScenarioCostStackChart } from '@/components/scenario-cost-stack-chart';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
 import { assumed, derived, missing, type Figure } from '@/lib/figure';
 import {
+  SAF_ALLOWANCE_MODES,
   type AirlineDecisionResponse,
   type DecisionReadModel,
+  type SafAllowanceMode,
+  type SafMarketCheck,
   type TippingPointReadModel,
   type TippingPointResponse,
   toDecisionReadModel,
@@ -89,6 +92,7 @@ function reserveWeeksFigure(value: number, seed: Figure): Figure { // figure-con
 
 type Props = {
   initialTippingPoint: TippingPointReadModel | null;
+  initialMarketCheck?: SafMarketCheck | null;
   initialDecision: DecisionReadModel | null;
   initialReserveWeeks: Figure;
   liveDefaults: {
@@ -102,6 +106,17 @@ type Props = {
 };
 
 const PATHWAY_KEYS = ['hefa', 'atj', 'ft', 'ptl'] as const;
+
+// EU ETS SAF allowances (Directive 2003/87/EC Art. 3c(6)); off unless the reader opts in.
+const ALLOWANCE_LABELS: Record<SafAllowanceMode, string> = {
+  none: '不计入',
+  statutory: '法定比例（HEFA/ATJ 50%，FT 70%，PtL 95%）',
+  remote_airport: '偏远机场 100%'
+};
+
+function allowanceMode(value: string | null): SafAllowanceMode {
+  return SAF_ALLOWANCE_MODES.includes(value as SafAllowanceMode) ? (value as SafAllowanceMode) : 'none';
+}
 
 function finiteNumber(value: string | null, fallback: number, min = 0, max = Number.POSITIVE_INFINITY): number { // figure-contract-lint-ignore: input parsing helper, not a prop
   if (value === null) return fallback;
@@ -129,6 +144,7 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
 
 export function TippingPointWorkbench({
   initialTippingPoint,
+  initialMarketCheck = null,
   initialDecision,
   initialReserveWeeks,
   liveDefaults
@@ -172,7 +188,9 @@ export function TippingPointWorkbench({
     const raw = searchParams.get('pathway') ?? liveDefaults.pathwayKey;
     return PATHWAY_KEYS.includes(raw as (typeof PATHWAY_KEYS)[number]) ? raw : liveDefaults.pathwayKey;
   });
+  const [safAllowance, setSafAllowance] = useState<SafAllowanceMode>(() => allowanceMode(searchParams.get('allowance')));
   const [tippingPoint, setTippingPoint] = useState<TippingPointReadModel | null>(initialTippingPoint);
+  const [marketCheck, setMarketCheck] = useState<SafMarketCheck | null>(initialMarketCheck);
   const [decision, setDecision] = useState<DecisionReadModel | null>(initialDecision);
   const [status, setStatus] = useState('就绪');
   const [error, setError] = useState<string | null>(null);
@@ -188,8 +206,9 @@ export function TippingPointWorkbench({
       reserve: formatNumber(reserveWeeks, 2),
       pathway: pathwayKey
     });
+    if (safAllowance !== 'none') params.set('allowance', safAllowance);
     return params.toString();
-  }, [blendRatePct, carbonPriceEurPerT, fossilJetUsdPerL, pathwayKey, reserveWeeks, subsidyUsdPerL]);
+  }, [blendRatePct, carbonPriceEurPerT, fossilJetUsdPerL, pathwayKey, reserveWeeks, safAllowance, subsidyUsdPerL]);
 
   const pathways = tippingPoint?.pathways ?? [];
   const selectedPathway = pathways.find((item) => item.pathway_key === pathwayKey) ?? pathways[0] ?? null;
@@ -215,7 +234,8 @@ export function TippingPointWorkbench({
           fossil_jet_usd_per_l: String(fossilJetUsdPerL),
           carbon_price_eur_per_t: String(carbonPriceEurPerT),
           subsidy_usd_per_l: String(subsidyUsdPerL),
-          blend_rate_pct: String(blendRatePct)
+          blend_rate_pct: String(blendRatePct),
+          saf_allowance: safAllowance
         });
         const decisionParams = new URLSearchParams({
           fossil_jet_usd_per_l: String(fossilJetUsdPerL),
@@ -232,6 +252,7 @@ export function TippingPointWorkbench({
           )
         ]);
         setTippingPoint(toTippingPointReadModel(nextTippingPoint));
+        setMarketCheck(nextTippingPoint.market_check ?? null);
         setDecision(toDecisionReadModel(nextDecision));
         setStatus('分析已更新');
       } catch (err) {
@@ -245,7 +266,7 @@ export function TippingPointWorkbench({
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [blendRatePct, carbonPriceEurPerT, fossilJetUsdPerL, reserveWeeks, selectedPathwayKey, subsidyUsdPerL]);
+  }, [blendRatePct, carbonPriceEurPerT, fossilJetUsdPerL, reserveWeeks, safAllowance, selectedPathwayKey, subsidyUsdPerL]);
 
   function useLiveValues() {
     // Only apply known values — never write 0 as a stand-in for missing.
@@ -473,7 +494,37 @@ export function TippingPointWorkbench({
               ))}
             </select>
           </label>
+          <label className="text-xs uppercase tracking-[0.18em] text-muted">
+            <span>ETS SAF 配额</span>
+            {safAllowance !== 'none' ? (
+              <span className="ml-2 normal-case tracking-normal text-warning">情景</span>
+            ) : null}
+            <select
+              className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink transition hover:border-accent hover:bg-accent-soft"
+              value={safAllowance}
+              onChange={(event) => setSafAllowance(allowanceMode(event.target.value))}
+            >
+              {SAF_ALLOWANCE_MODES.map((mode) => (
+                <option key={mode} value={mode}>{ALLOWANCE_LABELS[mode]}</option>
+              ))}
+            </select>
+          </label>
         </div>
+
+        {marketCheck ? (
+          <p className="mt-4 text-sm leading-6 text-muted">
+            HEFA 采购参考价 {formatNumber(marketCheck.saf_usd_per_l, 3)} USD/L（{marketCheck.source_name}，{marketCheck.period}）
+            {marketCheck.allowance_support_usd_per_l
+              ? `，扣除 ETS 配额补贴 ${formatNumber(marketCheck.allowance_support_usd_per_l, 3)} USD/L（剩余价差的 ${formatNumber(marketCheck.allowance_coverage_pct ?? 0, 0)}%）`
+              : ''}
+            ，对比化石航油含 EU ETS 成本 {formatNumber(marketCheck.fossil_with_ets_usd_per_l, 3)} USD/L：溢价{' '}
+            {marketCheck.premium_pct >= 0 ? '+' : ''}
+            {formatNumber(marketCheck.premium_pct, 1)}%。
+            {safAllowance !== 'none'
+              ? ' 配额补贴按年事后发放，2024–2030 年总量 2000 万个封顶，申请超额时统一按比例削减；ATJ、FT 的档位取决于原料，这里是假设。'
+              : ''}
+          </p>
+        ) : null}
 
         <div className="mt-5 grid gap-6 lg:grid-cols-[1fr_0.7fr_auto]">
           <label className="text-xs uppercase tracking-[0.18em] text-muted">

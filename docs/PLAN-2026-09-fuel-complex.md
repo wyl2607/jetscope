@@ -1,6 +1,6 @@
 # Fuel Complex & SAF market layer (2026-09)
 
-Status: Phase A A0–A4 and B1/B3 live (c9d34af); B4 in review. Owner: Claude (design/review), user (merge/deploy).
+Status: Phase A, B1/B3/B4 live (d262a3a); C1 (SAF allowance toggle) in review. Owner: Claude (design/review), user (merge/deploy).
 
 ## Goal
 
@@ -29,8 +29,10 @@ changes, with every number dated and sourced.
   ETS cost to fossil (2.5 kg/L × EUA); the engine / pathway compare subtract a
   *lifecycle* credit (reduction % × 2.5 kg/L × EUA). Under the EU ETS, eligible
   SAF is zero-rated, so the compliance value is the full combustion factor, not
-  the LCA reduction. EU ETS also reserves 20 M allowances covering 50/70/95 % of
-  the SAF price gap (other / advanced / RFNBO); aviation free allocation ended 2026.
+  the LCA reduction. EU ETS also reserves 20 M allowances (2024–2030) covering
+  50/70/95/100 % of the SAF price gap left after the carbon price (other /
+  advanced biofuel or renewable H2 / RFNBO / remote airports; Art. 3c(6));
+  aviation free allocation ended 2026.
 - NOT a market price: BNEF's 2,746 USD/t is a 2027-Q1 outlook. Kept out of
   comparisons.
 
@@ -75,7 +77,7 @@ compliance-adjusted gap separately, and API/web suites are green.
   and motor fuels +2.0 %. Curated in `data/curated/market/destatis_cpi.json`.
 - B2 (next): Diesel–HVO100 spread, only once a dated public HVO source is
   verified; a single station page is not a national price.
-- B4 (this branch): EV vs diesel vs petrol cost per 100 km. Household power
+- B4 (live): EV vs diesel vs petrol cost per 100 km. Household power
   from BDEW-Strompreisanalyse 08/2026 (37.0 ct/kWh, 2026 Jan–Aug new-customer
   tariffs, 3,500 kWh/a, incl. VAT), with Destatis 2025-H2 (40.55 ct/kWh, all
   households) shown as a reference. Curated in
@@ -87,6 +89,18 @@ compliance-adjusted gap separately, and API/web suites are green.
 ## Phase C — supply side
 
 - Feedstock crowding index (UCO / tallow references, HVO margin proxy).
-- SAF-allowance support (50/70/95 %) as an explicit scenario toggle.
+- C1 (this branch): EU ETS SAF-allowance toggle on `/v1/analysis/tipping-point`
+  (`saf_allowance=none|statutory|remote_airport`, default `none`). Rates from
+  the OJ text of Directive (EU) 2023/958, Art. 3c(6): 50 % other, 70 % advanced
+  biofuels (RED Annex IX Part A) / renewable H2, 95 % RFNBO, 100 % small-island,
+  small and outermost-region airports, all on the gap left after the carbon
+  price. Pathway mapping HEFA 50 (UCO/tallow are Annex IX Part B), ATJ 50 and
+  FT 70 (feedstock assumptions), PtL 95. Paid yearly ex post, capped at 20 M
+  allowances and cut uniformly when oversubscribed, so it stays off the headline;
+  `market_check` always carries the statutory what-if (2026-09-23: HEFA premium
+  +36 % → +18 %, still above the 15 % inflection band). Latest allocation: 2025
+  use, 5.2 M allowances ≈ EUR 430 M, 530 kt SAF (Commission, 2026-09-15).
+  Curated in `data/curated/market/eu_ets_saf_allowances.json`. COM(2026) 616
+  (2026-07-27) proposes extending to 2040 with 110 M more allowances; not law.
 - Link pathway rows to esg-research-toolkit `techno_economics/saf.py` LCOS/IRR.
 - Threshold alerts on Jet–SAF spread, Diesel–HVO spread, EUA.

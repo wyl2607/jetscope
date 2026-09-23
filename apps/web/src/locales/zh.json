@@ -1315,6 +1315,7 @@
     "market_title": "SAF 采购价 vs 化石航油",
     "market_why": "上面的信号按航空公司实际采购 SAF 的价格判断；各路线的数字是生产成本假设，不是采购价。",
     "market_body": "SAF 采购参考价 {saf}（{source}，{period} 年均价，{published} 发布），化石航油含 EU ETS 成本 {fossil}，溢价 {premium}。",
+    "market_allowance": "情景（默认不计入）：按 EU ETS SAF 配额补贴法定比例（HEFA 适用 {coverage}%，覆盖扣除碳价后的剩余价差），溢价降至 {premium}。配额事后按年发放、{period} 年共 {reserve} 百万个封顶，申请超额时统一按比例削减；{year} 年实际发放 {allowances} 百万个，约 {value} 百万欧元。来源：",
     "market_missing": "暂无带日期的 SAF 采购价参考，信号按生产成本假设计算。",
     "market_basis_production": "下方路线成本：生产成本假设（人工录入，非市场成交价）。",
     "meta_title": "临界点报告",

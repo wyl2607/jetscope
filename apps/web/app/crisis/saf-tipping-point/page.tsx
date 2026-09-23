@@ -296,6 +296,7 @@ export default async function SafTippingPointPage() {
       >
         <TippingPointWorkbench
           initialTippingPoint={tippingPoint}
+          initialMarketCheck={readModel.tippingPoint?.market_check ?? null}
           initialDecision={airlineDecision}
           initialReserveWeeks={reserveDefault}
           liveDefaults={{
