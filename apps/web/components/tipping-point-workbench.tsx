@@ -8,7 +8,7 @@ import { FuelVsSafPriceChart } from '@/components/fuel-vs-saf-price-chart';
 import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
 import { ScenarioCostStackChart } from '@/components/scenario-cost-stack-chart';
 import { TippingPointSimulator } from '@/components/tipping-point-simulator';
-import { assumed, derived, missing, observed, type Figure } from '@/lib/figure';
+import { assumed, derived, missing, type Figure } from '@/lib/figure';
 import {
   type AirlineDecisionResponse,
   type DecisionReadModel,
@@ -396,7 +396,9 @@ export function TippingPointWorkbench({
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           <label className="text-xs uppercase tracking-[0.18em] text-muted">
             <span>化石航油 USD/L</span>
-            {liveDefaults.fossilJetUsdPerL.basis === 'assumption' ? (
+            {fossilJetUserControlled ? (
+              <span className="ml-2 normal-case tracking-normal text-warning">你的输入（假设值）</span>
+            ) : liveDefaults.fossilJetUsdPerL.basis === 'assumption' ? (
               <span className="ml-2 normal-case tracking-normal text-warning">假设值</span>
             ) : null}
             <input
