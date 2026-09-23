@@ -203,6 +203,8 @@ class PathwaySourceMeta(BaseModel):
     cadence: str
     updated_at: str
     fallback_used: bool
+    source_name: str | None = None
+    source_url: str | None = None
 
 
 class PathwayComparisonRow(BaseModel):

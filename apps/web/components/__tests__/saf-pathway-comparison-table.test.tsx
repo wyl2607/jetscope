@@ -40,7 +40,9 @@ describe('SafPathwayComparisonTable', () => {
             confidencePct: 80,
             confidenceLabel: '高',
             freshnessLabel: '2026-06-01 · daily',
-            fallbackUsed: false
+            fallbackUsed: false,
+            sourceName: null,
+            sourceUrl: null
           }
         }}
       />
@@ -48,6 +50,30 @@ describe('SafPathwayComparisonTable', () => {
 
     expect(getByText('来源可信度')).not.toBeNull();
     expect(getByText(/market_feed/)).not.toBeNull();
+  });
+
+  it('links the published source when a pathway has one', () => {
+    const { getByRole } = render(
+      <SafPathwayComparisonTable
+        selectedPathwayKey="hefa"
+        pathways={[hefaFixture]}
+        sources={{
+          hefa: {
+            sourceType: 'official',
+            confidencePct: 80,
+            confidenceLabel: '高',
+            freshnessLabel: '2026-02-26 · annual',
+            fallbackUsed: false,
+            sourceName: 'EASA 2026 Briefing Note',
+            sourceUrl: 'https://www.easa.europa.eu/en/downloads/143282/en'
+          }
+        }}
+      />
+    );
+    expect(getByRole('link', { name: 'EASA 2026 Briefing Note' })).toHaveAttribute(
+      'href',
+      'https://www.easa.europa.eu/en/downloads/143282/en'
+    );
   });
 
   it('renders pathway attributes from mocked API data', async () => {

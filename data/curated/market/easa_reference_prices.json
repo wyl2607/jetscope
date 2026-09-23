@@ -1,0 +1,20 @@
+{
+  "note": "EASA 2025 reference prices for ReFuelEU Aviation fuels (EUR per tonne of product, not energy-adjusted). Real index prices come from price reporting agencies; production cost estimates are EASA back-up pricing for small first-of-a-kind plants, AACE Class 5 (-50 % / +100 %). Used by the Commission for the EU ETS SAF-allowance price differential.",
+  "reference_year": 2025,
+  "published_at": "2026-02-26",
+  "source_name": "EASA 2026 Briefing Note: 2025 Aviation Fuels Reference Prices for ReFuelEU Aviation, Table 1",
+  "source_url": "https://www.easa.europa.eu/en/downloads/143282/en",
+  "methodology_url": "https://www.easa.europa.eu/en/downloads/142604/en",
+  "subcategories": {
+    "aviation_biofuels": {"real_index_eur_per_t": 1925, "production_cost_eur_per_t": 1630},
+    "advanced_aviation_biofuels": {"production_cost_eur_per_t": 2760, "low_eur_per_t": 1790, "high_eur_per_t": 3130},
+    "synthetic_aviation_fuels": {"production_cost_eur_per_t": 7520, "low_eur_per_t": 6710, "high_eur_per_t": 9525},
+    "conventional_aviation_fuels": {"real_index_eur_per_t": 640}
+  },
+  "pathway_production_cost": {
+    "hefa": "aviation_biofuels",
+    "atj": "advanced_aviation_biofuels",
+    "ft": "advanced_aviation_biofuels",
+    "ptl": "synthetic_aviation_fuels"
+  }
+}

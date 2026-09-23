@@ -1,6 +1,6 @@
 # Fuel Complex & SAF market layer (2026-09)
 
-Status: Phase A, B1/B3/B4, C1 live (eff5b74); C2 (feedstock squeeze) in review. Owner: Claude (design/review), user (merge/deploy).
+Status: Phase A, B1/B3/B4, C1/C2 live (518dbfb); C3 (EASA pathway costs) in review. Owner: Claude (design/review), user (merge/deploy).
 
 ## Goal
 
@@ -88,7 +88,7 @@ compliance-adjusted gap separately, and API/web suites are green.
 
 ## Phase C — supply side
 
-- C2 (this branch): feedstock squeeze panel on the tipping-point report,
+- C2 (live): feedstock squeeze panel on the tipping-point report,
   `/v1/market/feedstock`. Three separate readings, no weighted score: UCO
   (ISCC) DDP NWE against its prior-year range (week ending 2026-09-10:
   EUR 1,280–1,290/t, +6.4 % over the 2025 high of 1,207.50), UCO CIF ARA bulk
@@ -97,10 +97,18 @@ compliance-adjusted gap separately, and API/web suites are green.
   Transcribed from free Fastmarkets insight articles (the database is
   paywalled) into `data/curated/market/feedstock_prices.json`; stale after
   30 days. No current public tallow price, so no tallow.
-- Next candidate: EASA 2025 per-subcategory reference prices (briefing note,
-  <https://www.easa.europa.eu/en/downloads/143282/en>: advanced biofuels avg
-  2,760, synthetic 7,520, aviation biofuels 1,925, CAF 640 EUR/t) as the
-  official basis for non-HEFA pathway rows and the allowance gap.
+- C3 (this branch): pathway production-cost bands now come from EASA's 2025
+  reference prices (briefing note 2026-02-26,
+  <https://www.easa.europa.eu/en/downloads/143282/en>, Table 1), curated in
+  `data/curated/market/easa_reference_prices.json` and converted at
+  1,250 L/t and the seed EUR/USD. HEFA 1,630 EUR/t (single point, 1.49 USD/L);
+  ATJ and FT share advanced aviation biofuels 2,760 [1,790–3,130] (2.52
+  [1.64–2.86]) because EASA does not split by technology; PtL synthetic
+  7,520 [6,710–9,525] (6.88 [6.14–8.71]). Previously unsourced manual bands
+  (PtL 3.0–5.0). EASA back-up pricing is AACE Class 5 (−50 %/+100 %). Sources
+  are `official`, annual cadence (stale after 400 days, 2027-04-03); this also
+  removes the quarterly 2026-07-15 stamp that would have gone stale on
+  2026-10-24.
 - C1 (live): EU ETS SAF-allowance toggle on `/v1/analysis/tipping-point`
   (`saf_allowance=none|statutory|remote_airport`, default `none`). Rates from
   the OJ text of Directive (EU) 2023/958, Art. 3c(6): 50 % other, 70 % advanced
