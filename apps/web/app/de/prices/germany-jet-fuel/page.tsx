@@ -16,6 +16,10 @@ export const metadata: Metadata = buildPageMetadata({
   }
 });
 
-export default function GermanGermanyJetFuelPricePage() {
-  return <GermanyJetFuelPage locale="de" />;
+export default async function GermanGermanyJetFuelPricePage({
+  searchParams
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  return <GermanyJetFuelPage locale="de" searchParams={await searchParams} />;
 }

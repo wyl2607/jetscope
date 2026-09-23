@@ -1,6 +1,6 @@
 # Fuel Complex & SAF market layer (2026-09)
 
-Status: Phase A A0–A3 live (98bbdf3); A4 in review. Owner: Claude (design/review), user (merge/deploy).
+Status: Phase A A0–A4 and B1/B3 live (c9d34af); B4 in review. Owner: Claude (design/review), user (merge/deploy).
 
 ## Goal
 
@@ -62,21 +62,27 @@ compliance-adjusted gap separately, and API/web suites are green.
 
 ## Phase B — road fuels & macro
 
-- B1 (this branch): German pump prices from the EU Weekly Oil Bulletin
+- B1 (live): German pump prices from the EU Weekly Oil Bulletin
   **history workbook** (Germany, Euro-super 95 and diesel, with and without
   taxes, weekly), fetched once a day, served at `/v1/road-fuels/germany`.
   On 2026-09-23 the Bulletin's "latest prices with taxes" download served the
   same ex-tax file as "without taxes" (Germany E95 1,170 EUR/1000 L), so only
   the history workbook is used. Week of 2026-09-21: E95 2.348, diesel 2.457
   EUR/L incl. tax (52-week change +36.9 % / +55.1 %).
-- B3 (this branch): CPI pass-through from Destatis (Aug 2026, published
+- B3 (live): CPI pass-through from Destatis (Aug 2026, published
   2026-09-10): CPI +2.9 %, motor fuels +27.7 % at a weight of 30.46 per mille,
   so a static direct contribution of about 0.84 pp; CPI excluding heating oil
   and motor fuels +2.0 %. Curated in `data/curated/market/destatis_cpi.json`.
 - B2 (next): Diesel–HVO100 spread, only once a dated public HVO source is
   verified; a single station page is not a national price.
-- B4 (next): EV vs diesel vs petrol cost per 100 km, once a sourced household
-  electricity price is curated. Consumption figures are labelled assumptions.
+- B4 (this branch): EV vs diesel vs petrol cost per 100 km. Household power
+  from BDEW-Strompreisanalyse 08/2026 (37.0 ct/kWh, 2026 Jan–Aug new-customer
+  tariffs, 3,500 kWh/a, incl. VAT), with Destatis 2025-H2 (40.55 ct/kWh, all
+  households) shown as a reference. Curated in
+  `data/curated/market/household_electricity_prices.json`. Home charging only:
+  no verifiable public fast-charging price source. Consumptions default to
+  6 L / 7 L / 18 kWh per 100 km, labelled assumptions, adjustable via
+  `?diesel_l=&petrol_l=&ev_kwh=`.
 
 ## Phase C — supply side
 

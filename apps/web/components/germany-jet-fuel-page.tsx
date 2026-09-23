@@ -7,7 +7,7 @@ import { getGermanyJetFuelReadModel } from '@/lib/germany-jet-fuel-read-model';
 import { messagesFor, type Locale } from '@/lib/i18n';
 import { NAV_ENTRIES } from '@/lib/navigation';
 import { getPriceTrendChartReadModel } from '@/lib/price-trend-chart-read-model';
-import { getRoadFuelsGermany } from '@/lib/road-fuels-read-model';
+import { getRoadFuelsGermany, type SearchParams } from '@/lib/road-fuels-read-model';
 import type { Route } from 'next';
 
 /**
@@ -58,12 +58,18 @@ function sourceLinkLabel(
   return copy.source_carbon;
 }
 
-export async function GermanyJetFuelPage({ locale }: { locale: Locale }) {
+export async function GermanyJetFuelPage({
+  locale,
+  searchParams
+}: {
+  locale: Locale;
+  searchParams?: SearchParams;
+}) {
   const copy = messagesFor(locale).prices;
   const [readModel, priceChartData, roadFuels] = await Promise.all([
     getGermanyJetFuelReadModel(locale),
     copy.show_trend_chart ? getPriceTrendChartReadModel() : Promise.resolve(null),
-    getRoadFuelsGermany()
+    getRoadFuelsGermany(searchParams)
   ]);
   const observedAsOf =
     readModel.quoteAsOf ??

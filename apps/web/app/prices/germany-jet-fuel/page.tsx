@@ -16,6 +16,10 @@ export const metadata: Metadata = buildPageMetadata({
   }
 });
 
-export default function ZhGermanyJetFuelPricePage() {
-  return <GermanyJetFuelPage locale="zh" />;
+export default async function ZhGermanyJetFuelPricePage({
+  searchParams
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  return <GermanyJetFuelPage locale="zh" searchParams={await searchParams} />;
 }

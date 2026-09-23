@@ -105,3 +105,39 @@ def test_route_reports_pump_prices_and_cpi_pass_through(fresh_state) -> None:
     # Destatis Aug 2026: weight 30.46 per mille x motor fuels +27.7 % YoY.
     assert body["inflation"]["period"] == "2026-08"
     assert body["inflation"]["motor_fuels_contribution_pp"] == 0.84
+
+
+def test_cost_per_100km_uses_pump_prices_and_sourced_household_power(fresh_state) -> None:
+    client = TestClient(app)
+
+    # Without pump prices only the EV (home charging) cost is known.
+    empty = client.get("/v1/road-fuels/germany").json()["cost_per_100km"]
+    assert empty["diesel_eur"] is None and empty["petrol_eur"] is None
+    assert empty["ev_home_eur"] == round(0.370 * 18, 2)
+
+    road_fuels._state.update(
+        summary=road_fuels.summarize(road_fuels.parse_wob_history(_workbook(_weeks()))),
+        fetched_at=datetime(2026, 9, 23, 12, tzinfo=UTC),
+    )
+    costs = client.get("/v1/road-fuels/germany").json()["cost_per_100km"]
+    assert costs["assumptions"] == {"diesel_l_per_100km": 6.0, "petrol_l_per_100km": 7.0, "ev_kwh_per_100km": 18.0}
+    assert costs["diesel_eur"] == round(2.457 * 6, 2)
+    assert costs["petrol_eur"] == round(2.348 * 7, 2)
+    # BDEW Aug 2026 new-customer average vs Destatis 2025-H2 all-household average.
+    assert costs["electricity"]["eur_per_kwh"] == 0.370
+    assert costs["electricity"]["published_at"] == "2026-08-21"
+    assert costs["electricity_reference"]["eur_per_kwh"] == 0.4055
+    assert costs["ev_home_reference_eur"] == round(0.4055 * 18, 2)
+
+    custom = client.get(
+        "/v1/road-fuels/germany",
+        params={"diesel_l_per_100km": 5, "petrol_l_per_100km": 8.5, "ev_kwh_per_100km": 20},
+    ).json()["cost_per_100km"]
+    assert custom["diesel_eur"] == round(2.457 * 5, 2)
+    assert custom["petrol_eur"] == round(2.348 * 8.5, 2)
+    assert custom["ev_home_eur"] == round(0.370 * 20, 2)
+
+
+@pytest.mark.parametrize("params", [{"ev_kwh_per_100km": 0}, {"diesel_l_per_100km": -1}, {"petrol_l_per_100km": 31}])
+def test_cost_assumptions_are_bounded(params: dict[str, float]) -> None:
+    assert TestClient(app).get("/v1/road-fuels/germany", params=params).status_code == 422

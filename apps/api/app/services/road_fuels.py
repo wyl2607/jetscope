@@ -167,3 +167,40 @@ def latest_cpi_release() -> dict[str, object] | None:
     with path.open(encoding="utf-8") as handle:
         releases = json.load(handle).get("releases", [])
     return max(releases, key=lambda item: str(item["published_at"]), default=None)
+
+
+# Example consumptions, not data: the UI labels them as assumptions and lets the reader change them.
+DEFAULT_DIESEL_L_PER_100KM = 6.0
+DEFAULT_PETROL_L_PER_100KM = 7.0
+DEFAULT_EV_KWH_PER_100KM = 18.0
+
+
+def household_electricity_prices() -> dict[str, dict[str, object]] | None:
+    path = curated_dir() / "market" / "household_electricity_prices.json"
+    if not path.is_file():
+        return None
+    with path.open(encoding="utf-8") as handle:
+        data = json.load(handle)
+    return {"primary": data["primary"], "reference": data["reference"]}
+
+
+def cost_per_100km(
+    pump_fuels: dict[str, dict[str, object]] | None,
+    electricity: dict[str, dict[str, object]] | None,
+    diesel_l: float,
+    petrol_l: float,
+    ev_kwh: float,
+) -> dict[str, float | None]:
+    """EUR per 100 km at pump prices incl. tax and household electricity (home charging only)."""
+
+    def cost(price: object, amount: float) -> float | None:
+        return round(float(price) * amount, 2) if isinstance(price, (int, float)) else None
+
+    fuels = pump_fuels or {}
+    power = electricity or {}
+    return {
+        "diesel_eur": cost(fuels.get("diesel", {}).get("with_tax_eur_per_l"), diesel_l),
+        "petrol_eur": cost(fuels.get("euro95", {}).get("with_tax_eur_per_l"), petrol_l),
+        "ev_home_eur": cost(power.get("primary", {}).get("eur_per_kwh"), ev_kwh),
+        "ev_home_reference_eur": cost(power.get("reference", {}).get("eur_per_kwh"), ev_kwh),
+    }

@@ -370,7 +370,20 @@
     "col_52w": "52 Wochen",
     "pump_source": "Bundesdurchschnitt, Woche vom {week}. Quelle:",
     "pump_missing": "Daten des EU Weekly Oil Bulletin noch nicht geladen; es wird kein Schätzwert angezeigt.",
-    "inflation_body": "{period}: Verbraucherpreise +{cpi}% ggü. Vorjahr; Kraftstoffe +{fuels}% bei einem Gewicht von {weight}‰, statischer direkter Beitrag rund {contribution} Prozentpunkte; ohne Heizöl und Kraftstoffe {ex}%. (Beitrag = Gewicht × Veränderung, Näherung erster Ordnung, keine amtliche Zerlegung.) Quelle:"
+    "inflation_body": "{period}: Verbraucherpreise +{cpi}% ggü. Vorjahr; Kraftstoffe +{fuels}% bei einem Gewicht von {weight}‰, statischer direkter Beitrag rund {contribution} Prozentpunkte; ohne Heizöl und Kraftstoffe {ex}%. (Beitrag = Gewicht × Veränderung, Näherung erster Ordnung, keine amtliche Zerlegung.) Quelle:",
+    "cost_title": "Kosten je 100 km: Diesel vs. Benzin vs. Elektro (Laden zu Hause)",
+    "col_vehicle": "Fahrzeug",
+    "col_consumption": "Verbrauch (Annahme)",
+    "col_cost_100km": "Kosten je 100 km",
+    "ev_home": "Elektroauto, Laden zu Hause",
+    "cost_assumption_note": "Die Verbräuche sind änderbare Beispielannahmen, keine Messdaten; beim Elektroauto ist der Netzbezug inklusive Ladeverlusten gemeint. Kraftstoffkosten nutzen die obigen Pumpenpreise dieser Woche inkl. Steuern; öffentliches Schnellladen ist nicht enthalten, da es keine überprüfbare öffentliche Preisquelle gibt.",
+    "electricity_source": "Haushaltsstrom {price} ct/kWh ({period}, veröffentlicht {published}). Quelle:",
+    "electricity_reference": "Referenz: Durchschnitt aller Haushalte {price} ct/kWh ({period}, veröffentlicht {published}) ergäbe €{cost} je 100 km. Quelle:",
+    "electricity_missing": "Kein belegter Haushaltsstrompreis geladen; die Kosten für das Elektroauto werden nicht angezeigt.",
+    "input_diesel": "Diesel, L/100 km",
+    "input_petrol": "Benzin (E95), L/100 km",
+    "input_ev": "Elektro, kWh/100 km",
+    "recalculate": "Neu berechnen"
   },
   "prices": {
     "meta_title": "Deutschland Kerosinpreis",

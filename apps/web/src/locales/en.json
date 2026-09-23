@@ -369,7 +369,20 @@
     "col_52w": "52 weeks",
     "pump_source": "National average, week of {week}. Source:",
     "pump_missing": "EU Weekly Oil Bulletin data not loaded yet; no estimate is shown.",
-    "inflation_body": "{period}: German CPI {cpi}% YoY; motor fuels {fuels}% YoY at a weight of {weight}‰, a static direct contribution of about {contribution} percentage points; CPI excluding heating oil and motor fuels {ex}%. (Contribution = weight × change, a first-order estimate, not an official decomposition.) Source:"
+    "inflation_body": "{period}: German CPI {cpi}% YoY; motor fuels {fuels}% YoY at a weight of {weight}‰, a static direct contribution of about {contribution} percentage points; CPI excluding heating oil and motor fuels {ex}%. (Contribution = weight × change, a first-order estimate, not an official decomposition.) Source:",
+    "cost_title": "Cost per 100 km: diesel vs petrol vs electric (home charging)",
+    "col_vehicle": "Vehicle",
+    "col_consumption": "Consumption (assumption)",
+    "col_cost_100km": "Cost per 100 km",
+    "ev_home": "Electric car, home charging",
+    "cost_assumption_note": "Consumptions are editable example assumptions, not measured data; the EV figure is energy drawn from the grid including charging losses. Fuel costs use this week's pump prices incl. tax above; public fast charging is not included because no verifiable public price source exists.",
+    "electricity_source": "Household electricity {price} ct/kWh ({period}, published {published}). Source:",
+    "electricity_reference": "Reference: all-household average {price} ct/kWh ({period}, published {published}) would give €{cost} per 100 km. Source:",
+    "electricity_missing": "No sourced household electricity price loaded; the EV cost is not shown.",
+    "input_diesel": "Diesel, L/100 km",
+    "input_petrol": "Petrol (E95), L/100 km",
+    "input_ev": "Electric, kWh/100 km",
+    "recalculate": "Recalculate"
   },
   "prices": {
     "meta_title": "Germany Jet-Fuel Price Monitor",

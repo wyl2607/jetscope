@@ -188,6 +188,111 @@
         "title": "AirlineDecisionResponse",
         "type": "object"
       },
+      "ConsumptionAssumptions": {
+        "properties": {
+          "diesel_l_per_100km": {
+            "title": "Diesel L Per 100Km",
+            "type": "number"
+          },
+          "ev_kwh_per_100km": {
+            "title": "Ev Kwh Per 100Km",
+            "type": "number"
+          },
+          "petrol_l_per_100km": {
+            "title": "Petrol L Per 100Km",
+            "type": "number"
+          }
+        },
+        "required": [
+          "diesel_l_per_100km",
+          "petrol_l_per_100km",
+          "ev_kwh_per_100km"
+        ],
+        "title": "ConsumptionAssumptions",
+        "type": "object"
+      },
+      "CostPer100km": {
+        "properties": {
+          "assumptions": {
+            "$ref": "#/components/schemas/ConsumptionAssumptions"
+          },
+          "diesel_eur": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diesel Eur"
+          },
+          "electricity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ElectricityPrice"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "electricity_reference": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ElectricityPrice"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ev_home_eur": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ev Home Eur"
+          },
+          "ev_home_reference_eur": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ev Home Reference Eur"
+          },
+          "petrol_eur": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Petrol Eur"
+          }
+        },
+        "required": [
+          "assumptions",
+          "diesel_eur",
+          "petrol_eur",
+          "ev_home_eur",
+          "ev_home_reference_eur",
+          "electricity",
+          "electricity_reference"
+        ],
+        "title": "CostPer100km",
+        "type": "object"
+      },
       "CpiPassThrough": {
         "properties": {
           "cpi_ex_heating_oil_and_motor_fuels_yoy_pct": {
@@ -401,6 +506,45 @@
           "research"
         ],
         "title": "CrisisBriefResponse",
+        "type": "object"
+      },
+      "ElectricityPrice": {
+        "properties": {
+          "basis": {
+            "title": "Basis",
+            "type": "string"
+          },
+          "eur_per_kwh": {
+            "title": "Eur Per Kwh",
+            "type": "number"
+          },
+          "period": {
+            "title": "Period",
+            "type": "string"
+          },
+          "published_at": {
+            "format": "date",
+            "title": "Published At",
+            "type": "string"
+          },
+          "source_name": {
+            "title": "Source Name",
+            "type": "string"
+          },
+          "source_url": {
+            "title": "Source Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "eur_per_kwh",
+          "period",
+          "published_at",
+          "basis",
+          "source_name",
+          "source_url"
+        ],
+        "title": "ElectricityPrice",
         "type": "object"
       },
       "EuEtsPressureInputs": {
@@ -3151,6 +3295,9 @@
       },
       "RoadFuelsGermanyResponse": {
         "properties": {
+          "cost_per_100km": {
+            "$ref": "#/components/schemas/CostPer100km"
+          },
           "generated_at": {
             "format": "date-time",
             "title": "Generated At",
@@ -3180,7 +3327,8 @@
         "required": [
           "generated_at",
           "pump",
-          "inflation"
+          "inflation",
+          "cost_per_100km"
         ],
         "title": "RoadFuelsGermanyResponse",
         "type": "object"
@@ -5575,6 +5723,44 @@
     "/v1/road-fuels/germany": {
       "get": {
         "operationId": "get_germany_road_fuels_v1_road_fuels_germany_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "diesel_l_per_100km",
+            "required": false,
+            "schema": {
+              "default": 6.0,
+              "exclusiveMinimum": 0,
+              "maximum": 30,
+              "title": "Diesel L Per 100Km",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "petrol_l_per_100km",
+            "required": false,
+            "schema": {
+              "default": 7.0,
+              "exclusiveMinimum": 0,
+              "maximum": 30,
+              "title": "Petrol L Per 100Km",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ev_kwh_per_100km",
+            "required": false,
+            "schema": {
+              "default": 18.0,
+              "exclusiveMinimum": 0,
+              "maximum": 60,
+              "title": "Ev Kwh Per 100Km",
+              "type": "number"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -5585,6 +5771,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Get Germany Road Fuels",
