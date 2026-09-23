@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 
 const source = readFileSync(join(process.cwd(), 'scripts/preflight-ui-e2e.mjs'), 'utf8');
+const journeySource = readFileSync(join(process.cwd(), 'scripts/e2e-journey.mjs'), 'utf8');
 const productSource = readFileSync(join(process.cwd(), 'scripts/preflight-product-smoke.mjs'), 'utf8');
 
 function assertContains(snippet, message) {
@@ -80,4 +81,13 @@ test('both preflight harnesses execute npm through Node without a shell', () => 
     assert.match(harness, /shell: false/, `${name} must keep child process shell execution disabled`);
     assert.doesNotMatch(harness, /shell:\s*true|useShell/, `${name} must not reintroduce shell switching`);
   }
+});
+
+test('MVP journey E2E reuses the isolated UI harness and is registered', () => {
+  const packageJson = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8'));
+  assert.equal(packageJson.scripts['e2e:journey'], 'node scripts/e2e-journey.mjs');
+  assert.match(journeySource, /runIsolatedUiE2e/, 'journey must reuse the UI E2E start/cleanup harness');
+  assert.match(journeySource, /HTTP_PROXY: BLOCKED_PROXY/, 'journey must force external market fetches offline locally');
+  assert.match(journeySource, /数据缺失/, 'journey must assert missing-market dashboard copy');
+  assert.match(journeySource, /复制分享链接/, 'journey must assert the workbench share control');
 });

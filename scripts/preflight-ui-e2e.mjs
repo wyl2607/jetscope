@@ -416,7 +416,12 @@ async function runUiFlow(page) {
   assert(dashboardHasDeleted === 0, 'Dashboard should not keep deleted scenario');
 }
 
-async function runAttempt(attempt) {
+async function runAttempt(attempt, {
+  label = 'UI E2E',
+  flow = runUiFlow,
+  apiEnv = {},
+  beforeWebStart
+} = {}) {
   const apiPort = randomPort();
   const webPort = randomPort(50001, 65000);
   const tempDir = mkdtempSync(join(tmpdir(), 'jetscope-ui-e2e-'));
@@ -427,7 +432,7 @@ async function runAttempt(attempt) {
   let browser = null;
   let page = null;
 
-  console.log(`UI E2E env: apiPort=${apiPort} webPort=${webPort} sqlite=${sqlitePath}`);
+  console.log(`${label} env: apiPort=${apiPort} webPort=${webPort} sqlite=${sqlitePath}`);
 
   try {
     apiProc = startProcess(
@@ -443,12 +448,16 @@ async function runAttempt(attempt) {
           JETSCOPE_MARKET_REFRESH_INTERVAL_SECONDS: '0',
           JETSCOPE_MARKET_SOURCE_TIMEOUT_SECONDS: '0.25',
           JETSCOPE_ADMIN_TOKEN: adminToken,
-          JETSCOPE_API_PREFIX: '/v1'
+          JETSCOPE_API_PREFIX: '/v1',
+          ...apiEnv
         }
       }
     );
 
     await waitForUrl(`http://127.0.0.1:${apiPort}/v1/health`);
+    if (beforeWebStart) {
+      await beforeWebStart({ apiPort, sqlitePath });
+    }
 
     webProc = startProcess(
       'web',
@@ -469,11 +478,20 @@ async function runAttempt(attempt) {
 
     browser = await chromium.launch({ headless: true });
     page = await browser.newPage({ baseURL: `http://127.0.0.1:${webPort}` });
-    await runUiFlow(page);
+    await flow(page, { apiPort, webPort, sqlitePath });
   } catch (error) {
+    let failure = error instanceof Error ? error : new Error(String(error));
+    if (page && !failure.message.includes('Page text excerpt:')) {
+      try {
+        const text = (await page.locator('body').innerText()).replaceAll(/\s+/g, ' ').trim().slice(0, 2400);
+        failure = new Error(`${failure.message}\nPage text excerpt:\n${text}`, { cause: failure });
+      } catch {
+        // The existing screenshot, HTML, and process-log artifact capture below remains best effort.
+      }
+    }
     await captureFailureArtifacts({
       attempt,
-      error,
+      error: failure,
       page,
       apiProc,
       webProc,
@@ -481,7 +499,7 @@ async function runAttempt(attempt) {
       webPort,
       sqlitePath
     }).catch(() => {});
-    throw error;
+    throw failure;
   } finally {
     if (browser) {
       await browser.close().catch(() => {});
@@ -492,19 +510,24 @@ async function runAttempt(attempt) {
   }
 }
 
-async function run() {
+export async function runIsolatedUiE2e({
+  label = 'UI E2E',
+  flow = runUiFlow,
+  apiEnv = {},
+  beforeWebStart
+} = {}) {
   let lastError = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
-      console.log(`Starting UI E2E attempt ${attempt}/${maxAttempts}`);
-      await runAttempt(attempt);
-      console.log('UI E2E preflight passed.');
+      console.log(`Starting ${label} attempt ${attempt}/${maxAttempts}`);
+      await runAttempt(attempt, { label, flow, apiEnv, beforeWebStart });
+      console.log(`${label} passed.`);
       return;
     } catch (error) {
       lastError = error;
       const err = error instanceof Error ? error : new Error(String(error));
-      console.error(`UI E2E attempt ${attempt} failed: ${err.message}`);
+      console.error(`${label} attempt ${attempt} failed: ${err.message}`);
       if (attempt < maxAttempts) {
         console.error('Retrying UI E2E once due to failure...');
         await sleep(1500);
@@ -515,9 +538,11 @@ async function run() {
   throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
-run()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error instanceof Error ? error.stack : error);
-    process.exit(1);
-  });
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  runIsolatedUiE2e()
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error(error instanceof Error ? error.stack : error);
+      process.exit(1);
+    });
+}
