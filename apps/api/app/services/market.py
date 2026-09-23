@@ -2172,6 +2172,9 @@ def build_market_snapshot_response(db: Session) -> MarketSnapshotResponse:
             overall_status = "ok"
         source_details = latest_run.sources if isinstance(latest_run.sources, dict) else {}
         refreshed_at = latest_run.refreshed_at
+        # Rows carry the market's observation date and are skipped when a quote has
+        # not moved, so their as_of says nothing about when this set was produced.
+        generated_at = refreshed_at
 
     typed_source_details: dict[str, MarketSourceDetail] = {}
     for key, raw in source_details.items():

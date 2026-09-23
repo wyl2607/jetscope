@@ -503,7 +503,7 @@ export function PriceTrendsChart({ metrics, events = [], isLoading = false, erro
             <FigureValue figure={data.latest_value} locale="zh" size="inline" showTimestamp={false} />
           </p>
           <p className="mt-1 text-xs text-muted">
-            截至 {data.latest_as_of ? new Date(data.latest_as_of).toLocaleString('zh-CN') : '暂无数据'}
+            截至 {data.latest_as_of ? new Date(data.latest_as_of).toLocaleString('zh-CN', { timeZone: 'UTC', timeZoneName: 'short' }) : '暂无数据'}
             {data.quality ? ` · ${data.quality}` : ''}
           </p>
         </div>

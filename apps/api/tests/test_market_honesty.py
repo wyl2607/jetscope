@@ -353,6 +353,41 @@ def test_legacy_fetch_timestamp_does_not_outrank_newer_observed_quote() -> None:
     assert latest.payload.get("quality") == "observed"
 
 
+def test_snapshot_generated_at_is_the_latest_refresh_not_a_row_date() -> None:
+    # Production 2026-09-23: a legacy row stamped with its fetch time (09:15:44) and
+    # an observed row stamped with its market date made the dashboard read 61m stale
+    # right after the 10:16:49 refresh.
+    refreshed_at = datetime(2026, 9, 23, 10, 16, 49, tzinfo=UTC)
+    engine = create_engine("sqlite:///:memory:", future=True)
+    Base.metadata.create_all(bind=engine)
+    with Session(engine) as db:
+        db.add(
+            MarketSnapshot(
+                source_key="brent_eia",
+                metric_key="brent_usd_per_bbl",
+                value=116.15,
+                unit="USD/bbl",
+                as_of=datetime(2026, 9, 23, 9, 15, 44, tzinfo=UTC),
+                payload={"refresh_run_id": "legacy-run"},
+            )
+        )
+        db.add(
+            MarketSnapshot(
+                source_key="eu_ets",
+                metric_key="eu_ets_price_eur_per_t",
+                value=85.53,
+                unit="EUR/t",
+                as_of=datetime(2026, 9, 22, tzinfo=UTC),
+                payload={"quality": "observed", "observed_at": "2026-09-22T00:00:00Z"},
+            )
+        )
+        db.add(MarketRefreshRun(refreshed_at=refreshed_at, source_status="ok", ingest="live-refresh", sources={}))
+        db.commit()
+        snapshot = market_service.build_market_snapshot_response(db)
+
+    assert snapshot.generated_at == refreshed_at
+
+
 def test_history_does_not_mix_spot_and_futures_returns() -> None:
     engine = create_engine("sqlite:///:memory:", future=True)
     Base.metadata.create_all(bind=engine)
