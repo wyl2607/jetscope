@@ -163,6 +163,7 @@ export async function loadGridParity(
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(buildGridParityUrl(query), {
+      next: { revalidate: 300 },
       signal: controller.signal,
       headers: { accept: 'application/json' }
     });
@@ -182,6 +183,7 @@ export async function loadGridHistory(
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(buildGridEndpoint('/analysis/grid-parity/history', '/api/analysis/grid-parity/history'), {
+      next: { revalidate: 300 },
       signal: controller.signal,
       headers: { accept: 'application/json' }
     });
@@ -202,6 +204,7 @@ export async function loadGridLcoeSensitivity(
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(buildGridLcoeSensitivityUrl(query), {
+      next: { revalidate: 300 },
       signal: controller.signal,
       headers: { accept: 'application/json' }
     });

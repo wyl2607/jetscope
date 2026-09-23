@@ -54,6 +54,34 @@ function installFetchStub(t, handlers) {
   });
 }
 
+test('research signals use a five-minute ISR fetch cache', async (t) => {
+  installEnv(t, { JETSCOPE_AI_RESEARCH_ENABLED: 'true' });
+  let receivedInit;
+  installFetchStub(
+    t,
+    new Map([
+      [
+        'https://api.example.com/v1/research/signals?since=2026-03-24T12%3A00%3A00.000Z&limit=20',
+        (init) => {
+          receivedInit = init;
+          return jsonResponse([]);
+        }
+      ]
+    ])
+  );
+  const originalDateNow = Date.now;
+  Date.now = () => new Date('2026-04-23T12:00:00Z').getTime();
+  t.after(() => {
+    Date.now = originalDateNow;
+  });
+
+  const { getResearchSignals } = await importWebLib('apps/web/lib/research-signals-read-model.ts');
+  await getResearchSignals();
+
+  assert.deepEqual(receivedInit?.next, { revalidate: 300 });
+  assert.equal(receivedInit?.cache, undefined);
+});
+
 test('portfolio read model normalizes research signal response variants', async (t) => {
   installEnv(t, { JETSCOPE_AI_RESEARCH_ENABLED: 'true' });
   installFetchStub(
@@ -105,6 +133,35 @@ test('portfolio read model normalizes research signal response variants', async 
   assert.equal(result.signals[0].confidence, 1);
   assert.equal(result.signals[0].published_at, null);
   assert.equal(result.signals[1].id, 'sig-undated');
+  assert.equal(result.signals[1].published_at, null);
+});
+
+test('research signals keep undated evidence after dated signals', async (t) => {
+  installEnv(t, { JETSCOPE_AI_RESEARCH_ENABLED: 'true' });
+  installFetchStub(
+    t,
+    new Map([
+      [
+        'https://api.example.com/v1/research/signals?since=2026-03-24T12%3A00%3A00.000Z&limit=20',
+        () =>
+          jsonResponse([
+            { id: 'undated', title: 'Undated', published_at: null },
+            { id: 'dated', title: 'Dated', published_at: '2026-04-22T12:00:00Z' }
+          ])
+      ]
+    ])
+  );
+  const originalDateNow = Date.now;
+  Date.now = () => new Date('2026-04-23T12:00:00Z').getTime();
+  t.after(() => {
+    Date.now = originalDateNow;
+  });
+
+  const { getResearchSignals } = await importWebLib('apps/web/lib/research-signals-read-model.ts');
+  const result = await getResearchSignals();
+
+  assert.equal(result.status, 'ok');
+  assert.deepEqual(result.signals.map((signal) => signal.id), ['dated', 'undated']);
   assert.equal(result.signals[1].published_at, null);
 });
 
