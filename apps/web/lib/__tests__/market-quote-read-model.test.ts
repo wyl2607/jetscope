@@ -3,7 +3,8 @@ import { presentDashboardMarket, presentQuote } from '@/lib/market-quote-read-mo
 
 describe('market quote presentation', () => {
   it('never prints a number for a missing quote', () => {
-    const shown = presentQuote('jet_usd_per_l', { status: 'missing', value: 0.64 }, 'zh');
+    const missingPayloadValue = 0.73;
+    const shown = presentQuote('jet_usd_per_l', { status: 'missing', value: missingPayloadValue }, 'zh');
     expect(shown.text).toBe('—');
     expect(shown.badge).toBe('数据缺失');
     expect(shown.text).not.toMatch(/0\.64/);
@@ -33,11 +34,12 @@ describe('market quote presentation', () => {
   });
 
   it('keeps only live and stale quotes in the dashboard primary slot', () => {
+    const missingValue = 0.73;
     const shown = presentDashboardMarket(
       {
         values: {
           brent_usd_per_bbl: 80,
-          jet_usd_per_l: 0.64,
+          jet_usd_per_l: missingValue,
           rotterdam_jet_fuel_usd_per_l: 0.604,
           carbon_proxy_usd_per_t: null
         },
@@ -53,7 +55,7 @@ describe('market quote presentation', () => {
     expect(shown.mode).toBe('quotes');
     expect(shown.primary).toContain('最新价');
     expect(shown.primary).toContain('80.00');
-    expect(shown.primary).not.toContain('0.64');
+    expect(shown.primary).not.toContain(String(missingValue));
     expect(shown.primary).not.toContain('0.604');
     expect(shown.secondary).toContain('估算');
     expect(shown.secondary).toContain('Brent × 1.20');

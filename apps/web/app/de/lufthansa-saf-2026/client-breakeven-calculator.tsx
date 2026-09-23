@@ -5,7 +5,7 @@ import { useState } from 'react';
 export default function ClientBreakevenCalculator() {
   const [oilPrice, setOilPrice] = useState(115);
   const [safPrice, setSafPrice] = useState(1.75);
-  const [euEtsPrice, setEuEtsPrice] = useState(92.50);
+  const [euEtsPrice, setEuEtsPrice] = useState(90);
   const [germanyPremium, setGermanyPremium] = useState(2.5);
   const [blendRate, setBlendRate] = useState(6);
 

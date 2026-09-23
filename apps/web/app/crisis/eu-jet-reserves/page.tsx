@@ -10,7 +10,7 @@ import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata, Route } from 'next';
 import Link from 'next/link';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = buildPageMetadata({
   title: 'EU 航油储备危机监测',
@@ -29,7 +29,8 @@ function getReserveData(): { weeks: number; updatedAt: string; source: string; n
   };
 }
 
-function formatNumber(value: number, digits = 2) {
+function formatNumber(value: number | null, digits = 2) {
+  if (value == null) return '—（数据缺失）';
   return Number(value).toLocaleString('en-US', {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits
@@ -106,18 +107,18 @@ export default async function EuJetReserveCrisisPage() {
   const brentIsAssumed = market.brent_usd_per_bbl == null;
   const jetEuIsAssumed = market.jet_eu_proxy_usd_per_l == null && market.jet_usd_per_l == null;
   const carbonIsAssumed = market.carbon_proxy_usd_per_t == null;
-  const brent = market.brent_usd_per_bbl ?? 87.01;
-  const jetEu = market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l ?? 0.657;
-  const carbon = market.carbon_proxy_usd_per_t ?? 91.91;
+  const brent = market.brent_usd_per_bbl ?? null;
+  const jetEu = market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l ?? null;
+  const carbon = market.carbon_proxy_usd_per_t ?? null;
   const anyInputIsAssumed = readModel.isFallback || reserveIsAssumed || brentIsAssumed || jetEuIsAssumed || carbonIsAssumed;
   const asOf = anyInputIsAssumed ? null : readModel.market.generated_at;
-  const safSpreadLow = ((1.6 - jetEu) / jetEu) * 100;
-  const safSpreadHigh = ((1.85 - jetEu) / jetEu) * 100;
+  const safSpreadLow = jetEu == null ? null : ((1.6 - jetEu) / jetEu) * 100;
+  const safSpreadHigh = jetEu == null ? null : ((1.85 - jetEu) / jetEu) * 100;
   const inputAssumptionCopy = [
     reserveIsAssumed ? `储备使用人工维护值 ${formatNumber(reserve.weeks, 1)} 周` : null,
-    brentIsAssumed ? 'Brent 使用内置假设 87.01 USD/bbl' : null,
-    jetEuIsAssumed ? 'EU 航油使用内置假设 0.657 USD/L' : null,
-    carbonIsAssumed ? '碳价使用内置假设 91.91 USD/tCO₂' : null
+    brentIsAssumed ? 'Brent 数据缺失' : null,
+    jetEuIsAssumed ? 'EU 航油数据缺失' : null,
+    carbonIsAssumed ? '碳价数据缺失' : null
   ].filter(Boolean).join('；');
 
   return (
@@ -177,9 +178,9 @@ export default async function EuJetReserveCrisisPage() {
           </div>
           <div className="grid gap-6 md:grid-cols-3">
             {[
-              { label: 'Brent 原油', value: `$${formatNumber(brent)}/bbl`, note: brentIsAssumed ? '内置假设 87.01 USD/bbl' : '全球基准观测' },
-              { label: '航油（EU 代理）', value: `$${formatNumber(jetEu, 3)}/L`, note: jetEuIsAssumed ? '内置假设 0.657 USD/L' : 'ARA / Rotterdam basis' },
-              { label: '碳价代理', value: `$${formatNumber(carbon)}/tCO₂`, note: carbonIsAssumed ? '内置假设 91.91 USD/tCO₂' : 'CBAM + EU ETS 压力' }
+              { label: 'Brent 原油', value: brent == null ? formatNumber(null) : `$${formatNumber(brent)}/bbl`, note: brentIsAssumed ? '数据缺失' : '全球基准观测' },
+              { label: '航油（EU 代理）', value: jetEu == null ? formatNumber(null) : `$${formatNumber(jetEu, 3)}/L`, note: jetEuIsAssumed ? '数据缺失' : 'ARA / Rotterdam basis' },
+              { label: '碳价代理', value: carbon == null ? formatNumber(null) : `$${formatNumber(carbon)}/tCO₂`, note: carbonIsAssumed ? '数据缺失' : 'CBAM + EU ETS 压力' }
             ].map((item) => (
               <div key={item.label} className="rounded-2xl border border-line bg-surface-muted p-6">
                 <p className="text-sm font-medium text-muted">{item.label}</p>
@@ -202,7 +203,7 @@ export default async function EuJetReserveCrisisPage() {
           */}
           {[
             ['步骤 1', '储备消耗', `EU 航油库存约 ${formatNumber(reserve.weeks, 1)} 周，地缘扰动与炼化瓶颈共同推高压力。`],
-            ['步骤 2', '价格跳升', `当前 EU 代理价 $${formatNumber(jetEu, 3)}/L，储备稀缺可能放大区域 basis。`],
+            ['步骤 2', '价格跳升', jetEu == null ? '当前 EU 代理价数据缺失，不能计算区域 basis 压力。' : `当前 EU 代理价 $${formatNumber(jetEu, 3)}/L，储备稀缺可能放大区域 basis。`],
             ['步骤 3', '航线承压', '燃油约占短途运营成本 30%，薄利航线会更早失去缓冲。'],
             ['步骤 4', 'SAF 窗口', `HEFA SAF 当前溢价约 ${formatNumber(safSpreadLow, 0)}–${formatNumber(safSpreadHigh, 0)}%。`]
           ].map(([step, title, body]) => (
@@ -288,9 +289,9 @@ export default async function EuJetReserveCrisisPage() {
       <SourceFooter
         sources={[
           { id: 'eu-reserve-estimate', label: `EU 航油储备覆盖（${reserve.source}）`, asOf: reserveIsAssumed ? null : reserve.updatedAt, basis: reserveIsAssumed ? 'assumption' : readModel.reserve?.source_type === 'official' ? 'observed' : readModel.reserve?.source_type === 'derived' ? 'derived' : 'assumption' },
-          { id: 'eu-crisis-brent', label: brentIsAssumed ? 'Brent 内置假设 87.01 USD/bbl' : 'Brent 市场快照', asOf: brentIsAssumed ? null : asOf, basis: readModel.isFallback || brentIsAssumed ? 'assumption' : 'observed' },
-          { id: 'eu-crisis-jet', label: jetEuIsAssumed ? 'EU 航油内置假设 0.657 USD/L' : market.jet_eu_proxy_usd_per_l != null ? 'EU 航油代理曲线' : '全球航油市场快照', asOf: jetEuIsAssumed ? null : asOf, basis: readModel.isFallback || jetEuIsAssumed ? 'assumption' : market.jet_eu_proxy_usd_per_l != null ? 'derived' : 'observed' },
-          { id: 'eu-crisis-carbon', label: carbonIsAssumed ? '碳价内置假设 91.91 USD/tCO₂' : 'EU 碳价代理', asOf: carbonIsAssumed ? null : asOf, basis: readModel.isFallback || carbonIsAssumed ? 'assumption' : 'derived' },
+          { id: 'eu-crisis-brent', label: brentIsAssumed ? 'Brent 数据缺失' : 'Brent 市场快照', asOf: brentIsAssumed ? null : asOf, basis: readModel.isFallback || brentIsAssumed ? 'assumption' : 'observed' },
+          { id: 'eu-crisis-jet', label: jetEuIsAssumed ? 'EU 航油数据缺失' : market.jet_eu_proxy_usd_per_l != null ? 'EU 航油代理曲线' : '全球航油市场快照', asOf: jetEuIsAssumed ? null : asOf, basis: readModel.isFallback || jetEuIsAssumed ? 'assumption' : market.jet_eu_proxy_usd_per_l != null ? 'derived' : 'observed' },
+          { id: 'eu-crisis-carbon', label: carbonIsAssumed ? '碳价数据缺失' : 'EU 碳价代理', asOf: carbonIsAssumed ? null : asOf, basis: readModel.isFallback || carbonIsAssumed ? 'assumption' : 'derived' },
           { id: 'market-price-history', label: 'market_snapshots 历史价格序列（上游未暴露 source_type）', basis: 'assumption' }
         ]}
         methodHref="/sources"

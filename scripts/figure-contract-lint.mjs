@@ -156,7 +156,7 @@ function hardRules(files) {
   for (const rel of files) {
     if (rel === contractModule) continue;
     const source = readListedFile(join(ROOT, rel));
-    if (source === null) return [];
+    if (source === null) continue;
 
     // A local `type Figure` shadows the contract one and every guarantee that
     // comes with it, while still type-checking and still reading correctly in

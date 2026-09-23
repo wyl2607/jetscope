@@ -2,7 +2,7 @@ import { ReportsPage } from '@/components/reports-page';
 import { buildPageMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = buildPageMetadata({
   title: '报告工作台',

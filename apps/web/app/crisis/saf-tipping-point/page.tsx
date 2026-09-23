@@ -6,7 +6,7 @@ import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-t
 import { SourceFooter } from '@/components/source-footer';
 import { TippingPointWorkbench } from '@/components/tipping-point-workbench';
 import { loadEuEtsPressure } from '@/lib/eu-ets-pressure-read-model';
-import { assumed, derived, observed, type Figure } from '@/lib/figure';
+import { assumed, derived, missing, observed, type Figure } from '@/lib/figure';
 import { loadPathwayComparison, toPathwayCostRow } from '@/lib/pathways-read-model';
 import { getDashboardReadModel, toDecisionReadModel, toTippingPointReadModel } from '@/lib/product-read-model';
 import { buildPageMetadata } from '@/lib/seo';
@@ -86,19 +86,18 @@ export default async function SafTippingPointPage() {
     : readModel.market.values?.jet_usd_per_l != null
       ? 'spot'
       : 'assumed';
-  const liveFuel = readModel.market.values?.jet_eu_proxy_usd_per_l ?? readModel.market.values?.jet_usd_per_l ?? 1.3;
-  const carbonIsAssumed = readModel.market.values?.carbon_proxy_usd_per_t == null;
-  const liveCarbonUsd = readModel.market.values?.carbon_proxy_usd_per_t ?? 102.6;
-  const usdPerEur = readModel.market.values?.usd_per_eur;
-  const eurUsd = typeof usdPerEur === 'number' && usdPerEur > 0 ? usdPerEur : 1.1435;
-  const liveCarbonEur = Number((liveCarbonUsd / eurUsd).toFixed(2));
+  const liveFuel = readModel.market.values?.jet_eu_proxy_usd_per_l ?? readModel.market.values?.jet_usd_per_l ?? null;
+  const liveCarbonEur = readModel.market.values?.eu_ets_price_eur_per_t ?? null;
+  const carbonIsAssumed = liveCarbonEur == null;
   const reserveIsAssumed = readModel.reserve == null;
   const anyInputIsAssumed = readModel.isFallback || fuelSource === 'assumed' || carbonIsAssumed || reserveIsAssumed;
   const asOf = anyInputIsAssumed ? null : readModel.market.generated_at;
   const marketAsOf = readModel.market.generated_at;
 
   const fossilJetDefault: Figure =
-    fuelSource === 'assumed' || readModel.isFallback || !marketAsOf
+    liveFuel == null
+      ? missing({ unit: 'USD/L', sourceId: 'saf-tipping-fuel', reason: 'API unavailable' })
+      : fuelSource === 'assumed' || readModel.isFallback || !marketAsOf
       ? assumed({
           value: liveFuel,
           unit: 'USD/L',
@@ -127,7 +126,9 @@ export default async function SafTippingPointPage() {
           });
 
   const carbonDefault: Figure =
-    carbonIsAssumed || readModel.isFallback || !marketAsOf
+    liveCarbonEur == null
+      ? missing({ unit: 'EUR/t', sourceId: 'saf-tipping-carbon', reason: 'API unavailable' })
+      : carbonIsAssumed || readModel.isFallback || !marketAsOf
       ? assumed({
           value: liveCarbonEur,
           unit: 'EUR/t',
@@ -143,7 +144,7 @@ export default async function SafTippingPointPage() {
           sourceId: 'saf-tipping-carbon',
           asOf: marketAsOf,
           precision: 2,
-          method: `carbon_proxy_usd_per_t / ${eurUsd} USD per EUR`
+          method: 'EU ETS price supplied directly in EUR/t'
         });
 
   const subsidyDefault = assumed({
@@ -187,13 +188,7 @@ export default async function SafTippingPointPage() {
             precision: 1,
             method: `reserve coverage from ${readModel.reserve.source_name} (${readModel.reserve.source_type})`
           })
-    : assumed({
-        value: 3.0,
-        unit: 'weeks',
-        sourceId: 'saf-tipping-reserve',
-        precision: 1,
-        method: '内置情景默认 3.0 周；非实测储备覆盖'
-      });
+    : missing({ unit: 'weeks', sourceId: 'saf-tipping-reserve', reason: 'API unavailable' });
   const sourceCoverageItems = (readModel.sourceCoverage?.metrics ?? [])
     .filter((metric) => SAF_SOURCE_METRICS.includes(metric.metric_key as (typeof SAF_SOURCE_METRICS)[number]))
     .map((metric) => ({ metric, trustState: getSourceCoverageTrustState(metric) }));
@@ -202,13 +197,14 @@ export default async function SafTippingPointPage() {
     ? `${degradedSourceCount} / ${sourceCoverageItems.length} 个计算输入需要复核`
     : '来源覆盖暂不可用，当前计算应视为情景基线';
   const assumedInputCopy = [
-    fuelSource === 'assumed' ? '化石航油使用内置假设 1.3 USD/L' : null,
-    carbonIsAssumed ? '碳价使用内置假设 102.6 USD/t' : null,
-    reserveIsAssumed ? '储备覆盖使用内置假设 3.0 周' : null
+    fuelSource === 'assumed' ? '化石航油数据缺失' : null,
+    carbonIsAssumed ? '碳价数据缺失' : null,
+    reserveIsAssumed ? '储备覆盖数据缺失' : null
   ].filter(Boolean).join('；');
 
   let pathwayComparison: Awaited<ReturnType<typeof loadPathwayComparison>> | null = null;
   try {
+    if (liveFuel == null || liveCarbonEur == null) throw new Error('Required live inputs unavailable');
     pathwayComparison = await loadPathwayComparison({
       fossilJetUsdPerL: liveFuel,
       carbonPriceEurPerT: liveCarbonEur,
@@ -221,6 +217,7 @@ export default async function SafTippingPointPage() {
 
   let euEtsPressure: Awaited<ReturnType<typeof loadEuEtsPressure>> | null = null;
   try {
+    if (liveFuel == null) throw new Error('Required live input unavailable');
     euEtsPressure = await loadEuEtsPressure({
       fossilJetUsdPerL: liveFuel,
       exemptBlendPct: 6,

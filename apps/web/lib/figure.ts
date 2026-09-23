@@ -9,7 +9,7 @@
  * The reason this is a type and not a convention: a bare `number` crossing a
  * component boundary loses its provenance silently, and the loss is invisible
  * in review. `fossilJetUsdPerL: number` looks identical whether it came from a
- * spot price feed or from a hardcoded `?? 0.657` four fallbacks down the chain.
+ * spot price feed or from a hardcoded fallback four layers down the chain.
  * Once it is a `Figure`, the fallback has to say what it is.
  *
  * Construct figures through `observed` / `derived` / `assumed` / `missing`

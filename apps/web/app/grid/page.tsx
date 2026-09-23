@@ -19,7 +19,7 @@ import {
   loadGridParity
 } from '@/lib/grid-parity-read-model';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = buildPageMetadata({
   title: '电网平价分析',

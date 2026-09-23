@@ -160,6 +160,40 @@ describe('DashboardPage', () => {
     });
   });
 
+  it('renders missing data without any market seed values when the API fallback is active', async () => {
+    getDashboardReadModel.mockResolvedValue({
+      ...mockReadModel(),
+      market: {
+        generated_at: null,
+        source_status: { overall: 'degraded', is_fallback: true },
+        values: {
+          brent_usd_per_bbl: null,
+          jet_usd_per_l: null,
+          rotterdam_jet_fuel_usd_per_l: null,
+          jet_eu_proxy_usd_per_l: null,
+          carbon_proxy_usd_per_t: null
+        }
+      },
+      analysisInputs: {
+        fossilJetUsdPerL: null,
+        carbonPriceEurPerT: null,
+        reserveWeeks: null,
+        jetSourceKey: 'unavailable',
+        missingReason: 'API unavailable'
+      },
+      isFallback: true,
+      error: 'API unavailable'
+    });
+
+    render(await DashboardPage({ locale: 'zh' }));
+
+    expect(screen.getByText(/—（数据缺失）/)).toBeInTheDocument();
+    const rendered = document.body.textContent ?? '';
+    for (const forbidden of ['87.01', '0.64', '0.657', '91.91', '92.5', '80.38', '1.1435']) {
+      expect(rendered).not.toContain(forbidden);
+    }
+  });
+
   it.each(LOCALES)('renders %s copy from the locale file', async (locale) => {
     const copy = messagesFor(locale).dashboard;
     render(await DashboardPage({ locale }));
@@ -325,7 +359,7 @@ describe('DashboardPage', () => {
       },
       analysisInputs: {
         fossilJetUsdPerL: 0.9,
-        carbonPriceEurPerT: 80.38,
+        carbonPriceEurPerT: 82.4,
         reserveWeeks: 3,
         jetSourceKey: 'seed_fallback'
       },

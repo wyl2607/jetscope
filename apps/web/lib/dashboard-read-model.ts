@@ -1,9 +1,9 @@
 import { WORKSPACE_SLUG } from '@/lib/api-config';
 import type { SourceCoverageResponse } from '@/lib/source-coverage-contract';
+import { selectFossilJetBenchmark, selectQualifiedInput } from '@/lib/market-quality';
 import {
   fetchJson,
   metricLabel,
-  FALLBACK_VALUES,
   type DisplayLocale,
   type AirlineDecisionResponse,
   type MarketHistory,
@@ -63,10 +63,11 @@ export type DashboardReadModel = {
   aviationEvent: CuratedAviationEvent | null;
   marketHealth: MarketHealth | null;
   analysisInputs: {
-    fossilJetUsdPerL: number;
-    carbonPriceEurPerT: number;
-    reserveWeeks: number;
+    fossilJetUsdPerL: number | null;
+    carbonPriceEurPerT: number | null;
+    reserveWeeks: number | null;
     jetSourceKey: string;
+    missingReason: string | null;
   };
   scenarioCount: number;
   recentScenarioNames: string[];
@@ -149,7 +150,13 @@ function fallbackReadModel(error: unknown): DashboardReadModel {
     market: {
       generated_at: null,
       source_status: { overall: 'degraded', confidence: 0, freshness_minutes: null, fallback_rate: 100, is_fallback: true },
-      values: { ...FALLBACK_VALUES }
+      values: {
+        brent_usd_per_bbl: null,
+        jet_usd_per_l: null,
+        rotterdam_jet_fuel_usd_per_l: null,
+        jet_eu_proxy_usd_per_l: null,
+        carbon_proxy_usd_per_t: null
+      }
     },
     reserve: null,
     tippingPoint: null,
@@ -158,10 +165,11 @@ function fallbackReadModel(error: unknown): DashboardReadModel {
     aviationEvent: null,
     marketHealth: null,
     analysisInputs: {
-      fossilJetUsdPerL: FALLBACK_VALUES.jet_eu_proxy_usd_per_l,
-      carbonPriceEurPerT: 92.5,
-      reserveWeeks: 3,
-      jetSourceKey: 'fallback'
+      fossilJetUsdPerL: null,
+      carbonPriceEurPerT: null,
+      reserveWeeks: null,
+      jetSourceKey: 'unavailable',
+      missingReason: 'API unavailable'
     },
     scenarioCount: 0,
     recentScenarioNames: [],
@@ -236,7 +244,7 @@ export async function getDashboardReadModel(locale: DisplayLocale = 'zh'): Promi
   try {
     const [market, scenarios, history, reserve, sourceCoverage, aviationEvent, marketHealth] = await Promise.all([
       fetchJson<MarketSnapshot>('/market/snapshot'),
-      fetchJson<ScenarioRecord[]>(`/workspaces/${WORKSPACE_SLUG}/scenarios`).catch(() => []),
+      fetchJson<ScenarioRecord[]>(`/workspaces/${WORKSPACE_SLUG}/scenarios`, { fresh: true }).catch(() => []),
       fetchJson<MarketHistory>('/market/history').catch(() => ({ metrics: {} })),
       fetchJson<ReserveSignal>('/reserves/eu').catch(() => null),
       fetchJson<SourceCoverageResponse>('/sources/coverage').catch(() => null),
@@ -246,64 +254,48 @@ export async function getDashboardReadModel(locale: DisplayLocale = 'zh'): Promi
 
     const values = market.values ?? {};
     const details = market.source_details ?? {};
-    const jetCandidates: Array<{ metric: string; detail: string }> = [
-      { metric: 'rotterdam_jet_fuel_usd_per_l', detail: 'rotterdam_jet_fuel' },
-      { metric: 'jet_eu_proxy_usd_per_l', detail: 'jet_eu_proxy' },
-      { metric: 'jet_usd_per_l', detail: 'jet' }
-    ];
-    const qualityRank: Record<string, number> = { observed: 0, stale: 1, derived: 2, seed: 3, missing: 4 };
-    const ranked = jetCandidates
-      .map((candidate, index) => {
-        const value = Number(values[candidate.metric]);
-        const detail = details[candidate.detail] ?? details[candidate.metric];
-        const quality = String(detail?.quality || (detail?.fallback_used ? 'seed' : 'missing'));
-        return { ...candidate, value, quality, index };
-      })
-      .filter((candidate) => Number.isFinite(candidate.value) && candidate.value > 0 && candidate.quality !== 'missing')
-      .sort((left, right) => (qualityRank[left.quality] ?? 4) - (qualityRank[right.quality] ?? 4) || left.index - right.index);
-    let jetSourceKey = 'unavailable';
-    let fossilJetUsdPerL: number = Number(FALLBACK_VALUES.jet_eu_proxy_usd_per_l);
-    if (ranked[0] && ranked[0].quality !== 'seed') {
-      fossilJetUsdPerL = ranked[0].value;
-      jetSourceKey = ranked[0].metric;
-    } else if (ranked[0]) {
-      fossilJetUsdPerL = ranked[0].value;
-      jetSourceKey = 'seed_fallback';
-    } else {
-      jetSourceKey = 'seed_fallback';
-    }
-    const euEts = Number(values.eu_ets_price_eur_per_t);
-    const carbonPriceEurPerT = Number.isFinite(euEts) && euEts > 0 ? euEts : 92.5;
+    const clockRaw = market.fetched_at ?? market.generated_at;
+    const clock = clockRaw && !Number.isNaN(Date.parse(clockRaw)) ? new Date(clockRaw) : undefined;
+    const selectedJet = selectFossilJetBenchmark(values, details, clock);
+    const fossilJetUsdPerL = selectedJet.usableForSignal ? selectedJet.value : null;
+    const jetSourceKey = selectedJet.usableForSignal && selectedJet.metricKey
+      ? selectedJet.metricKey
+      : 'unavailable';
+    const selectedCarbon = selectQualifiedInput(values.eu_ets_price_eur_per_t, details.eu_ets, clock);
+    const carbonPriceEurPerT = selectedCarbon.usableForCost ? selectedCarbon.value : null;
     const reserveWeeks =
       reserve && Number.isFinite(reserve.coverage_weeks) && reserve.coverage_weeks > 0
         ? reserve.coverage_weeks
-        : 3;
+        : null;
     const mapping = aviationEvent?.jetscope_mapping;
-    const tippingQuery = new URLSearchParams({
-      fossil_jet_usd_per_l: String(fossilJetUsdPerL),
-      carbon_price_eur_per_t: String(carbonPriceEurPerT),
-      subsidy_usd_per_l: '0',
-      blend_rate_pct: '6'
-    });
-    const decisionQuery = new URLSearchParams({
-      fossil_jet_usd_per_l: String(fossilJetUsdPerL),
-      reserve_weeks: String(reserveWeeks),
-      carbon_price_eur_per_t: String(carbonPriceEurPerT),
-      pathway_key: 'hefa'
-    });
-    if (mapping?.fare_pass_through_pct != null) {
-      decisionQuery.set('fare_pass_through_pct', String(mapping.fare_pass_through_pct));
+    const tippingPointPromise = fossilJetUsdPerL != null && carbonPriceEurPerT != null
+      ? fetchJson<TippingPointResponse>(`/analysis/tipping-point?${new URLSearchParams({
+          fossil_jet_usd_per_l: String(fossilJetUsdPerL),
+          carbon_price_eur_per_t: String(carbonPriceEurPerT),
+          subsidy_usd_per_l: '0',
+          blend_rate_pct: '6'
+        })}`).catch(() => null)
+      : Promise.resolve(null);
+    let airlineDecisionPromise: Promise<AirlineDecisionResponse | null> = Promise.resolve(null);
+    if (fossilJetUsdPerL != null && carbonPriceEurPerT != null && reserveWeeks != null) {
+      const decisionQuery = new URLSearchParams({
+        fossil_jet_usd_per_l: String(fossilJetUsdPerL),
+        reserve_weeks: String(reserveWeeks),
+        carbon_price_eur_per_t: String(carbonPriceEurPerT),
+        pathway_key: 'hefa'
+      });
+      if (mapping?.fare_pass_through_pct != null) {
+        decisionQuery.set('fare_pass_through_pct', String(mapping.fare_pass_through_pct));
+      }
+      if (mapping?.labor_cost_impact_eur_m != null) {
+        decisionQuery.set('labor_cost_impact_eur_m', String(mapping.labor_cost_impact_eur_m));
+      }
+      if (mapping?.extra_fuel_cost_eur_m != null) {
+        decisionQuery.set('extra_fuel_cost_eur_m', String(mapping.extra_fuel_cost_eur_m));
+      }
+      airlineDecisionPromise = fetchJson<AirlineDecisionResponse>(`/analysis/airline-decision?${decisionQuery}`).catch(() => null);
     }
-    if (mapping?.labor_cost_impact_eur_m != null) {
-      decisionQuery.set('labor_cost_impact_eur_m', String(mapping.labor_cost_impact_eur_m));
-    }
-    if (mapping?.extra_fuel_cost_eur_m != null) {
-      decisionQuery.set('extra_fuel_cost_eur_m', String(mapping.extra_fuel_cost_eur_m));
-    }
-    const [tippingPoint, airlineDecision] = await Promise.all([
-      fetchJson<TippingPointResponse>(`/analysis/tipping-point?${tippingQuery}`).catch(() => null),
-      fetchJson<AirlineDecisionResponse>(`/analysis/airline-decision?${decisionQuery}`).catch(() => null)
-    ]);
+    const [tippingPoint, airlineDecision] = await Promise.all([tippingPointPromise, airlineDecisionPromise]);
 
     const topRiskSignal = computeTopRiskSignal(history);
 
@@ -319,7 +311,11 @@ export async function getDashboardReadModel(locale: DisplayLocale = 'zh'): Promi
         fossilJetUsdPerL,
         carbonPriceEurPerT,
         reserveWeeks,
-        jetSourceKey
+        jetSourceKey,
+        missingReason:
+          fossilJetUsdPerL == null || carbonPriceEurPerT == null || reserveWeeks == null
+            ? 'Required live inputs unavailable'
+            : null
       },
       scenarioCount: scenarios.length,
       recentScenarioNames: scenarios.slice(0, 3).map((item) => item.name),

@@ -155,11 +155,11 @@ describe('GermanyJetFuelMonitor', () => {
       fetched_at: '2026-09-14T09:00:00Z',
       source_status: { overall: 'ok', is_fallback: false },
       values: {
-        brent_usd_per_bbl: 87.01,
-        jet_usd_per_l: 0.64,
+        brent_usd_per_bbl: 86.4,
+        jet_usd_per_l: 0.73,
         jet_eu_proxy_usd_per_l: 1.2,
         rotterdam_jet_fuel_usd_per_l: 0.88,
-        carbon_proxy_usd_per_t: 91.91,
+        carbon_proxy_usd_per_t: 93.4,
         usd_per_eur: 1.25,
         eu_ets_price_eur_per_t: 80
       },

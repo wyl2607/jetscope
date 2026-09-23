@@ -808,8 +808,8 @@ test('crisis page uses light semantic data cards instead of gray dark boxes', as
   assert.match(crisisSource, /buildSafWorkbenchHref/);
   assert.match(crisisSource, /reviewSourcesHref/);
   assert.match(crisisSource, /sources', '\?filter=review/);
-  assert.match(crisisSource, /fuel: fallbackFossil\.toFixed\(3\)/);
-  assert.match(crisisSource, /reserve: reserveWeeks\?\.toFixed\(2\)/);
+  assert.match(crisisSource, /params\.set\('fuel', fallbackFossil\.toFixed\(3\)\)/);
+  assert.match(crisisSource, /params\.set\('reserve', reserveWeeks\.toFixed\(2\)\)/);
   // Asserted through the design tokens rather than palette literals, which any
   // migration necessarily breaks. See docs/UI_CONTRACT.md section 1.
   //
@@ -1044,7 +1044,7 @@ test('reports landing page is a live report workbench instead of a static index'
   assert.match(zh.source.label, /来源状态/);
   assert.match(zh.scenarios.label, /情景数量/);
   assert.match(zh.actions.review_sources.label, /复核来源/);
-  assert.match(zhPage, /revalidate = 300/);
+  assert.match(zhPage, /dynamic = 'force-dynamic'/);
   assert.match(zhPage, /报告工作台/);
   assert.match(zhPage, /locale="zh"/);
   assert.match(page, /getDashboardReadModel\(locale\)/);

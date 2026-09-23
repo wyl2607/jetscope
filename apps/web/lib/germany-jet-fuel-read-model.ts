@@ -1,7 +1,6 @@
 import { buildApiUrl } from '@/lib/api-config';
 import { selectFossilJetBenchmark, selectQualifiedInput } from '@/lib/market-quality';
 import {
-  FALLBACK_VALUES,
   finiteChangeOrNull,
   finiteNumberOrNull,
   metricLabel,
@@ -180,7 +179,7 @@ function emptyMetrics(locale: DisplayLocale): GermanyJetFuelMetric[] {
     metricKey: config.metricKey,
     label: metricLabel(config.metricKey, locale),
     unit: config.unit,
-    value: finiteNumberOrNull(FALLBACK_VALUES[config.metricKey]),
+    value: null,
     digits: config.digits,
     sourceMetricKey: config.fallbackKey ?? config.metricKey,
     latestAsOf: null,
@@ -189,9 +188,9 @@ function emptyMetrics(locale: DisplayLocale): GermanyJetFuelMetric[] {
     changePct1d: null,
     changePct7d: null,
     changePct30d: null,
-    quality: 'seed',
-    quoteKind: 'assumption',
-    note: config.fallbackKey ? fallbackNote(config.fallbackKey, locale) : null
+    quality: 'missing',
+    quoteKind: null,
+    note: 'API unavailable'
   }));
 }
 

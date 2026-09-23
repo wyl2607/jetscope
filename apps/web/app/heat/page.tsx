@@ -14,7 +14,7 @@ import {
 } from '@/lib/heat-parity-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = buildPageMetadata({
   title: '供暖平价分析',

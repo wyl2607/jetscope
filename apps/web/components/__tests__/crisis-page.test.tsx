@@ -112,7 +112,8 @@ function fakeDashboard(overrides: Partial<DashboardReadModel> = {}): DashboardRe
       fossilJetUsdPerL: 0.72,
       carbonPriceEurPerT: 100,
       reserveWeeks: 4,
-      jetSourceKey: 'test'
+      jetSourceKey: 'test',
+      missingReason: null
     },
     scenarioCount: 0,
     recentScenarioNames: [],
@@ -312,7 +313,7 @@ describe('CrisisPage', () => {
     expect(screen.queryByTestId('page-as-of')).toBeNull();
   });
 
-  it('marks a fallback monitor snapshot as an unstamped assumption', async () => {
+  it('marks a fallback monitor snapshot as missing data instead of an unstamped assumption', async () => {
     const copy = messagesFor('zh').crisis;
     const dashboard = fakeDashboard({
       isFallback: true,
@@ -327,17 +328,24 @@ describe('CrisisPage', () => {
           is_fallback: true
         },
         values: {}
+      },
+      analysisInputs: {
+        fossilJetUsdPerL: null,
+        carbonPriceEurPerT: null,
+        reserveWeeks: null,
+        jetSourceKey: 'test',
+        missingReason: 'missing'
       }
     });
     await renderCrisis('zh', dashboard);
 
-    const label = copy.footer.market_snapshot.replace('{price}', '0.66').replace('{carbon}', '89.72');
+    const label = copy.footer.market_snapshot.replace('{price}', copy.na).replace('{carbon}', copy.na);
     const row = screen.getByText(label).closest('li');
     expect(row).toHaveTextContent('情景假设');
     expect(row?.querySelector('time')).toBeNull();
     expect(screen.getByTestId('fuel-vs-saf-price-chart')).toHaveAttribute(
       'data-effective-basis',
-      'assumption'
+      'observed'
     );
   });
 

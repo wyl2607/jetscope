@@ -6,7 +6,7 @@ import { ResearchDecisionBriefCard } from '@/components/research-decision-brief'
 import { ReservesCoverageStrip } from '@/components/reserves-coverage-strip';
 import { SourceFooter } from '@/components/source-footer';
 import { TippingEventTimeline } from '@/components/tipping-event-timeline';
-import { assumed, derived, observed, type Figure } from '@/lib/figure';
+import { assumed, derived, missing, observed, type Figure } from '@/lib/figure';
 import { messagesFor, type Locale, type TippingPointReportMessages } from '@/lib/i18n';
 import { NAV_ENTRIES } from '@/lib/navigation';
 import { getEuReserveCoverage, getTippingPointEvents } from '@/lib/portfolio-read-model';
@@ -30,8 +30,6 @@ import Link from 'next/link';
  */
 
 const REPORT_CHART_SOURCE_ID = 'saf-tipping-model';
-const ASSUMED_FOSSIL_JET_USD_PER_L = 0.657;
-
 const DEFAULT_REPORT_FEATURES = {
   priceChart: false,
   reservesStrip: false,
@@ -158,11 +156,14 @@ function researchPosture(
 }
 
 function fossilJetFigure(
-  value: number, // figure-contract-lint-ignore: constructor input, not a display prop
+  value: number | null, // figure-contract-lint-ignore: constructor input, not a display prop
   asOf: string | null,
   source: FossilJetSource,
   assumedMethod: string
 ): Figure {
+  if (value == null) {
+    return missing({ unit: 'USD/L', sourceId: REPORT_CHART_SOURCE_ID, reason: assumedMethod });
+  }
   if (source === 'assumed' || !asOf) {
     return assumed({
       value,
@@ -182,11 +183,14 @@ function fossilJetFigure(
 }
 
 function effectiveFossilJetFigure(
-  value: number, // figure-contract-lint-ignore: constructor input, not a display prop
+  value: number | null, // figure-contract-lint-ignore: constructor input, not a display prop
   asOf: string | null,
   method: string,
   isAssumed: boolean
 ): Figure {
+  if (value == null) {
+    return missing({ unit: 'USD/L', sourceId: REPORT_CHART_SOURCE_ID, reason: method });
+  }
   if (isAssumed) {
     return assumed({
       value,
@@ -220,7 +224,7 @@ function resolveZhFossil(readModel: DashboardReadModel) {
     tipping?.inputs.fossilJetUsdPerL ??
     readModel.market.values.jet_eu_proxy_usd_per_l ??
     readModel.market.values.jet_usd_per_l ??
-    ASSUMED_FOSSIL_JET_USD_PER_L;
+    null;
   return {
     source,
     tipping,
