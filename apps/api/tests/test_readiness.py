@@ -83,7 +83,10 @@ def test_readiness_reports_database_market_and_source_checks(tmp_path: Path):
         "market_refresh_task",
     }
     assert payload["checks"]["database"]["ok"] is True
-    assert payload["checks"]["market_snapshot"]["ok"] is True
+    assert payload["checks"]["market_snapshot"]["ok"] is False
+    assert payload["checks"]["market_snapshot"]["status"] == "degraded"
+    assert "no successful market refresh" in payload["checks"]["market_snapshot"]["detail"]
+    assert payload["checks"]["market_snapshot"]["blocking"] is False
     assert payload["checks"]["source_coverage"]["ok"] is False
     assert payload["checks"]["admin_token"]["ok"] is False
     assert payload["checks"]["admin_token"]["status"] == "missing"
@@ -106,6 +109,10 @@ def test_readiness_reports_database_market_and_source_checks(tmp_path: Path):
     assert payload["checks"]["market_refresh_task"]["ok"] is False
     assert payload["checks"]["market_refresh_task"]["blocking"] is True
     assert payload["checks"]["market_snapshot"]["blocking"] is False
+
+    market_health = client.get("/v1/market/health").json()
+    assert market_health["healthy"] is False
+    assert payload["checks"]["market_snapshot"]["ok"] is market_health["healthy"]
 
 
 def test_readiness_reports_degraded_when_source_coverage_is_partial(tmp_path: Path, monkeypatch):

@@ -2,11 +2,12 @@ from datetime import datetime, timezone
 import re
 
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.db.session import get_db
+from app.models.tables import MarketRefreshRun
 from app.schemas.readiness import ReadinessAction, ReadinessCheck, ReadinessResponse
 from app.services.bootstrap import utcnow
 from app.services.market import build_market_snapshot_response
@@ -157,12 +158,28 @@ def get_readiness(db: Session = Depends(get_db), request: Request = None) -> Rea
     try:
         snapshot = build_market_snapshot_response(db)
         source_status = snapshot.source_status.overall
-        market_ok = bool(snapshot.values) and source_status in {"ok", "degraded", "seed"}
+        metric_count = sum(value is not None for value in snapshot.values.values())
+        completed_refresh = db.scalar(
+            select(MarketRefreshRun.id)
+            .where(
+                MarketRefreshRun.source_status.in_(("ok", "degraded")),
+                MarketRefreshRun.ingest != "seed",
+            )
+            .order_by(MarketRefreshRun.refreshed_at.desc())
+            .limit(1)
+        )
+        market_ok = metric_count > 0 and completed_refresh is not None and source_status in {"ok", "degraded"}
         market_clean = market_ok and source_status == "ok"
+        market_reasons: list[str] = []
+        if metric_count == 0:
+            market_reasons.append("no non-null market metrics available")
+        if completed_refresh is None:
+            market_reasons.append("no successful market refresh recorded")
+        market_detail = "; ".join(market_reasons) if market_reasons else f"{metric_count} metrics available"
         checks["market_snapshot"] = _readiness_check(
             ok=market_ok,
-            status=source_status,
-            detail=f"{len(snapshot.values)} metrics available",
+            status=source_status if market_ok else "degraded",
+            detail=market_detail,
             severity="ok" if market_clean else "review",
             action=_readiness_action(
                 "review_market_sources",

@@ -32,35 +32,30 @@ function figureControlSeed(figure: Figure): number | null {
 
 function fossilJetFigure(
   value: number, // figure-contract-lint-ignore: constructor input, not a display prop
-  asOf: string | null
+  seed: Figure,
+  userControlled: boolean
 ): Figure {
-  if (asOf) {
-    return observed({
-      value,
-      unit: 'USD/L',
-      sourceId: WORKBENCH_SOURCE_ID,
-      asOf,
-      precision: 2
-    });
+  if (!userControlled && seed.value != null && Math.abs(seed.value - value) < 1e-9) {
+    return seed;
   }
   return assumed({
     value,
     unit: 'USD/L',
     sourceId: WORKBENCH_SOURCE_ID,
     precision: 2,
-    method: 'workbench fossil-jet input (slider or live default without source timestamp)'
+    method: '你的输入（假设值）'
   });
 }
 
 function effectiveFossilJetFigure(
   value: number, // figure-contract-lint-ignore: constructor input, not a display prop
-  asOf: string | null
+  fossilJet: Figure
 ): Figure {
   return derived({
     value,
     unit: 'USD/L',
     sourceId: WORKBENCH_SOURCE_ID,
-    asOf,
+    asOf: fossilJet.basis === 'assumption' ? null : fossilJet.asOf,
     precision: 2,
     method:
       'effective fossil jet = spot fossil jet + carbon price pressure at selected blend rate, minus subsidy (tipping-point model)'
@@ -153,6 +148,12 @@ export function TippingPointWorkbench({
   const [fossilJetUsdPerL, setFossilJetUsdPerL] = useState(() =>
     fossilSeed == null ? finiteNumber(searchParams.get('fuel'), Number.NaN, 0.1) : finiteNumber(searchParams.get('fuel'), fossilSeed, 0.1)
   );
+  const [fossilJetUserControlled, setFossilJetUserControlled] = useState(() => {
+    const raw = searchParams.get('fuel');
+    if (raw === null) return false;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) && parsed >= 0.1;
+  });
   const [carbonPriceEurPerT, setCarbonPriceEurPerT] = useState(() =>
     carbonSeed == null ? finiteNumber(searchParams.get('carbon'), Number.NaN) : finiteNumber(searchParams.get('carbon'), carbonSeed)
   );
@@ -253,7 +254,10 @@ export function TippingPointWorkbench({
     const nextSubsidy = figureControlSeed(liveDefaults.subsidyUsdPerL);
     const nextBlend = figureControlSeed(liveDefaults.blendRatePct);
     const nextReserve = figureControlSeed(liveDefaults.reserveWeeks);
-    if (nextFuel != null) setFossilJetUsdPerL(nextFuel);
+    if (nextFuel != null) {
+      setFossilJetUsdPerL(nextFuel);
+      setFossilJetUserControlled(false);
+    }
     if (nextCarbon != null) setCarbonPriceEurPerT(nextCarbon);
     if (nextSubsidy != null) setSubsidyUsdPerL(nextSubsidy);
     if (nextBlend != null) setBlendRatePct(nextBlend);
@@ -401,7 +405,10 @@ export function TippingPointWorkbench({
               min="0.1"
               step="0.01"
               value={fossilJetUsdPerL}
-              onChange={(event) => setFossilJetUsdPerL((current) => boundedNumber(event.target.value, current, 0.1))}
+              onChange={(event) => {
+                setFossilJetUserControlled(true);
+                setFossilJetUsdPerL((current) => boundedNumber(event.target.value, current, 0.1));
+              }}
             />
           </label>
           <label className="text-xs uppercase tracking-[0.18em] text-muted">
@@ -507,11 +514,16 @@ export function TippingPointWorkbench({
         <FuelVsSafPriceChart
           fossilJetUsdPerL={fossilJetFigure(
             tippingPoint?.inputs.fossilJetUsdPerL ?? fossilJetUsdPerL,
-            tippingPoint?.generatedAt ?? null
+            liveDefaults.fossilJetUsdPerL,
+            fossilJetUserControlled
           )}
           effectiveFossilJetUsdPerL={effectiveFossilJetFigure(
             tippingPoint?.effectiveFossilJetUsdPerL ?? fossilJetUsdPerL,
-            tippingPoint?.generatedAt ?? null
+            fossilJetFigure(
+              tippingPoint?.inputs.fossilJetUsdPerL ?? fossilJetUsdPerL,
+              liveDefaults.fossilJetUsdPerL,
+              fossilJetUserControlled
+            )
           )}
           pathways={pathways}
         />

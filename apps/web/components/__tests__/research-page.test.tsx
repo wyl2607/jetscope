@@ -14,8 +14,8 @@ vi.mock('@/lib/research-signals-read-model', async (importOriginal) => {
 });
 
 vi.mock('@/components/research-decision-brief', () => ({
-  ResearchDecisionBriefCard: ({ showLink }: { showLink?: boolean }) => (
-    <div data-testid="research-decision-brief" data-show-link={showLink === false ? 'false' : 'true'}>
+  ResearchDecisionBriefCard: () => (
+    <div data-testid="research-decision-brief">
       ResearchDecisionBriefCard
     </div>
   )
@@ -111,7 +111,7 @@ describe('ResearchPage', () => {
 
     const card = screen.getByTestId('research-decision-brief');
     expect(card).toBeInTheDocument();
-    expect(card).toHaveAttribute('data-show-link', 'false');
+    expect(card).not.toHaveAttribute('data-show-link');
   });
 
   it('uses the count grid for de and en ready state, not ResearchDecisionBriefCard', async () => {

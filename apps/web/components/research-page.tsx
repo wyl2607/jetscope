@@ -152,7 +152,7 @@ export async function ResearchPage({ locale }: { locale: Locale }) {
   const decisionPanel = (
     <Panel locale={locale} title={copy.panels.decision.title} why={copy.panels.decision.why}>
       {copy.decision_brief_mode === 'card' && brief ? (
-        <ResearchDecisionBriefCard brief={brief} showLink={false} />
+        <ResearchDecisionBriefCard brief={brief} />
       ) : state !== 'ready' ? (
         <div className={`rounded-xl border p-4 text-sm leading-7 ${pipelineStateTone(state)}`}>
           {pipelineStateDetail(copy, state, resultMessage)}

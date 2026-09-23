@@ -36,18 +36,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.94
     },
     {
-      url: `${BASE_URL}/grid`,
-      lastModified: STABLE_LAST_MODIFIED,
-      changeFrequency: 'daily',
-      priority: 0.93
-    },
-    {
-      url: `${BASE_URL}/heat`,
-      lastModified: STABLE_LAST_MODIFIED,
-      changeFrequency: 'daily',
-      priority: 0.91
-    },
-    {
       url: `${BASE_URL}/de/dashboard`,
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'hourly',
@@ -88,12 +76,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'hourly',
       priority: 0.9
-    },
-    {
-      url: `${BASE_URL}/en/research`,
-      lastModified: STABLE_LAST_MODIFIED,
-      changeFrequency: 'daily',
-      priority: 0.86
     },
     {
       url: `${BASE_URL}/en/reports`,
@@ -148,12 +130,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'hourly',
       priority: 0.89
-    },
-    {
-      url: `${BASE_URL}/de/research`,
-      lastModified: STABLE_LAST_MODIFIED,
-      changeFrequency: 'daily',
-      priority: 0.84
     },
     {
       url: `${BASE_URL}/de/reports`,

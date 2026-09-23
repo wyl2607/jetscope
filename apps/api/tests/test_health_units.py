@@ -108,6 +108,9 @@ class FakeDb:
     def execute(self, statement):
         self.executed.append(statement)
 
+    def scalar(self, _statement):
+        return "refresh-run"
+
 
 def test_get_health_returns_liveness_payload_with_capabilities(monkeypatch):
     fixed_now = datetime(2026, 6, 2, 18, 30, tzinfo=timezone.utc)
@@ -214,8 +217,8 @@ def test_get_readiness_reports_degraded_when_passing_check_is_degraded(monkeypat
     assert response.ready is True
     assert response.status == "degraded"
     assert response.degraded is True
-    assert response.checks["market_snapshot"].ok is True
-    assert response.checks["market_snapshot"].status == "seed"
+    assert response.checks["market_snapshot"].ok is False
+    assert response.checks["market_snapshot"].status == "degraded"
     assert response.checks["market_snapshot"].severity == "review"
     assert response.checks["market_snapshot"].action.key == "review_market_sources"
     assert response.checks["source_coverage"].ok is True

@@ -1,7 +1,7 @@
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { TippingPointWorkbench } from '@/components/tipping-point-workbench';
-import { assumed } from '@/lib/figure';
+import { assumed, observed } from '@/lib/figure';
 
 const mockedReplace = vi.fn();
 const mockedSearchParams = vi.hoisted(() => ({ value: new URLSearchParams() }));
@@ -121,6 +121,55 @@ describe('TippingPointWorkbench', () => {
     expect(screen.getByLabelText(/掺混比例/).getAttribute('value')).toBe('10');
     expect(screen.getByLabelText(/储备周数/).getAttribute('value')).toBe('5');
     expect((screen.getByLabelText(/已选路径/) as HTMLSelectElement).value).toBe('ptl');
+  });
+
+  it('labels a URL fuel input as the user assumption without an observation time', () => {
+    mockedSearchParams.value = new URLSearchParams({ fuel: '2.0' });
+
+    render(
+      <TippingPointWorkbench
+        initialTippingPoint={null}
+        initialDecision={null}
+        initialReserveWeeks={testReserve}
+        liveDefaults={{
+          ...testLiveDefaults,
+          fossilJetUsdPerL: observed({
+            value: 1.2,
+            unit: 'USD/L',
+            sourceId: 'test-live-fuel',
+            asOf: '2026-09-23T08:00:00Z',
+            precision: 2
+          })
+        }}
+      />
+    );
+
+    expect(screen.getAllByText('2.00 USD/L')).toHaveLength(2);
+    expect(screen.getAllByTestId('figure-basis-assumption').some((mark) => mark.title === '你的输入（假设值）')).toBe(true);
+    expect(document.querySelector('time')).toBeNull();
+  });
+
+  it('preserves an untouched live fuel quote as observed', () => {
+    render(
+      <TippingPointWorkbench
+        initialTippingPoint={null}
+        initialDecision={null}
+        initialReserveWeeks={testReserve}
+        liveDefaults={{
+          ...testLiveDefaults,
+          fossilJetUsdPerL: observed({
+            value: 1.2,
+            unit: 'USD/L',
+            sourceId: 'test-live-fuel',
+            asOf: '2026-09-23T08:00:00Z',
+            precision: 2
+          })
+        }}
+      />
+    );
+
+    expect(screen.getAllByText('1.20 USD/L')).toHaveLength(2);
+    expect(screen.getAllByTestId('figure-basis-observed')).toHaveLength(1);
   });
 
   it('ignores out-of-bounds or non-numeric query parameters, using live defaults instead', () => {

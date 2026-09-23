@@ -1435,7 +1435,7 @@ test('research page is an honest signal workbench with disabled-state actions', 
 
   assert.match(page, /AI_RESEARCH_ENABLED/);
   assert.match(page, /ResearchDecisionBriefCard/);
-  assert.match(page, /showLink=\{false\}/);
+  assert.doesNotMatch(page, /showLink=/);
   assert.match(page, /NAV_ENTRIES/);
   assert.match(zhPage, /locale="zh"/);
   assert.match(zhPage, /研究信号/);
