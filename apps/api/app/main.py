@@ -13,6 +13,7 @@ from app.db.session import SessionLocal, engine
 from app.services.market import refresh_market_snapshot_set
 from app.services.analysis.tipping_point import TippingPointEngine
 from app.services.bootstrap import utcnow
+from app.services import road_fuels
 from app.services.reserves import refresh_reserves_coverage
 from app.services.ai_research import run_daily_pipeline
 
@@ -79,6 +80,7 @@ def _run_background_maintenance_cycle(
     try:
         refreshed_at, status = refresh_market_snapshot_set(db)
         now = utcnow()
+        road_fuels.refresh_if_due(now)
 
         if now >= next_reserves_refresh_at:
             try:

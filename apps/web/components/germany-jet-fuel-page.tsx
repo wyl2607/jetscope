@@ -1,4 +1,5 @@
 import { GermanyJetFuelMonitor } from '@/components/germany-jet-fuel-monitor';
+import { GermanyRoadFuelsPanel } from '@/components/germany-road-fuels-panel';
 import { PageTemplate } from '@/components/page-template';
 import { SourceFooter, type SourceRef } from '@/components/source-footer';
 import { germanyJetFuelCopy } from '@/lib/germany-jet-fuel-copy';
@@ -6,6 +7,7 @@ import { getGermanyJetFuelReadModel } from '@/lib/germany-jet-fuel-read-model';
 import { messagesFor, type Locale } from '@/lib/i18n';
 import { NAV_ENTRIES } from '@/lib/navigation';
 import { getPriceTrendChartReadModel } from '@/lib/price-trend-chart-read-model';
+import { getRoadFuelsGermany } from '@/lib/road-fuels-read-model';
 import type { Route } from 'next';
 
 /**
@@ -58,9 +60,10 @@ function sourceLinkLabel(
 
 export async function GermanyJetFuelPage({ locale }: { locale: Locale }) {
   const copy = messagesFor(locale).prices;
-  const [readModel, priceChartData] = await Promise.all([
+  const [readModel, priceChartData, roadFuels] = await Promise.all([
     getGermanyJetFuelReadModel(locale),
-    copy.show_trend_chart ? getPriceTrendChartReadModel() : Promise.resolve(null)
+    copy.show_trend_chart ? getPriceTrendChartReadModel() : Promise.resolve(null),
+    getRoadFuelsGermany()
   ]);
   const observedAsOf =
     readModel.quoteAsOf ??
@@ -94,6 +97,8 @@ export async function GermanyJetFuelPage({ locale }: { locale: Locale }) {
         showChart={Boolean(copy.show_trend_chart) && priceChartData != null}
         showFooter={false}
       />
+
+      <GermanyRoadFuelsPanel locale={locale} data={roadFuels} />
 
       <SourceFooter
         locale={locale}

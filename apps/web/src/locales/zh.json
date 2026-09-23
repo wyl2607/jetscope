@@ -333,6 +333,21 @@
       "FAQ 不替代来源、研究或情景页面上的实时状态与适用边界。"
     ]
   },
+  "road_fuels": {
+    "title": "德国道路燃料与通胀",
+    "why": "航油之外，同一场中间馏分油紧缺正在推高加油站价格，并直接进入通胀。",
+    "euro95": "Euro-super 95",
+    "diesel": "柴油",
+    "col_fuel": "燃料",
+    "col_pump": "含税价",
+    "col_ex_tax": "不含税",
+    "col_tax_share": "税费占比",
+    "col_4w": "4 周",
+    "col_52w": "52 周",
+    "pump_source": "{week} 当周全国均价，来源：",
+    "pump_missing": "暂未取得欧盟 Weekly Oil Bulletin 数据；不显示估算值。",
+    "inflation_body": "{period} 德国 CPI 同比 {cpi}%，其中机动车燃料同比 {fuels}%、权重 {weight}‰，静态估算直接贡献约 {contribution} 个百分点；剔除取暖油和燃料后 CPI 为 {ex}%。（贡献为权重×涨幅的一阶估算，非官方分解）来源："
+  },
   "prices": {
     "meta_title": "德国航油价格",
     "meta_description": "可索引的德国航油 SSR 视图，展示 Brent、全球航油、EU 航油代理价、碳价代理及 1d/7d/30d 市场变化。",
