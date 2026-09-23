@@ -1,10 +1,11 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.schemas.feedstock import FeedstockSqueezeResponse
 from app.models.tables import MarketSnapshot
 from app.schemas.market import (
     MarketHealthResponse,
@@ -14,6 +15,8 @@ from app.schemas.market import (
     MarketSnapshotResponse,
 )
 from app.security import require_admin_token
+from app.services.analysis.feedstock import load_feedstock_prices, summarize_feedstock
+from app.services.bootstrap import utcnow
 from app.services.market import (
     backfill_market_history_from_public_sources,
     build_market_health_response,
@@ -23,6 +26,15 @@ from app.services.market import (
 )
 
 router = APIRouter()
+
+
+@router.get("/feedstock", response_model=FeedstockSqueezeResponse)
+def get_feedstock_squeeze() -> FeedstockSqueezeResponse:
+    data = load_feedstock_prices()
+    if data is None:
+        raise HTTPException(status_code=404, detail="No curated feedstock prices")
+    now = utcnow()
+    return FeedstockSqueezeResponse(generated_at=now, **summarize_feedstock(data, now.date()))
 
 
 @router.get("/snapshot", response_model=MarketSnapshotResponse)
