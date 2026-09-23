@@ -312,7 +312,11 @@ export function toTippingPointReadModel(
   if (!response) return null;
   const asOf = response.generated_at ?? null;
   const pathwayOpts = asOf
-    ? ({ asOf, basis: 'observed' as const })
+    ? ({
+        asOf: null,
+        basis: 'observed' as const,
+        method: 'EASA 2025 production-cost estimate, minus support (not a market print)'
+      })
     : ({
         asOf: null,
         basis: 'assumption' as const,
