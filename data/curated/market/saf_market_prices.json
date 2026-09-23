@@ -1,0 +1,17 @@
+{
+  "note": "Public, dated SAF purchase-price references. Not production costs, not live quotes. Forecasts (e.g. BNEF 2027-Q1 outlook) do not belong here.",
+  "references": [
+    {
+      "id": "easa-refueleu-atr-2026-avg-2025",
+      "kind": "realized_average",
+      "region": "EU",
+      "period": "2025",
+      "published_at": "2026-09-17",
+      "saf_eur_per_t": 1925,
+      "conventional_jet_eur_per_t": 640,
+      "source_name": "EASA ReFuelEU Aviation Annual Technical Report 2026",
+      "source_url": "https://www.easa.europa.eu/en/document-library/general-publications/refueleu-aviation-annual-technical-report-2026",
+      "notes": "2025 EU average. ~80% of SAF supplied was aviation biofuel, overwhelmingly UCO-based HEFA; 85% of feedstock imported, 61% of imports from China."
+    }
+  ]
+}
