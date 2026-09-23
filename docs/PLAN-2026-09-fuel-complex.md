@@ -51,8 +51,8 @@ changes, with every number dated and sourced.
 |---|---|---|
 | A0 | snapshot `generated_at` = latest refresh; UTC timestamps | #376 |
 | A1 | history never publishes seed/missing rows as latest | #377 |
-| A2 | SAF market layer: `data/curated/saf_market_prices.json` + loader; buyer cost for HEFA = market reference when one exists, production cost otherwise; `market_check` block on tipping-point; headline `signal` and engine events use buyer cost | this branch |
-| A3 | Carbon: compliance value = zero-rating (2.5 kg/L × EUA) on one side only, everywhere; lifecycle reduction reported as `lifecycle_avoided_kg_per_l`, not money | this branch |
+| A2 | SAF market layer: `data/curated/market/saf_market_prices.json` + loader; buyer cost for HEFA = market reference when one exists, production cost otherwise; `market_check` block on tipping-point; headline `signal` and engine events use buyer cost | #378 |
+| A3 | Carbon: compliance value = zero-rating (2.5 kg/L × EUA) everywhere; `carbon_reduction_pct` stays an LCA figure with no money attached | #378 |
 | A4 | Jet crack from same-date EIA spot table (Brent + Gulf jet); EU proxy uses the actual ratio when both are observed that day, fixed 1.20 only as fallback | next |
 
 Done when: with the production inputs above, the tipping-point signal is not
