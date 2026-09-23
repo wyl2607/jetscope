@@ -172,3 +172,19 @@ def test_latest_market_snapshots_query_returns_one_row_per_metric() -> None:
 
     assert set(latest) == {item["metric_key"] for item in market.DEFAULT_MARKET_METRICS}
     assert all(float(row.value) == 2.0 for row in latest.values())
+
+
+# Trimmed from https://www.eia.gov/todayinenergy/prices.php as served on 2026-09-23.
+EIA_PRICES_HTML = """
+<table summary="Spot Petroleum Prices" class="t2 basic-table">
+<tr class="prices_table_title"> <td colspan="4"> <b>Wholesale Spot Petroleum Prices, 9/21/26 Close</b> </td> </tr>
+<tr valign="top"> <td class="s1" rowspan="3">Crude Oil<br> ($/barrel)</td>
+<td class="s2">WTI</td> <td class="d1">96.97</td> <td class="dn">-4.4</td> </tr>
+<tr> <td class="s2">Brent</td> <td class="d1">116.15</td> <td class="dn">-2.9</td> </tr>
+</table>
+<b> Retail Petroleum Prices (<a href="http://www.fuelgaugereport.com/">AAA</a>), 9/20/26 ($/gallon) </b>
+"""
+
+
+def test_parse_eia_brent_quote_reads_date_from_wholesale_table_title() -> None:
+    assert market._parse_eia_brent_quote(EIA_PRICES_HTML) == (116.15, datetime(2026, 9, 21, tzinfo=UTC))

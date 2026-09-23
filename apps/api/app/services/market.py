@@ -430,8 +430,10 @@ def _parse_eia_brent(html: str) -> float | None:
 def _parse_eia_header_dates(html: str) -> list[datetime]:
     import re
 
+    # The Brent row sits in the table titled "Wholesale Spot Petroleum Prices, 9/21/26 Close";
+    # the date lives only in that title, never in a data cell.
     dates: list[datetime] = []
-    for match in re.finditer(r'<td class="d1">\s*([0-9]{1,2}/[0-9]{1,2}/[0-9]{2,4})\s*<', html):
+    for match in re.finditer(r"Wholesale Spot Petroleum Prices,\s*([0-9]{1,2}/[0-9]{1,2}/[0-9]{2,4})", html):
         raw = match.group(1)
         for fmt in ("%m/%d/%Y", "%m/%d/%y"):
             try:
