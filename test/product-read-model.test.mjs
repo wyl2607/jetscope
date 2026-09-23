@@ -394,7 +394,7 @@ test('getPriceTrendChartReadModel falls back when market history is unavailable'
 });
 
 test('finiteNumberOrNull keeps null, undefined and empty string as missing', async () => {
-  const { finiteNumberOrNull, finiteChangeOrNull } = await importWebLib(
+  const { finiteNumberOrNull, finiteChangeOrNull, resolveSnapshotMetric } = await importWebLib(
     'apps/web/lib/product-read-model.ts'
   );
 
@@ -406,6 +406,14 @@ test('finiteNumberOrNull keeps null, undefined and empty string as missing', asy
   assert.equal(finiteNumberOrNull('12.5'), 12.5);
   assert.equal(finiteChangeOrNull(null), null);
   assert.equal(finiteChangeOrNull(undefined), null);
+
+  const missingJet = resolveSnapshotMetric(
+    { jet_eu_proxy_usd_per_l: null, jet_usd_per_l: null },
+    'jet_eu_proxy_usd_per_l',
+    'jet_usd_per_l'
+  );
+  assert.equal(missingJet.value, null);
+  assert.doesNotMatch(JSON.stringify(missingJet), /80\.38|0\.9(?:00)?|0\.64/);
 });
 
 test('Germany jet-fuel read model does not turn missing 30d change into a stable 0% verdict', async (t) => {
@@ -426,7 +434,7 @@ test('Germany jet-fuel read model does not turn missing 30d change into a stable
             source_status: { overall: 'degraded', is_fallback: true, fallback_rate: 71.43 },
             values: {
               brent_usd_per_bbl: 120.98,
-              jet_usd_per_l: 0.64,
+              jet_usd_per_l: 1.017,
               jet_eu_proxy_usd_per_l: 0.913,
               carbon_proxy_usd_per_t: 91.91
             },
@@ -441,7 +449,7 @@ test('Germany jet-fuel read model does not turn missing 30d change into a stable
               },
               jet_eu_proxy: {
                 source: 'brent-derived',
-                status: 'fallback',
+                status: 'estimated',
                 fallback_used: true,
                 quality: 'derived',
                 observed_at: '2026-09-10T00:00:00Z',
@@ -558,10 +566,10 @@ test('Germany jet-fuel read model uses Rotterdam when it differs from the EU pro
     {
       generated_at: '2026-09-14T09:00:00Z',
       fetched_at: '2026-09-14T09:00:00Z',
-      source_status: { overall: 'ok', is_fallback: false },
+      source_status: { overall: 'degraded', is_fallback: true },
       values: {
-        brent_usd_per_bbl: 87.01,
-        jet_usd_per_l: 0.64,
+        brent_usd_per_bbl: 82.4,
+        jet_usd_per_l: 1.04,
         jet_eu_proxy_usd_per_l: 1.2,
         rotterdam_jet_fuel_usd_per_l: 0.88,
         carbon_proxy_usd_per_t: 91.91,
@@ -579,7 +587,7 @@ test('Germany jet-fuel read model uses Rotterdam when it differs from the EU pro
         },
         jet_eu_proxy: {
           source: 'brent-derived',
-          status: 'fallback',
+          status: 'estimated',
           fallback_used: true,
           quality: 'derived',
           observed_at: '2026-09-13T00:00:00Z',
@@ -622,7 +630,7 @@ test('Germany jet-fuel read model uses Rotterdam when it differs from the EU pro
   assert.equal(rotterdam?.quality, 'observed');
   assert.equal(readModel.quoteAsOf, '2026-09-10T00:00:00Z');
   assert.notEqual(readModel.quoteAsOf, euProxy?.observedAt);
-  assert.equal(readModel.decision, 'stable');
+  assert.equal(readModel.decision, 'insufficient');
 });
 
 test('English Germany jet fuel price page exposes localized market review without Chinese or German copy', async () => {
@@ -1495,10 +1503,10 @@ test('Germany jet-fuel read model falls back to fresh EU proxy when Rotterdam is
     {
       generated_at: '2026-09-14T09:00:00Z',
       fetched_at: '2026-09-14T09:00:00Z',
-      source_status: { overall: 'ok', is_fallback: false },
+      source_status: { overall: 'degraded', is_fallback: true },
       values: {
-        brent_usd_per_bbl: 87.01,
-        jet_usd_per_l: 0.64,
+        brent_usd_per_bbl: 82.4,
+        jet_usd_per_l: 1.04,
         jet_eu_proxy_usd_per_l: 0.913,
         rotterdam_jet_fuel_usd_per_l: 0.657,
         carbon_proxy_usd_per_t: 91.91,
@@ -1516,7 +1524,7 @@ test('Germany jet-fuel read model falls back to fresh EU proxy when Rotterdam is
         },
         jet_eu_proxy: {
           source: 'brent-derived',
-          status: 'fallback',
+          status: 'estimated',
           fallback_used: true,
           quality: 'derived',
           observed_at: '2026-09-14T00:00:00Z',

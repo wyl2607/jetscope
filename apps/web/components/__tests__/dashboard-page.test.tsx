@@ -302,6 +302,45 @@ describe('DashboardPage', () => {
     expect(screen.queryByTestId('page-as-of')).toBeNull();
   });
 
+  it('renders missing jet and carbon without seed prices or pathway calculations', async () => {
+    getDashboardReadModel.mockResolvedValue({
+      ...mockReadModel(),
+      market: {
+        ...mockReadModel().market,
+        source_status: {
+          overall: 'degraded',
+          confidence: 0,
+          freshness_minutes: 5,
+          fallback_rate: 100,
+          is_fallback: true
+        },
+        values: {
+          brent_usd_per_bbl: 80,
+          jet_usd_per_l: null,
+          jet_eu_proxy_usd_per_l: null,
+          carbon_proxy_usd_per_t: null,
+          eu_ets_price_eur_per_t: null,
+          usd_per_eur: null
+        }
+      },
+      analysisInputs: {
+        fossilJetUsdPerL: 0.9,
+        carbonPriceEurPerT: 80.38,
+        reserveWeeks: 3,
+        jetSourceKey: 'seed_fallback'
+      },
+      isFallback: false
+    });
+
+    const { container } = render(await DashboardPage({ locale: 'zh' }));
+    const text = container.textContent ?? '';
+
+    expect(text).toContain('数据缺失');
+    expect(text).not.toMatch(/80\.38|0\.900|0\.9|0\.64/);
+    expect(loadPathwayComparison).not.toHaveBeenCalled();
+    expect(loadEuEtsPressure).not.toHaveBeenCalled();
+  });
+
   it('does not bleed copy across locale files', () => {
     const zh = JSON.stringify(messagesFor('zh').dashboard);
     const de = JSON.stringify(messagesFor('de').dashboard);

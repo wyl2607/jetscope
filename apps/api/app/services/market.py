@@ -794,7 +794,7 @@ def _ingest_jet_eu_market_value(
     *,
     brent_value: float | None,
     seed_by_key: dict[str, float],
-) -> float:
+) -> float | None:
     try:
         ara_html = _fetch_text(MARKET_SOURCE_URLS["jet_ara_rotterdam"])
         ara_usd_per_metric_ton, ara_observed = _parse_ara_rotterdam_quote(ara_html)
