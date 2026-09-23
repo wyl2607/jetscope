@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-const defaultPlanPath = 'docs/archive/automation-safe-local-task-example.json';
+const defaultPlanPath = 'docs/automation-safe-local-task-example.json';
 
 const requiredFields = [
   'task_id',

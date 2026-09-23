@@ -51,7 +51,7 @@ function assertFails(plan, pattern) {
 }
 
 test('automation plan check accepts the safe-local example contract', () => {
-  const output = execFileSync('node', [scriptPath, 'docs/archive/automation-safe-local-task-example.json'], {
+  const output = execFileSync('node', [scriptPath, 'docs/automation-safe-local-task-example.json'], {
     encoding: 'utf8'
   });
 
