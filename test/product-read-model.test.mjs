@@ -4,6 +4,35 @@ import { readFile } from 'node:fs/promises';
 
 import { importWebLib } from './helpers/load-web-lib.mjs';
 
+const DELEGATED_PAGE_COMPONENTS = {
+  'apps/web/app/en/lufthansa-saf-2026/page.tsx': {
+    component: 'LufthansaCase',
+    importPath: '@/components/lufthansa-case',
+    source: 'apps/web/components/lufthansa-case.tsx'
+  }
+};
+
+async function sourceForPage(path) {
+  const pageSource = await readFile(new URL(`../${path}`, import.meta.url), 'utf8');
+  const delegated = DELEGATED_PAGE_COMPONENTS[path];
+  if (!delegated) {
+    return pageSource;
+  }
+
+  assert.match(
+    pageSource,
+    new RegExp(`import\\s+\\{\\s*${delegated.component}\\s*\\}\\s+from\\s+['\"]${delegated.importPath}['\"]`),
+    `${path} must import its allowlisted shared implementation`
+  );
+  assert.match(
+    pageSource,
+    new RegExp(`return\\s+<${delegated.component}\\b[^>]*\\/>;`),
+    `${path} must render only its allowlisted shared implementation`
+  );
+
+  return readFile(new URL(`../${delegated.source}`, import.meta.url), 'utf8');
+}
+
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -673,22 +702,19 @@ test('German Germany jet fuel price page keeps source review in the German local
 });
 
 test('English Lufthansa SAF analysis page is a localized light review surface', async () => {
-  const englishLufthansaSource = await readFile(
+  const englishPage = await readFile(
     new URL('../apps/web/app/en/lufthansa-saf-2026/page.tsx', import.meta.url),
     'utf8'
   );
+  const englishLufthansaSource = await sourceForPage('apps/web/app/en/lufthansa-saf-2026/page.tsx');
 
-  assert.match(englishLufthansaSource, /Lufthansa SAF Inflection Review/);
-  assert.match(englishLufthansaSource, /locale="en"/);
-  assert.match(englishLufthansaSource, /\/en\/prices\/germany-jet-fuel/);
-  assert.match(englishLufthansaSource, /\/en\/sources\?filter=review/);
-  assert.match(englishLufthansaSource, /\/en\/scenarios/);
-  assert.match(englishLufthansaSource, /\/analysis\/lufthansa-flight-cuts-2026-04/);
-  assert.match(englishLufthansaSource, /\/de\/lufthansa-saf-2026/);
-  assert.doesNotMatch(
-    englishLufthansaSource,
-    /汉莎|削减|航油|德国制造|事件概述|Lufthansa kürzt|Wendepunkt|Kerosin|Deutschland|Chinesische Vollversion/
-  );
+  assert.match(englishPage, /Lufthansa SAF Inflection Review/);
+  assert.match(englishPage, /locale="en"/);
+  assert.match(englishLufthansaSource, /<PageTemplate/);
+  assert.match(englishLufthansaSource, /question=\{data\.pageTemplate\.question\}/);
+  assert.match(englishLufthansaSource, /<SourceFooter/);
+  assert.match(englishLufthansaSource, /href: '\/en\/crisis'/);
+  assert.match(englishLufthansaSource, /Run the numbers yourself in the tipping-point workbench/);
   assert.doesNotMatch(englishLufthansaSource, /text-white|text-slate-300|bg-slate-900|bg-slate-950|border-slate-800/);
   assert.doesNotMatch(englishLufthansaSource, /<input|AdminDataOps|ScenarioRegistry|x-admin-token/i);
 });

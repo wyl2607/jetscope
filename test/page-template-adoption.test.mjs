@@ -185,6 +185,16 @@ const SHARED_VIEWS = [
     source: 'apps/web/components/tipping-point-report-page.tsx',
     i18nKey: 'tipping_point_report',
   },
+  {
+    // Static Lufthansa routes intentionally delegate their entire view to one
+    // shared component. Keep this allowlist explicit: a route is not allowed
+    // to satisfy the template contract merely by importing an arbitrary view.
+    route: /\/lufthansa-(?:flight-cuts-2026-04|2026-de|saf-2026)\/page\.tsx$/,
+    component: 'LufthansaCase',
+    source: 'apps/web/components/lufthansa-case.tsx',
+    importPath: '@/components/lufthansa-case',
+    questionPattern: /question=\{data\.pageTemplate\.question\}/,
+  },
 ];
 
 function sharedViewFor(path) {
@@ -195,6 +205,18 @@ async function implementationOf(path) {
   const source = await read(path);
   const view = sharedViewFor(path);
   if (view && source.includes(`<${view.component}`)) {
+    if (view.importPath) {
+      assert.match(
+        source,
+        new RegExp(`import\\s+\\{\\s*${view.component}\\s*\\}\\s+from\\s+['\"]${view.importPath}['\"]`),
+        `${path} must import its allowlisted shared implementation`
+      );
+      assert.match(
+        source,
+        new RegExp(`return\\s+<${view.component}\\b[^>]*\\/>;`),
+        `${path} must render only its allowlisted shared implementation`
+      );
+    }
     return read(view.source);
   }
   return source;
@@ -212,7 +234,8 @@ test('every converted page states the decision question it answers', async () =>
   for (const path of CONVERTED_PAGES) {
     const source = await implementationOf(path);
 
-    const i18nKey = sharedViewFor(path)?.i18nKey ?? null;
+    const view = sharedViewFor(path);
+    const i18nKey = view?.i18nKey ?? null;
     if (i18nKey) {
       assert.match(
         source,
@@ -227,6 +250,11 @@ test('every converted page states the decision question it answers', async () =>
           `${locale}.json ${i18nKey}.question must be a real sentence, got: ${question}`
         );
       }
+      continue;
+    }
+
+    if (view?.questionPattern) {
+      assert.match(source, view.questionPattern, `${path} must pass a question to PageTemplate`);
       continue;
     }
 
@@ -288,7 +316,7 @@ test('static FAQ pages never invent a data timestamp', async () => {
 
 test('static Lufthansa analysis pages never invent a data timestamp', async () => {
   for (const path of STATIC_LUFTHANSA_ANALYSIS_PAGES) {
-    const source = await read(path);
+    const source = await implementationOf(path);
     assert.match(source, /asOf=\{null\}/, `${path} must explicitly state that it has no page-level data timestamp`);
     assert.doesNotMatch(source, /new Date\(/, `${path} must not turn publication or render time into an as-of stamp`);
   }
