@@ -17,6 +17,7 @@
 #   bash scripts/deploy-usa-vps.sh --rebuild    # rsync + rebuild api container + rebuild/restart systemd web + smoke
 #   bash scripts/deploy-usa-vps.sh --rebuild --api-only   # skip the web rebuild
 #   bash scripts/deploy-usa-vps.sh --rebuild --allow-unmerged  # source not on origin/main
+#   bash scripts/deploy-usa-vps.sh --rebuild --allow-empty-db  # allow a first boot without a migrated SQLite DB
 #   bash scripts/deploy-usa-vps.sh --dry-run    # print the plan, including the SQLite copy; do not SSH
 #   bash scripts/deploy-usa-vps.sh --rebuild --dry-run
 #   JETSCOPE_REMOTE_DIR=/opt/jetscope bash scripts/deploy-usa-vps.sh --rebuild
@@ -44,6 +45,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REBUILD=0
 API_ONLY=0
 ALLOW_UNMERGED=0
+ALLOW_EMPTY_DB=0
 DRY_RUN=0
 HOST_DATA_DIR="${JETSCOPE_HOST_DATA_DIR:-$REMOTE_DIR/data}"
 
@@ -52,6 +54,7 @@ for arg in "$@"; do
     --rebuild) REBUILD=1 ;;
     --api-only) API_ONLY=1 ;;
     --allow-unmerged) ALLOW_UNMERGED=1 ;;
+    --allow-empty-db) ALLOW_EMPTY_DB=1 ;;
     --dry-run) DRY_RUN=1 ;;
     --help|-h)
       awk 'NR==1 {next} /^set -euo pipefail$/ {exit} {print}' "$0"
@@ -71,14 +74,14 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
   echo "host_data_dir=$HOST_DATA_DIR"
   echo "container=jetscope-api"
   echo "container_db=/app/data/market.db"
-  echo "rebuild=$REBUILD api_only=$API_ONLY allow_unmerged=$ALLOW_UNMERGED"
+  echo "rebuild=$REBUILD api_only=$API_ONLY allow_unmerged=$ALLOW_UNMERGED allow_empty_db=$ALLOW_EMPTY_DB"
   echo "would: rsync $ROOT/ -> $HOST:$REMOTE_DIR/ (excludes .env, data/*.db, data/*.sqlite; no --delete)"
   echo "would: record HEAD in $REMOTE_DIR/.deploy-commit"
   if [[ "$REBUILD" -eq 1 ]]; then
     echo "would: docker compose -f docker-compose.prod.yml build api   # old container keeps serving"
     echo "would: mkdir -p $HOST_DATA_DIR"
     echo "would: if $HOST_DATA_DIR/market.db is non-empty: skip docker cp (idempotent; never overwrite)"
-    echo "would: else if jetscope-api is missing, or /app/data/market.db is missing or empty: skip docker cp"
+    echo "would: else if jetscope-api is missing, or /app/data/market.db is missing or empty: fail with exit 1 (use --allow-empty-db to continue)"
     echo "would: else: PRAGMA wal_checkpoint(FULL); docker stop jetscope-api; docker cp market.db and non-empty -wal/-shm to $HOST_DATA_DIR"
     echo "would: JETSCOPE_HOST_DATA_DIR=$HOST_DATA_DIR docker compose -f docker-compose.prod.yml up -d api"
     if [[ "$API_ONLY" -eq 1 ]]; then
@@ -176,6 +179,7 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 export JETSCOPE_HOST_DATA_DIR="$HOST_DATA_DIR"
+allow_empty_db="$ALLOW_EMPTY_DB"
 host_dir="\$JETSCOPE_HOST_DATA_DIR"
 host_db="\$host_dir/market.db"
 container="jetscope-api"
@@ -222,11 +226,22 @@ else
       fi
       echo "Copied \$container:/app/data/market.db -> \$host_db"
     else
-      echo "Container \$container has no non-empty /app/data/market.db; host volume left empty"
+      if [ "\$allow_empty_db" = "1" ]; then
+        echo "WARN: Container \$container has no non-empty /app/data/market.db; continuing because --allow-empty-db was supplied"
+      else
+        echo "ERROR: Container \$container has no non-empty /app/data/market.db and host volume \$host_dir is empty; refusing to start a new empty database" >&2
+        rm -rf "\$tmp"
+        exit 1
+      fi
     fi
     rm -rf "\$tmp"
   else
-    echo "No existing \$container container; nothing to migrate"
+    if [ "\$allow_empty_db" = "1" ]; then
+      echo "WARN: No existing \$container container and host volume \$host_dir is empty; continuing because --allow-empty-db was supplied"
+    else
+      echo "ERROR: No existing \$container container and host volume \$host_dir is empty; refusing to start a new empty database" >&2
+      exit 1
+    fi
   fi
 fi
 
