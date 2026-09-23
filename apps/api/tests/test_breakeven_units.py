@@ -21,7 +21,8 @@ def test_status_for_spread_boundaries() -> None:
 
 
 def test_compute_tipping_point_matches_expected_calculation() -> None:
-    fossil_jet_usd_per_l = 1.20
+    # HEFA midpoint (EASA 2025 production cost) minus support lands 5-10 % under this fossil price.
+    fossil_jet_usd_per_l = 1.45
     carbon_price_eur_per_t = 90.0
     subsidy_usd_per_l = 0.10
     blend_rate_pct = 40.0

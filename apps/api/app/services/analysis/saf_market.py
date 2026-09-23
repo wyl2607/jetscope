@@ -11,11 +11,9 @@ import json
 from dataclasses import dataclass
 from datetime import date
 
-from app.services.analysis.pathway_costs import EUR_TO_USD, get_pathway_cost
+from app.services.analysis.pathway_costs import EUR_TO_USD, JET_LITRES_PER_TONNE, get_pathway_cost
 from app.services.curated_events import curated_dir
 
-# Jet reference density 0.8 kg/L, the same one the Rotterdam USD/t conversion uses.
-JET_LITRES_PER_TONNE = 1250.0
 # EASA: ~80 % of EU SAF supplied in 2025 was aviation biofuel, overwhelmingly
 # UCO-based HEFA, so the aggregate market price stands in for HEFA only.
 MARKET_REFERENCE_PATHWAY = "hefa"
