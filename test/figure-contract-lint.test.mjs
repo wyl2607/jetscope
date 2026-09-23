@@ -40,7 +40,10 @@ function expectsRed(name, contents, expectedMessage) {
     } finally {
       rmSync(FIXTURE, { force: true });
     }
-    assert.equal(runLint().status, 0, 'lint should be green again once the fixture is gone');
+    // Other lint tests write their own fixtures concurrently, so assert only that
+    // this fixture no longer contributes a violation.
+    const after = runLint();
+    assert.doesNotMatch(`${after.stdout}${after.stderr}`, /__figure-contract-fixture__/, 'lint should stop reporting this fixture once it is gone');
   });
 }
 

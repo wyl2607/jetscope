@@ -24,6 +24,16 @@ import { readdir } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+/** Read a listed file; a file that vanished after listing (ENOENT) is skipped, any other error is fatal. */
+function readListedFile(path) {
+  try {
+    return readFileSync(path, 'utf8');
+  } catch (error) {
+    if (error && error.code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const BASELINE_PATH = join(ROOT, 'scripts', 'design-system-baseline.json');
 // lib/ is scanned too: read models hand class names to components, so a raw
@@ -52,9 +62,13 @@ const RAW_PALETTE = new RegExp(`\\b(?:${PREFIX})-(?:${PALETTE})-\\d{2,3}(?:\\/\\
 /** `text-white`, `bg-black/40` - absolutes are tokens' job too. */
 const RAW_ABSOLUTE = new RegExp(`\\b(?:${PREFIX})-(?:white|black)(?:\\/\\d{1,3})?\\b`, 'g');
 
+/** `fill="#fff"`, `stroke="rgb(...)"`, `fill="red"` */
+const RAW_SVG_COLOR = /\b(?:fill|stroke)=["'](?:#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)|hsla?\([^)]+\)|red|blue|green|yellow|black|white|slate-\d+|gray-\d+)["']/gi;
+
 const rules = [
   { id: 'raw-palette-class', pattern: RAW_PALETTE, hint: 'use a token utility (bg-surface, text-muted, text-danger, border-line)' },
-  { id: 'raw-absolute-class', pattern: RAW_ABSOLUTE, hint: 'use bg-surface / text-ink instead of white / black' }
+  { id: 'raw-absolute-class', pattern: RAW_ABSOLUTE, hint: 'use bg-surface / text-ink instead of white / black' },
+  { id: 'raw-svg-color', pattern: RAW_SVG_COLOR, hint: 'use a CSS variable or currentColor (e.g. fill="var(--js-muted)" or className="text-muted" fill="currentColor")' }
 ];
 
 async function collectFiles(dir) {
@@ -78,7 +92,8 @@ async function collectFiles(dir) {
 }
 
 function scanFile(rel) {
-  const source = readFileSync(join(ROOT, rel), 'utf8');
+  const source = readListedFile(join(ROOT, rel));
+  if (source === null) return [];
   const hits = [];
   for (const rule of rules) {
     rule.pattern.lastIndex = 0;
