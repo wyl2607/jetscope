@@ -1291,6 +1291,47 @@
         "title": "HeatSensitivityResponse",
         "type": "object"
       },
+      "MarketAssumption": {
+        "description": "Workbench slider seed. Never a market observation.",
+        "properties": {
+          "as_of": {
+            "title": "As Of",
+            "type": "string"
+          },
+          "kind": {
+            "const": "assumption",
+            "default": "assumption",
+            "title": "Kind",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "value",
+          "unit",
+          "as_of"
+        ],
+        "title": "MarketAssumption",
+        "type": "object"
+      },
       "MarketHealthResponse": {
         "properties": {
           "age_seconds": {
@@ -1374,6 +1415,13 @@
               }
             ],
             "title": "Quote Coverage Rate"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
           },
           "recent_runs": {
             "items": {
@@ -1741,6 +1789,13 @@
       },
       "MarketSnapshotResponse": {
         "properties": {
+          "assumptions": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MarketAssumption"
+            },
+            "title": "Assumptions",
+            "type": "object"
+          },
           "derived": {
             "additionalProperties": {
               "anyOf": [
@@ -1813,6 +1868,18 @@
       },
       "MarketSourceDetail": {
         "properties": {
+          "as_of": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          },
           "cbam_eur": {
             "anyOf": [
               {
@@ -1883,6 +1950,17 @@
           "market_scope": {
             "title": "Market Scope",
             "type": "string"
+          },
+          "method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method"
           },
           "note": {
             "anyOf": [
@@ -1985,6 +2063,17 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
           },
           "usd_per_eur": {
             "anyOf": [
@@ -3240,6 +3329,13 @@
               }
             ],
             "title": "Quote Coverage Rate"
+          },
+          "status_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Status Counts",
+            "type": "object"
           }
         },
         "required": [

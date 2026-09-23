@@ -17,6 +17,12 @@ export type SourceCoverageMetric = {
 export type SourceCoverageTrustState = 'live' | 'proxy' | 'fallback' | 'degraded';
 
 export function getSourceCoverageTrustState(metric: SourceCoverageMetric): SourceCoverageTrustState {
+  if (metric.status === 'estimated') return 'proxy';
+  if (metric.status === 'missing' || metric.status === 'stale') return 'degraded';
+  if (metric.status === 'live') {
+    if (metric.source_type.includes('proxy') || metric.source_type === 'derived') return 'proxy';
+    return 'live';
+  }
   if (metric.fallback_used || metric.status === 'seed') return 'fallback';
   if (metric.status !== 'ok') return 'degraded';
   if (metric.source_type.includes('proxy') || metric.source_type === 'derived') return 'proxy';

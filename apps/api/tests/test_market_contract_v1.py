@@ -180,7 +180,10 @@ def test_snapshot_source_status_exposes_freshness_confidence_and_fallback_summar
     assert source_status["freshness_minutes"] >= 0
     assert 0.0 <= source_status["confidence"] <= 1.0
     assert source_status["confidence"] < 0.9
-    assert source_status["fallback_rate"] == pytest.approx(50.0)
+    counts = source_status["status_counts"]
+    assert sum(counts.values()) > 0
+    non_live = sum(counts[name] for name in ("stale", "estimated", "missing"))
+    assert source_status["fallback_rate"] == pytest.approx(non_live / sum(counts.values()) * 100.0)
     assert source_status["is_fallback"] is True
 
 
@@ -196,15 +199,17 @@ def test_snapshot_distinguishes_live_proxy_and_fallback_source_paths(
     carbon = payload["source_details"]["carbon"]
     jet_eu_proxy = payload["source_details"]["jet_eu_proxy"]
 
-    assert brent["status"] == "ok"
-    assert brent["fallback_used"] is False
+    # No observation date: an "ok" flag is not a live quote.
+    assert brent["status"] == "missing"
+    assert brent["value"] is None
     assert brent["confidence_score"] == pytest.approx(0.88)
 
-    assert carbon["status"] == "fallback"
+    assert carbon["status"] == "missing"
     assert carbon["fallback_used"] is True
     assert carbon["confidence_score"] == pytest.approx(0.7)
 
     assert jet_eu_proxy["market_scope"] == "derived_proxy"
+    assert jet_eu_proxy["status"] == "missing"
     assert jet_eu_proxy["fallback_used"] is True
 
 
@@ -256,11 +261,12 @@ def test_snapshot_exposes_stale_fallback_source_status(client: TestClient, db_pa
     assert source_status["fallback_rate"] == pytest.approx(100.0)
     assert source_status["is_fallback"] is True
     assert jet_eu_proxy["fallback_used"] is True
-    assert jet_eu_proxy["status"] == "fallback"
-    # Stale fallback rows are capped into the DATA_CONTRACT weak/stale band (0.30-0.49).
+    assert jet_eu_proxy["status"] == "missing"
+    assert jet_eu_proxy["value"] is None
+    # Non-live rows on an old refresh are capped into the weak/stale band (0.30-0.49).
     assert jet_eu_proxy["confidence_score"] == pytest.approx(0.49)
     assert 0.30 <= jet_eu_proxy["confidence_score"] <= 0.49
-    assert source_status["confidence"] == pytest.approx(0.49)
+    assert source_status["confidence"] <= 0.49
 
 
 def test_snapshot_source_details_errors_are_public_safe(client: TestClient, seeded_refresh_run):

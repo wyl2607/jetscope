@@ -365,7 +365,10 @@ export function TippingPointWorkbench({
 
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           <label className="text-xs uppercase tracking-[0.18em] text-muted">
-            化石航油 USD/L
+            <span>化石航油 USD/L</span>
+            {liveDefaults.fossilJetUsdPerL.basis === 'assumption' ? (
+              <span className="ml-2 normal-case tracking-normal text-warning">假设值</span>
+            ) : null}
             <input
               className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink transition hover:border-accent hover:bg-accent-soft"
               type="number"
@@ -376,7 +379,10 @@ export function TippingPointWorkbench({
             />
           </label>
           <label className="text-xs uppercase tracking-[0.18em] text-muted">
-            碳价 EUR/t
+            <span>碳价 EUR/t</span>
+            {liveDefaults.carbonPriceEurPerT.basis === 'assumption' ? (
+              <span className="ml-2 normal-case tracking-normal text-warning">假设值</span>
+            ) : null}
             <input
               className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink transition hover:border-accent hover:bg-accent-soft"
               type="number"

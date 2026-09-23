@@ -120,7 +120,14 @@ def test_snapshot_derived_uses_quality_aware_jet_not_seed_rotterdam() -> None:
                 source_status="degraded",
                 ingest="live-refresh",
                 sources={
-                    "brent": {"source": "eia", "status": "ok", "fallback_used": False, "quality": "observed", "value": 120.98},
+                    "brent": {
+                        "source": "eia",
+                        "status": "ok",
+                        "fallback_used": False,
+                        "quality": "observed",
+                        "value": 120.98,
+                        "observed_at": datetime.now(UTC).isoformat(),
+                    },
                     "jet": {"source": "fred", "status": "error", "fallback_used": True, "quality": "seed", "value": 0.64},
                     "jet_eu_proxy": {
                         "source": "brent-derived",
@@ -144,7 +151,14 @@ def test_snapshot_derived_uses_quality_aware_jet_not_seed_rotterdam() -> None:
                         "quality": "missing",
                         "value": None,
                     },
-                    "ecb": {"source": "ecb", "status": "ok", "fallback_used": False, "quality": "observed", "value": 1.1592},
+                    "ecb": {
+                        "source": "ecb",
+                        "status": "ok",
+                        "fallback_used": False,
+                        "quality": "observed",
+                        "value": 1.1592,
+                        "observed_at": datetime.now(UTC).isoformat(),
+                    },
                 },
             )
         )
@@ -152,9 +166,15 @@ def test_snapshot_derived_uses_quality_aware_jet_not_seed_rotterdam() -> None:
         snapshot = market_service.build_market_snapshot_response(db)
 
     selected = select_fossil_jet_benchmark(snapshot.values, snapshot.source_details)
-    assert selected["metric_key"] == "jet_eu_proxy_usd_per_l"
-    assert snapshot.derived.get("jet_source") == "jet_eu_proxy_usd_per_l"
+    # Seed jet/Rotterdam numbers are not quotes. Brent is live, so Rotterdam is the
+    # public Brent×1.20 estimate and outranks the US Gulf seed.
+    assert snapshot.values.get("jet_usd_per_l") is None
     assert snapshot.values.get("germany_premium_pct") is None
+    assert snapshot.source_details["rotterdam_jet_fuel"].status == "estimated"
+    assert selected["metric_key"] == "rotterdam_jet_fuel_usd_per_l"
+    assert snapshot.derived.get("jet_source") == "rotterdam_jet_fuel_usd_per_l"
+    assert selected["quality"] == "derived"
+    assert selected["value"] != 0.657
     generated = snapshot.generated_at
     if generated.tzinfo is None:
         generated = generated.replace(tzinfo=UTC)
@@ -185,10 +205,12 @@ def test_health_separates_task_success_from_quote_coverage() -> None:
         db.commit()
         health = market_service.build_market_health_response(db)
 
-    assert health.healthy is True
     assert health.success_rate == 1.0
     assert getattr(health, "quote_coverage_rate", None) is not None
     assert health.quote_coverage_rate < 1.0
+    # Task success is not enough: a seed jet quote is not live or stale.
+    assert health.healthy is False
+    assert any(reason.startswith("jet_") for reason in health.reasons)
 
 
 def test_missing_quote_date_is_not_replaced_with_fetch_time() -> None:

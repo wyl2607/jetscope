@@ -9,6 +9,7 @@ import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-t
 import { SourceFooter, type SourceRef } from '@/components/source-footer';
 import { StatusBanner } from '@/components/status-banner';
 import { getDashboardReadModel, type DashboardReadModel } from '@/lib/dashboard-read-model';
+import { presentDashboardMarket } from '@/lib/market-quote-read-model';
 import { loadEuEtsPressure } from '@/lib/eu-ets-pressure-read-model';
 import { messagesFor, type DashboardMessages, type Locale } from '@/lib/i18n';
 import { computeDashboardAlertBanners } from '@/lib/market-signals';
@@ -66,6 +67,12 @@ function formatNumber(value: number | null | undefined, digits = 2, locale: Loca
     minimumFractionDigits: digits,
     maximumFractionDigits: digits
   });
+}
+
+function missingPrice(locale: Locale): string {
+  if (locale === 'zh') return '—（数据缺失）';
+  if (locale === 'de') return '— (Daten fehlen)';
+  return '— (data missing)';
 }
 
 function formatStamp(value: string | null, locale: Locale, fallback: string): string {
@@ -193,10 +200,24 @@ export async function DashboardPage({ locale }: { locale: Locale }) {
       });
 
   const marketJet = market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l;
+  const marketCarbonUsd = market.carbon_proxy_usd_per_t;
+  const marketUsdPerEur = market.usd_per_eur;
+  const marketCarbonEur = market.eu_ets_price_eur_per_t ?? (
+    typeof marketCarbonUsd === 'number' &&
+    typeof marketUsdPerEur === 'number' &&
+    marketUsdPerEur > 0
+      ? Number((marketCarbonUsd / marketUsdPerEur).toFixed(2))
+      : null
+  );
   const brent = formatNumber(market.brent_usd_per_bbl, 2, locale);
   const jet = formatNumber(market.jet_usd_per_l, 3, locale);
   const jetEu = formatNumber(marketJet, 3, locale);
   const carbon = formatNumber(market.carbon_proxy_usd_per_t, 2, locale);
+  const quoteLocale = locale === 'de' || locale === 'en' ? locale : 'zh';
+  const missingCopy = quoteLocale === 'zh' ? '数据缺失' : quoteLocale === 'de' ? 'Daten fehlen' : 'missing';
+  const presentedMarket = readModel.isFallback
+    ? { mode: 'quotes' as const, primary: '—', secondary: missingCopy }
+    : presentDashboardMarket(readModel.market, quoteLocale);
 
   const cards: Record<SignalId, ReactNode> = {
     decision: (
@@ -231,23 +252,26 @@ export async function DashboardPage({ locale }: { locale: Locale }) {
       <MetricCard
         key="market"
         label={copy.market_label}
-        value={fill(copy.market_value, { brent })}
-        hint={fill(copy.market_hint, { jet, jetEu, carbon })}
+        value={
+          presentedMarket.mode === 'quotes'
+            ? presentedMarket.primary
+            : fill(copy.market_value, { brent })
+        }
+        hint={
+          presentedMarket.mode === 'quotes'
+            ? presentedMarket.secondary
+            : fill(copy.market_hint, { jet, jetEu, carbon })
+        }
       />
     )
   };
 
   let pathwayComparison: Awaited<ReturnType<typeof loadPathwayComparison>> | null = null;
-  if (copy.show_pathways) {
+  if (copy.show_pathways && typeof marketJet === 'number' && typeof marketCarbonEur === 'number') {
     try {
       pathwayComparison = await loadPathwayComparison({
-        fossilJetUsdPerL: readModel.analysisInputs?.fossilJetUsdPerL ?? marketJet ?? 0.9,
-        carbonPriceEurPerT: Number(
-          (
-            (market.carbon_proxy_usd_per_t ?? 0) /
-            (typeof market.usd_per_eur === 'number' && market.usd_per_eur > 0 ? market.usd_per_eur : 1.1435)
-          ).toFixed(2)
-        ),
+        fossilJetUsdPerL: marketJet,
+        carbonPriceEurPerT: marketCarbonEur,
         subsidyUsdPerL: 0,
         blendRatePct: 6
       });
@@ -257,10 +281,10 @@ export async function DashboardPage({ locale }: { locale: Locale }) {
   }
 
   let euEtsPressure: Awaited<ReturnType<typeof loadEuEtsPressure>> | null = null;
-  if (copy.show_ets) {
+  if (copy.show_ets && typeof marketJet === 'number') {
     try {
       euEtsPressure = await loadEuEtsPressure({
-        fossilJetUsdPerL: marketJet ?? 0.9,
+        fossilJetUsdPerL: marketJet,
         exemptBlendPct: 6,
         euEtsMin: 0,
         euEtsMax: 200,
@@ -452,8 +476,18 @@ function DashboardStatusBanners({
       : sourceStatus.overall === 'ok' && health?.healthy !== false
         ? 'success'
         : 'warning';
-  const jetPrice = formatNumber(analysis?.fossilJetUsdPerL ?? market.jet_eu_proxy_usd_per_l ?? 0, 3, locale);
-  const ets = formatNumber(analysis?.carbonPriceEurPerT ?? 0, 2, locale);
+  const marketJet = market.jet_eu_proxy_usd_per_l ?? market.jet_usd_per_l;
+  const marketCarbonEur = market.eu_ets_price_eur_per_t ?? (
+    typeof market.carbon_proxy_usd_per_t === 'number' &&
+    typeof market.usd_per_eur === 'number' &&
+    market.usd_per_eur > 0
+      ? Number((market.carbon_proxy_usd_per_t / market.usd_per_eur).toFixed(2))
+      : null
+  );
+  const jetPrice = typeof marketJet === 'number' ? formatNumber(marketJet, 3, locale) : missingPrice(locale);
+  const ets = typeof marketCarbonEur === 'number'
+    ? formatNumber(marketCarbonEur, 2, locale)
+    : missingPrice(locale);
   const healthLabel = health == null ? copy.na : health.healthy ? copy.status_health_ok : copy.status_health_attention;
   const runs =
     health?.runs_total != null
@@ -469,7 +503,7 @@ function DashboardStatusBanners({
         detail={
           <>
             {fill(copy.status_detail, {
-              jetSource: analysis?.jetSourceKey ?? copy.na,
+              jetSource: typeof marketJet === 'number' ? analysis?.jetSourceKey ?? copy.na : copy.na,
               jetPrice,
               ets,
               interval: health?.refresh_interval_seconds != null ? String(health.refresh_interval_seconds) : '—',

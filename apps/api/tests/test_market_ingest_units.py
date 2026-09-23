@@ -63,16 +63,18 @@ def test_ingest_jet_eu_uses_brent_derived_fallback_when_ara_unavailable(monkeypa
     source_detail = details["sources"]["jet_eu_proxy"]
 
     assert result == expected
-    assert source_detail["status"] == "fallback"
+    assert source_detail["status"] == "estimated"
     assert source_detail["source"] == "brent-derived"
     assert source_detail["fallback_used"] is True
+    assert source_detail["method"]
+    assert "1.20" in str(source_detail["method"])
     assert source_detail["confidence_score"] == pytest.approx(0.65)
     assert 0.50 <= source_detail["confidence_score"] <= 0.69
     assert "primary_error" in source_detail
 
 
-def test_ingest_jet_eu_uses_seed_baseline_when_public_and_derived_unavailable(monkeypatch) -> None:
-    """Regression: deterministic SAF-adjacent jet proxy must be low-confidence fallback."""
+def test_ingest_jet_eu_is_missing_when_public_and_brent_unavailable(monkeypatch) -> None:
+    """A failed public quote must not be replaced with the seeded baseline."""
     details: dict[str, object] = {"sources": {}}
     seed_by_key = {item["metric_key"]: item["value"] for item in market_service.DEFAULT_MARKET_METRICS}
 
@@ -89,12 +91,8 @@ def test_ingest_jet_eu_uses_seed_baseline_when_public_and_derived_unavailable(mo
 
     source_detail = details["sources"]["jet_eu_proxy"]
 
-    assert result == pytest.approx(float(seed_by_key["jet_eu_proxy_usd_per_l"]))
-    assert source_detail["status"] == "fallback"
-    assert source_detail["source"] == "seed-baseline"
-    assert source_detail["fallback_used"] is True
-    assert source_detail["confidence_score"] == pytest.approx(
-        market_service.DETERMINISTIC_FALLBACK_CONFIDENCE
-    )
-    assert 0.00 <= source_detail["confidence_score"] <= 0.29
-    assert "seeded EU proxy baseline" in str(source_detail["note"])
+    assert result is None
+    assert source_detail["status"] == "missing"
+    assert source_detail.get("value") is None
+    assert source_detail["value"] != seed_by_key["jet_eu_proxy_usd_per_l"] if "value" in source_detail else True
+    assert float(seed_by_key["jet_eu_proxy_usd_per_l"]) != source_detail.get("value")
