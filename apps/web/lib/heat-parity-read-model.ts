@@ -110,6 +110,7 @@ export async function loadHeatParity(
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(buildHeatParityUrl(query), {
+      next: { revalidate: 300 },
       signal: controller.signal,
       headers: { accept: 'application/json' }
     });
@@ -161,6 +162,7 @@ export async function loadHeatSensitivity(
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(buildHeatSensitivityUrl(query), {
+      next: { revalidate: 300 },
       signal: controller.signal,
       headers: { accept: 'application/json' }
     });

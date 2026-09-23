@@ -515,15 +515,15 @@ export async function getSourcesReadModel(): Promise<SourcesReadModel> {
   try {
     const [snapshotResponse, historyResponse, coverageResponse] = await Promise.all([
       fetch(buildApiUrl("/market/snapshot"), {
-        cache: "no-store",
+        next: { revalidate: 300 },
         signal: controller.signal
       }),
       fetch(buildApiUrl("/market/history"), {
-        cache: "no-store",
+        next: { revalidate: 300 },
         signal: controller.signal
       }),
       fetch(buildApiUrl("/sources/coverage"), {
-        cache: 'no-store',
+        next: { revalidate: 300 },
         signal: controller.signal
       })
     ]);

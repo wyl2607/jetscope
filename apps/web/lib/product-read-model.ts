@@ -170,7 +170,7 @@ export async function fetchJson<T>(path: string): Promise<T> {
   );
   try {
     const response = await fetch(buildApiUrl(path), {
-      cache: 'no-store',
+      next: { revalidate: 300 },
       signal: controller.signal
     });
     if (!response.ok) {

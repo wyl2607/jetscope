@@ -126,7 +126,7 @@ export async function getCrisisBriefReadModel(
   try {
     const search = new URLSearchParams({ limit: String(limit) });
     const response = await fetch(buildApiUrl(`/analysis/crisis-brief?${search.toString()}`), {
-      cache: 'no-store',
+      next: { revalidate: 300 },
       signal: controller.signal
     });
     if (!response.ok) {
