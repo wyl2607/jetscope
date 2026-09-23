@@ -1,8 +1,10 @@
 services:
   api:
     build:
-      context: ./apps/api
-      dockerfile: Dockerfile
+      # Repository root, same as `docker build -f apps/api/Dockerfile .`.
+      # data/curated is outside apps/api and has to be in the context.
+      context: .
+      dockerfile: apps/api/Dockerfile
     container_name: jetscope-api
     restart: unless-stopped
     init: true
@@ -17,8 +19,13 @@ services:
       JETSCOPE_APP_ENV: production
       JETSCOPE_MARKET_REFRESH_INTERVAL_SECONDS: "600"
       JETSCOPE_SQLITE_PATH: ./data/market.db
+      # Outside the /app/data bind mount. See apps/api/Dockerfile.
+      JETSCOPE_CURATED_DIR: /app/curated
     volumes:
-      - ./data:/app/data
+      # SQLite file is /app/data/market.db (WORKDIR /app, sqlite:///./data/market.db).
+      # Absolute default so the DB does not follow an unexpected compose project dir.
+      # scripts/deploy-usa-vps.sh exports JETSCOPE_HOST_DATA_DIR to $REMOTE_DIR/data.
+      - ${JETSCOPE_HOST_DATA_DIR:-/opt/jetscope/data}:/app/data
 
   web:
     build:

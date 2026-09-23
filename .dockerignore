@@ -16,14 +16,21 @@ node_modules
 apps/web/dist
 **/*.tsbuildinfo
 
-# Python side. The API image builds from apps/api with its own context.
+# Python side. The API image builds from the repository root
+# (`docker build -f apps/api/Dockerfile .`).
 apps/api/.venv
 **/__pycache__
 **/*.pyc
 
-# Runtime state. `data/` is a host volume mount in docker-compose.prod.yml; it
-# must never be baked into an image.
-data
+# Runtime state. The SQLite database is a host bind mount
+# (${JETSCOPE_HOST_DATA_DIR:-/opt/jetscope/data} -> /app/data) and must not be
+# baked into an image. Curated event JSON is product content: curated_events.py
+# reads it from the API image. Excluding the parent directory `data` would make
+# the exception below unreachable, so ignore the contents and re-include only
+# data/curated.
+data/**
+!data/curated
+!data/curated/**
 *.db
 *.sqlite
 *.sqlite3
