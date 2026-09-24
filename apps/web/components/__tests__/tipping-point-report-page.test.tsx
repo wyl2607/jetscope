@@ -1,10 +1,33 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { TippingPointReportPage } from '@/components/tipping-point-report-page';
+import { safInflectionAlert, TippingPointReportPage } from '@/components/tipping-point-report-page';
 import { messagesFor, type Locale } from '@/lib/i18n';
+import type { SafMarketCheck } from '@/lib/product-read-model';
 
 const LOCALES: readonly Locale[] = ['zh', 'de', 'en'];
+
+function marketCheck(
+  status: SafMarketCheck['status'],
+  statutoryAllowancePremiumPct: number | null = null
+): SafMarketCheck {
+  return {
+    reference_id: 'test-reference',
+    kind: 'purchase_price',
+    region: 'EU',
+    period: '2026',
+    published_at: '2026-01-01',
+    source_name: 'Test source',
+    source_url: 'https://example.com',
+    pathway_key: 'hefa',
+    saf_eur_per_t: 1,
+    saf_usd_per_l: 1,
+    fossil_with_ets_usd_per_l: 1,
+    premium_pct: 26,
+    status,
+    statutory_allowance_premium_pct: statutoryAllowancePremiumPct
+  };
+}
 
 async function renderReport(locale: Locale) {
   const ui = await TippingPointReportPage({ locale });
@@ -60,7 +83,7 @@ describe('TippingPointReportPage', () => {
     expect(screen.queryByTestId('page-as-of')).toBeNull();
   });
 
-  it('renders missing probability and confidence as unavailable, not zero', async () => {
+  it('renders missing premium and confidence as unavailable, not zero', async () => {
     const copy = messagesFor('en').tipping_point_report;
     await renderReport('en');
 
@@ -97,5 +120,27 @@ describe('TippingPointReportPage', () => {
     expect(zh).toMatch(/临界点报告/);
     expect(en).toMatch(/Tipping-Point Report/);
     expect(de).toMatch(/Kipppunktbericht/);
+  });
+});
+
+describe('safInflectionAlert', () => {
+  it('returns no alert when the market check is missing', () => {
+    expect(safInflectionAlert(null)).toBeNull();
+  });
+
+  it('returns no alert for a premium market check without an allowance value', () => {
+    expect(safInflectionAlert(marketCheck('premium'))).toBeNull();
+  });
+
+  it.each([13, 15])('returns an allowance alert at %s%% after allowance', (premium) => {
+    expect(safInflectionAlert(marketCheck('premium', premium))).toBe('allowance_inflection');
+  });
+
+  it('returns no alert above the allowance inflection threshold', () => {
+    expect(safInflectionAlert(marketCheck('premium', 16))).toBeNull();
+  });
+
+  it('returns an at-inflection alert for inflection status', () => {
+    expect(safInflectionAlert(marketCheck('inflection'))).toBe('at_inflection');
   });
 });

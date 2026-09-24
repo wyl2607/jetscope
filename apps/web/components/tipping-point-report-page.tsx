@@ -34,6 +34,8 @@ import Link from 'next/link';
  */
 
 const REPORT_CHART_SOURCE_ID = 'saf-tipping-model';
+// Mirrors the 0.15 threshold in apps/api/app/services/analysis/dashboard_contracts.py `_pathway_status`.
+const INFLECTION_PREMIUM_PCT = 15;
 const DEFAULT_REPORT_FEATURES = {
   priceChart: false,
   reservesStrip: false,
@@ -103,11 +105,11 @@ function tippingSignalTone(signal?: string): string {
   return 'text-warning';
 }
 
-function probabilityTone(probability: number | null): string { // figure-contract-lint-ignore: internal tone helper parameter, not a prop
-  if (probability == null) return 'text-warning';
-  if (probability >= 67) return 'text-success';
-  if (probability >= 34) return 'text-warning';
-  return 'text-danger';
+function marketCheckTone(check: SafMarketCheck | null): string {
+  if (check?.status === 'competitive') return 'text-success';
+  if (check?.status === 'inflection') return 'text-warning';
+  if (check?.status === 'premium') return 'text-danger';
+  return 'text-warning';
 }
 
 function formatNumber(
@@ -140,13 +142,31 @@ function formatPercent(
   return `${Number(value).toFixed(0)}%`;
 }
 
+function formatPremium(value: number): string { // figure-contract-lint-ignore: internal formatter parameter, not a prop
+  return `${value >= 0 ? '+' : ''}${value.toFixed(0)}%`;
+}
+
+export function safInflectionAlert(
+  check: SafMarketCheck | null
+): 'at_inflection' | 'allowance_inflection' | null {
+  if (!check) return null;
+  if (check.status === 'inflection' || check.status === 'competitive') return 'at_inflection';
+  if (
+    check.statutory_allowance_premium_pct != null &&
+    check.statutory_allowance_premium_pct <= INFLECTION_PREMIUM_PCT
+  ) {
+    return 'allowance_inflection';
+  }
+  return null;
+}
+
 function marketCheckText(
   check: SafMarketCheck | null,
   locale: Locale,
   copy: TippingPointReportMessages
 ): string {
   if (!check) return copy.market_missing;
-  const premium = `${check.premium_pct >= 0 ? '+' : ''}${check.premium_pct.toFixed(0)}%`;
+  const premium = formatPremium(check.premium_pct);
   return copy.market_body
     .replace('{saf}', `${formatNumber(check.saf_eur_per_t, locale, 0, copy.number_unavailable)} EUR/t ≈ ${formatPrice(check.saf_usd_per_l, locale, copy.number_unavailable)}`)
     .replace('{source}', check.source_name)
@@ -168,7 +188,7 @@ function allowanceText(
   const premium = check.statutory_allowance_premium_pct;
   return copy.market_allowance
     .replace('{coverage}', check.statutory_allowance_coverage_pct.toFixed(0))
-    .replace('{premium}', `${premium >= 0 ? '+' : ''}${premium.toFixed(0)}%`)
+    .replace('{premium}', formatPremium(premium))
     .replace('{reserve}', formatNumber(basis.reserve_allowances / 1e6, locale, 0, copy.number_unavailable))
     .replace('{period}', basis.period)
     .replace('{year}', String(basis.latest_fuel_year))
@@ -349,16 +369,9 @@ export async function TippingPointReportPage({ locale }: { locale: Locale }) {
   const evidenceFossil = features.assumedFossilFallback ? null : resolveEvidenceFossil(readModel);
   const fossilJetSource = zhFossil?.source ?? evidenceFossil?.source ?? 'assumed';
   const signal = features.assumedFossilFallback ? zhFossil?.tipping?.signal : evidenceFossil?.tipping?.signal;
-  const decision = readModel.airlineDecision;
+  const marketCheck = readModel.tippingPoint?.market_check ?? null;
+  const inflectionAlert = safInflectionAlert(marketCheck);
   const latestEvent = events[0] ?? null;
-  const decisionProbabilities = decision
-    ? [decision.probabilities.buy_spot_saf, decision.probabilities.sign_long_term_offtake].filter(
-        (value): value is number => typeof value === 'number' && Number.isFinite(value)
-      )
-    : [];
-  const switchProbability = decisionProbabilities.length > 0
-    ? Math.round(Math.max(...decisionProbabilities) * 100)
-    : null;
   const sourceStatus = readModel.market.source_status;
   const sourceConfidence = formatPercent(
     readModel.isFallback || sourceStatus.confidence == null ? null : sourceStatus.confidence * 100,
@@ -392,10 +405,15 @@ export async function TippingPointReportPage({ locale }: { locale: Locale }) {
           hint={copy.signal_hint}
         />
         <MetricCard
-          label={copy.probability_label}
-          value={switchProbability == null ? copy.number_unavailable : `${switchProbability}%`}
-          valueClassName={probabilityTone(switchProbability)}
-          hint={copy.probability_hint}
+          label={copy.premium_label}
+          value={marketCheck ? formatPremium(marketCheck.premium_pct) : copy.number_unavailable}
+          valueClassName={marketCheckTone(marketCheck)}
+          hint={marketCheck?.statutory_allowance_premium_pct != null
+            ? copy.premium_hint_allowance.replace(
+                '{allowance}',
+                formatPremium(marketCheck.statutory_allowance_premium_pct)
+              )
+            : copy.premium_hint}
         />
         {features.sourceConfidence ? (
           <MetricCard
@@ -411,6 +429,21 @@ export async function TippingPointReportPage({ locale }: { locale: Locale }) {
           hint={eventsHint}
         />
       </SignalRow>
+
+      {inflectionAlert ? (
+        <div
+          role="status"
+          data-testid="saf-inflection-alert"
+          className="rounded-md bg-warning-soft px-3 py-2 text-sm text-warning"
+        >
+          {inflectionAlert === 'at_inflection'
+            ? copy.alert_at_inflection
+            : copy.alert_allowance_inflection.replace(
+                '{allowance}',
+                formatPremium(marketCheck?.statutory_allowance_premium_pct ?? 0)
+              )}
+        </div>
+      ) : null}
 
       <Panel locale={locale} title={copy.thesis_title} why={copy.thesis_why}>
         {features.assumedFossilFallback ? (
