@@ -389,6 +389,7 @@
     "trend_why": "当前价只是一个点；只有把它放进 1d、7d、30d 窗口，才能判断偏离是否足以触发合同或套保复核。",
     "source_read_model": "德国航油价格读模型（Brent、全球航油、EU 航油代理与碳价代理）",
     "source_read_model_fallback": "德国航油价格读模型不可用，当前为回退估算（{error}）",
+    "source_read_model_degraded": "德国航油价格读模型已加载：{live}/{total} 个来源为实时数据，其余为估算或缺失",
     "source_unknown_error": "未知原因",
     "source_brent": "Brent 来源状态",
     "source_jet": "全球航油来源状态",

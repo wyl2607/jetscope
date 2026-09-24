@@ -27,6 +27,7 @@ function metric(value: number, quality = 'derived'): GermanyJetFuelReadModel['me
     changePct7d: null,
     changePct30d: 4,
     quality,
+    sourceStatus: 'estimated',
     quoteKind: 'proxy',
     note: null
   };
@@ -41,6 +42,7 @@ function readModel(value: number): GermanyJetFuelReadModel {
     overallStatus: 'degraded',
     metrics: [jet],
     isFallback: false,
+    sourceHealth: { live: 3, total: 4 },
     decision: 'stable',
     usdPerEur: 1.25,
     usdPerEurQuality: 'observed',

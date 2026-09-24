@@ -513,7 +513,9 @@ test('Germany jet-fuel read model does not turn missing 30d change into a stable
 
   assert.equal(euProxyMetric?.changePct30d, null);
   assert.equal(readModel.decision, 'insufficient');
-  assert.equal(readModel.isFallback, true);
+  // One live source of two: degraded, not a fetch fallback.
+  assert.equal(readModel.isFallback, false);
+  assert.deepEqual(readModel.sourceHealth, { live: 1, total: 2 });
   assert.equal(euProxyMetric?.quality, 'derived');
   assert.equal(euProxyMetric?.observedAt, '2026-09-10T00:00:00Z');
   assert.notEqual(euProxyMetric?.observedAt, euProxyMetric?.fetchedAt);
