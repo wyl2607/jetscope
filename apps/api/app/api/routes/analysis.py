@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -35,12 +36,17 @@ def get_tipping_point_analysis(
     carbon_price_eur_per_t: float = Query(0.0, ge=0, description="Carbon price in EUR per metric ton"),
     subsidy_usd_per_l: float = Query(0.0, ge=0, description="Per-liter SAF subsidy in USD"),
     blend_rate_pct: float = Query(0.0, ge=0, le=100, description="Blend rate as percent of total fuel burn"),
+    saf_allowance: Literal["none", "statutory", "remote_airport"] = Query(
+        "none",
+        description="EU ETS SAF allowances (Directive 2003/87/EC Art. 3c(6)): none, statutory per-pathway rate, or 100 % at remote airports",
+    ),
 ) -> TippingPointResponse:
     return build_tipping_point_response(
         fossil_jet_usd_per_l=fossil_jet_usd_per_l,
         carbon_price_eur_per_t=carbon_price_eur_per_t,
         subsidy_usd_per_l=subsidy_usd_per_l,
         blend_rate_pct=blend_rate_pct,
+        saf_allowance=saf_allowance,
     )
 
 

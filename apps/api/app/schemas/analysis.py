@@ -65,6 +65,7 @@ class TippingPointInputs(BaseModel):
     carbon_price_eur_per_t: float = Field(ge=0)
     subsidy_usd_per_l: float = Field(ge=0)
     blend_rate_pct: float = Field(ge=0, le=100)
+    saf_allowance: Literal["none", "statutory", "remote_airport"] = "none"
 
 
 class PathwayTippingPoint(BaseModel):
@@ -76,6 +77,9 @@ class PathwayTippingPoint(BaseModel):
     spread_high_pct: float
     status: Literal["competitive", "inflection", "premium"]
     cost_basis: Literal["production_cost"] = "production_cost"
+    # EU ETS SAF allowances applied to the net costs above (0 unless requested).
+    allowance_coverage_pct: float = Field(default=0.0, ge=0, le=100)
+    allowance_category_assumed: bool = False
 
 
 class SafMarketCheck(BaseModel):
@@ -94,6 +98,28 @@ class SafMarketCheck(BaseModel):
     fossil_with_ets_usd_per_l: float = Field(gt=0)
     premium_pct: float
     status: Literal["competitive", "inflection", "premium"]
+    # premium_pct / status include the requested allowance; statutory_* is always the what-if.
+    allowance_coverage_pct: float = Field(default=0.0, ge=0, le=100)
+    allowance_support_usd_per_l: float = Field(default=0.0, ge=0)
+    statutory_allowance_coverage_pct: float | None = None
+    statutory_allowance_premium_pct: float | None = None
+
+
+class SafAllowanceBasis(BaseModel):
+    """Where the allowance rates come from and how far they reach."""
+
+    legal_basis_name: str
+    legal_basis_url: str
+    period: str
+    reserve_allowances: int
+    rates_pct: dict[str, float]
+    latest_fuel_year: int
+    latest_published_at: date
+    latest_allowances: int
+    latest_value_eur: float
+    latest_saf_tonnes: float
+    latest_source_name: str
+    latest_source_url: str
 
 
 class TippingPointResponse(BaseModel):
@@ -102,6 +128,7 @@ class TippingPointResponse(BaseModel):
     effective_fossil_jet_usd_per_l: float = Field(gt=0)
     pathways: list[PathwayTippingPoint]
     market_check: SafMarketCheck | None = None
+    saf_allowance: SafAllowanceBasis | None = None
     signal: TippingPointSignal
     signal_basis: SafCostBasis
 
@@ -176,6 +203,8 @@ class PathwaySourceMeta(BaseModel):
     cadence: str
     updated_at: str
     fallback_used: bool
+    source_name: str | None = None
+    source_url: str | None = None
 
 
 class PathwayComparisonRow(BaseModel):

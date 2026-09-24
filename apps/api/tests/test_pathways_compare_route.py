@@ -22,7 +22,8 @@ def test_compare_happy_path_returns_rows_and_signal(client):
     assert "fossil_jet_crisis" not in keys
     assert body["signal"] in {"clear_leader", "close_race", "no_advantage", "insufficient_data"}
     for row in body["rows"]:
-        assert row["source"]["source_type"] == "manual"
+        assert row["source"]["source_type"] == "official"
+        assert row["source"]["source_url"] == "https://www.easa.europa.eu/en/downloads/143282/en"
         assert 0 <= row["source"]["confidence_score"] <= 1
 
 

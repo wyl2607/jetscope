@@ -1,4 +1,5 @@
 import sys
+from datetime import date
 import types
 
 import pytest
@@ -57,22 +58,27 @@ def test_compare_pathways_status_below_fossil() -> None:
     assert hefa["status"] == "below_fossil"
 
 
+def _hefa_mid() -> float:
+    return PATHWAY_COSTS["hefa"].midpoint_usd_per_l
+
+
 def test_compare_pathways_status_competitive() -> None:
-    results = compare_pathways(fossil_jet_usd_per_l=1.20)
+    # Spread thresholds: <= 5 % competitive, <= 25 % inflection, above that premium.
+    results = compare_pathways(fossil_jet_usd_per_l=_hefa_mid() / 1.03)
     hefa = _find_result(results, "hefa")
 
     assert hefa["status"] == "competitive"
 
 
 def test_compare_pathways_status_inflection() -> None:
-    results = compare_pathways(fossil_jet_usd_per_l=1.00)
+    results = compare_pathways(fossil_jet_usd_per_l=_hefa_mid() / 1.15)
     hefa = _find_result(results, "hefa")
 
     assert hefa["status"] == "inflection"
 
 
 def test_compare_pathways_status_premium() -> None:
-    results = compare_pathways(fossil_jet_usd_per_l=0.80)
+    results = compare_pathways(fossil_jet_usd_per_l=_hefa_mid() / 1.5)
     hefa = _find_result(results, "hefa")
 
     assert hefa["status"] == "premium"
@@ -126,13 +132,18 @@ def test_carbon_price_sweep_raises_for_inverted_range() -> None:
 
 
 def test_pathway_sources_cover_all_keys_and_validate_fields() -> None:
-    sources = list_pathway_sources()
+    # Pinned date: the manual fossil crisis band goes stale after its quarterly window.
+    sources = list_pathway_sources(as_of=date(2026, 9, 23))
     allowed_source_types = {"official", "market_primary", "public_proxy", "derived", "manual"}
 
     assert set(sources.keys()) == set(PATHWAY_COSTS.keys())
     for source in sources.values():
         assert source["source_type"] in allowed_source_types
         assert 0.0 <= source["confidence_score"] <= 1.0
-        assert source["cadence"] == "quarterly"
-        assert source["updated_at"] == "2026-07-15"
         assert source["fallback_used"] is False
+    for key in ("hefa", "atj", "ft", "ptl"):
+        assert sources[key]["source_type"] == "official"
+        assert sources[key]["cadence"] == "annual"
+        assert sources[key]["updated_at"] == "2026-02-26"
+        assert sources[key]["source_url"] == "https://www.easa.europa.eu/en/downloads/143282/en"
+    assert sources["fossil_jet_crisis"]["source_type"] == "manual"

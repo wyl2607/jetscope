@@ -233,4 +233,83 @@ describe('TippingPointWorkbench', () => {
 
     vi.useRealTimers();
   });
+
+  it('carries the ETS SAF allowance toggle into the URL and the analysis request', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn((_input: RequestInfo | URL, _init?: RequestInit) => new Promise<Response>(() => {}));
+    vi.stubGlobal('fetch', fetchMock);
+    mockedSearchParams.value = new URLSearchParams({ allowance: 'statutory' });
+
+    render(
+      <TippingPointWorkbench
+        initialTippingPoint={null}
+        initialDecision={null}
+        initialReserveWeeks={testReserve}
+        liveDefaults={testLiveDefaults}
+      />
+    );
+
+    const select = screen.getByLabelText(/ETS SAF 配额/) as HTMLSelectElement;
+    expect(select.value).toBe('statutory');
+    await act(async () => {
+      vi.advanceTimersByTime(400);
+    });
+    expect(mockedReplace.mock.calls[0][0]).toContain('allowance=statutory');
+    const analysisCall = fetchMock.mock.calls.map((call) => String(call[0])).find((url) => url.startsWith('/api/analysis/tipping-point'));
+    expect(analysisCall).toContain('saf_allowance=statutory');
+
+    await act(async () => {
+      fireEvent.change(select, { target: { value: 'none' } });
+      vi.advanceTimersByTime(400);
+    });
+    expect(mockedReplace.mock.calls.at(-1)?.[0]).not.toContain('allowance=');
+
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it('falls back to no allowance for an unknown allowance parameter', () => {
+    mockedSearchParams.value = new URLSearchParams({ allowance: 'everything' });
+
+    render(
+      <TippingPointWorkbench
+        initialTippingPoint={null}
+        initialDecision={null}
+        initialReserveWeeks={testReserve}
+        liveDefaults={testLiveDefaults}
+      />
+    );
+
+    expect((screen.getByLabelText(/ETS SAF 配额/) as HTMLSelectElement).value).toBe('none');
+  });
+
+  it('shows the HEFA market check with the allowance deduction', () => {
+    render(
+      <TippingPointWorkbench
+        initialTippingPoint={null}
+        initialMarketCheck={{
+          reference_id: 'easa-refueleu-atr-2026-avg-2025',
+          kind: 'realized_average',
+          region: 'EU',
+          period: '2025',
+          published_at: '2026-09-17',
+          source_name: 'EASA ReFuelEU Aviation Annual Technical Report 2026',
+          source_url: 'https://example.test',
+          pathway_key: 'hefa',
+          saf_eur_per_t: 1925,
+          saf_usd_per_l: 1.761,
+          fossil_with_ets_usd_per_l: 1.292,
+          premium_pct: 18.15,
+          status: 'premium',
+          allowance_coverage_pct: 50,
+          allowance_support_usd_per_l: 0.2346
+        }}
+        initialDecision={null}
+        initialReserveWeeks={testReserve}
+        liveDefaults={testLiveDefaults}
+      />
+    );
+
+    expect(screen.getByText(/HEFA 采购参考价 1\.761 USD\/L/).textContent).toContain('扣除 ETS 配额补贴 0.235 USD/L（剩余价差的 50%）');
+  });
 });

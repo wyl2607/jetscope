@@ -1,0 +1,33 @@
+{
+  "note": "Public, dated waste-lipid feedstock references, transcribed from free Fastmarkets insight articles (the assessment database itself is paywalled). Updated by hand; the API flags them stale after 30 days. No current public tallow figure: not included.",
+  "observations": [
+    {
+      "id": "fastmarkets-2026-09-15",
+      "week_ending": "2026-09-10",
+      "published_at": "2026-09-15",
+      "uco_ddp_nwe_eur_per_t": {"low": 1280, "high": 1290},
+      "uco_cif_ara_bulk_usd_per_t": {"low": 1365, "high": 1375},
+      "ice_gasoil_usd_per_t": 1464,
+      "source_name": "Fastmarkets: European UCO and animal fat prices jump on strong demand and geopolitical tensions",
+      "source_url": "https://www.fastmarkets.com/insights/european-uco-and-animal-fat-prices-jump-on-strong-demand-and-geopolitical-tensions/"
+    }
+  ],
+  "annual_ranges": [
+    {
+      "year": 2025,
+      "published_at": "2026-01-26",
+      "uco_ddp_nwe_eur_per_t": {"low": 1070, "low_date": "2025-03-28", "high": 1207.5, "high_date": "2025-02-21"},
+      "source_name": "Fastmarkets: European biofuel feedstock prices fluctuate significantly in 2025 (2026 preview)",
+      "source_url": "https://www.fastmarkets.com/insights/european-biofuel-feedstock-prices-fluctuate-significantly-in-2025-market-expects-more-volatility-next-year-2026-preview/"
+    }
+  ],
+  "structure": {
+    "period": "2025",
+    "published_at": "2026-09-17",
+    "aviation_biofuel_share_of_saf_pct": 80,
+    "feedstock_imported_pct": 85,
+    "china_share_of_imports_pct": 61,
+    "source_name": "EASA ReFuelEU Aviation Annual Technical Report 2026",
+    "source_url": "https://www.easa.europa.eu/en/document-library/general-publications/refueleu-aviation-annual-technical-report-2026"
+  }
+}

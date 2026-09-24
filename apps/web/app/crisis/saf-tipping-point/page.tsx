@@ -296,6 +296,7 @@ export default async function SafTippingPointPage() {
       >
         <TippingPointWorkbench
           initialTippingPoint={tippingPoint}
+          initialMarketCheck={readModel.tippingPoint?.market_check ?? null}
           initialDecision={airlineDecision}
           initialReserveWeeks={reserveDefault}
           liveDefaults={{
@@ -330,7 +331,11 @@ export default async function SafTippingPointPage() {
                   spread_high_pct: row.spread_pct ?? 0,
                   status: row.status
                 },
-                { asOf: pathwayComparison.generatedAt, basis: 'observed' }
+                {
+                  asOf: null,
+                  basis: 'observed',
+                  method: 'EASA 2025 production-cost estimate, minus support (not a market print)'
+                }
               )
             )}
             sources={pathwayComparison.sourceByKey}

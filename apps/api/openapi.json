@@ -700,6 +700,32 @@
         "title": "EuEtsPressureSource",
         "type": "object"
       },
+      "FeedstockSqueezeResponse": {
+        "properties": {
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "structure": {
+            "$ref": "#/components/schemas/SafFeedstockStructure"
+          },
+          "uco": {
+            "$ref": "#/components/schemas/UcoPrice"
+          },
+          "uco_vs_gasoil": {
+            "$ref": "#/components/schemas/UcoVsGasoil"
+          }
+        },
+        "required": [
+          "generated_at",
+          "uco",
+          "uco_vs_gasoil",
+          "structure"
+        ],
+        "title": "FeedstockSqueezeResponse",
+        "type": "object"
+      },
       "FossilReference": {
         "properties": {
           "efficiency": {
@@ -2599,9 +2625,31 @@
             "title": "Fallback Used",
             "type": "boolean"
           },
+          "source_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Name"
+          },
           "source_type": {
             "title": "Source Type",
             "type": "string"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
           },
           "updated_at": {
             "title": "Updated At",
@@ -2648,6 +2696,18 @@
       },
       "PathwayTippingPoint": {
         "properties": {
+          "allowance_category_assumed": {
+            "default": false,
+            "title": "Allowance Category Assumed",
+            "type": "boolean"
+          },
+          "allowance_coverage_pct": {
+            "default": 0.0,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Allowance Coverage Pct",
+            "type": "number"
+          },
           "cost_basis": {
             "const": "production_cost",
             "default": "production_cost",
@@ -3384,9 +3444,139 @@
         "title": "RouteEditPayload",
         "type": "object"
       },
+      "SafAllowanceBasis": {
+        "description": "Where the allowance rates come from and how far they reach.",
+        "properties": {
+          "latest_allowances": {
+            "title": "Latest Allowances",
+            "type": "integer"
+          },
+          "latest_fuel_year": {
+            "title": "Latest Fuel Year",
+            "type": "integer"
+          },
+          "latest_published_at": {
+            "format": "date",
+            "title": "Latest Published At",
+            "type": "string"
+          },
+          "latest_saf_tonnes": {
+            "title": "Latest Saf Tonnes",
+            "type": "number"
+          },
+          "latest_source_name": {
+            "title": "Latest Source Name",
+            "type": "string"
+          },
+          "latest_source_url": {
+            "title": "Latest Source Url",
+            "type": "string"
+          },
+          "latest_value_eur": {
+            "title": "Latest Value Eur",
+            "type": "number"
+          },
+          "legal_basis_name": {
+            "title": "Legal Basis Name",
+            "type": "string"
+          },
+          "legal_basis_url": {
+            "title": "Legal Basis Url",
+            "type": "string"
+          },
+          "period": {
+            "title": "Period",
+            "type": "string"
+          },
+          "rates_pct": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Rates Pct",
+            "type": "object"
+          },
+          "reserve_allowances": {
+            "title": "Reserve Allowances",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "legal_basis_name",
+          "legal_basis_url",
+          "period",
+          "reserve_allowances",
+          "rates_pct",
+          "latest_fuel_year",
+          "latest_published_at",
+          "latest_allowances",
+          "latest_value_eur",
+          "latest_saf_tonnes",
+          "latest_source_name",
+          "latest_source_url"
+        ],
+        "title": "SafAllowanceBasis",
+        "type": "object"
+      },
+      "SafFeedstockStructure": {
+        "properties": {
+          "aviation_biofuel_share_of_saf_pct": {
+            "title": "Aviation Biofuel Share Of Saf Pct",
+            "type": "number"
+          },
+          "china_share_of_imports_pct": {
+            "title": "China Share Of Imports Pct",
+            "type": "number"
+          },
+          "feedstock_imported_pct": {
+            "title": "Feedstock Imported Pct",
+            "type": "number"
+          },
+          "period": {
+            "title": "Period",
+            "type": "string"
+          },
+          "published_at": {
+            "format": "date",
+            "title": "Published At",
+            "type": "string"
+          },
+          "source_name": {
+            "title": "Source Name",
+            "type": "string"
+          },
+          "source_url": {
+            "title": "Source Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "period",
+          "published_at",
+          "aviation_biofuel_share_of_saf_pct",
+          "feedstock_imported_pct",
+          "china_share_of_imports_pct",
+          "source_name",
+          "source_url"
+        ],
+        "title": "SafFeedstockStructure",
+        "type": "object"
+      },
       "SafMarketCheck": {
         "description": "Dated SAF purchase price against fossil jet plus its EU ETS cost.",
         "properties": {
+          "allowance_coverage_pct": {
+            "default": 0.0,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Allowance Coverage Pct",
+            "type": "number"
+          },
+          "allowance_support_usd_per_l": {
+            "default": 0.0,
+            "minimum": 0.0,
+            "title": "Allowance Support Usd Per L",
+            "type": "number"
+          },
           "fossil_with_ets_usd_per_l": {
             "exclusiveMinimum": 0.0,
             "title": "Fossil With Ets Usd Per L",
@@ -3447,6 +3637,28 @@
             ],
             "title": "Status",
             "type": "string"
+          },
+          "statutory_allowance_coverage_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Statutory Allowance Coverage Pct"
+          },
+          "statutory_allowance_premium_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Statutory Allowance Premium Pct"
           }
         },
         "required": [
@@ -3840,6 +4052,16 @@
             "title": "Fossil Jet Usd Per L",
             "type": "number"
           },
+          "saf_allowance": {
+            "default": "none",
+            "enum": [
+              "none",
+              "statutory",
+              "remote_airport"
+            ],
+            "title": "Saf Allowance",
+            "type": "string"
+          },
           "subsidy_usd_per_l": {
             "minimum": 0.0,
             "title": "Subsidy Usd Per L",
@@ -3886,6 +4108,16 @@
             },
             "title": "Pathways",
             "type": "array"
+          },
+          "saf_allowance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SafAllowanceBasis"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "signal": {
             "enum": [
@@ -4007,6 +4239,158 @@
           "competitive_at_reference"
         ],
         "title": "TransitionTech",
+        "type": "object"
+      },
+      "UcoPrice": {
+        "description": "UCO (ISCC) delivered Northwest Europe, midpoint of the published range.",
+        "properties": {
+          "age_days": {
+            "title": "Age Days",
+            "type": "integer"
+          },
+          "ddp_nwe_eur_per_t": {
+            "title": "Ddp Nwe Eur Per T",
+            "type": "number"
+          },
+          "ddp_nwe_high_eur_per_t": {
+            "title": "Ddp Nwe High Eur Per T",
+            "type": "number"
+          },
+          "ddp_nwe_low_eur_per_t": {
+            "title": "Ddp Nwe Low Eur Per T",
+            "type": "number"
+          },
+          "prior_year": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UcoPriorYear"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "published_at": {
+            "format": "date",
+            "title": "Published At",
+            "type": "string"
+          },
+          "source_name": {
+            "title": "Source Name",
+            "type": "string"
+          },
+          "source_url": {
+            "title": "Source Url",
+            "type": "string"
+          },
+          "stale": {
+            "title": "Stale",
+            "type": "boolean"
+          },
+          "week_ending": {
+            "format": "date",
+            "title": "Week Ending",
+            "type": "string"
+          }
+        },
+        "required": [
+          "week_ending",
+          "published_at",
+          "ddp_nwe_eur_per_t",
+          "ddp_nwe_low_eur_per_t",
+          "ddp_nwe_high_eur_per_t",
+          "age_days",
+          "stale",
+          "source_name",
+          "source_url",
+          "prior_year"
+        ],
+        "title": "UcoPrice",
+        "type": "object"
+      },
+      "UcoPriorYear": {
+        "properties": {
+          "high_date": {
+            "format": "date",
+            "title": "High Date",
+            "type": "string"
+          },
+          "high_eur_per_t": {
+            "title": "High Eur Per T",
+            "type": "number"
+          },
+          "low_date": {
+            "format": "date",
+            "title": "Low Date",
+            "type": "string"
+          },
+          "low_eur_per_t": {
+            "title": "Low Eur Per T",
+            "type": "number"
+          },
+          "source_name": {
+            "title": "Source Name",
+            "type": "string"
+          },
+          "source_url": {
+            "title": "Source Url",
+            "type": "string"
+          },
+          "vs_high_pct": {
+            "title": "Vs High Pct",
+            "type": "number"
+          },
+          "vs_low_pct": {
+            "title": "Vs Low Pct",
+            "type": "number"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "low_eur_per_t",
+          "low_date",
+          "high_eur_per_t",
+          "high_date",
+          "vs_high_pct",
+          "vs_low_pct",
+          "source_name",
+          "source_url"
+        ],
+        "title": "UcoPriorYear",
+        "type": "object"
+      },
+      "UcoVsGasoil": {
+        "description": "Same-week UCO CIF ARA (bulk) over ICE gasoil futures, both USD/t.",
+        "properties": {
+          "ice_gasoil_usd_per_t": {
+            "title": "Ice Gasoil Usd Per T",
+            "type": "number"
+          },
+          "ratio": {
+            "title": "Ratio",
+            "type": "number"
+          },
+          "uco_cif_ara_bulk_usd_per_t": {
+            "title": "Uco Cif Ara Bulk Usd Per T",
+            "type": "number"
+          },
+          "week_ending": {
+            "format": "date",
+            "title": "Week Ending",
+            "type": "string"
+          }
+        },
+        "required": [
+          "week_ending",
+          "uco_cif_ara_bulk_usd_per_t",
+          "ice_gasoil_usd_per_t",
+          "ratio"
+        ],
+        "title": "UcoVsGasoil",
         "type": "object"
       },
       "ValidationError": {
@@ -4672,6 +5056,23 @@
               "title": "Blend Rate Pct",
               "type": "number"
             }
+          },
+          {
+            "description": "EU ETS SAF allowances (Directive 2003/87/EC Art. 3c(6)): none, statutory per-pathway rate, or 100 % at remote airports",
+            "in": "query",
+            "name": "saf_allowance",
+            "required": false,
+            "schema": {
+              "default": "none",
+              "description": "EU ETS SAF allowances (Directive 2003/87/EC Art. 3c(6)): none, statutory per-pathway rate, or 100 % at remote airports",
+              "enum": [
+                "none",
+                "statutory",
+                "remote_airport"
+              ],
+              "title": "Saf Allowance",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -4878,6 +5279,27 @@
         "summary": "Get Health",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/v1/market/feedstock": {
+      "get": {
+        "operationId": "get_feedstock_squeeze_v1_market_feedstock_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedstockSqueezeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Feedstock Squeeze",
+        "tags": [
+          "market"
         ]
       }
     },

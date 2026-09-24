@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from app.services.analysis.pathway_costs import get_pathway_cost
 from app.services.analysis.tipping_point import TippingPointEngine
 
 _DEFAULT_CARBON = object()
@@ -176,8 +177,13 @@ def test_evaluate_skips_when_carbon_input_is_missing(now: datetime, monkeypatch:
     assert called is False
 
 
+def _hefa_mid() -> float:
+    # Production-cost basis (market reference disabled above): EASA 2025 HEFA estimate.
+    return get_pathway_cost("hefa").midpoint_usd_per_l
+
+
 def test_evaluate_emits_critical_for_gap_inside_5_cents(now: datetime) -> None:
-    session = MockSession(fossil_price=1.21)  # HEFA effective=1.25 -> gap=-0.04
+    session = MockSession(fossil_price=_hefa_mid() - 0.04)
     engine = TippingPointEngine()
 
     events = engine.evaluate(now=now, db=session)
@@ -189,7 +195,7 @@ def test_evaluate_emits_critical_for_gap_inside_5_cents(now: datetime) -> None:
 
 
 def test_evaluate_emits_alert_for_gap_inside_20_cents(now: datetime) -> None:
-    session = MockSession(fossil_price=1.09)  # HEFA effective=1.25 -> gap=-0.16
+    session = MockSession(fossil_price=_hefa_mid() - 0.16)
     engine = TippingPointEngine()
 
     events = engine.evaluate(now=now, db=session)
@@ -201,7 +207,7 @@ def test_evaluate_emits_alert_for_gap_inside_20_cents(now: datetime) -> None:
 
 
 def test_evaluate_dedupes_same_event_and_pathway_within_24h(now: datetime) -> None:
-    session = MockSession(fossil_price=1.09)
+    session = MockSession(fossil_price=_hefa_mid() - 0.16)
     session.recorded_events.append(
         SimpleNamespace(
             id="evt-existing",
@@ -218,7 +224,7 @@ def test_evaluate_dedupes_same_event_and_pathway_within_24h(now: datetime) -> No
 
 
 def test_crossover_boundary_zero_gap_is_not_crossover(now: datetime) -> None:
-    session = MockSession(fossil_price=1.25)  # HEFA effective=1.25 -> gap=0.0
+    session = MockSession(fossil_price=_hefa_mid())
     engine = TippingPointEngine()
 
     events = engine.evaluate(now=now, db=session)
@@ -283,7 +289,7 @@ def test_evaluate_falls_back_to_fresh_proxy_when_rotterdam_expired(now: datetime
                 {"quality": "derived", "observed_at": "2020-01-02T00:00:00+00:00"},
             ),
             "jet_eu_proxy_usd_per_l": (
-                1.40,
+                1.60,
                 {"quality": "derived", "observed_at": "2026-04-23T11:00:00+00:00"},
             ),
         }
@@ -295,7 +301,7 @@ def test_evaluate_falls_back_to_fresh_proxy_when_rotterdam_expired(now: datetime
     hefa_event = _event_for_pathway(events, "hefa")
     assert hefa_event is not None
     assert hefa_event.event_type == "CROSSOVER"
-    assert hefa_event.fossil_price == pytest.approx(1.40)
+    assert hefa_event.fossil_price == pytest.approx(1.60)
 
 
 def test_hefa_uses_market_reference_not_production_seed(now: datetime, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -325,3 +331,16 @@ def test_hefa_uses_market_reference_not_production_seed(now: datetime, monkeypat
 
     # 1.243 − (1.761 − 0.245 ETS) = −0.27 USD/L: not even an ALERT.
     assert hefa_event is None
+
+
+def test_tipping_point_route_accepts_only_known_saf_allowance_modes() -> None:
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    client = TestClient(app)
+    base = {"fossil_jet_usd_per_l": 1.092, "carbon_price_eur_per_t": 70}
+    body = client.get("/v1/analysis/tipping-point", params={**base, "saf_allowance": "statutory"}).json()
+    assert body["inputs"]["saf_allowance"] == "statutory"
+    assert body["market_check"]["allowance_coverage_pct"] == 50.0
+    assert client.get("/v1/analysis/tipping-point", params={**base, "saf_allowance": "all"}).status_code == 422

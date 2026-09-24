@@ -114,8 +114,12 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, pathwa
                   <td className="py-3 pr-4">
                     <span className="inline-flex flex-wrap items-baseline gap-1">
                       <FigureValue figure={pathway.netCostLow} locale="zh" size="inline" showTimestamp={false} />
-                      <span>–</span>
-                      <FigureValue figure={pathway.netCostHigh} locale="zh" size="inline" showTimestamp={false} />
+                      {pathway.netCostLow.value !== pathway.netCostHigh.value ? (
+                        <>
+                          <span>–</span>
+                          <FigureValue figure={pathway.netCostHigh} locale="zh" size="inline" showTimestamp={false} />
+                        </>
+                      ) : null}
                     </span>
                   </td>
                   <td className="py-3 pr-4">
@@ -128,7 +132,13 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, pathwa
                   </td>
                   <td className={`py-3 pr-4 font-medium ${statusColor}`}>{pathway.status}</td>
                   <td className="py-3 pr-4">
-                    {formatFigure(pathway.spreadLow)} 至 {formatFigure(pathway.spreadHigh)}
+                    {pathway.spreadLow.value !== pathway.spreadHigh.value ? (
+                      <>
+                        {formatFigure(pathway.spreadLow)} 至 {formatFigure(pathway.spreadHigh)}
+                      </>
+                    ) : (
+                      formatFigure(pathway.spreadLow)
+                    )}
                   </td>
                   {showSources ? (
                     <td className="py-3">
@@ -142,6 +152,11 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, pathwa
                             {sources[pathway.pathway_key].freshnessLabel}
                             {sources[pathway.pathway_key].fallbackUsed ? ' · 回退' : ''}
                           </div>
+                          {sources[pathway.pathway_key].sourceUrl ? (
+                            <a className="text-xs underline" href={sources[pathway.pathway_key].sourceUrl ?? undefined}>
+                              {sources[pathway.pathway_key].sourceName ?? sources[pathway.pathway_key].sourceUrl}
+                            </a>
+                          ) : null}
                         </div>
                       ) : (
                         <span className="text-subtle">无数据</span>
