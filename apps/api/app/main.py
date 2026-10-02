@@ -12,7 +12,7 @@ from app.db.bootstrap import apply_schema_bootstrap
 from app.db.session import SessionLocal, engine
 from app.services.market import refresh_market_snapshot_set
 from app.services.analysis.tipping_point import TippingPointEngine
-from app.services.bootstrap import utcnow
+from app.services.bootstrap import seed_configuration_defaults, utcnow
 from app.services import road_fuels
 from app.services.reserves import refresh_reserves_coverage
 from app.services.ai_research import run_daily_pipeline
@@ -146,6 +146,8 @@ def create_app() -> FastAPI:
         from app import models  # noqa: F401
 
         bootstrap_mode = apply_schema_bootstrap(engine)
+        with SessionLocal() as db:
+            seed_configuration_defaults(db)
         # Alembic's fileConfig pins the root logger to WARN; re-assert the app's
         # configuration so refresh-loop logs survive in-process migrations.
         configure_logging()

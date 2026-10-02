@@ -69,6 +69,17 @@ Or from repo root:
 npm run api:migrate
 ```
 
+## Configuration defaults
+
+After schema bootstrap (`alembic` or `create_all`), API startup initializes empty
+pathway and ReFuelEU configuration tables. These defaults are production-cost
+assumptions and policy targets, not market observations; no market snapshots are
+seeded. Existing configuration rows are preserved, including partial catalogs.
+
+`GET /v1/pathways` and `GET /v1/policies/refuel-eu` only read persisted rows. If
+startup/bootstrap is skipped and the tables are empty, both return `[]` without
+writing. There is no separate disabled schema-bootstrap mode.
+
 ## Auth behavior (write routes)
 
 These routes require header `x-admin-token` matching `JETSCOPE_ADMIN_TOKEN`:

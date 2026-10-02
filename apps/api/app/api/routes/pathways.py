@@ -8,7 +8,6 @@ from app.schemas.analysis import PathwayComparisonResponse
 from app.schemas.pathways import PathwaySummary, PathwayUpsert
 from app.security import require_admin_token
 from app.services.analysis.dashboard_contracts import build_pathway_comparison_response
-from app.services.analysis.pathway_costs import FOSSIL_JET_EMISSIONS_KG_PER_L, list_pathway_costs
 
 router = APIRouter()
 
@@ -50,34 +49,8 @@ def compare_pathways_endpoint(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-def _default_pathways() -> list[dict]:
-    return [
-        {
-            "pathway_id": pathway.pathway_key,
-            "name": pathway.name,
-            "pathway": pathway.name,
-            "base_cost_usd_per_l": pathway.midpoint_usd_per_l,
-            "co2_savings_kg_per_l": (
-                FOSSIL_JET_EMISSIONS_KG_PER_L * pathway.carbon_reduction_pct / 100
-            ),
-            "category": "saf",
-        }
-        for pathway in list_pathway_costs()
-        if pathway.pathway_key != "fossil_jet_crisis"
-    ]
-
-
-def _seed_pathways_if_needed(db: Session) -> None:
-    existing = db.scalar(select(RouteCatalog.pathway_id).limit(1))
-    if existing is not None:
-        return
-    for row in _default_pathways():
-        db.add(RouteCatalog(**row))
-    db.commit()
-
 
 def _list_pathway_rows(db: Session) -> list[RouteCatalog]:
-    _seed_pathways_if_needed(db)
     return db.scalars(select(RouteCatalog).order_by(RouteCatalog.base_cost_usd_per_l.asc())).all()
 
 
