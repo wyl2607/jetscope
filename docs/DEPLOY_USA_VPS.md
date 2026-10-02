@@ -169,12 +169,14 @@ deploy script still excludes `.env` and `data/*.db` and does not use `rsync --de
 | `GET /v1/reserves/eu` | No invented IATA claim |
 | Dashboard `/dashboard` | Live strip + LH event card when web is served |
 
-## Admin UI edge gate (host nginx)
+## Admin and readiness edge gate (host nginx)
 
 The public admin pages (`/admin`, `/de/admin`, `/en/admin`) show operational
 detail and write controls. Mutating API calls already require `x-admin-token`.
-Edge Basic Auth is the first gate for the HTML. `infra/server/nginx.conf` puts
-it on the existing admin location:
+Edge Basic Auth gates that HTML and the operational disclosure at
+`/api/readiness` and `/v1/readiness`, including trailing slashes. All three
+locations use the same realm and credential file. `infra/server/nginx.conf`
+keeps `/api/readiness` on Next.js and `/v1/readiness` on FastAPI:
 
 ```nginx
 location ~ ^/(?:en/|de/)?admin(?:/|$) {
@@ -191,25 +193,50 @@ container edge in `infra/nginx.prod.conf` uses the same location with
 does not drop the gate. This host also serves unrelated products; only touch
 the `saf.meichen.beauty` vhost.
 
-Create the credential file on the VPS before reloading nginx. nginx refuses
-to start or reload if `auth_basic_user_file` is missing. Never commit the
-file, the password, or the hash.
+Create the credential file on the VPS before enabling the gate. A missing or
+unreadable file fails authenticated requests; `nginx -t` does not check worker
+read access. Never commit the file, the password, or the hash.
 
 ```bash
 ssh usa-vps
 sudo mkdir -p /etc/nginx/secrets
+sudo chown root:www-data /etc/nginx/secrets
 sudo chmod 750 /etc/nginx/secrets
 # First user: -c creates the file. Additional users: omit -c.
-sudo htpasswd -c /etc/nginx/secrets/jetscope-admin.htpasswd <username>
+sudo htpasswd -cB /etc/nginx/secrets/jetscope-admin.htpasswd <username>
 sudo chmod 640 /etc/nginx/secrets/jetscope-admin.htpasswd
 sudo chown root:www-data /etc/nginx/secrets/jetscope-admin.htpasswd
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-If the live vhost is still a hand-edited copy under `/etc/nginx/sites-enabled/`
-rather than this file, add those two `auth_basic` lines to its existing
-`location ~ ^/(?:en/|de/)?admin(?:/|$)` block. Do not add a second set of
-`location = /admin` blocks beside that regex.
+Use the actual host worker group if it differs from `www-data`. If the live
+vhost is a hand-edited copy under `/etc/nginx/sites-enabled/`, apply the reviewed
+admin and readiness locations from `infra/server/nginx.conf` to the JetScope
+vhost. Keep the readiness regex ahead of the generic `/api` regex; do not add a
+second set of `location = /admin` blocks beside the admin regex.
+
+Rotate an existing user's password interactively without `-c` (which would
+erase other users):
+
+```bash
+sudo htpasswd -B /etc/nginx/secrets/jetscope-admin.htpasswd <username>
+sudo chown root:www-data /etc/nginx/secrets/jetscope-admin.htpasswd
+sudo chmod 640 /etc/nginx/secrets/jetscope-admin.htpasswd
+```
+
+Use `htpasswd -D` to revoke an obsolete user. Host nginx reads the credential
+file on requests. If this file is also bind-mounted into a container, restore
+its worker read permissions and recreate that container after rotation as
+described in [the container guide](DEPLOY_WEB_VPS.md#operator-credentials-before-starting-the-container-edge).
+
+Run `node scripts/nginx-edge-smoke.mjs https://<public-host>` after the edge
+reload. Anonymous admin and readiness requests must return 401 with a Basic
+challenge, private/no-store and noindex/nofollow. Verify an authenticated admin
+page and both readiness paths interactively, without capturing credentials or
+response bodies in logs. The old password must fail after rotation. Public
+monitors continue using `/v1/health` or `/api/health`. Internal deploy,
+rollback and watchdog readiness checks keep the direct loopback API URL;
+server-side web fetches keep their internal API base, bypassing this edge.
 
 `X-Robots-Tag: noindex, nofollow` is set on the same nginx location and again
 in `apps/web/next.config.mjs`, so the tag still holds if a request reaches

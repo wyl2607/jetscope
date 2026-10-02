@@ -145,12 +145,15 @@ Minimum public checks can use documented API endpoints:
 ```bash
 export JETSCOPE_API_BASE_URL="https://<your-api-host>"
 curl -fsS "$JETSCOPE_API_BASE_URL/v1/health"
-curl -fsS "$JETSCOPE_API_BASE_URL/v1/readiness"
 curl -fsS "$JETSCOPE_API_BASE_URL/v1/market/snapshot"
 ```
 
 If alerting is configured, store webhook URLs and credentials in the deployment
 environment or secret manager, not in repository documentation.
+Readiness is an operator-only disclosure behind edge Basic Auth; public
+monitors use `/v1/health` or `/api/health`. Provision and rotate the htpasswd
+file using [the host guide](DEPLOY_USA_VPS.md#admin-and-readiness-edge-gate-host-nginx)
+or [the container guide](DEPLOY_WEB_VPS.md#operator-credentials-before-starting-the-container-edge).
 
 ## Phase 6: Post-Deployment Validation
 
@@ -162,8 +165,8 @@ export JETSCOPE_API_BASE_URL="https://<your-api-host>"
 # 1. API health check
 curl -fsS "$JETSCOPE_API_BASE_URL/v1/health" | jq '.'
 
-# 2. Launch prerequisite disclosure
-curl -fsS "$JETSCOPE_API_BASE_URL/v1/readiness" | jq '.status, .checks'
+# 2. Web liveness proxy (readiness requires operator Basic Auth)
+curl -fsS "$JETSCOPE_API_BASE_URL/api/health" | jq '.'
 
 # 3. All 7 market values present
 curl -fsS "$JETSCOPE_API_BASE_URL/v1/market/snapshot" | jq '.values | keys | length'

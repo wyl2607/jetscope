@@ -69,6 +69,14 @@ services:
     cpus: "0.5"
     volumes:
       - ./infra/nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
+      # Operator state outside the checkout; same file as the host edge.
+      # create_host_path: false makes compose fail instead of creating a directory there.
+      - type: bind
+        source: /etc/nginx/secrets/jetscope-admin.htpasswd
+        target: /etc/nginx/secrets/admin.htpasswd
+        read_only: true
+        bind:
+          create_host_path: false
       # Operator-supplied TLS server blocks. The directory may be empty; the
       # include in nginx.prod.conf globs and matches nothing until it is not.
       - ./infra/tls:/etc/nginx/tls:ro
