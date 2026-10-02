@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { FigureValue } from '@/components/figure-value';
+import { esgSafEconomicsHref } from '@/lib/esg-saf-economics';
 import { derived, formatFigure, observed, type Figure } from '@/lib/figure';
+import { messagesFor } from '@/lib/i18n';
 import type { PathwayCostRow, PathwaySourceView } from '@/lib/pathways-read-model';
 
 type Props = {
@@ -12,6 +14,7 @@ type Props = {
   /** Optional source-trust metadata keyed by pathway_key. When provided,
    *  the table renders provenance columns; when omitted it renders as before. */
   sources?: Record<string, PathwaySourceView>;
+  projectJetReference?: Figure;
 };
 
 export type PathwayDetailsByKey = Record<
@@ -62,7 +65,8 @@ export function pathwayDetailsFromComparison(response: PathwayComparisonWire): P
   );
 }
 
-export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, pathwayDetails, sources }: Props) {
+export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, pathwayDetails, sources, projectJetReference }: Props) {
+  const economicsCopy = messagesFor('zh').saf_project_economics;
   const [fetchedDetails, setFetchedDetails] = useState<PathwayDetailsByKey>({});
   useEffect(() => {
     if (pathwayDetails) return;
@@ -81,6 +85,19 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, pathwa
   return (
     // Bare artifact: card, title and why-line come from the wrapping Panel.
     <div className="min-w-0">
+      <div className="mb-3 space-y-2 text-xs text-muted">
+        <p>{economicsCopy.external_model}</p>
+        {projectJetReference?.value != null ? (
+          <>
+            <p>
+              {economicsCopy.jet_reference}{' '}
+              <FigureValue figure={projectJetReference} locale="zh" size="inline" />
+              {' · '}<span className="text-warning">{economicsCopy.status.estimated}</span>
+            </p>
+            <p>{projectJetReference.method}</p>
+          </>
+        ) : <p className="text-warning">{economicsCopy.missing_reference}</p>}
+      </div>
       <div className="overflow-x-auto">
         <table className="min-w-full text-left text-sm text-ink">
           <thead>
@@ -92,12 +109,14 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, pathwa
               <th className="py-3 pr-4">状态</th>
               <th className="py-3 pr-4">价差</th>
               {showSources ? <th className="py-3">来源可信度</th> : null}
+              <th className="py-3">{economicsCopy.column}</th>
             </tr>
           </thead>
           <tbody>
             {pathways.map((pathway) => {
               const details = detailsByKey[pathway.pathway_key];
               const isSelected = pathway.pathway_key === selectedPathwayKey;
+              const economicsHref = esgSafEconomicsHref(pathway.pathway_key, projectJetReference);
               const rowClass = isSelected ? 'bg-accent-soft ring-1 ring-accent' : '';
               const statusColor =
                 pathway.status === 'competitive'
@@ -163,6 +182,19 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, pathwa
                       )}
                     </td>
                   ) : null}
+                  <td className="py-3">
+                    {economicsHref ? (
+                      <a
+                        href={economicsHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`${pathway.display_name} · ${economicsCopy.link}`}
+                        className="rounded-xl text-accent underline hover:text-ink focus-visible:ring-2 focus-visible:ring-accent"
+                      >
+                        {economicsCopy.link}
+                      </a>
+                    ) : <span className="text-subtle">{economicsCopy.unsupported}</span>}
+                  </td>
                 </tr>
               );
             })}

@@ -1,4 +1,19 @@
 {
+  "saf_project_economics": {
+    "column": "Project economics (esg)",
+    "link": "Project economics (esg) ↗",
+    "external_model": "External model: LCOS, NPV, IRR and payback are estimated using esg’s own project assumptions. Airline EU ETS zero-rating and SAF allowances are excluded from producer revenue.",
+    "jet_reference": "EU jet reference passed to esg:",
+    "missing_reference": "Jet reference missing: EU jet proxy or dated ECB FX unavailable; no price is passed, so esg uses its own estimated default.",
+    "unsupported": "No matching project preset",
+    "conversion_method": "EUR/L = EU jet USD/L ÷ ECB USD/EUR. Sources: {jetSource} ({jetStatus}, {jetAsOf}); {fxSource} ({fxStatus}, {fxAsOf}).",
+    "status": {
+      "live": "live",
+      "stale": "stale",
+      "estimated": "estimated",
+      "missing": "missing"
+    }
+  },
   "shell": {
     "nav": {
       "dashboard": "Decision Cockpit",

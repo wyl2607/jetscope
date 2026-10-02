@@ -6,6 +6,7 @@ import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-t
 import { SourceFooter } from '@/components/source-footer';
 import { TippingPointWorkbench } from '@/components/tipping-point-workbench';
 import { loadEuEtsPressure } from '@/lib/eu-ets-pressure-read-model';
+import { esgSafJetReference } from '@/lib/esg-saf-economics';
 import { assumed, derived, missing, observed, type Figure } from '@/lib/figure';
 import { loadPathwayComparison, toPathwayCostRow } from '@/lib/pathways-read-model';
 import { getDashboardReadModel, toDecisionReadModel, toTippingPointReadModel } from '@/lib/product-read-model';
@@ -79,6 +80,7 @@ function tippingSignalTone(signal?: string): string {
 
 export default async function SafTippingPointPage() {
   const readModel = await getDashboardReadModel();
+  const projectJetReference = esgSafJetReference(readModel.market);
   const tippingPoint = toTippingPointReadModel(readModel.tippingPoint);
   const airlineDecision = toDecisionReadModel(readModel.airlineDecision);
   const fuelSource = readModel.market.values?.jet_eu_proxy_usd_per_l != null
@@ -299,6 +301,7 @@ export default async function SafTippingPointPage() {
           initialMarketCheck={readModel.tippingPoint?.market_check ?? null}
           initialDecision={airlineDecision}
           initialReserveWeeks={reserveDefault}
+          projectJetReference={projectJetReference}
           liveDefaults={{
             fossilJetUsdPerL: fossilJetDefault,
             carbonPriceEurPerT: carbonDefault,
@@ -339,6 +342,7 @@ export default async function SafTippingPointPage() {
               )
             )}
             sources={pathwayComparison.sourceByKey}
+            projectJetReference={projectJetReference}
           />
         ) : null}
       </Panel>

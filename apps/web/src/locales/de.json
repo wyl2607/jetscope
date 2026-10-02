@@ -1,4 +1,19 @@
 {
+  "saf_project_economics": {
+    "column": "Projektwirtschaftlichkeit (esg)",
+    "link": "Projektwirtschaftlichkeit (esg) ↗",
+    "external_model": "Externes Modell: LCOS, NPV, IRR und Amortisation sind Schätzungen mit esgs eigenen Projektannahmen. EU-ETS-Nullbewertung und SAF-Zuteilungen für Fluggesellschaften fließen nicht in Produzentenerlöse ein.",
+    "jet_reference": "An esg übergebener EU-Kerosinreferenzpreis:",
+    "missing_reference": "Kerosinreferenz fehlt (missing): EU-Kerosinproxy oder datierter EZB-Wechselkurs nicht verfügbar; kein Preis wird übergeben, esg verwendet seine eigene geschätzte Vorgabe.",
+    "unsupported": "Keine passende Projektvorlage",
+    "conversion_method": "EUR/L = EU-Kerosin USD/L ÷ EZB USD/EUR. Quellen: {jetSource} ({jetStatus}, {jetAsOf}); {fxSource} ({fxStatus}, {fxAsOf}).",
+    "status": {
+      "live": "aktuell (live)",
+      "stale": "veraltet (stale)",
+      "estimated": "Schätzung (estimated)",
+      "missing": "fehlend (missing)"
+    }
+  },
   "shell": {
     "nav": {
       "dashboard": "Entscheidungscockpit",
