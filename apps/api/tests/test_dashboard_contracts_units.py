@@ -24,6 +24,64 @@ def _pathway(pathway_key: str, name: str, low: float, high: float) -> PathwayCos
     )
 
 
+@pytest.mark.parametrize("payload", [{"quality": "seed"}, {"seed": True, "source": "seed-baseline"}])
+def test_seed_eua_snapshot_never_becomes_a_dashboard_contract_default(monkeypatch, payload) -> None:
+    from fastapi.testclient import TestClient
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
+    from sqlalchemy.pool import StaticPool
+
+    from app.db.base import Base
+    from app.db.session import get_db
+    from app.main import app
+    from app.models.tables import MarketSnapshot
+
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    Base.metadata.create_all(engine)
+    try:
+        with Session(engine) as db:
+            # Avoid application startup/background refresh; the only state is
+            # this in-memory seed snapshot.
+            client = TestClient(app)
+            # Only the isolated database may be read by these requests.
+            monkeypatch.setitem(app.dependency_overrides, get_db, lambda: db)
+            db.add(MarketSnapshot(
+                source_key="seed-baseline",
+                metric_key="eu_ets_price_eur_per_t",
+                value=950.0,
+                unit="EUR/tCO2",
+                as_of=datetime.now(UTC),
+                payload=payload,
+            ))
+            db.commit()
+
+            snapshot = client.get("/v1/market/snapshot")
+            assert snapshot.status_code == 200
+            assert snapshot.json()["values"]["eu_ets_price_eur_per_t"] is None
+            assert snapshot.json()["source_details"]["eu_ets"]["status"] == "missing"
+
+            # These builders compute explicit scenario inputs, not snapshot defaults.
+            # Omitting carbon means the route's zero-carbon scenario; it must not
+            # silently substitute the stored 950 EUR/t seed.
+            for carbon_query, expected_carbon in [({}, 0.0), ({"carbon_price_eur_per_t": 35.0}, 35.0)]:
+                for path, extra in [
+                    ("/v1/analysis/tipping-point", {}),
+                    ("/v1/analysis/airline-decision", {"reserve_weeks": 3.0}),
+                    ("/v1/pathways/compare", {}),
+                ]:
+                    response = client.get(path, params={"fossil_jet_usd_per_l": 1.3, **extra, **carbon_query})
+                    assert response.status_code == 200
+                    body = response.json()
+                    assert body["inputs"]["carbon_price_eur_per_t"] == expected_carbon
+                    assert body["inputs"]["fossil_jet_usd_per_l"] == 1.3
+                    if path == "/v1/analysis/tipping-point":
+                        assert body["effective_fossil_jet_usd_per_l"] == pytest.approx(
+                            1.3 + expected_carbon * contracts.EUR_TO_USD * 0.0025, abs=1e-4
+                        )
+    finally:
+        engine.dispose()
+
+
 def test_tipping_point_response_orders_known_pathways_and_sets_advantaged_signal(monkeypatch) -> None:
     hefa = _pathway("hefa", "HEFA", 0.90, 0.95)
     ptl = _pathway("ptl", "Power-to-Liquid", 2.00, 2.20)
