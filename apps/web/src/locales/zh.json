@@ -1355,6 +1355,35 @@
     "premium_label": "SAF 市场溢价",
     "premium_hint": "拐点阈值 15%",
     "premium_hint_allowance": "按法定 ETS 配额补贴后 {allowance}；拐点阈值 15%",
+    "threshold_alerts": {
+      "label": "阈值提醒",
+      "jet_saf_title": "Jet–SAF 价差观察",
+      "eua_title": "EUA 价格观察",
+      "suppressed": "已抑制 — {input}：{reason}。",
+      "spread_normal": "两种溢价均未进入 15% 观察阈值以内。",
+      "spread_value": "按当前 ECB 汇率计算、不计配额补贴的溢价：",
+      "eua_triggered": "价格已达到观察阈值。",
+      "eua_normal": "价格低于观察阈值。",
+      "eua_threshold": "假设：≥{threshold} EUR/t 时提醒复核；这是产品观察阈值，并非法定上限或预测。",
+      "method_title": "阈值、计算方法与输入资格",
+      "method": "Jet–SAF：SAF 溢价 ≤15%，或法定配额补贴后的溢价 ≤15%（沿用现有模型区间，属于产品假设）。溢价 =（SAF − 含 ETS 的化石成本）÷ 含 ETS 的化石成本 × 100。SAF = 有日期的购买参考价 EUR/t × 当前 ECB USD/EUR ÷ 1,250 L/t；含 ETS 的化石成本 = 所选航煤 USD/L + EUA EUR/t × ECB USD/EUR × 0.0025 tCO₂/L。体积和燃烧系数为模型假设。此处使用当前汇率，主模型使用固定汇率。SAF 年均价是参考，并非实时报价；假设公布后 400 天过期。航煤、EUA 和 ECB 输入必须为观测或推导值，且未超过来源更新周期（默认 24 小时）。种子、未知、回退观测、缺失、陈旧及无效或未来日期会抑制相应提醒；抓取时间不延长有效期。法定配额补贴仅作假设情景；Diesel–HVO 等待验证公开来源。",
+      "sources": "复核输入来源与日期",
+      "inputs": {
+        "market": "市场读模型",
+        "jet": "航煤基准",
+        "eua": "EUA",
+        "fx": "ECB 汇率",
+        "saf": "SAF 购买参考价"
+      },
+      "reasons": {
+        "missing": "缺少必要数值或来源信息",
+        "seed": "种子输入",
+        "unverified": "未验证输入或不适用的参考类型",
+        "stale": "输入超过新鲜度上限",
+        "date": "观测/公布日期缺失、无效或位于未来",
+        "fallback": "回退数据"
+      }
+    },
     "alert_at_inflection": "SAF 溢价已进入拐点区间（≤15%）",
     "alert_allowance_inflection": "计入法定 ETS 配额补贴后，SAF 溢价 {allowance} 已进入 15% 拐点阈值以内；主结论不计补贴",
     "confidence_metric_label": "来源置信度",

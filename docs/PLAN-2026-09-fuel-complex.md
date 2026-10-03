@@ -132,4 +132,9 @@ compliance-adjusted gap separately, and API/web suites are green.
   notes disclose remaining legacy assumptions. See
   `docs/DESIGN-2026-09-esg-saf-economics.md` (option A). Local gates green:
   `api:test`, `api:openapi:check`, `web:gate`, `npm test`.
-- Threshold alerts on Jet–SAF spread, Diesel–HVO spread, EUA.
+- Threshold alerts (implemented): Jet–SAF spread (≤15% premium, retaining
+  #389's statutory-allowance what-if) and EUA (≥100 EUR/t, labelled assumption)
+  on the tipping-point report in zh/en/de. Seed, missing and stale inputs
+  suppress alerts with a visible reason; annual SAF reference expiry is an
+  explicit 400-day assumption. See [threshold policy](THRESHOLD_ALERTS.md).
+  Diesel–HVO remains deferred until B2's public HVO source is verified.

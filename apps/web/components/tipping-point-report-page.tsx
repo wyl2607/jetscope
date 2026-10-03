@@ -1,7 +1,8 @@
 import { MetricCard } from '@/components/cards';
 import { FeedstockSqueezePanel } from '@/components/feedstock-squeeze-panel';
 import { FuelVsSafPriceChart } from '@/components/fuel-vs-saf-price-chart';
-import { PageTemplate, SignalRow } from '@/components/page-template';
+import { FigureValue } from '@/components/figure-value';
+import { formatAsOf, PageTemplate, SignalRow } from '@/components/page-template';
 import { Panel } from '@/components/panel';
 import { ResearchDecisionBriefCard } from '@/components/research-decision-brief';
 import { ReservesCoverageStrip } from '@/components/reserves-coverage-strip';
@@ -11,6 +12,7 @@ import { getFeedstockSqueeze } from '@/lib/feedstock-read-model';
 import { assumed, derived, missing, observed, type Figure } from '@/lib/figure';
 import { messagesFor, type Locale, type TippingPointReportMessages } from '@/lib/i18n';
 import { NAV_ENTRIES } from '@/lib/navigation';
+import { observationFromDetail, qualityFromDetail } from '@/lib/market-quality';
 import { getEuReserveCoverage, getTippingPointEvents } from '@/lib/portfolio-read-model';
 import {
   getDashboardReadModel,
@@ -20,6 +22,7 @@ import {
   type SafMarketCheck
 } from '@/lib/product-read-model';
 import { AI_RESEARCH_ENABLED, buildResearchDecisionBrief, getResearchSignals } from '@/lib/research-signals-read-model';
+import { EUA_ALERT_EUR_PER_T, INFLECTION_PREMIUM_PCT, evaluateThresholdAlerts, type Suppression } from '@/lib/threshold-alerts';
 import type { Route } from 'next';
 import Link from 'next/link';
 
@@ -34,8 +37,6 @@ import Link from 'next/link';
  */
 
 const REPORT_CHART_SOURCE_ID = 'saf-tipping-model';
-// Mirrors the 0.15 threshold in apps/api/app/services/analysis/dashboard_contracts.py `_pathway_status`.
-const INFLECTION_PREMIUM_PCT = 15;
 const DEFAULT_REPORT_FEATURES = {
   priceChart: false,
   reservesStrip: false,
@@ -370,7 +371,26 @@ export async function TippingPointReportPage({ locale }: { locale: Locale }) {
   const fossilJetSource = zhFossil?.source ?? evidenceFossil?.source ?? 'assumed';
   const signal = features.assumedFossilFallback ? zhFossil?.tipping?.signal : evidenceFossil?.tipping?.signal;
   const marketCheck = readModel.tippingPoint?.market_check ?? null;
-  const inflectionAlert = safInflectionAlert(marketCheck);
+  const alerts = evaluateThresholdAlerts(readModel);
+  const inflectionAlert = safInflectionAlert(alerts.jetSaf.check);
+  const alertCopy = copy.threshold_alerts;
+  const suppressionText = (suppression: Suppression) => alertCopy.suppressed
+    .replace('{input}', alertCopy.inputs[suppression.input])
+    .replace('{reason}', alertCopy.reasons[suppression.reason]);
+  const spreadFigure = alerts.jetSaf.check ? derived({
+    value: alerts.jetSaf.check.premium_pct,
+    unit: '%', sourceId: 'threshold-jet-saf', asOf: alerts.jetSaf.check.published_at,
+    method: alertCopy.method, methodHref: '#threshold-alert-method'
+  }) : null;
+  const euaDetail = readModel.market.source_details?.eu_ets;
+  const euaAsOf = observationFromDetail(euaDetail)?.toISOString() ?? null;
+  const euaFigure = alerts.eua.value == null ? null
+    : qualityFromDetail(euaDetail) === 'observed' && euaAsOf ? observed({
+      value: alerts.eua.value, unit: 'EUR/t', sourceId: 'threshold-eua', asOf: euaAsOf
+    }) : derived({
+      value: alerts.eua.value, unit: 'EUR/t', sourceId: 'threshold-eua', asOf: euaAsOf,
+      method: euaDetail?.method ?? alertCopy.method, methodHref: '#threshold-alert-method'
+    });
   const latestEvent = events[0] ?? null;
   const sourceStatus = readModel.market.source_status;
   const sourceConfidence = formatPercent(
@@ -430,20 +450,32 @@ export async function TippingPointReportPage({ locale }: { locale: Locale }) {
         />
       </SignalRow>
 
-      {inflectionAlert ? (
-        <div
-          role="status"
-          data-testid="saf-inflection-alert"
-          className="rounded-md bg-warning-soft px-3 py-2 text-sm text-warning"
-        >
-          {inflectionAlert === 'at_inflection'
-            ? copy.alert_at_inflection
-            : copy.alert_allowance_inflection.replace(
-                '{allowance}',
-                formatPremium(marketCheck?.statutory_allowance_premium_pct ?? 0)
-              )}
+      <div className="space-y-4 text-sm tabular-nums" aria-label={alertCopy.label}>
+        <div role="status" data-testid={inflectionAlert ? 'saf-inflection-alert' : 'jet-saf-threshold-status'}
+          className={inflectionAlert ? 'rounded-xl bg-warning-soft px-3 py-2 text-warning' : 'rounded-xl border border-line px-3 py-2 text-muted'}>
+          <strong>{alertCopy.jet_saf_title}</strong>{' · '}
+          {alerts.jetSaf.suppression ? suppressionText(alerts.jetSaf.suppression)
+            : inflectionAlert === 'at_inflection' ? copy.alert_at_inflection
+            : inflectionAlert === 'allowance_inflection'
+              ? copy.alert_allowance_inflection.replace('{allowance}', formatPremium(alerts.jetSaf.check!.statutory_allowance_premium_pct!))
+              : alertCopy.spread_normal}
+          {spreadFigure ? <p>{alertCopy.spread_value}{' '}<FigureValue figure={spreadFigure} locale={locale} /></p> : null}
         </div>
-      ) : null}
+        <div role="status" data-testid="eua-threshold-status"
+          className={alerts.eua.triggered ? 'rounded-xl bg-warning-soft px-3 py-2 text-warning' : 'rounded-xl border border-line px-3 py-2 text-muted'}>
+          <strong>{alertCopy.eua_title}</strong>{' · '}
+          {alerts.eua.suppression ? suppressionText(alerts.eua.suppression)
+            : alerts.eua.triggered ? alertCopy.eua_triggered : alertCopy.eua_normal}
+          <p>{alertCopy.eua_threshold.replace('{threshold}', String(EUA_ALERT_EUR_PER_T))}</p>
+          {euaFigure ? <p><FigureValue figure={euaFigure} locale={locale} /> · {euaDetail?.source}</p> : null}
+        </div>
+        <details id="threshold-alert-method" className="rounded-xl border border-line px-3 py-2 text-muted">
+          <summary className="cursor-pointer text-ink focus-visible:ring-2 focus-visible:ring-accent">{alertCopy.method_title}</summary>
+          <p>{alertCopy.method}</p>
+          <Link className="underline focus-visible:ring-2 focus-visible:ring-accent" href={hrefFor(locale, 'sources')}>{alertCopy.sources}</Link>
+          {marketCheck ? <p><a className="underline focus-visible:ring-2 focus-visible:ring-accent" href={marketCheck.source_url}>{marketCheck.source_name}</a> · {marketCheck.period} · {formatAsOf(marketCheck.published_at, locale)}</p> : null}
+        </details>
+      </div>
 
       <Panel locale={locale} title={copy.thesis_title} why={copy.thesis_why}>
         {features.assumedFossilFallback ? (
@@ -588,6 +620,14 @@ export async function TippingPointReportPage({ locale }: { locale: Locale }) {
       <SourceFooter
         locale={locale}
         sources={[
+          ...(spreadFigure ? [{
+            id: spreadFigure.sourceId, label: alertCopy.jet_saf_title,
+            href: hrefFor(locale, 'sources'), asOf: spreadFigure.asOf, basis: spreadFigure.basis
+          }] : []),
+          ...(euaFigure ? [{
+            id: euaFigure.sourceId, label: `${alertCopy.eua_title} · ${euaDetail?.source ?? copy.source_unavailable}`,
+            href: hrefFor(locale, 'sources'), asOf: euaFigure.asOf, basis: euaFigure.basis
+          }] : []),
           ...(features.dashboardSource
             ? [
                 {

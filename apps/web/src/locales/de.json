@@ -1380,6 +1380,35 @@
     "premium_label": "SAF-Marktaufschlag",
     "premium_hint": "Kipppunktschwelle: 15 %",
     "premium_hint_allowance": "Nach gesetzlicher ETS-Zuteilung: {allowance}; Kipppunktschwelle: 15 %",
+    "threshold_alerts": {
+      "label": "Schwellenwarnungen",
+      "jet_saf_title": "Jet–SAF-Spread beobachten",
+      "eua_title": "EUA-Preis beobachten",
+      "suppressed": "Unterdrückt — {input}: {reason}.",
+      "spread_normal": "Keiner der Aufschläge liegt innerhalb der Beobachtungsschwelle von 15 %.",
+      "spread_value": "Aufschlag mit aktuellem EZB-Wechselkurs, ohne Zuteilung:",
+      "eua_triggered": "Preis erreicht die Beobachtungsschwelle.",
+      "eua_normal": "Preis liegt unter der Beobachtungsschwelle.",
+      "eua_threshold": "Annahme: Beobachtung ab ≥{threshold} EUR/t; Auslöser zur Prüfung, kein amtlicher Grenzwert und keine Prognose.",
+      "method_title": "Schwellen, Berechnung und zulässige Eingaben",
+      "method": "Jet–SAF: SAF-Aufschlag ≤15 % oder Aufschlag mit gesetzlicher Zuteilung ≤15 % (bestehendes Modellband, Produktannahme). Aufschlag = (SAF − Fossilpreis mit ETS) / Fossilpreis mit ETS × 100. SAF = datierter Kaufpreis in EUR/t × aktueller EZB-Kurs USD/EUR ÷ 1.250 L/t; Fossilpreis mit ETS = gewählter Jetpreis USD/L + EUA EUR/t × EZB USD/EUR × 0,0025 tCO₂/L. Volumen und Verbrennungsfaktor sind Modellannahmen. Hier gilt der aktuelle Wechselkurs; das Hauptmodell nutzt einen festen Kurs. Das SAF-Jahresmittel ist eine Referenz, kein Livepreis; angenommene Gültigkeit: 400 Tage ab Veröffentlichung. Jet, EUA und EZB müssen beobachtet oder abgeleitet und innerhalb der Quellenfrequenz aktuell sein (Standard: 24h). Seed, unbekannte Werte, Fallback-Beobachtungen, fehlende oder veraltete Eingaben sowie ungültige oder zukünftige Daten unterdrücken die betreffende Warnung. Abrufzeit verlängert die Gültigkeit nicht. Gesetzliche Zuteilung bleibt ein Was-wäre-wenn; Diesel–HVO wartet auf eine geprüfte öffentliche Quelle.",
+      "sources": "Quellen und Eingabedaten prüfen",
+      "inputs": {
+        "market": "Marktlesemodell",
+        "jet": "Jet-Benchmark",
+        "eua": "EUA",
+        "fx": "EZB-Wechselkurs",
+        "saf": "SAF-Kaufpreisreferenz"
+      },
+      "reasons": {
+        "missing": "Wert oder Herkunft fehlt",
+        "seed": "Seed-Eingabe",
+        "unverified": "ungeprüfte Eingabe oder ungeeigneter Referenztyp",
+        "stale": "Aktualitätsgrenze überschritten",
+        "date": "Beobachtungs-/Veröffentlichungsdatum fehlt, ist ungültig oder liegt in der Zukunft",
+        "fallback": "Fallback-Daten"
+      }
+    },
     "alert_at_inflection": "Der SAF-Aufschlag liegt im Kipppunktbereich (≤15 %).",
     "alert_allowance_inflection": "Nach der gesetzlichen ETS-Zuteilung liegt der SAF-Aufschlag von {allowance} innerhalb der Kipppunktschwelle von 15 %; die Hauptaussage berücksichtigt die Zuteilung nicht.",
     "confidence_metric_label": "Quellenvertrauen",

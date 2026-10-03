@@ -1379,6 +1379,35 @@
     "premium_label": "SAF market premium",
     "premium_hint": "Inflection threshold: 15%",
     "premium_hint_allowance": "After the statutory ETS allowance: {allowance}; inflection threshold: 15%",
+    "threshold_alerts": {
+      "label": "Threshold alerts",
+      "jet_saf_title": "Jet–SAF spread watch",
+      "eua_title": "EUA price watch",
+      "suppressed": "Suppressed — {input}: {reason}.",
+      "spread_normal": "Neither premium is within the 15% watch threshold.",
+      "spread_value": "Premium with current ECB FX, excluding allowances:",
+      "eua_triggered": "Price reached the watch threshold.",
+      "eua_normal": "Price is below the watch threshold.",
+      "eua_threshold": "Assumption: watch at ≥{threshold} EUR/t; a product review trigger, not an official limit or forecast.",
+      "method_title": "Thresholds, calculation and input eligibility",
+      "method": "Jet–SAF watch: SAF premium ≤15%, or statutory allowance premium ≤15% (the existing model band, a product assumption). Premium = (SAF − fossil with ETS) / fossil with ETS × 100. SAF = dated purchase reference in EUR/t × current ECB USD/EUR ÷ 1,250 L/t; fossil with ETS = selected jet USD/L + EUA EUR/t × ECB USD/EUR × 0.0025 tCO₂/L. Volume and combustion factors are model assumptions. This uses current FX; the headline model uses fixed FX. The annual SAF average is a reference, not a live quote; assumed expiry is 400 days after publication. Jet, EUA and ECB must be observed or derived and current within their source cadence (default 24h). Seed, unknown, fallback observations, missing, stale and invalid/future dates suppress the relevant watch. Source fetch time never extends eligibility. Statutory allowance remains a what-if; Diesel–HVO awaits a verified public source.",
+      "sources": "Review input sources and dates",
+      "inputs": {
+        "market": "market read model",
+        "jet": "jet benchmark",
+        "eua": "EUA",
+        "fx": "ECB FX",
+        "saf": "SAF purchase reference"
+      },
+      "reasons": {
+        "missing": "required value or provenance is missing",
+        "seed": "seed input",
+        "unverified": "unverified input or unsupported reference kind",
+        "stale": "input exceeds its freshness limit",
+        "date": "observation/publication date is missing, invalid or in the future",
+        "fallback": "fallback data"
+      }
+    },
     "alert_at_inflection": "The SAF premium has entered the inflection range (≤15%).",
     "alert_allowance_inflection": "After the statutory ETS allowance, the SAF premium of {allowance} is within the 15% inflection threshold; the main conclusion excludes the allowance.",
     "confidence_metric_label": "Source confidence",
