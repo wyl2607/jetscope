@@ -1,9 +1,10 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { safInflectionAlert, TippingPointReportPage } from '@/components/tipping-point-report-page';
 import { messagesFor, type Locale } from '@/lib/i18n';
 import type { SafMarketCheck } from '@/lib/product-read-model';
+import * as thresholdAlerts from '@/lib/threshold-alerts';
 
 const LOCALES: readonly Locale[] = ['zh', 'de', 'en'];
 
@@ -89,6 +90,39 @@ describe('TippingPointReportPage', () => {
 
     expect(screen.getAllByText(copy.number_unavailable).length).toBeGreaterThanOrEqual(2);
     expect(screen.queryByText(/^0(?:[.,]0)?%$/)).toBeNull();
+  });
+
+  it.each(LOCALES)('shows both suppression reasons on fallback in %s', async (locale) => {
+    const copy = messagesFor(locale).tipping_point_report.threshold_alerts;
+    await renderReport(locale);
+    const reason = copy.suppressed.replace('{input}', copy.inputs.market).replace('{reason}', copy.reasons.fallback);
+    expect(screen.getByTestId('jet-saf-threshold-status')).toHaveTextContent(reason);
+    expect(screen.getByTestId('eua-threshold-status')).toHaveTextContent(reason);
+    expect(screen.queryByTestId('saf-inflection-alert')).toBeNull();
+  });
+
+  it.each(LOCALES)('renders current Jet–SAF and EUA alerts with assumptions in %s', async (locale) => {
+    vi.spyOn(thresholdAlerts, 'evaluateThresholdAlerts').mockReturnValue({
+      jetSaf: { check: marketCheck('inflection'), suppression: null },
+      eua: { value: 100, triggered: true, suppression: null }
+    });
+    const copy = messagesFor(locale).tipping_point_report;
+    await renderReport(locale);
+    expect(screen.getByTestId('saf-inflection-alert')).toHaveTextContent(copy.alert_at_inflection);
+    expect(screen.getByTestId('eua-threshold-status')).toHaveTextContent(copy.threshold_alerts.eua_triggered);
+    expect(screen.getByText(copy.threshold_alerts.eua_threshold.replace('{threshold}', '100'))).toBeInTheDocument();
+    expect(screen.getByText(copy.threshold_alerts.method)).toBeInTheDocument();
+  });
+
+  it('retains the allowance-only alert copy', async () => {
+    vi.spyOn(thresholdAlerts, 'evaluateThresholdAlerts').mockReturnValue({
+      jetSaf: { check: marketCheck('premium', 15), suppression: null },
+      eua: { value: 99, triggered: false, suppression: null }
+    });
+    await renderReport('en');
+    expect(screen.getByTestId('saf-inflection-alert')).toHaveTextContent(
+      messagesFor('en').tipping_point_report.alert_allowance_inflection.replace('{allowance}', '+15%')
+    );
   });
 
   it('does not introduce middleware or a [locale] rewrite', () => {
