@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SafPathwayComparisonTable } from '@/components/saf-pathway-comparison-table';
+import { esgSafJetReference } from '@/lib/esg-saf-economics';
 import { toPathwayCostRow } from '@/lib/pathways-read-model';
 
 const hefaFixture = toPathwayCostRow(
@@ -66,6 +67,40 @@ describe('SafPathwayComparisonTable', () => {
     );
 
     expect(container.firstChild).not.toBeNull();
+  });
+
+  it('links each SAF row to its external preset and labels the estimated reference with sources', () => {
+    const reference = esgSafJetReference({
+      generated_at: '2026-10-02T00:00:00Z',
+      source_status: { overall: 'live' },
+      values: { jet_eu_proxy_usd_per_l: 1.2, usd_per_eur: 1.25 },
+      source_details: {
+        jet_eu_proxy: { source: 'brent-derived', status: 'estimated', as_of: '2026-09-30T00:00:00Z' },
+        ecb: { source: 'ecb', status: 'stale', as_of: '2026-09-29T00:00:00Z' }
+      }
+    });
+    const rows = ['hefa', 'atj', 'ft', 'ptl'].map((key) => ({
+      ...hefaFixture, pathway_key: key, display_name: key.toUpperCase()
+    }));
+    render(<SafPathwayComparisonTable selectedPathwayKey="hefa" pathways={rows} pathwayDetails={{}} projectJetReference={reference} />);
+    const presets = ['HEFA_EU', 'ATJ_Brazil', 'FT_biomass_DE', 'PtL_EU_2025'];
+    const links = screen.getAllByRole('link', { name: /项目经济性/ });
+    expect(links).toHaveLength(4);
+    links.forEach((link, index) => {
+      expect(link).toHaveAttribute('href', `https://esg.meichen.beauty/saf?preset=${presets[index]}&jet_fuel_price_eur_per_litre=0.9600`);
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    });
+    expect(screen.getByText('0.9600 EUR/L')).toBeInTheDocument();
+    expect(screen.getByText('估算（estimated）')).toBeInTheDocument();
+    expect(screen.getByText(/EUR\/L = EU/).textContent).toContain('ecb（陈旧（stale），2026-09-29T00:00:00Z）');
+    expect(screen.getByText(/外部模型/)).toBeInTheDocument();
+  });
+
+  it('discloses missing price prefill and still provides a preset link', () => {
+    render(<SafPathwayComparisonTable selectedPathwayKey="hefa" pathways={[hefaFixture]} pathwayDetails={{}} />);
+    expect(screen.getByRole('link', { name: /HEFA · 项目经济性/ })).toHaveAttribute('href', 'https://esg.meichen.beauty/saf?preset=HEFA_EU');
+    expect(screen.getByText(/航煤参考价缺失/)).toBeInTheDocument();
   });
 
   it('renders source-trust column when sources provided', () => {

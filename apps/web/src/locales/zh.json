@@ -1,4 +1,19 @@
 {
+  "saf_project_economics": {
+    "column": "项目经济性（esg）",
+    "link": "项目经济性（esg） ↗",
+    "external_model": "外部模型：LCOS、NPV、IRR 与回收期均为估算，采用 esg 自己的项目假设。航司 EU ETS 零税率收益与 SAF 配额补贴不计入生产商收入。",
+    "jet_reference": "传入的 EU 航煤参考价：",
+    "missing_reference": "航煤参考价缺失（missing）：EU 航煤代理或有日期的 ECB 汇率不可用；链接不传入价格，esg 将使用自己的估算默认值。",
+    "unsupported": "无对应项目预设",
+    "conversion_method": "EUR/L = EU 航煤 USD/L ÷ ECB USD/EUR。来源：{jetSource}（{jetStatus}，{jetAsOf}）；{fxSource}（{fxStatus}，{fxAsOf}）。",
+    "status": {
+      "live": "实时（live）",
+      "stale": "陈旧（stale）",
+      "estimated": "估算（estimated）",
+      "missing": "缺失（missing）"
+    }
+  },
   "shell": {
     "nav": {
       "dashboard": "决策驾驶舱",
