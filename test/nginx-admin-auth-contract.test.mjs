@@ -4,11 +4,9 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Edge Basic Auth for the admin UI is a security contract. The current nginx
-// files (after the #351 cache/CSP rewrite) use one regex location rather than
-// the exact-plus-prefix blocks from #325. This test checks that shape: every
-// admin URI is covered, /administrator is not, and the covering block keeps
-// auth_basic. Static checks only — no live nginx.
+// Edge Basic Auth protects admin HTML and readiness disclosure. Check the
+// selected nginx location as well as coverage: an earlier generic regex must
+// not bypass the gate. Static checks only — no live nginx.
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -21,7 +19,11 @@ const REQUIRED_URIS = [
   '/en/admin/settings',
   '/de/admin',
   '/de/admin/',
-  '/de/admin/settings'
+  '/de/admin/settings',
+  '/api/readiness',
+  '/api/readiness/',
+  '/v1/readiness',
+  '/v1/readiness/'
 ];
 
 // A bare `location /admin` prefix matches /administrator. These URIs must not
@@ -36,7 +38,12 @@ const FORBIDDEN_URIS = [
   '/fr/admin',
   '/api/admin',
   '/en/dashboard',
-  '/de/dashboard'
+  '/de/dashboard',
+  '/api/health',
+  '/v1/health',
+  '/api/readiness-status',
+  '/v1/readiness-status',
+  '/v1/market/refresh'
 ];
 
 const HOST_HTPASSWD = '/etc/nginx/secrets/jetscope-admin.htpasswd';
@@ -89,7 +96,7 @@ function compileSelector(selector) {
     return { kind: 'exact', path: parts[1] };
   }
   if (parts[0] === '^~' && parts.length === 2) {
-    return { kind: 'prefix', path: parts[1] };
+    return { kind: 'prefix', path: parts[1], stopRegex: true };
   }
   if (parts.length === 1) {
     return { kind: 'prefix', path: parts[0] };
@@ -103,30 +110,49 @@ function covers(compiled, uri) {
   return uri.startsWith(compiled.path);
 }
 
-function isDedicatedAdminLocation(compiled) {
+function selectLocation(blocks, uri) {
+  const exact = blocks.find((block) => block.compiled.kind === 'exact' && covers(block.compiled, uri));
+  if (exact) return exact;
+  const prefix = blocks
+    .filter((block) => block.compiled.kind === 'prefix' && covers(block.compiled, uri))
+    .sort((a, b) => b.compiled.path.length - a.compiled.path.length)[0];
+  if (prefix?.compiled.stopRegex) return prefix;
+  return blocks.find((block) => block.compiled.kind === 'regex' && covers(block.compiled, uri)) ?? prefix;
+}
+
+function isDedicatedOperatorLocation(compiled) {
   const hitsRequired = REQUIRED_URIS.some((uri) => covers(compiled, uri));
   const hitsForbidden = FORBIDDEN_URIS.some((uri) => covers(compiled, uri));
   return hitsRequired && !hitsForbidden;
 }
 
-function assertAdminLocationsGuarded(conf, fileLabel, htpasswdPath) {
+function assertOperatorLocationsGuarded(conf, fileLabel, htpasswdPath) {
   const blocks = locationBlocks(conf).map((block) => ({
     ...block,
     compiled: compileSelector(block.selector)
   }));
-  const adminBlocks = blocks.filter((block) => isDedicatedAdminLocation(block.compiled));
+  const operatorBlocks = blocks.filter((block) => isDedicatedOperatorLocation(block.compiled));
 
-  assert.ok(adminBlocks.length > 0, `${fileLabel}: no dedicated admin location`);
+  assert.ok(operatorBlocks.length > 0, `${fileLabel}: no dedicated operator location`);
 
   for (const uri of REQUIRED_URIS) {
     assert.ok(
-      adminBlocks.some((block) => covers(block.compiled, uri)),
-      `${fileLabel}: no admin location covers ${uri}`
+      operatorBlocks.some((block) => covers(block.compiled, uri)),
+      `${fileLabel}: no operator location covers ${uri}`
     );
   }
 
-  for (const block of adminBlocks) {
-    assert.match(block.body, /\bauth_basic\b/, `${fileLabel}: location ${block.selector} lost auth_basic`);
+  for (const uri of REQUIRED_URIS) {
+    const selected = selectLocation(blocks, uri);
+    assert.ok(operatorBlocks.includes(selected), `${fileLabel}: selected location bypasses auth for ${uri}`);
+    assert.match(selected.body, uri.startsWith('/v1/')
+      ? /proxy_pass http:\/\/(?:jetscope_api|127\.0\.0\.1:8000);/
+      : /proxy_pass http:\/\/(?:jetscope_web|127\.0\.0\.1:3000);/,
+    `${fileLabel}: ${uri} must keep its upstream`);
+  }
+
+  for (const block of operatorBlocks) {
+    assert.match(block.body, /auth_basic\s+"JetScope admin";/, `${fileLabel}: location ${block.selector} lost auth_basic`);
     assert.match(
       block.body,
       /\bauth_basic_user_file\b/,
@@ -137,6 +163,8 @@ function assertAdminLocationsGuarded(conf, fileLabel, htpasswdPath) {
       new RegExp(`auth_basic_user_file\\s+${htpasswdPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')};`),
       `${fileLabel}: location ${block.selector} must reference ${htpasswdPath}`
     );
+    assert.match(block.body, /add_header Cache-Control "private, no-store" always;/);
+    assert.match(block.body, /add_header X-Robots-Tag "noindex, nofollow" always;/);
     assert.doesNotMatch(
       block.body,
       /\$apr1\$|\$2[ayb]\$/,
@@ -145,25 +173,67 @@ function assertAdminLocationsGuarded(conf, fileLabel, htpasswdPath) {
   }
 
   for (const block of blocks) {
-    if (!isDedicatedAdminLocation(block.compiled)) {
+    if (!isDedicatedOperatorLocation(block.compiled)) {
       assert.doesNotMatch(
         block.body,
         /\bauth_basic\b/,
-        `${fileLabel}: location ${block.selector} is not an admin gate and must not require Basic Auth`
+        `${fileLabel}: location ${block.selector} is not an operator gate and must not require Basic Auth`
       );
     }
   }
 }
 
-test('infra/nginx.prod.conf guards admin locations with Basic Auth', async () => {
+test('infra/nginx.prod.conf guards admin and readiness locations with Basic Auth', async () => {
   const conf = await readFile(path.join(repoRoot, 'infra/nginx.prod.conf'), 'utf8');
-  assertAdminLocationsGuarded(conf, 'infra/nginx.prod.conf', PROD_HTPASSWD);
+  assertOperatorLocationsGuarded(conf, 'infra/nginx.prod.conf', PROD_HTPASSWD);
   assert.doesNotMatch(conf, /jetscope-admin\.htpasswd/);
 });
 
-test('infra/server/nginx.conf guards admin locations with Basic Auth', async () => {
+test('infra/server/nginx.conf guards admin and readiness locations with Basic Auth', async () => {
   const conf = await readFile(path.join(repoRoot, 'infra/server/nginx.conf'), 'utf8');
-  assertAdminLocationsGuarded(conf, 'infra/server/nginx.conf', HOST_HTPASSWD);
+  assertOperatorLocationsGuarded(conf, 'infra/server/nginx.conf', HOST_HTPASSWD);
+});
+
+test('readiness contract rejects a generic API regex that bypasses the gate', async () => {
+  const conf = await readFile(path.join(repoRoot, 'infra/nginx.prod.conf'), 'utf8');
+  const bypass = 'location ~ ^/api(?:/|$) { proxy_pass http://jetscope_web; }\n';
+  assert.throws(() => assertOperatorLocationsGuarded(bypass + conf, 'bypass fixture', PROD_HTPASSWD),
+    /selected location bypasses auth for \/api\/readiness/);
+});
+
+test('readiness contract rejects disabling Basic Auth', async () => {
+  const conf = await readFile(path.join(repoRoot, 'infra/nginx.prod.conf'), 'utf8');
+  assert.throws(() => assertOperatorLocationsGuarded(
+    conf.replaceAll('auth_basic "JetScope admin";', 'auth_basic off;'), 'disabled fixture', PROD_HTPASSWD),
+  /lost auth_basic/);
+});
+
+test('Compose mounts the operator htpasswd read-only at the container gate path', async () => {
+  const source = await readFile(path.join(repoRoot, 'docker-compose.prod.yml'), 'utf8');
+  const nginx = source.slice(source.indexOf('\n  nginx:'));
+  assert.ok(nginx.includes(`source: ${HOST_HTPASSWD}`));
+  assert.ok(nginx.includes(`target: ${PROD_HTPASSWD}`));
+  assert.match(nginx, /read_only: true/);
+  // A missing host file must fail compose, not be created as a directory.
+  assert.match(nginx, /create_host_path: false/);
+  assert.doesNotMatch(source, /\$apr1\$|\$2[ayb]\$/);
+  assert.match(source, /JETSCOPE_API_BASE_URL: http:\/\/api:8000/);
+  assert.match(source, /JETSCOPE_API_PREFIX: \/v1/);
+});
+
+test('internal readiness consumers continue to reach the API directly', async () => {
+  for (const file of ['scripts/auto-deploy.sh', 'scripts/rollback.sh', 'infra/server/health-check.sh']) {
+    const source = await readFile(path.join(repoRoot, file), 'utf8');
+    assert.match(source, /JETSCOPE_API_READINESS_URL:-http:\/\/127\.0\.0\.1:8000\/v1\/readiness/);
+  }
+  const readModel = await readFile(path.join(repoRoot, 'apps/web/lib/readiness-read-model.ts'), 'utf8');
+  assert.match(readModel, /fetch\(buildApiUrl\('\/readiness'\)/);
+});
+
+test('sitemap excludes every locale admin route', async () => {
+  const source = await readFile(path.join(repoRoot, 'apps/web/app/sitemap.ts'), 'utf8');
+  assert.doesNotMatch(source, /\$\{BASE_URL\}\/(?:en\/|de\/)?admin/);
+  assert.match(source, /\$\{BASE_URL\}\/dashboard/);
 });
 
 test('Next.js sets X-Robots-Tag noindex on admin routes', async () => {

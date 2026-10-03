@@ -71,7 +71,7 @@ bash scripts/deploy-usa-vps.sh --rebuild # 会改变线上状态
 ```bash
 # 检查健康状态，应返回状态 200 及 ok 信息
 curl -fsS https://saf.meichen.beauty/v1/health # 只读
-curl -fsS https://saf.meichen.beauty/v1/readiness # 只读
+curl -fsS https://saf.meichen.beauty/api/health # 公共 liveness；readiness 需 Basic Auth
 
 # 检查行情快照
 curl -fsS https://saf.meichen.beauty/v1/market/snapshot # 只读

@@ -9,7 +9,7 @@ if (!base) {
 const origin = new URL(base);
 
 async function fetchPath(path) {
-  const response = await fetch(new URL(path, `${origin.origin}/`));
+  const response = await fetch(new URL(path, `${origin.origin}/`), { redirect: 'manual' });
   if (response.status >= 500) {
     throw new Error(`${path} returned HTTP ${response.status}`);
   }
@@ -37,14 +37,27 @@ requireHeader(
   'anonymous public HTML must carry the short edge-cache policy'
 );
 
-for (const path of ['/api/health', '/v1/health', '/admin', '/en/admin', '/de/admin', '/_next/image']) {
+const protectedPaths = ['/admin', '/en/admin', '/de/admin', '/api/readiness', '/v1/readiness'];
+
+for (const path of ['/api/health', '/v1/health', '/_next/image', ...protectedPaths]) {
   const response = await fetchPath(path);
   requireHeader(
     response,
     'cache-control',
-    (value) => value.includes('no-store') && !value.includes('public'),
+    (value) => value.includes('private') && value.includes('no-store') && !value.includes('public'),
     `${path} must not be publicly cached`
   );
+  if (protectedPaths.includes(path)) {
+    if (response.status !== 401) {
+      throw new Error(`${path} must reject anonymous requests with HTTP 401; received ${response.status}`);
+    }
+    requireHeader(response, 'www-authenticate', (value) => /^Basic\s+/i.test(value),
+      `${path} must carry a Basic Auth challenge`);
+    requireHeader(response, 'x-robots-tag', (value) => value.includes('noindex') && value.includes('nofollow'),
+      `${path} must be excluded from indexing`);
+  } else if (path.endsWith('/health') && response.status !== 200) {
+    throw new Error(`${path} public liveness must return HTTP 200; received ${response.status}`);
+  }
 }
 
 console.log('nginx edge smoke: OK');

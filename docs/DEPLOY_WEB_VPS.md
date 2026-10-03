@@ -202,6 +202,7 @@ Add two services alongside `api`.
       - api
     volumes:
       - ./infra/nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/nginx/secrets/jetscope-admin.htpasswd:/etc/nginx/secrets/admin.htpasswd:ro
     ports:
       - "80:80"
       - "443:443"
@@ -213,6 +214,38 @@ compose network, and it should not be publicly exposed directly.
 Give `web` the same `mem_limit` / `cpus` treatment the `api` service already
 has, so one container cannot starve the other on a small VPS.
 
+### Operator credentials before starting the container edge
+
+Create `/etc/nginx/secrets/jetscope-admin.htpasswd` outside the checkout before
+starting nginx. Follow the interactive creation and rotation steps in
+[the host guide](DEPLOY_USA_VPS.md#admin-and-readiness-edge-gate-host-nginx):
+`htpasswd -cB` for the first user, `htpasswd -B` without `-c` to rotate. Never
+put credentials in Compose, the image, command arguments, Git or logs.
+The read-only bind mount exposes the file at `/etc/nginx/secrets/admin.htpasswd`,
+the path expected by all container admin and readiness locations.
+
+Verify the nginx worker's numeric UID/GID can read the mounted file. For a
+container-only edge, assign the file's group to that worker's numeric GID and
+retain mode `640`. When sharing the file with host nginx, retain host worker
+access and grant the container worker a read ACL instead. Reapply permissions
+after rotation. A missing host file may become a directory with Compose's
+short bind syntax, and a missing/unreadable credential file fails authenticated
+requests even when `nginx -t` succeeds.
+
+After rotation or file replacement, recreate the nginx container so a file bind
+mount cannot retain the previous inode:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --force-recreate nginx
+node scripts/nginx-edge-smoke.mjs https://<public-host>
+```
+
+Perform these as an approved operator step. Verify an authenticated admin page
+and both readiness paths, and confirm the old password fails after rotation.
+Keep `JETSCOPE_API_BASE_URL=http://api:8000` for server-side readiness fetches;
+they must bypass the public Basic Auth gate. Public monitors use `/v1/health`
+or `/api/health`.
+
 ## 4. `infra/nginx.prod.conf`
 
 A new file. The existing `infra/nginx.conf` and `infra/app.conf` serve the dev
@@ -220,11 +253,14 @@ compose and should not be reused.
 
 - `location /v1/` proxies to `http://api:8000`
 - `location /` proxies to `http://web:3000`
+- `/v1/readiness` and `/api/readiness` require the same Basic Auth as admin,
+  with private/no-store and noindex/nofollow on every response. The readiness
+  regex must precede the generic `/api` regex. `/api/v1/readiness` is not routed.
 - Admin paths use `location ~ ^/(?:en/|de/)?admin(?:/|$)`, which covers
   `/admin`, `/de/admin`, and `/en/admin` (including subpaths) and does not
   match `/administrator`. The block sets `auth_basic` and
   `auth_basic_user_file /etc/nginx/secrets/admin.htpasswd`. The credential
-  file is operator state; mount it, never bake it into the image. Application
+  file is operator state; mount it read-only, never bake it into the image. Application
   write routes keep `x-admin-token` as a second layer. The live host-nginx
   file and the `htpasswd` steps are in `docs/DEPLOY_USA_VPS.md`.
 - forward `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`
@@ -232,7 +268,8 @@ compose and should not be reused.
   few seconds via `JETSCOPE_*_FETCH_TIMEOUT_MS`
 - TLS: terminate here. Certificates are operator state and do not belong in the
   repository; reference them by path and document the path in the operator's own
-  notes, not here.
+  notes, not here. A TLS server block must repeat both the admin and readiness
+  gates and their headers; it does not inherit them from the HTTP server block.
 
 Order matters: `/v1/` must be declared before `/`, or the catch-all swallows API
 traffic and the browser silently gets HTML where it expected JSON. The admin

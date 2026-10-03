@@ -76,7 +76,6 @@ test('localized sitemap includes published English and German route surfaces', a
     '/en/reports/tipping-point-analysis',
     '/de/reports',
     '/de/reports/tipping-point-analysis',
-    '/de/admin',
     '/de/scenarios',
     '/de/lufthansa-saf-2026'
   ];
