@@ -232,6 +232,66 @@ test('getDashboardReadModel summarizes live market, scenario, and risk signals f
   assert.equal(englishReadModel.topRiskSignal?.metric, 'Jet fuel');
 });
 
+for (const [name, carbonDetail, usable] of [
+  ['explicit seed quality', { quality: 'seed', source: 'seed-baseline', status: 'seed' }, false],
+  ['legacy seed source', { source: 'seed-baseline', status: 'fallback', fallback_used: true }, false],
+  ['observed EUA control', { quality: 'observed', source: 'eex-eu-ets', status: 'ok' }, true]
+]) {
+  test(`dashboard cost contracts reject seed EUA: ${name}`, async (t) => {
+    installEnv(t, {
+      JETSCOPE_API_BASE_URL: 'https://api.example.com',
+      JETSCOPE_API_PREFIX: '/v1',
+      JETSCOPE_WORKSPACE_SLUG: 'ops'
+    });
+    const asOf = '2026-10-03T12:00:00Z';
+    const snapshot = {
+      generated_at: asOf,
+      fetched_at: asOf,
+      source_status: { overall: usable ? 'ok' : 'degraded' },
+      values: { jet_eu_proxy_usd_per_l: 1.3, eu_ets_price_eur_per_t: 95 },
+      source_details: {
+        jet_eu_proxy: { quality: 'derived', source: 'brent-derived', observed_at: asOf },
+        // A recent timestamp must never make a seed usable for costs.
+        eu_ets: { ...carbonDetail, observed_at: asOf }
+      }
+    };
+    const analysisCalls = [];
+    const originalFetch = global.fetch;
+    global.fetch = async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname.startsWith('/v1/analysis/')) {
+        analysisCalls.push(url);
+        return jsonResponse({ inputs: Object.fromEntries(url.searchParams) });
+      }
+      if (url.pathname === '/v1/market/snapshot') return jsonResponse(snapshot);
+      if (url.pathname === '/v1/reserves/eu') return jsonResponse({ coverage_weeks: 3 });
+      if (url.pathname === '/v1/market/history') return jsonResponse({ metrics: {} });
+      return jsonResponse([]);
+    };
+    t.after(() => { global.fetch = originalFetch; });
+
+    const { getDashboardReadModel } = await importWebLib('apps/web/lib/dashboard-read-model.ts');
+    const model = await getDashboardReadModel('en');
+    assert.equal(model.isFallback, false);
+    assert.equal(model.analysisInputs.fossilJetUsdPerL, 1.3);
+    assert.equal(model.analysisInputs.reserveWeeks, 3);
+    assert.equal(model.analysisInputs.carbonPriceEurPerT, usable ? 95 : null);
+    assert.equal(model.analysisInputs.missingReason, usable ? null : 'Required live inputs unavailable');
+    assert.equal(analysisCalls.length, usable ? 2 : 0);
+    if (usable) {
+      assert.deepEqual(analysisCalls.map((url) => url.pathname).sort(), [
+        '/v1/analysis/airline-decision', '/v1/analysis/tipping-point'
+      ]);
+      assert.ok(analysisCalls.every((url) => url.searchParams.get('carbon_price_eur_per_t') === '95'));
+      assert.ok(model.tippingPoint);
+      assert.ok(model.airlineDecision);
+    } else {
+      assert.equal(model.tippingPoint, null);
+      assert.equal(model.airlineDecision, null);
+    }
+  });
+}
+
 test('getDashboardReadModel falls back to safe dashboard defaults when the market snapshot fails', async (t) => {
   installEnv(t, {
     JETSCOPE_API_BASE_URL: 'https://api.example.com',
