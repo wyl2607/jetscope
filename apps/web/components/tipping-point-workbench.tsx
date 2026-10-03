@@ -95,6 +95,7 @@ type Props = {
   initialMarketCheck?: SafMarketCheck | null;
   initialDecision: DecisionReadModel | null;
   initialReserveWeeks: Figure;
+  projectJetReference?: Figure;
   liveDefaults: {
     fossilJetUsdPerL: Figure;
     carbonPriceEurPerT: Figure;
@@ -147,6 +148,7 @@ export function TippingPointWorkbench({
   initialMarketCheck = null,
   initialDecision,
   initialReserveWeeks,
+  projectJetReference,
   liveDefaults
 }: Props) {
   const router = useRouter();
@@ -596,7 +598,7 @@ export function TippingPointWorkbench({
         />
       </section>
       <section>
-        <SafPathwayComparisonTable pathways={pathways} selectedPathwayKey={selectedPathwayKey} />
+        <SafPathwayComparisonTable pathways={pathways} selectedPathwayKey={selectedPathwayKey} projectJetReference={projectJetReference} />
       </section>
       <section>
         <ScenarioCostStackChart tippingPoint={tippingPoint} selectedPathwayKey={selectedPathwayKey} />

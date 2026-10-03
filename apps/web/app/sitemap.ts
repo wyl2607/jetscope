@@ -90,12 +90,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.83
     },
     {
-      url: `${BASE_URL}/en/admin`,
-      lastModified: STABLE_LAST_MODIFIED,
-      changeFrequency: 'weekly',
-      priority: 0.45
-    },
-    {
       url: `${BASE_URL}/en/scenarios`,
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'daily',
@@ -142,12 +136,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'daily',
       priority: 0.82
-    },
-    {
-      url: `${BASE_URL}/de/admin`,
-      lastModified: STABLE_LAST_MODIFIED,
-      changeFrequency: 'weekly',
-      priority: 0.44
     },
     {
       url: `${BASE_URL}/de/scenarios`,
@@ -202,12 +190,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: STABLE_LAST_MODIFIED,
       changeFrequency: 'hourly',
       priority: 0.94
-    },
-    {
-      url: `${BASE_URL}/admin`,
-      lastModified: STABLE_LAST_MODIFIED,
-      changeFrequency: 'weekly',
-      priority: 0.5
     }
   ];
 }

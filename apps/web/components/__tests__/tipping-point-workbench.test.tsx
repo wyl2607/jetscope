@@ -2,6 +2,8 @@ import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { TippingPointWorkbench } from '@/components/tipping-point-workbench';
 import { assumed, observed } from '@/lib/figure';
+import { esgSafJetReference } from '@/lib/esg-saf-economics';
+import { toPathwayCostRow } from '@/lib/pathways-read-model';
 
 const mockedReplace = vi.fn();
 const mockedSearchParams = vi.hoisted(() => ({ value: new URLSearchParams() }));
@@ -77,6 +79,39 @@ describe('TippingPointWorkbench', () => {
     );
 
     expect(container.firstChild).not.toBeNull();
+  });
+
+  it('keeps external project pricing on the market reference when fuel and airline policy controls change', () => {
+    const reference = esgSafJetReference({
+      generated_at: '2026-10-02T00:00:00Z', source_status: { overall: 'live' },
+      values: { jet_eu_proxy_usd_per_l: 1.2, usd_per_eur: 1.25 },
+      source_details: {
+        jet_eu_proxy: { source: 'brent-derived', status: 'estimated', as_of: '2026-09-30T00:00:00Z' },
+        ecb: { source: 'ecb', status: 'live', as_of: '2026-10-01T00:00:00Z' }
+      }
+    });
+    render(
+      <TippingPointWorkbench
+        initialTippingPoint={{
+          generatedAt: null, effectiveFossilJetUsdPerL: 1.2, signal: 'fossil_still_advantaged',
+          inputs: { fossilJetUsdPerL: 1.2, carbonPriceEurPerT: 80, subsidyUsdPerL: 0.2, blendRatePct: 2 },
+          pathways: [toPathwayCostRow({
+            pathway_key: 'hefa', display_name: 'HEFA', net_cost_low_usd_per_l: 1.8,
+            net_cost_high_usd_per_l: 2.2, spread_low_pct: 10, spread_high_pct: 20, status: 'premium'
+          }, { asOf: null, basis: 'assumption', method: 'test fixture' })]
+        }}
+        initialDecision={null}
+        initialReserveWeeks={testReserve}
+        liveDefaults={testLiveDefaults}
+        projectJetReference={reference}
+      />
+    );
+    const href = 'https://esg.meichen.beauty/saf?preset=HEFA_EU&jet_fuel_price_eur_per_litre=0.9600';
+    expect(screen.getByRole('link', { name: /HEFA · 项目经济性/ })).toHaveAttribute('href', href);
+    fireEvent.change(screen.getByLabelText(/化石航油/), { target: { value: '2.5' } });
+    fireEvent.change(screen.getByLabelText(/ETS SAF 配额/), { target: { value: 'statutory' } });
+    fireEvent.change(screen.getByLabelText(/补贴/), { target: { value: '0.8' } });
+    expect(screen.getByRole('link', { name: /HEFA · 项目经济性/ })).toHaveAttribute('href', href);
   });
 
   it('masks the admin token input and disables browser helpers', () => {

@@ -122,5 +122,19 @@ compliance-adjusted gap separately, and API/web suites are green.
   use, 5.2 M allowances ≈ EUR 430 M, 530 kt SAF (Commission, 2026-09-15).
   Curated in `data/curated/market/eu_ets_saf_allowances.json`. COM(2026) 616
   (2026-07-27) proposes extending to 2040 with 110 M more allowances; not law.
-- Link pathway rows to esg-research-toolkit `techno_economics/saf.py` LCOS/IRR.
-- Threshold alerts on Jet–SAF spread, Diesel–HVO spread, EUA.
+- C4 (implemented, locally validated 2026-10-02): pathway rows link to esg's external
+  SAF project-economics model (HEFA_EU / ATJ_Brazil / FT_biomass_DE / PtL_EU_2025).
+  The dated EU jet proxy is converted to EUR/L using the snapshot's dated ECB
+  FX quote and labelled estimated, with both input sources/statuses/dates shown.
+  Missing inputs omit the price prefill and disclose esg's default assumption;
+  seeds and workbench policy credits never enter the link. LCOS/NPV/IRR/payback
+  stay in esg. Prerequisite URL prefill is merged there (#168); preset source
+  notes disclose remaining legacy assumptions. See
+  `docs/DESIGN-2026-09-esg-saf-economics.md` (option A). Local gates green:
+  `api:test`, `api:openapi:check`, `web:gate`, `npm test`.
+- Threshold alerts (implemented): Jet–SAF spread (≤15% premium, retaining
+  #389's statutory-allowance what-if) and EUA (≥100 EUR/t, labelled assumption)
+  on the tipping-point report in zh/en/de. Seed, missing and stale inputs
+  suppress alerts with a visible reason; annual SAF reference expiry is an
+  explicit 400-day assumption. See [threshold policy](THRESHOLD_ALERTS.md).
+  Diesel–HVO remains deferred until B2's public HVO source is verified.

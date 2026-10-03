@@ -5,12 +5,9 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from app.db.base import Base
-from app.api.routes.policies import (
-    DEFAULT_POLICY_TARGETS,
-    _list_policy_rows,
-    _seed_policies_if_needed,
-)
+from app.api.routes.policies import _list_policy_rows
 from app.models.tables import RefuelEuTarget
+from app.services.bootstrap import DEFAULT_POLICY_TARGETS, seed_configuration_defaults
 
 
 @pytest.fixture
@@ -36,7 +33,7 @@ def test_default_policy_targets_sorted_by_year():
 
 def test_seed_policies_populates_empty_table(session):
     assert session.scalar(select(RefuelEuTarget.year).limit(1)) is None
-    _seed_policies_if_needed(session)
+    seed_configuration_defaults(session)
     rows = session.scalars(
         select(RefuelEuTarget).order_by(RefuelEuTarget.year.asc())
     ).all()
@@ -46,14 +43,15 @@ def test_seed_policies_populates_empty_table(session):
 
 
 def test_seed_policies_does_not_seed_twice(session):
-    _seed_policies_if_needed(session)
+    seed_configuration_defaults(session)
     count_before = len(session.scalars(select(RefuelEuTarget)).all())
-    _seed_policies_if_needed(session)
+    seed_configuration_defaults(session)
     count_after = len(session.scalars(select(RefuelEuTarget)).all())
     assert count_before == count_after == 3
 
 
 def test_list_policy_rows_returns_seeded_data(session):
+    seed_configuration_defaults(session)
     rows = _list_policy_rows(session)
     assert len(rows) == 3
     assert [r.year for r in rows] == [2030, 2035, 2050]
@@ -64,5 +62,10 @@ def test_list_policy_rows_with_prepopulated_data(session):
     session.commit()
     rows = _list_policy_rows(session)
     years = [r.year for r in rows]
-    # seed is skipped because 2025 already exists, so only our row appears
+    # Listing preserves the operator row without adding defaults.
     assert years == [2025]
+
+
+def test_list_policy_rows_leaves_empty_table_empty(session):
+    assert _list_policy_rows(session) == []
+    assert session.scalar(select(RefuelEuTarget.year).limit(1)) is None
