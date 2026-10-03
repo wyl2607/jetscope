@@ -63,24 +63,8 @@ def get_eu_ets_pressure(
         signal=pressure_signal(curve),
     )
 
-DEFAULT_POLICY_TARGETS = [
-    {"year": 2030, "saf_share_pct": 6, "synthetic_share_pct": 1.2, "label": "Early scale-up"},
-    {"year": 2035, "saf_share_pct": 20, "synthetic_share_pct": 5, "label": "Commercial lift-off"},
-    {"year": 2050, "saf_share_pct": 70, "synthetic_share_pct": 35, "label": "Long-run target"},
-]
-
-
-def _seed_policies_if_needed(db: Session) -> None:
-    existing = db.scalar(select(RefuelEuTarget.year).limit(1))
-    if existing is not None:
-        return
-    for row in DEFAULT_POLICY_TARGETS:
-        db.add(RefuelEuTarget(**row))
-    db.commit()
-
 
 def _list_policy_rows(db: Session) -> list[RefuelEuTarget]:
-    _seed_policies_if_needed(db)
     return db.scalars(select(RefuelEuTarget).order_by(RefuelEuTarget.year.asc())).all()
 
 

@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from app.api.router import api_router
 from app.db.base import Base
 from app.db.session import get_db
+from app.services.bootstrap import seed_configuration_defaults
 from app.services.analysis.pathway_costs import FOSSIL_JET_EMISSIONS_KG_PER_L, PATHWAY_COSTS
 
 
@@ -15,6 +16,8 @@ def test_pathways_route_uses_the_analysis_pathway_costs(tmp_path: Path) -> None:
     engine = create_engine(f"sqlite:///{tmp_path / 'pathways.sqlite3'}", future=True)
     session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
     Base.metadata.create_all(bind=engine)
+    with session_factory() as db:
+        seed_configuration_defaults(db)
     app = FastAPI(title="pathway-cost-consistency-test")
     app.include_router(api_router, prefix="/v1")
 
