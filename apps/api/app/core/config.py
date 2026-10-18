@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     api_prefix: str = "/v1"
     app_env: str = "development"
+    build_sha: str = "unknown"
     database_url: str = "sqlite:///./data/market.db"
     workspace_slug: str = "default"
     admin_token: str = ""

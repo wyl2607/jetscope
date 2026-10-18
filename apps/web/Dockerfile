@@ -27,6 +27,9 @@ WORKDIR /app
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+# Inlined by next.config.mjs, served at /api/version.
+ARG JETSCOPE_BUILD_SHA=unknown
+ENV JETSCOPE_BUILD_SHA=$JETSCOPE_BUILD_SHA
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
