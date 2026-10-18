@@ -136,6 +136,11 @@ def get_health() -> dict:
     }
 
 
+@router.get("/version")
+def get_version() -> dict:
+    return {"service": "api", "commit": settings.build_sha}
+
+
 @router.get("/readiness", response_model=ReadinessResponse)
 def get_readiness(db: Session = Depends(get_db), request: Request = None) -> ReadinessResponse:
     checks: dict[str, ReadinessCheck] = {}

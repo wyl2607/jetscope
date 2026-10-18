@@ -6232,6 +6232,29 @@
         ]
       }
     },
+    "/v1/version": {
+      "get": {
+        "operationId": "get_version_v1_version_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Version V1 Version Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Version",
+        "tags": [
+          "health"
+        ]
+      }
+    },
     "/v1/workspaces/{workspace_slug}/preferences": {
       "delete": {
         "operationId": "delete_preferences_v1_workspaces__workspace_slug__preferences_delete",

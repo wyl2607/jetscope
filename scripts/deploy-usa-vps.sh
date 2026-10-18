@@ -179,6 +179,7 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 export JETSCOPE_HOST_DATA_DIR="$HOST_DATA_DIR"
+export JETSCOPE_BUILD_SHA="$DEPLOY_COMMIT"
 allow_empty_db="$ALLOW_EMPTY_DB"
 host_dir="\$JETSCOPE_HOST_DATA_DIR"
 host_db="\$host_dir/market.db"
@@ -305,7 +306,7 @@ fi
 # unit caps the server, so an OOM kills the build with a clear error. Note the
 # ordering: the restart below only happens if this succeeds, so a failed build
 # leaves the previous version running.
-NODE_OPTIONS=--max-old-space-size=768 npm run web:build
+JETSCOPE_BUILD_SHA="$DEPLOY_COMMIT" NODE_OPTIONS=--max-old-space-size=768 npm run web:build
 
 systemctl restart jetscope-web.service
 sleep 3
@@ -334,6 +335,8 @@ while [ \$attempt -lt \$max_attempts ]; do
   attempt=\$((attempt + 1))
   if curl -fsS --max-time 5 http://127.0.0.1:8000/v1/health >/dev/null 2>&1; then
     echo "API health OK after \$attempt attempt(s)"
+    curl -fsS --max-time 5 http://127.0.0.1:8000/v1/version || echo "api version route not yet deployed"
+    echo
     curl -fsS --max-time 8 http://127.0.0.1:8000/v1/market/health | head -c 500 || echo "market/health not yet deployed"
     echo
     curl -fsS --max-time 8 http://127.0.0.1:8000/v1/events/lufthansa-q2-2026-earnings | head -c 300 || echo "events route not yet deployed"

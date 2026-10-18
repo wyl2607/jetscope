@@ -21,6 +21,9 @@ COPY apps/api/migrations ./migrations
 COPY data/curated/ /app/curated/
 COPY data/curated/ /app/data/curated/
 
+# Commit this image was built from, served at /v1/version.
+ARG JETSCOPE_BUILD_SHA=unknown
+ENV JETSCOPE_BUILD_SHA=$JETSCOPE_BUILD_SHA
 ENV PYTHONPATH=/app
 ENV SAFVSOIL_APP_ENV=production
 ENV JETSCOPE_CURATED_DIR=/app/curated

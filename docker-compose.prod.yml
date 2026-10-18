@@ -5,6 +5,8 @@ services:
       # data/curated is outside apps/api and has to be in the context.
       context: .
       dockerfile: apps/api/Dockerfile
+      args:
+        JETSCOPE_BUILD_SHA: ${JETSCOPE_BUILD_SHA:-unknown}
     container_name: jetscope-api
     restart: unless-stopped
     init: true
@@ -33,6 +35,8 @@ services:
       # hoisted node_modules here, and packages/core is reached by path alias.
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        JETSCOPE_BUILD_SHA: ${JETSCOPE_BUILD_SHA:-unknown}
     container_name: jetscope-web
     restart: unless-stopped
     init: true
