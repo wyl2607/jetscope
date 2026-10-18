@@ -65,7 +65,7 @@ for (const file of ['infra/nginx.prod.conf', 'infra/server/nginx.conf']) {
   test(`${file}: workspace pages, API paths and unknown routes stay private`, async () => {
     const apiFiles = await readdir(new URL('../apps/web/app/api/', import.meta.url), { recursive: true });
     const apiRoutes = apiFiles.filter((path) => path.replaceAll('\\', '/').endsWith('/route.ts')).map((path) => `/api/${path.replaceAll('\\', '/').replace('/route.ts', '').replace(/\[[^/]+\]/g, 'example')}`);
-    assert.equal(apiRoutes.length, 28, 're-audit when API inventory changes');
+    assert.equal(apiRoutes.length, 29, 're-audit when API inventory changes');
     for (const path of [...excluded, ...excluded.map((path) => `${path}/settings`), ...apiRoutes, '/api', '/api/new', '/v1', '/v1/health', '/v1/new', '/unknown', '/faq/extra', '/en/grid', '/de/crisis/saf-tipping-point', '/_next/image']) {
       assert.equal(header(path), PRIVATE, path);
     }

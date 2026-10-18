@@ -12,6 +12,10 @@ const nextConfig = {
   output: 'standalone',
   typedRoutes: true,
   outputFileTracingRoot: rootDir,
+  // Inlined at build time: the systemd unit starts the server without it.
+  env: {
+    JETSCOPE_BUILD_SHA: process.env.JETSCOPE_BUILD_SHA || 'unknown'
+  },
   images: {
     unoptimized: true
   },
