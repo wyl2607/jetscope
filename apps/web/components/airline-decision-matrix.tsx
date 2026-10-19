@@ -3,7 +3,7 @@ import type { AirlineDecisionResponse } from '@/lib/product-read-model';
 import { getAirlineDecisionSignalLabel } from '@/lib/market-signals';
 
 type Props = {
-  decision: Pick<AirlineDecisionResponse, 'signal' | 'probabilities' | 'fare_pass_through_pct' | 'labor_cost_impact_eur_m' | 'extra_fuel_cost_eur_m' | 'residual_fuel_cost_exposure'> | null;
+  decision: Pick<AirlineDecisionResponse, 'signal' | 'probabilities' | 'saf_premium_pct' | 'saf_premium_basis' | 'saf_reference_period' | 'method' | 'fare_pass_through_pct' | 'labor_cost_impact_eur_m' | 'extra_fuel_cost_eur_m' | 'residual_fuel_cost_exposure'> | null;
   reserveWeeks: Figure;
   pathwayKey: string;
 };
@@ -71,6 +71,16 @@ export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Pr
           <p className="mt-2 text-sm text-muted">
             Õé¿ÕñçÕÄïÕèø {formatFigure(reserveWeeks)} ┬À ÕÀ▓ÚÇëÞÀ»Õ¥ä {pathwayKey.toUpperCase()}
           </p>
+          {decision.saf_premium_pct != null && decision.saf_premium_basis != null && (
+            <p className="mt-2 text-sm text-muted">
+              SAF 买方溢价 {decision.saf_premium_pct >= 0 ? '+' : ''}{decision.saf_premium_pct.toFixed(1)}%
+              {'（'}
+              {decision.saf_premium_basis === 'market_reference'
+                ? `EASA ${decision.saf_reference_period ?? '—'} 市场参考价`
+                : '生产成本估算'}
+              {'）· 概率为启发式情景，不是观测'}
+            </p>
+          )}
         </div>
         <span className="rounded-full border border-accent bg-accent-soft px-3 py-1 text-xs uppercase tracking-[0.18em] text-accent">
           {getAirlineDecisionSignalLabel(decision.signal)}

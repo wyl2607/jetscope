@@ -112,6 +112,10 @@ export type DecisionReadModel = {
     sign_long_term_offtake: number;
     ground_routes: number;
   };
+  saf_premium_pct?: number | null;
+  saf_premium_basis?: 'market_reference' | 'production_cost' | null;
+  saf_reference_period?: string | null;
+  method?: 'heuristic_scenario' | null;
   fare_pass_through_pct?: number | null;
   labor_cost_impact_eur_m?: number | null;
   extra_fuel_cost_eur_m?: number | null;
@@ -168,6 +172,10 @@ export type AirlineDecisionResponse = {
     extra_fuel_cost_eur_m?: number | null;
   };
   signal: string;
+  saf_premium_pct?: number | null;
+  saf_premium_basis?: 'market_reference' | 'production_cost' | null;
+  saf_reference_period?: string | null;
+  method?: 'heuristic_scenario' | null;
   probabilities: {
     raise_fares: number;
     cut_capacity: number;
@@ -339,16 +347,20 @@ export function toTippingPointReadModel(
 export function toDecisionReadModel(
   response: AirlineDecisionResponse | null
 ): DecisionReadModel | null {
-  if (!response) return null;
+  if (!response || !response.probabilities) return null;
   return {
     signal: response.signal ?? 'incremental_adjustment',
     probabilities: {
-      raise_fares: response.probabilities?.raise_fares ?? 0,
-      cut_capacity: response.probabilities?.cut_capacity ?? 0,
-      buy_spot_saf: response.probabilities?.buy_spot_saf ?? 0,
-      sign_long_term_offtake: response.probabilities?.sign_long_term_offtake ?? 0,
-      ground_routes: response.probabilities?.ground_routes ?? 0,
+      raise_fares: response.probabilities.raise_fares,
+      cut_capacity: response.probabilities.cut_capacity,
+      buy_spot_saf: response.probabilities.buy_spot_saf,
+      sign_long_term_offtake: response.probabilities.sign_long_term_offtake,
+      ground_routes: response.probabilities.ground_routes,
     },
+    saf_premium_pct: response.saf_premium_pct ?? null,
+    saf_premium_basis: response.saf_premium_basis ?? null,
+    saf_reference_period: response.saf_reference_period ?? null,
+    method: response.method ?? null,
     fare_pass_through_pct: response.fare_pass_through_pct ?? null,
     labor_cost_impact_eur_m: response.labor_cost_impact_eur_m ?? null,
     extra_fuel_cost_eur_m: response.extra_fuel_cost_eur_m ?? null,
