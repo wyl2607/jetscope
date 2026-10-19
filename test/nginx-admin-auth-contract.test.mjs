@@ -214,8 +214,10 @@ test('Compose mounts the operator htpasswd read-only at the container gate path'
   assert.ok(nginx.includes(`source: ${HOST_HTPASSWD}`));
   assert.ok(nginx.includes(`target: ${PROD_HTPASSWD}`));
   assert.match(nginx, /read_only: true/);
-  // A missing host file must fail compose, not be created as a directory.
-  assert.match(nginx, /create_host_path: false/);
+  // Long-syntax bind so a missing host file fails compose instead of becoming
+  // a directory; docker-compose v1 on the VPS rejects `create_host_path`.
+  assert.match(nginx, /- type: bind\n\s+source: /);
+  assert.doesNotMatch(source, /^\s*create_host_path:/m);
   assert.doesNotMatch(source, /\$apr1\$|\$2[ayb]\$/);
   assert.match(source, /JETSCOPE_API_BASE_URL: http:\/\/api:8000/);
   assert.match(source, /JETSCOPE_API_PREFIX: \/v1/);
