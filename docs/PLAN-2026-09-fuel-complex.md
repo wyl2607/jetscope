@@ -79,7 +79,7 @@ compliance-adjusted gap separately, and API/web suites are green.
   verified; a single station page is not a national price.
 - B4 (live): EV vs diesel vs petrol cost per 100 km. Household power
   from BDEW-Strompreisanalyse 08/2026 (37.0 ct/kWh, 2026 Jan–Aug new-customer
-  tariffs, 3,500 kWh/a, incl. VAT), with Destatis 2025-H2 (40.55 ct/kWh, all
+  tariffs, 3,500 kWh/a, incl. VAT), with Destatis 2026-H1 (37.97 ct/kWh, all
   households) shown as a reference. Curated in
   `data/curated/market/household_electricity_prices.json`. Home charging only:
   no verifiable public fast-charging price source. Consumptions default to

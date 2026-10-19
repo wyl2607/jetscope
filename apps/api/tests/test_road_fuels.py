@@ -123,11 +123,11 @@ def test_cost_per_100km_uses_pump_prices_and_sourced_household_power(fresh_state
     assert costs["assumptions"] == {"diesel_l_per_100km": 6.0, "petrol_l_per_100km": 7.0, "ev_kwh_per_100km": 18.0}
     assert costs["diesel_eur"] == round(2.457 * 6, 2)
     assert costs["petrol_eur"] == round(2.348 * 7, 2)
-    # BDEW Aug 2026 new-customer average vs Destatis 2025-H2 all-household average.
+    # BDEW Aug 2026 new-customer average vs Destatis 2026-H1 all-household average.
     assert costs["electricity"]["eur_per_kwh"] == 0.370
     assert costs["electricity"]["published_at"] == "2026-08-21"
-    assert costs["electricity_reference"]["eur_per_kwh"] == 0.4055
-    assert costs["ev_home_reference_eur"] == round(0.4055 * 18, 2)
+    assert costs["electricity_reference"]["eur_per_kwh"] == 0.3797
+    assert costs["ev_home_reference_eur"] == round(0.3797 * 18, 2)
 
     custom = client.get(
         "/v1/road-fuels/germany",
