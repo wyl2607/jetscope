@@ -51,6 +51,7 @@ class AirlineDecisionAssessment(BaseModel):
     fossil_jet_usd_per_l: float = Field(gt=0)
     reserve_weeks: float = Field(gt=0)
     carbon_price_eur_per_t: float = Field(ge=0)
+    saf_premium_pct: float
     probabilities: AirlineDecisionProbabilities
     dominant_response: str
     reserve_signal: str
@@ -148,6 +149,10 @@ class AirlineDecisionResponse(BaseModel):
     inputs: AirlineDecisionInputs
     probabilities: AirlineDecisionProbabilities
     signal: AirlineDecisionSignal
+    saf_premium_pct: float
+    saf_premium_basis: SafCostBasis
+    saf_reference_period: str | None = None
+    method: Literal["heuristic_scenario"] = "heuristic_scenario"
     fare_pass_through_pct: float | None = None
     labor_cost_impact_eur_m: float | None = None
     extra_fuel_cost_eur_m: float | None = None
