@@ -13,24 +13,24 @@ const DECISION_COPY: Record<
   { title: string; body: string }
 > = {
   raise_fares: {
-    title: 'µÅÉÚ½ÿþÑ¿õ╗À',
-    body: 'Õ░åþçâµ▓╣õ©Äþó│µêÉµ£¼ÕÄïÕèøõ╝áÕ»╝Õê░þÑ¿õ╗ÀÒÇé'
+    title: '提高票价',
+    body: '将燃油与碳成本压力传导到票价。'
   },
   cut_capacity: {
-    title: 'ÕëèÕçÅÞ┐ÉÕèø',
-    body: 'ÕçÅÕ░æþƒ¡ÚÇöµêûõ¢ÄÕê®µÂªÞê¬þÅ¡Úóæµ¼íõ╗Ñõ┐ØµèñÕê®µÂªþÄçÒÇé'
+    title: '削减运力',
+    body: '减少短途或低利润航班频次以保护利润率。'
   },
   buy_spot_saf: {
-    title: 'þÄ░Þ┤ºÚççÞ┤¡ SAF',
-    body: 'ÕÉêÞºäÕÄïÕèøõ©èÕìçµùÂÕó×Õèáþƒ¡µ£ƒ SAF ÚççÞ┤¡ÒÇé'
+    title: '现货采购 SAF',
+    body: '合规压力上升时增加短期 SAF 采购。'
   },
   sign_long_term_offtake: {
-    title: 'þ¡¥þ¢▓Úò┐µ£ƒµë┐Þ┤¡',
-    body: 'ÚççÞ┤¡õ╗Äµ£║õ╝ÜÕ×ïõ╣░ÕàÑÞ¢¼ÕÉæþ╗ôµ×äÕîûõ¥øþ╗ÖÕìÅÞ««ÒÇé'
+    title: '签署长期承购',
+    body: '采购从机会型买入转向结构化供给协议。'
   },
   ground_routes: {
-    title: 'Õü£Úú×Þê¬þ║┐',
-    body: 'Þê¬þ║┐þ╗ÅµÁÄµÇºÕñ▒µòêµùÂþÜäµ£ÇÚ½ÿÕÄïÕèøÞ¥╣þòîµâàÕ¢óÒÇé'
+    title: '停飞航线',
+    body: '航线经济性失效时的最高压力边界情形。'
   }
 };
 
@@ -45,14 +45,14 @@ export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Pr
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-ink">
-              Þê¬ÕÅ©Õå│þ¡ûþƒ®ÚÿÁ
+              航司决策矩阵
             </h4>
             <p className="mt-2 text-sm text-muted">
-              Õé¿ÕñçÕÄïÕèø {formatFigure(reserveWeeks)} ┬À ÕÀ▓ÚÇëÞÀ»Õ¥ä {pathwayKey.toUpperCase()}
+              储备压力 {formatFigure(reserveWeeks)} · 已选路径 {pathwayKey.toUpperCase()}
             </p>
           </div>
         </div>
-        <p className="text-sm text-muted">Õå│þ¡ûµ¿íÕ×ïµÜéõ©ìÕÅ»þö¿ÒÇé</p>
+        <p className="text-sm text-muted">决策模型暂不可用。</p>
       </section>
     );
   }
@@ -66,10 +66,10 @@ export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Pr
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-ink">
-            Þê¬ÕÅ©Õå│þ¡ûþƒ®ÚÿÁ
+            航司决策矩阵
           </h4>
           <p className="mt-2 text-sm text-muted">
-            Õé¿ÕñçÕÄïÕèø {formatFigure(reserveWeeks)} ┬À ÕÀ▓ÚÇëÞÀ»Õ¥ä {pathwayKey.toUpperCase()}
+            储备压力 {formatFigure(reserveWeeks)} · 已选路径 {pathwayKey.toUpperCase()}
           </p>
           {decision.saf_premium_pct != null && decision.saf_premium_basis != null && (
             <p className="mt-2 text-sm text-muted">
