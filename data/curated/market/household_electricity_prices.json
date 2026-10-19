@@ -9,11 +9,11 @@
     "source_url": "https://www.bdew.de/media/documents/BDEW_Strompreisanalyse_082026.pdf"
   },
   "reference": {
-    "eur_per_kwh": 0.4055,
-    "period": "2025-H2",
-    "published_at": "2026-03-31",
+    "eur_per_kwh": 0.3797,
+    "period": "2026-H1",
+    "published_at": "2026-09-30",
     "basis": "Average paid by all private consumers, incl. taxes, levies and standing charge",
-    "source_name": "Destatis press release 111/2026: Household electricity prices, 2nd half 2025",
-    "source_url": "https://www.destatis.de/DE/Presse/Pressemitteilungen/2026/03/PD26_111_61243.html"
+    "source_name": "Destatis press release 345/2026: Household electricity prices, 1st half 2026",
+    "source_url": "https://www.destatis.de/DE/Presse/Pressemitteilungen/2026/09/PD26_345_61243.html"
   }
 }

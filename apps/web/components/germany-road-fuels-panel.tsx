@@ -90,7 +90,7 @@ export function GermanyRoadFuelsPanel({ locale, data }: { locale: Locale; data: 
 type Costs = RoadFuelsGermany['cost_per_100km'];
 
 function sourceLine(template: string, price: ElectricityPrice, locale: Locale): string {
-  // Keep the published precision (BDEW 37,0 vs Destatis 40,55 ct/kWh).
+  // Keep the published precision (BDEW 37,0 vs Destatis 37,97 ct/kWh).
   const cents = Math.round(price.eur_per_kwh * 10000) / 100;
   return template
     .replace('{price}', num(cents, locale, Number.isInteger(cents * 10) ? 1 : 2))
