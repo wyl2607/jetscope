@@ -3,14 +3,22 @@ updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     open-pull-requests-limit: 5
+    # One PR per ecosystem per month instead of one per runtime package.
+    # Majors stay separate so a breaking bump does not take the rest red.
     groups:
-      node-dev-tooling:
-        dependency-type: development
+      npm-minor-patch:
+        patterns:
+          - '*'
+        update-types: [minor, patch]
+      npm-major:
+        patterns:
+          - '*'
+        update-types: [major]
     ignore:
       # Deferred majors: each of these fails `Verify web and API` for a reason
-      # that lives outside this repo, so a weekly PR is a weekly re-diagnosis.
+      # that lives outside this repo, so every PR is another re-diagnosis.
       # Drop the entry once the blocker below clears, and upgrade deliberately.
       #
       # typescript 7: Next 16 build aborts with "trying to use TypeScript but do
@@ -40,7 +48,7 @@ updates:
   - package-ecosystem: pip
     directory: /apps/api
     schedule:
-      interval: weekly
+      interval: monthly
     open-pull-requests-limit: 5
     groups:
       python-runtime:
@@ -50,7 +58,7 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     open-pull-requests-limit: 5
     groups:
       github-actions:
