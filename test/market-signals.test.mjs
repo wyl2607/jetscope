@@ -3,6 +3,26 @@ import test from 'node:test';
 
 import { importWebLib } from './helpers/load-web-lib.mjs';
 
+test('no jet alert and no throw when both jet values are absent', async () => {
+  const { computeDashboardAlertBanners } = await importWebLib('apps/web/lib/market-signals.ts');
+  const banners = computeDashboardAlertBanners(
+    {
+      values: {}
+    },
+    {
+      metric: 'Brent',
+      metricKey: 'brent_usd_per_bbl',
+      window: '1d',
+      changePct: 2.0,
+      level: 'normal',
+      latestAsOf: '2026-04-23T12:00:00Z',
+      sampleCount: 1
+    }
+  );
+  const jetBanner = banners.find((b) => b.title === 'Jet Fuel Price Alert');
+  assert.strictEqual(jetBanner, undefined);
+});
+
 test('market signal helpers centralize dashboard, reserve, and signal semantics', async () => {
   const {
     computeDashboardAlertBanners,

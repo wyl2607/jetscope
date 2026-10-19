@@ -8,7 +8,7 @@ interface MarketSnapshot {
   source_status: {
     overall: string;
   };
-  values: Record<string, number>;
+  values: Record<string, number | null | undefined>;
 }
 
 export default function ClientMarketData() {
@@ -80,11 +80,11 @@ export default function ClientMarketData() {
   }
 
   const v = data.values;
-  const brent = v.brent_usd_per_bbl ?? 0;
-  const jetEu = v.jet_eu_proxy_usd_per_l ?? 0;
-  const euEts = v.eu_ets_price_eur_per_t ?? 0;
-  const germanyPremium = v.germany_premium_pct ?? 0;
-  const rotterdam = v.rotterdam_jet_fuel_usd_per_l ?? 0;
+  const brent = v.brent_usd_per_bbl;
+  const jetEu = v.jet_eu_proxy_usd_per_l;
+  const euEts = v.eu_ets_price_eur_per_t;
+  const germanyPremium = v.germany_premium_pct;
+  const rotterdam = v.rotterdam_jet_fuel_usd_per_l;
   const sourceStatus = data.source_status?.overall ?? 'unknown';
 
   return (
@@ -102,31 +102,36 @@ export default function ClientMarketData() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <MetricCard
           label="Brent"
-          value={`$${brent.toFixed(2)}`}
+          value={brent}
+          format={(n) => `$${n.toFixed(2)}`}
           unit="USD/bbl"
           detail={coverageByMetric.brent_usd_per_bbl}
         />
         <MetricCard
           label="Jet EU"
-          value={`$${jetEu.toFixed(3)}`}
+          value={jetEu}
+          format={(n) => `$${n.toFixed(3)}`}
           unit="USD/L"
           detail={coverageByMetric.jet_eu_proxy_usd_per_l}
         />
         <MetricCard
           label="Rotterdam"
-          value={`$${rotterdam.toFixed(3)}`}
+          value={rotterdam}
+          format={(n) => `$${n.toFixed(3)}`}
           unit="USD/L"
           detail={coverageByMetric.rotterdam_jet_fuel_usd_per_l}
         />
         <MetricCard
           label="EU ETS"
-          value={`€${euEts.toFixed(2)}`}
+          value={euEts}
+          format={(n) => `€${n.toFixed(2)}`}
           unit="EUR/tCO₂"
           detail={coverageByMetric.eu_ets_price_eur_per_t}
         />
         <MetricCard
           label="DE-Aufschlag"
-          value={`+${germanyPremium.toFixed(1)}%`}
+          value={germanyPremium}
+          format={(n) => `+${n.toFixed(1)}%`}
           unit="auf Jet"
           detail={coverageByMetric.germany_premium_pct}
           highlight
@@ -140,9 +145,10 @@ export default function ClientMarketData() {
   );
 }
 
-function MetricCard({ label, value, unit, detail, highlight }: {
+function MetricCard({ label, value, format, unit, detail, highlight }: {
   label: string;
-  value: string;
+  value: number | null | undefined;
+  format: (n: number) => string; // figure-contract-lint-ignore: formatter callback parameter, not a measurement
   unit: string;
   detail?: SourceCoverageMetric;
   highlight?: boolean;
@@ -151,19 +157,35 @@ function MetricCard({ label, value, unit, detail, highlight }: {
     detail?.status === 'ok' ? 'border-success' :
     detail ? 'border-danger' :
     'border-line';
+  const shown = formatMarketValue(value, format, detail);
 
   return (
     <div className={`p-3 rounded border ${statusColor} ${highlight ? 'bg-accent-soft' : 'bg-surface-muted'}`}>
       <p className="text-xs text-muted uppercase tracking-wide">{label}</p>
-      <p className="text-lg font-bold text-ink mt-1">{value}</p>
+      <p className="text-lg font-bold text-ink mt-1">{shown.value}</p>
       <p className="text-xs text-muted">{unit}</p>
-      {detail?.confidence_score !== undefined && (
+      {shown.detailText !== undefined && (
+        <p className="text-xs text-muted mt-1">{shown.detailText}</p>
+      )}
+      {value != null && detail?.confidence_score !== undefined && (
         <p className="text-xs text-muted mt-1">
           Vertrauen: {(detail.confidence_score * 100).toFixed(0)}%
         </p>
       )}
     </div>
   );
+}
+
+export function formatMarketValue(
+  value: number | null | undefined,
+  format: (n: number) => string, // figure-contract-lint-ignore: formatter callback parameter, not a measurement
+  detail?: SourceCoverageMetric
+): { value: string; detailText?: string } {
+  if (value == null) {
+    const note = detail?.note ?? detail?.source_name;
+    return { value: '—', detailText: note ? `fehlt · ${note}` : 'fehlt' };
+  }
+  return { value: format(value) };
 }
 
 function sourceStatusLabel(status: string) {

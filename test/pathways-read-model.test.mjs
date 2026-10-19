@@ -69,6 +69,33 @@ test('confidenceLabel thresholds', async () => {
   assert.equal(confidenceLabel(0.4), '低');
 });
 
+test('toPathwayCostRow returns missing Figure when spread is null', async () => {
+  const { toPathwayCostRow } = await importReadModel();
+  const row = toPathwayCostRow(
+    {
+      pathway_key: 'test',
+      display_name: 'Test',
+      net_cost_low_usd_per_l: 1.0,
+      net_cost_high_usd_per_l: 1.5,
+      spread_low_pct: null,
+      spread_high_pct: null,
+      status: 'not_computable'
+    },
+    {
+      asOf: null,
+      basis: 'observed',
+      sourceId: 'test-source'
+    }
+  );
+  assert.equal(row.spreadLow.value, null);
+  assert.notStrictEqual(row.spreadLow.value, 0);
+  assert.equal(row.spreadLow.basis, 'observed');
+  assert.equal(row.spreadLow.unit, '%');
+  assert.equal(row.spreadLow.reason, 'API 未给出可计算的价差');
+  assert.equal(row.spreadHigh.value, null);
+  assert.notStrictEqual(row.spreadHigh.value, 0);
+});
+
 test('loadPathwayComparison fetches compare endpoint with query params', async (t) => {
   const previousBase = process.env.JETSCOPE_API_BASE_URL;
   const previousPrefix = process.env.JETSCOPE_API_PREFIX;

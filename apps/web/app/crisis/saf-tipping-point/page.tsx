@@ -330,8 +330,8 @@ export default async function SafTippingPointPage() {
                   display_name: row.name,
                   net_cost_low_usd_per_l: row.min_usd_per_l,
                   net_cost_high_usd_per_l: row.max_usd_per_l,
-                  spread_low_pct: row.spread_pct ?? 0,
-                  spread_high_pct: row.spread_pct ?? 0,
+                  spread_low_pct: row.spread_pct ?? null,
+                  spread_high_pct: row.spread_pct ?? null,
                   status: row.status
                 },
                 {

@@ -156,7 +156,12 @@ export function SafPathwayComparisonTable({ pathways, selectedPathwayKey, pathwa
                         {formatFigure(pathway.spreadLow)} 至 {formatFigure(pathway.spreadHigh)}
                       </>
                     ) : (
-                      formatFigure(pathway.spreadLow)
+                      <>
+                        {formatFigure(pathway.spreadLow)}
+                        {pathway.spreadLow.value === null && pathway.spreadLow.reason ? (
+                          <span className="ml-1 text-xs text-muted">（{pathway.spreadLow.reason}）</span>
+                        ) : null}
+                      </>
                     )}
                   </td>
                   {showSources ? (

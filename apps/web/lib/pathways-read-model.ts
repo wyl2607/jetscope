@@ -1,5 +1,5 @@
 import { buildApiUrl } from '@/lib/api-config';
-import { assumed, derived, observed, type Figure } from '@/lib/figure';
+import { assumed, derived, missing, observed, type Figure } from '@/lib/figure';
 
 const DEFAULT_FETCH_TIMEOUT_MS = 2000;
 const PATHWAY_COST_SOURCE_ID = 'pathways-read-model';
@@ -23,8 +23,8 @@ type PathwayCostWire = {
   display_name: string;
   net_cost_low_usd_per_l: number;
   net_cost_high_usd_per_l: number;
-  spread_low_pct: number;
-  spread_high_pct: number;
+  spread_low_pct: number | null;
+  spread_high_pct: number | null;
   status: string;
 };
 
@@ -73,7 +73,15 @@ export function toPathwayCostRow(
     });
   };
 
-  const spreadFigure = (value: number): Figure => {
+  const spreadFigure = (value: number | null): Figure => {
+    if (value === null) {
+      return missing({
+        unit: '%',
+        sourceId,
+        reason: 'API 未给出可计算的价差',
+        precision: 1
+      });
+    }
     if (opts.basis === 'assumption') {
       return assumed({
         value,

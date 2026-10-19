@@ -196,6 +196,26 @@ describe('SafPathwayComparisonTable', () => {
   });
 
   describe('spread rendering', () => {
+    it('renders a missing spread as a dash with its reason, never 0%', () => {
+      const row = toPathwayCostRow(
+        {
+          pathway_key: 'hefa',
+          display_name: 'HEFA',
+          net_cost_low_usd_per_l: 1.8,
+          net_cost_high_usd_per_l: 2.2,
+          spread_low_pct: null,
+          spread_high_pct: null,
+          status: 'premium'
+        },
+        { asOf: null, basis: 'observed', method: 'test fixture pathway cost' }
+      );
+      render(<SafPathwayComparisonTable selectedPathwayKey="hefa" pathways={[row]} />);
+
+      const cell = screen.getByText('（API 未给出可计算的价差）').closest('td');
+      expect(cell?.textContent).toContain('—');
+      expect(cell?.textContent).not.toContain('0.0%');
+    });
+
     it('renders single value when low equals high', () => {
       render(<SafPathwayComparisonTable selectedPathwayKey="hefa" pathways={[hefaSingleSpreadFixture]} />);
 
