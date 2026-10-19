@@ -239,7 +239,7 @@ def build_airline_decision_response(
     pathway = get_pathway_cost(pathway_key)
     market_check = (
         _saf_market_check(fossil_jet_usd_per_l, carbon_price_eur_per_t)
-        if pathway_key == MARKET_REFERENCE_PATHWAY
+        if pathway.pathway_key == MARKET_REFERENCE_PATHWAY
         else None
     )
     if market_check is not None:

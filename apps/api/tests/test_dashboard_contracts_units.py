@@ -178,6 +178,30 @@ def test_airline_decision_response_uses_market_reference_for_hefa_and_production
     assert atj.saf_premium_pct == expected_atj_premium
 
 
+def test_airline_decision_response_normalizes_hefa_pathway_key() -> None:
+    fossil_jet_usd_per_l = 0.877
+    carbon_price_eur_per_t = 85.53
+    market_check = contracts._saf_market_check(fossil_jet_usd_per_l, carbon_price_eur_per_t)
+    assert market_check is not None
+
+    normalized = contracts.build_airline_decision_response(
+        fossil_jet_usd_per_l=fossil_jet_usd_per_l,
+        reserve_weeks=6.0,
+        carbon_price_eur_per_t=carbon_price_eur_per_t,
+        pathway_key="hefa",
+    )
+    uppercase = contracts.build_airline_decision_response(
+        fossil_jet_usd_per_l=fossil_jet_usd_per_l,
+        reserve_weeks=6.0,
+        carbon_price_eur_per_t=carbon_price_eur_per_t,
+        pathway_key="HEFA",
+    )
+
+    assert uppercase.saf_premium_basis == "market_reference"
+    assert uppercase.saf_premium_pct == normalized.saf_premium_pct
+    assert uppercase.saf_premium_pct == market_check.premium_pct
+
+
 def test_high_hefa_premium_blocks_switch_signal_even_when_offtake_dominates(monkeypatch) -> None:
     pathway = _pathway("hefa", "HEFA", 1.0, 1.5)
     probabilities = AirlineDecisionProbabilities(
