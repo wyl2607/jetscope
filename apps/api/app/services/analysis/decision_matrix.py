@@ -22,23 +22,19 @@ def compute_airline_decision(
     carbon_price_eur_per_t: float,
     pathway_key: str,
     *,
+    saf_premium_pct: float,
     fare_pass_through_pct: float | None = None,
     labor_cost_impact_eur_m: float | None = None,
     extra_fuel_cost_eur_m: float | None = None,
 ) -> AirlineDecisionAssessment:
-    """Probability matrix for airline responses under fuel/reserve stress.
+    """Probability matrix driven by fuel/reserve stress and the SAF buyer premium.
 
-    Optional LH-style inputs (pass-through, labor EUR m, extra fuel EUR m)
-    are accepted only as documented scenario parameters. They do not invent
-    market prices. Probability weights remain unchanged unless pass-through
-    is provided, in which case residual fuel exposure is reported and used
-    only as an additive residual-margin context field (not a new price).
+    Optional LH-style inputs remain documented scenario parameters only.
     """
     pathway = get_pathway_cost(pathway_key)
     scarcity = max(0.0, (6.0 - reserve_weeks) / 6.0)
     fuel_shock = max(0.0, (fossil_jet_usd_per_l - 1.0) / 0.8)
-    carbon_pressure = max(0.0, carbon_price_eur_per_t / 200.0)
-    pathway_readiness = pathway.carbon_reduction_pct / 100.0
+    saf_pull = max(0.0, min(1.0, (30.0 - saf_premium_pct) / 30.0))
     maturity_bonus = {
         "commercial": 0.12,
         "early_commercial": 0.08,
@@ -75,10 +71,8 @@ def compute_airline_decision(
     probabilities = AirlineDecisionProbabilities(
         raise_fares=_clamp(raise_fares),
         cut_capacity=_clamp(cut_capacity),
-        buy_spot_saf=_clamp(0.08 + 0.26 * carbon_pressure + 0.18 * scarcity + maturity_bonus),
-        sign_long_term_offtake=_clamp(
-            0.10 + 0.30 * carbon_pressure + 0.20 * pathway_readiness + maturity_bonus
-        ),
+        buy_spot_saf=_clamp(0.08 + 0.26 * saf_pull + 0.18 * scarcity + maturity_bonus),
+        sign_long_term_offtake=_clamp(0.10 + 0.50 * saf_pull + maturity_bonus),
         ground_routes=_clamp(ground_routes),
     )
 
@@ -92,6 +86,7 @@ def compute_airline_decision(
         fossil_jet_usd_per_l=fossil_jet_usd_per_l,
         reserve_weeks=reserve_weeks,
         carbon_price_eur_per_t=carbon_price_eur_per_t,
+        saf_premium_pct=saf_premium_pct,
         probabilities=probabilities,
         dominant_response=dominant_response,
         reserve_signal=_reserve_signal(reserve_weeks),

@@ -219,7 +219,7 @@ def build_tipping_point_response(
 
 def _decision_signal(assessment: AirlineDecisionAssessment) -> str:
     dominant = assessment.dominant_response
-    if dominant == "sign_long_term_offtake":
+    if dominant == "sign_long_term_offtake" and assessment.saf_premium_pct <= 15.0:
         return "switch_window_opening"
     if assessment.reserve_signal in {"critical", "elevated"} and dominant in {"cut_capacity", "ground_routes"}:
         return "capacity_stress_dominant"
@@ -236,12 +236,27 @@ def build_airline_decision_response(
     labor_cost_impact_eur_m: float | None = None,
     extra_fuel_cost_eur_m: float | None = None,
 ) -> AirlineDecisionResponse:
-    get_pathway_cost(pathway_key)
+    pathway = get_pathway_cost(pathway_key)
+    market_check = (
+        _saf_market_check(fossil_jet_usd_per_l, carbon_price_eur_per_t)
+        if pathway.pathway_key == MARKET_REFERENCE_PATHWAY
+        else None
+    )
+    if market_check is not None:
+        saf_premium_pct = market_check.premium_pct
+        saf_premium_basis = "market_reference"
+        saf_reference_period = market_check.period
+    else:
+        fossil_with_ets = fossil_jet_usd_per_l + carbon_credit_usd_per_l(carbon_price_eur_per_t)
+        saf_premium_pct = _premium_pct(pathway.min_usd_per_l, fossil_with_ets)
+        saf_premium_basis = "production_cost"
+        saf_reference_period = None
     assessment = compute_airline_decision(
         fossil_jet_usd_per_l=fossil_jet_usd_per_l,
         reserve_weeks=reserve_weeks,
         carbon_price_eur_per_t=carbon_price_eur_per_t,
         pathway_key=pathway_key,
+        saf_premium_pct=saf_premium_pct,
         fare_pass_through_pct=fare_pass_through_pct,
         labor_cost_impact_eur_m=labor_cost_impact_eur_m,
         extra_fuel_cost_eur_m=extra_fuel_cost_eur_m,
@@ -259,6 +274,9 @@ def build_airline_decision_response(
         ),
         probabilities=assessment.probabilities,
         signal=_decision_signal(assessment),
+        saf_premium_pct=saf_premium_pct,
+        saf_premium_basis=saf_premium_basis,
+        saf_reference_period=saf_reference_period,
         fare_pass_through_pct=assessment.fare_pass_through_pct,
         labor_cost_impact_eur_m=assessment.labor_cost_impact_eur_m,
         extra_fuel_cost_eur_m=assessment.extra_fuel_cost_eur_m,

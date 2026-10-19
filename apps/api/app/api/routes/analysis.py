@@ -61,9 +61,12 @@ def get_airline_decision_analysis(
     extra_fuel_cost_eur_m: float | None = Query(None, ge=0, description="Optional extra fuel cost EUR m (context)"),
 ) -> AirlineDecisionResponse:
     try:
-        get_pathway_cost(pathway_key)
+        pathway = get_pathway_cost(pathway_key)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=f"Unknown pathway_key: {pathway_key}") from exc
+
+    if pathway.pathway_key == "fossil_jet_crisis":
+        raise HTTPException(status_code=422, detail=f"Not a SAF pathway: {pathway_key}")
 
     return build_airline_decision_response(
         fossil_jet_usd_per_l=fossil_jet_usd_per_l,

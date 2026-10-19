@@ -76,6 +76,15 @@ def test_airline_decision_route_returns_probability_matrix(client: TestClient):
         assert 0.0 <= probabilities[key] <= 1.0
 
 
+def test_airline_decision_route_rejects_non_saf_pathway(client: TestClient):
+    response = client.get(
+        "/v1/analysis/airline-decision?fossil_jet_usd_per_l=0.877&reserve_weeks=6"
+        "&carbon_price_eur_per_t=85.53&pathway_key=fossil_jet_crisis"
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Not a SAF pathway: fossil_jet_crisis"
+
+
 def test_reserve_and_source_routes_return_contract_shapes(client: TestClient):
     reserve_response = client.get("/v1/reserves/eu")
     assert reserve_response.status_code == 200

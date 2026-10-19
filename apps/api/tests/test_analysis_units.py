@@ -57,7 +57,7 @@ def test_get_airline_decision_analysis_validates_pathway_and_returns_builder_val
 
     def _fake_get_pathway_cost(pathway_key: str):
         call_log.append(("get_pathway_cost", pathway_key))
-        return {"pathway_key": pathway_key}
+        return SimpleNamespace(pathway_key=pathway_key)
 
     def _fake_build_airline_decision_response(**kwargs):  # noqa: ANN003
         call_log.append(("build_airline_decision_response", kwargs))

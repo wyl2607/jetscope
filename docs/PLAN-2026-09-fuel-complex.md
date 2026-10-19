@@ -138,3 +138,9 @@ compliance-adjusted gap separately, and API/web suites are green.
   suppress alerts with a visible reason; annual SAF reference expiry is an
   explicit 400-day assumption. See [threshold policy](THRESHOLD_ALERTS.md).
   Diesel–HVO remains deferred until B2's public HVO source is verified.
+- Airline decision matrix (this branch): `buy_spot_saf` / `sign_long_term_offtake`
+  are driven by the SAF buyer premium (HEFA: EASA market reference via
+  `market_check`; other pathways: EASA production-cost low end vs fossil + ETS),
+  no longer by EUA/200 and the LCA reduction %. `switch_window_opening` needs a
+  premium ≤ 15 %. The response carries `saf_premium_pct`, its basis and period,
+  and `method=heuristic_scenario`; the weights stay a labelled heuristic.

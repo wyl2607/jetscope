@@ -100,12 +100,13 @@ def test_reserve_route_contract(client: TestClient):
 
 
 def test_airline_decision_optional_lh_params():
-    base = compute_airline_decision(1.3, 3.0, 95.0, "hefa")
+    base = compute_airline_decision(1.3, 3.0, 95.0, "hefa", saf_premium_pct=30.0)
     with_lh = compute_airline_decision(
         1.3,
         3.0,
         95.0,
         "hefa",
+        saf_premium_pct=30.0,
         fare_pass_through_pct=0.6,
         labor_cost_impact_eur_m=150,
         extra_fuel_cost_eur_m=750,
