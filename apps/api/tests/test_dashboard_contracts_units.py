@@ -209,6 +209,68 @@ def test_airline_decision_response_expires_market_reference_after_400_days(
         assert response.saf_reference_period is None
 
 
+def test_airline_decision_applies_statutory_allowance_to_market_reference() -> None:
+    kwargs = dict(
+        fossil_jet_usd_per_l=0.877,
+        reserve_weeks=6.0,
+        carbon_price_eur_per_t=85.53,
+        pathway_key="hefa",
+    )
+    none = contracts.build_airline_decision_response(**kwargs)
+    statutory = contracts.build_airline_decision_response(**kwargs, saf_allowance="statutory")
+
+    assert none.saf_premium_basis == "market_reference"
+    assert statutory.saf_premium_basis == "market_reference"
+    assert statutory.saf_allowance_coverage_pct == 50.0
+    assert statutory.saf_premium_pct < none.saf_premium_pct
+    assert statutory.inputs.saf_allowance == "statutory"
+
+
+def test_airline_decision_applies_statutory_allowance_to_production_cost() -> None:
+    kwargs = dict(
+        fossil_jet_usd_per_l=0.877,
+        reserve_weeks=6.0,
+        carbon_price_eur_per_t=85.53,
+        pathway_key="atj",
+    )
+    none = contracts.build_airline_decision_response(**kwargs)
+    statutory = contracts.build_airline_decision_response(**kwargs, saf_allowance="statutory")
+
+    assert none.saf_premium_basis == "production_cost"
+    assert statutory.saf_premium_basis == "production_cost"
+    assert statutory.saf_allowance_coverage_pct == 50.0
+    assert statutory.saf_premium_pct < none.saf_premium_pct
+
+
+def test_airline_decision_none_allowance_matches_the_default() -> None:
+    kwargs = dict(
+        fossil_jet_usd_per_l=0.877,
+        reserve_weeks=6.0,
+        carbon_price_eur_per_t=85.53,
+        pathway_key="atj",
+    )
+    default = contracts.build_airline_decision_response(**kwargs)
+    explicit_none = contracts.build_airline_decision_response(**kwargs, saf_allowance="none")
+
+    assert explicit_none.saf_premium_pct == default.saf_premium_pct
+    assert explicit_none.saf_allowance_coverage_pct == 0.0
+
+
+def test_airline_decision_allowance_is_zero_when_saf_already_cheaper() -> None:
+    kwargs = dict(
+        fossil_jet_usd_per_l=10.0,
+        reserve_weeks=6.0,
+        carbon_price_eur_per_t=0.0,
+        pathway_key="atj",
+    )
+    none = contracts.build_airline_decision_response(**kwargs)
+    statutory = contracts.build_airline_decision_response(**kwargs, saf_allowance="statutory")
+
+    assert statutory.saf_allowance_coverage_pct == 50.0
+    assert statutory.saf_premium_pct == none.saf_premium_pct
+    assert statutory.saf_premium_pct < 0.0
+
+
 def test_airline_decision_response_normalizes_hefa_pathway_key() -> None:
     fossil_jet_usd_per_l = 0.877
     carbon_price_eur_per_t = 85.53

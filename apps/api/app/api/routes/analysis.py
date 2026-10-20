@@ -59,6 +59,10 @@ def get_airline_decision_analysis(
     fare_pass_through_pct: float | None = Query(None, ge=0, le=1, description="Optional fare pass-through share (e.g. 0.60 LH Q2 2026)"),
     labor_cost_impact_eur_m: float | None = Query(None, ge=0, description="Optional labor/strike cost EUR m"),
     extra_fuel_cost_eur_m: float | None = Query(None, ge=0, description="Optional extra fuel cost EUR m (context)"),
+    saf_allowance: Literal["none", "statutory", "remote_airport"] = Query(
+        "none",
+        description="EU ETS SAF allowances (Directive 2003/87/EC Art. 3c(6)): none, statutory per-pathway rate, or 100 % at remote airports",
+    ),
 ) -> AirlineDecisionResponse:
     try:
         pathway = get_pathway_cost(pathway_key)
@@ -76,6 +80,7 @@ def get_airline_decision_analysis(
         fare_pass_through_pct=fare_pass_through_pct,
         labor_cost_impact_eur_m=labor_cost_impact_eur_m,
         extra_fuel_cost_eur_m=extra_fuel_cost_eur_m,
+        saf_allowance=saf_allowance,
     )
 
 

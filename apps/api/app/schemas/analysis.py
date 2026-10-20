@@ -142,6 +142,7 @@ class AirlineDecisionInputs(BaseModel):
     fare_pass_through_pct: float | None = Field(default=None, ge=0, le=1)
     labor_cost_impact_eur_m: float | None = Field(default=None, ge=0)
     extra_fuel_cost_eur_m: float | None = Field(default=None, ge=0)
+    saf_allowance: Literal["none", "statutory", "remote_airport"] = "none"
 
 
 class AirlineDecisionResponse(BaseModel):
@@ -152,6 +153,7 @@ class AirlineDecisionResponse(BaseModel):
     saf_premium_pct: float
     saf_premium_basis: SafCostBasis
     saf_reference_period: str | None = None
+    saf_allowance_coverage_pct: float = Field(default=0.0, ge=0, le=100)
     method: Literal["heuristic_scenario"] = "heuristic_scenario"
     fare_pass_through_pct: float | None = None
     labor_cost_impact_eur_m: float | None = None

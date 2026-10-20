@@ -115,6 +115,7 @@ export type DecisionReadModel = {
   saf_premium_pct?: number | null;
   saf_premium_basis?: 'market_reference' | 'production_cost' | null;
   saf_reference_period?: string | null;
+  saf_allowance_coverage_pct?: number | null;
   method?: 'heuristic_scenario' | null;
   fare_pass_through_pct?: number | null;
   labor_cost_impact_eur_m?: number | null;
@@ -170,11 +171,13 @@ export type AirlineDecisionResponse = {
     fare_pass_through_pct?: number | null;
     labor_cost_impact_eur_m?: number | null;
     extra_fuel_cost_eur_m?: number | null;
+    saf_allowance?: SafAllowanceMode;
   };
   signal: string;
   saf_premium_pct?: number | null;
   saf_premium_basis?: 'market_reference' | 'production_cost' | null;
   saf_reference_period?: string | null;
+  saf_allowance_coverage_pct?: number | null;
   method?: 'heuristic_scenario' | null;
   probabilities: {
     raise_fares: number;
@@ -360,6 +363,7 @@ export function toDecisionReadModel(
     saf_premium_pct: response.saf_premium_pct ?? null,
     saf_premium_basis: response.saf_premium_basis ?? null,
     saf_reference_period: response.saf_reference_period ?? null,
+    saf_allowance_coverage_pct: response.saf_allowance_coverage_pct ?? null,
     method: response.method ?? null,
     fare_pass_through_pct: response.fare_pass_through_pct ?? null,
     labor_cost_impact_eur_m: response.labor_cost_impact_eur_m ?? null,

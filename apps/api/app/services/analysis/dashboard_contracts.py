@@ -236,14 +236,16 @@ def build_airline_decision_response(
     fare_pass_through_pct: float | None = None,
     labor_cost_impact_eur_m: float | None = None,
     extra_fuel_cost_eur_m: float | None = None,
+    saf_allowance: SafAllowanceMode = "none",
 ) -> AirlineDecisionResponse:
     pathway = get_pathway_cost(pathway_key)
+    allowance_rules = load_saf_allowance_rules()
     reference = latest_saf_market_reference()
     reference_is_stale = reference is not None and is_pathway_source_stale(
         reference.published_at.isoformat(), "annual"
     )
     market_check = (
-        _saf_market_check(fossil_jet_usd_per_l, carbon_price_eur_per_t)
+        _saf_market_check(fossil_jet_usd_per_l, carbon_price_eur_per_t, allowance_rules, saf_allowance)
         if pathway.pathway_key == MARKET_REFERENCE_PATHWAY and not reference_is_stale
         else None
     )
@@ -251,9 +253,14 @@ def build_airline_decision_response(
         saf_premium_pct = market_check.premium_pct
         saf_premium_basis = "market_reference"
         saf_reference_period = market_check.period
+        saf_allowance_coverage_pct = market_check.allowance_coverage_pct
     else:
         fossil_with_ets = fossil_jet_usd_per_l + carbon_credit_usd_per_l(carbon_price_eur_per_t)
-        saf_premium_pct = _premium_pct(pathway.min_usd_per_l, fossil_with_ets)
+        saf_allowance_coverage_pct = coverage_pct(allowance_rules, saf_allowance, pathway.pathway_key)
+        saf_usd_per_l = pathway.min_usd_per_l - allowance_support_usd_per_l(
+            pathway.min_usd_per_l, fossil_with_ets, saf_allowance_coverage_pct
+        )
+        saf_premium_pct = _premium_pct(saf_usd_per_l, fossil_with_ets)
         saf_premium_basis = "production_cost"
         saf_reference_period = None
     assessment = compute_airline_decision(
@@ -276,12 +283,14 @@ def build_airline_decision_response(
             fare_pass_through_pct=fare_pass_through_pct,
             labor_cost_impact_eur_m=labor_cost_impact_eur_m,
             extra_fuel_cost_eur_m=extra_fuel_cost_eur_m,
+            saf_allowance=saf_allowance,
         ),
         probabilities=assessment.probabilities,
         signal=_decision_signal(assessment),
         saf_premium_pct=saf_premium_pct,
         saf_premium_basis=saf_premium_basis,
         saf_reference_period=saf_reference_period,
+        saf_allowance_coverage_pct=saf_allowance_coverage_pct,
         fare_pass_through_pct=assessment.fare_pass_through_pct,
         labor_cost_impact_eur_m=assessment.labor_cost_impact_eur_m,
         extra_fuel_cost_eur_m=assessment.extra_fuel_cost_eur_m,

@@ -243,7 +243,8 @@ export function TippingPointWorkbench({
           fossil_jet_usd_per_l: String(fossilJetUsdPerL),
           reserve_weeks: String(Math.max(0.1, reserveWeeks)),
           carbon_price_eur_per_t: String(carbonPriceEurPerT),
-          pathway_key: selectedPathwayKey
+          pathway_key: selectedPathwayKey,
+          saf_allowance: safAllowance
         });
         const [nextTippingPoint, nextDecision] = await Promise.all([
           fetch(`/api/analysis/tipping-point?${analysisParams}`, { cache: 'no-store', signal: controller.signal }).then(
