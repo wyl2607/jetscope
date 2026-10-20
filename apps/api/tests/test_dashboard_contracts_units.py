@@ -1,4 +1,5 @@
-from datetime import UTC, datetime
+from dataclasses import replace
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -176,6 +177,36 @@ def test_airline_decision_response_uses_market_reference_for_hefa_and_production
         fossil_jet_usd_per_l + contracts.carbon_credit_usd_per_l(carbon_price_eur_per_t),
     )
     assert atj.saf_premium_pct == expected_atj_premium
+
+
+@pytest.mark.parametrize(
+    ("age_days", "expected_basis"),
+    [(10, "market_reference"), (400, "market_reference"), (401, "production_cost")],
+)
+def test_airline_decision_response_expires_market_reference_after_400_days(
+    monkeypatch, age_days: int, expected_basis: str
+) -> None:
+    reference = contracts.latest_saf_market_reference()
+    assert reference is not None
+    published_at = datetime.now(UTC).date() - timedelta(days=age_days)
+    monkeypatch.setattr(
+        contracts,
+        "latest_saf_market_reference",
+        lambda: replace(reference, published_at=published_at),
+    )
+
+    response = contracts.build_airline_decision_response(
+        fossil_jet_usd_per_l=0.877,
+        reserve_weeks=6.0,
+        carbon_price_eur_per_t=85.53,
+        pathway_key="hefa",
+    )
+
+    assert response.saf_premium_basis == expected_basis
+    if expected_basis == "market_reference":
+        assert response.saf_reference_period == reference.period
+    else:
+        assert response.saf_reference_period is None
 
 
 def test_airline_decision_response_normalizes_hefa_pathway_key() -> None:

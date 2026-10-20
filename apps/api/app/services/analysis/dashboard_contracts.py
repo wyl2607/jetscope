@@ -12,6 +12,7 @@ from app.schemas.analysis import (
 from app.schemas.reserves import ReserveSignalResponse
 from app.services.analysis.breakeven import EUR_TO_USD, FOSSIL_JET_EMISSIONS_KG_PER_L, compute_tipping_point
 from app.services.analysis.pathway_costs import carbon_credit_usd_per_l
+from app.services.analysis.pathway_sources import is_pathway_source_stale
 from app.services.analysis.saf_allowance import (
     SafAllowanceMode,
     allowance_support_usd_per_l,
@@ -237,9 +238,13 @@ def build_airline_decision_response(
     extra_fuel_cost_eur_m: float | None = None,
 ) -> AirlineDecisionResponse:
     pathway = get_pathway_cost(pathway_key)
+    reference = latest_saf_market_reference()
+    reference_is_stale = reference is not None and is_pathway_source_stale(
+        reference.published_at.isoformat(), "annual"
+    )
     market_check = (
         _saf_market_check(fossil_jet_usd_per_l, carbon_price_eur_per_t)
-        if pathway.pathway_key == MARKET_REFERENCE_PATHWAY
+        if pathway.pathway_key == MARKET_REFERENCE_PATHWAY and not reference_is_stale
         else None
     )
     if market_check is not None:
