@@ -25,6 +25,35 @@ def _pathway(pathway_key: str, name: str, low: float, high: float) -> PathwayCos
     )
 
 
+def _stub_offtake_dominated_decision(monkeypatch, pathway: PathwayCostBand) -> dict:
+    probabilities = AirlineDecisionProbabilities(
+        raise_fares=0.10,
+        cut_capacity=0.15,
+        buy_spot_saf=0.20,
+        sign_long_term_offtake=0.45,
+        ground_routes=0.10,
+    )
+    seen_kwargs: dict = {}
+
+    def fake_compute_airline_decision(**kwargs):
+        seen_kwargs.update(kwargs)
+        return AirlineDecisionAssessment(
+            pathway=pathway,
+            fossil_jet_usd_per_l=kwargs["fossil_jet_usd_per_l"],
+            reserve_weeks=kwargs["reserve_weeks"],
+            carbon_price_eur_per_t=kwargs["carbon_price_eur_per_t"],
+            probabilities=probabilities,
+            dominant_response="sign_long_term_offtake",
+            reserve_signal="normal",
+            saf_premium_pct=kwargs["saf_premium_pct"],
+        )
+
+    monkeypatch.setattr(contracts, "get_pathway_cost", lambda pathway_key: pathway)
+    monkeypatch.setattr(contracts, "compute_airline_decision", fake_compute_airline_decision)
+    monkeypatch.setattr(contracts, "utcnow", lambda: datetime(2030, 1, 1, tzinfo=UTC))
+    return seen_kwargs
+
+
 @pytest.mark.parametrize("payload", [{"quality": "seed"}, {"seed": True, "source": "seed-baseline"}])
 def test_seed_eua_snapshot_never_becomes_a_dashboard_contract_default(monkeypatch, payload) -> None:
     from fastapi.testclient import TestClient
@@ -172,9 +201,12 @@ def test_airline_decision_response_uses_market_reference_for_hefa_and_production
     assert hefa.saf_premium_pct == market_check.premium_pct
     assert atj.saf_premium_basis == "production_cost"
     assert atj.saf_reference_period is None
-    expected_atj_premium = contracts._premium_pct(
-        contracts.get_pathway_cost("atj").min_usd_per_l,
-        fossil_jet_usd_per_l + contracts.carbon_credit_usd_per_l(carbon_price_eur_per_t),
+    expected_atj_premium = round(
+        contracts._premium_pct(
+            contracts.get_pathway_cost("atj").min_usd_per_l,
+            fossil_jet_usd_per_l + contracts.carbon_credit_usd_per_l(carbon_price_eur_per_t),
+        ),
+        2,
     )
     assert atj.saf_premium_pct == expected_atj_premium
 
@@ -341,6 +373,55 @@ def test_high_hefa_premium_blocks_switch_signal_even_when_offtake_dominates(monk
     assert response.saf_reference_period is not None
     assert response.saf_premium_pct > 15.0
     assert response.signal == "incremental_adjustment"
+
+
+def test_airline_decision_signal_uses_unrounded_premium_above_15pct(monkeypatch) -> None:
+    pathway = _pathway("atj", "ATJ", 1.15004, 1.5)
+    seen_kwargs = _stub_offtake_dominated_decision(monkeypatch, pathway)
+
+    response = contracts.build_airline_decision_response(
+        fossil_jet_usd_per_l=1.0,
+        reserve_weeks=6.0,
+        carbon_price_eur_per_t=0.0,
+        pathway_key="atj",
+    )
+
+    assert seen_kwargs["saf_premium_pct"] == pytest.approx(15.004)
+    assert seen_kwargs["saf_premium_pct"] != 15.0
+    assert response.signal != "switch_window_opening"
+    assert response.saf_premium_pct == 15.0
+
+
+def test_airline_decision_signal_uses_unrounded_premium_below_15pct(monkeypatch) -> None:
+    pathway = _pathway("atj", "ATJ", 1.14996, 1.5)
+    seen_kwargs = _stub_offtake_dominated_decision(monkeypatch, pathway)
+
+    response = contracts.build_airline_decision_response(
+        fossil_jet_usd_per_l=1.0,
+        reserve_weeks=6.0,
+        carbon_price_eur_per_t=0.0,
+        pathway_key="atj",
+    )
+
+    assert seen_kwargs["saf_premium_pct"] == pytest.approx(14.996)
+    assert response.signal == "switch_window_opening"
+    assert response.saf_premium_pct == 15.0
+
+
+def test_airline_decision_switch_signal_is_inclusive_at_exact_15pct(monkeypatch) -> None:
+    pathway = _pathway("atj", "ATJ", 1.15, 1.5)
+    seen_kwargs = _stub_offtake_dominated_decision(monkeypatch, pathway)
+
+    response = contracts.build_airline_decision_response(
+        fossil_jet_usd_per_l=1.0,
+        reserve_weeks=6.0,
+        carbon_price_eur_per_t=0.0,
+        pathway_key="atj",
+    )
+
+    assert seen_kwargs["saf_premium_pct"] == pytest.approx(15.0)
+    assert response.signal == "switch_window_opening"
+    assert response.saf_premium_pct == 15.0
 
 
 def test_reserve_signal_response_maps_source_and_rounds_coverage_weeks(monkeypatch) -> None:

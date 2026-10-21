@@ -84,7 +84,23 @@ def _pathway_row(
 
 
 def _premium_pct(saf_usd_per_l: float, fossil_usd_per_l: float) -> float:
-    return round((saf_usd_per_l - fossil_usd_per_l) / fossil_usd_per_l * 100.0, 2)
+    return (saf_usd_per_l - fossil_usd_per_l) / fossil_usd_per_l * 100.0
+
+
+def _saf_market_premium_inputs(
+    reference,
+    fossil_jet_usd_per_l: float,
+    carbon_price_eur_per_t: float,
+    allowance_rules: dict | None,
+    allowance_mode: SafAllowanceMode,
+) -> tuple[float, float, float, float]:
+    # Per litre, independent of blend: SAF is zero-rated, fossil jet carries its ETS cost.
+    fossil_with_ets = fossil_jet_usd_per_l + carbon_credit_usd_per_l(carbon_price_eur_per_t)
+    # The allowance covers a share of the gap left after that carbon incentive.
+    allowance_pct = coverage_pct(allowance_rules, allowance_mode, MARKET_REFERENCE_PATHWAY)
+    support = allowance_support_usd_per_l(reference.saf_usd_per_l, fossil_with_ets, allowance_pct)
+    saf_usd_per_l = reference.saf_usd_per_l - support
+    return fossil_with_ets, saf_usd_per_l, support, allowance_pct
 
 
 def _saf_market_check(
@@ -96,12 +112,9 @@ def _saf_market_check(
     reference = latest_saf_market_reference()
     if reference is None:
         return None
-    # Per litre, independent of blend: SAF is zero-rated, fossil jet carries its ETS cost.
-    fossil_with_ets = fossil_jet_usd_per_l + carbon_credit_usd_per_l(carbon_price_eur_per_t)
-    # The allowance covers a share of the gap left after that carbon incentive.
-    allowance_pct = coverage_pct(allowance_rules, allowance_mode, MARKET_REFERENCE_PATHWAY)
-    support = allowance_support_usd_per_l(reference.saf_usd_per_l, fossil_with_ets, allowance_pct)
-    saf_usd_per_l = reference.saf_usd_per_l - support
+    fossil_with_ets, saf_usd_per_l, support, allowance_pct = _saf_market_premium_inputs(
+        reference, fossil_jet_usd_per_l, carbon_price_eur_per_t, allowance_rules, allowance_mode
+    )
     statutory_pct = coverage_pct(allowance_rules, "statutory", MARKET_REFERENCE_PATHWAY) if allowance_rules else None
     statutory_premium = (
         _premium_pct(
@@ -124,12 +137,12 @@ def _saf_market_check(
         saf_eur_per_t=reference.saf_eur_per_t,
         saf_usd_per_l=round(reference.saf_usd_per_l, 4),
         fossil_with_ets_usd_per_l=round(fossil_with_ets, 4),
-        premium_pct=_premium_pct(saf_usd_per_l, fossil_with_ets),
+        premium_pct=round(_premium_pct(saf_usd_per_l, fossil_with_ets), 2),
         status=_status_with_allowance(fossil_with_ets, saf_usd_per_l, saf_usd_per_l, support),
         allowance_coverage_pct=allowance_pct,
         allowance_support_usd_per_l=round(support, 4),
         statutory_allowance_coverage_pct=statutory_pct,
-        statutory_allowance_premium_pct=statutory_premium,
+        statutory_allowance_premium_pct=round(statutory_premium, 2) if statutory_premium is not None else None,
     )
 
 
@@ -250,7 +263,10 @@ def build_airline_decision_response(
         else None
     )
     if market_check is not None:
-        saf_premium_pct = market_check.premium_pct
+        fossil_with_ets, saf_usd_per_l, _, _ = _saf_market_premium_inputs(
+            reference, fossil_jet_usd_per_l, carbon_price_eur_per_t, allowance_rules, saf_allowance
+        )
+        saf_premium_pct = _premium_pct(saf_usd_per_l, fossil_with_ets)
         saf_premium_basis = "market_reference"
         saf_reference_period = market_check.period
         saf_allowance_coverage_pct = market_check.allowance_coverage_pct
@@ -287,7 +303,7 @@ def build_airline_decision_response(
         ),
         probabilities=assessment.probabilities,
         signal=_decision_signal(assessment),
-        saf_premium_pct=saf_premium_pct,
+        saf_premium_pct=round(saf_premium_pct, 2),
         saf_premium_basis=saf_premium_basis,
         saf_reference_period=saf_reference_period,
         saf_allowance_coverage_pct=saf_allowance_coverage_pct,
