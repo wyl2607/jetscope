@@ -23,9 +23,9 @@ under the current "no paid feeds" rule.
 ### Argus Media — Diesel & HVO monthly averages (Germany, wholesale)
 
 - URL opened:
-  https://www.argusmedia.com/en/methodology/key-commodity-prices/diesel-and-hvo-monatsdurchschnitte
+  <https://www.argusmedia.com/en/methodology/key-commodity-prices/diesel-and-hvo-monatsdurchschnitte>
 - Alternative URL opened (German, O.M.R.):
-  https://www.omr.de/produkte/diesel-hvo-monatsdurchschnitte
+  <https://www.omr.de/produkte/diesel-hvo-monatsdurchschnitte>
 - Coverage: German national average of daily price assessments for diesel
   10 ppm and HVO100, **wholesale** spot market, loading from tank farms onto
   trucks ("fca Truck"). The page says the averages are based on daily
@@ -38,8 +38,8 @@ under the current "no paid feeds" rule.
   - `20/10/26 | 176.49 | 172.80` (Diesel | HVO)
   - `Sept 2026 | 188.08 | 184.03` (Diesel | HVO)
 - Licence / terms:
-  - https://www.omr.de/produkte/diesel-hvo-monatsdurchschnitte/nutzungsbedingungen
-  - https://www.argusmedia.com/en/policies/terms-of-use
+  - <https://www.omr.de/produkte/diesel-hvo-monatsdurchschnitte/nutzungsbedingungen>
+  - <https://www.argusmedia.com/en/policies/terms-of-use>
   - Key restriction (Argus page footer): "you will not copy or reproduce any
     part of its contents (including, but not limited to, single prices, graphs
     or news content) in any form or for any purpose whatsoever without the
@@ -59,7 +59,7 @@ under the current "no paid feeds" rule.
 
 ### Argus O.M.R. PDF export
 
-- URL: https://www.omr.de/en/products/diesel-hvo-monthly-averages/pdf?id=52
+- URL: <https://www.omr.de/en/products/diesel-hvo-monthly-averages/pdf?id=52>
   (linked from the O.M.R. page; opened 2026-10-21, one page dated 21.10.2026).
 - Coverage: same Diesel/HVO monthly and month-to-date averages in PDF form,
   monthly rows back to 2025 (e.g. `Sep 2026 188.08 184.03`, €/100 l).
@@ -70,7 +70,7 @@ under the current "no paid feeds" rule.
 ### Bundeskartellamt — Markttransparenzstelle für Kraftstoffe (MTS-K)
 
 - URL opened:
-  https://www.bundeskartellamt.de/DE/Aufgaben/MarkttransparenzstelleFuerKraftstoffe/MTS-K_Infotext/mts-k_node.html
+  <https://www.bundeskartellamt.de/DE/Aufgaben/MarkttransparenzstelleFuerKraftstoffe/MTS-K_Infotext/mts-k_node.html>
 - Coverage: real-time station prices for **Super E5, Super E10 and Diesel**
   only, from about 15,000 German stations. MTS-K passes the data to approved
   consumer information services. It does **not** cover HVO100.
@@ -91,7 +91,7 @@ under the current "no paid feeds" rule.
 
 ### Tankerkönig API
 
-- URL opened: https://creativecommons.tankerkoenig.de/swagger/tankerkoenig.yaml
+- URL opened: <https://creativecommons.tankerkoenig.de/swagger/tankerkoenig.yaml>
 - Coverage: German station-level real-time prices. The API schema's fuel
   category enum is `diesel`, `lpg`, `gasoline`, `cng`; the statistics object
   exposes only `Diesel`, `E5`, `E10`. No HVO100 field.
@@ -110,7 +110,7 @@ under the current "no paid feeds" rule.
 
 ### clever-tanken.de — HVO Diesel price pages
 
-- URL opened: https://www.clever-tanken.de/spritpreise/hvodiesel-preise
+- URL opened: <https://www.clever-tanken.de/spritpreise/hvodiesel-preise>
 - Coverage: station and city-level HVO diesel search ("die günstigsten HVO
   Diesel Preise in Ihrer Stadt"). No national average, no monthly series.
 - Update frequency: live station prices (the static HTML did not expose a
@@ -128,7 +128,7 @@ under the current "no paid feeds" rule.
 
 ### mehr-tanken.de
 
-- URL opened: https://www.mehr-tanken.de/
+- URL opened: <https://www.mehr-tanken.de/>
 - Coverage: station-level comparison. HVO100 appears in the fuel selector as
   "Klimadiesel 90 (HVO100)". The site's "Spritpreisindex" covers Diesel, Super
   E5 and Super E10 only; no HVO100 index.
@@ -145,7 +145,7 @@ under the current "no paid feeds" rule.
 ### ADAC fuel price search
 
 - URL opened:
-  https://www.adac.de/verkehr/tanken-kraftstoff-antrieb/kraftstoffpreise/
+  <https://www.adac.de/verkehr/tanken-kraftstoff-antrieb/kraftstoffpreise/>
 - Coverage: station-level search across Germany, including HVO100. ADAC's
   monthly fuel-price evaluations (e.g. the April 2026 press release) cover
   Super E10 and Diesel only; no HVO100 monthly average was found.
@@ -156,7 +156,7 @@ under the current "no paid feeds" rule.
 - Licence: ADAC imprint says: "Es ist daher unzulässig, Inhalte des
   Internet-Auftritts („ADAC Inhalte“) ohne Genehmigung durch den ADAC e.V. zu
   vervielfältigen, zu verbreiten oder öffentlich wiederzugeben."
-  https://www.adac.de/impressum-ev/
+  <https://www.adac.de/impressum-ev/>
 - Automatic fetching: no public API documented; the search is interactive.
   Copyright forbids reproduction without permission.
 - Verdict: **not usable for a national average** — station search only, no
@@ -165,7 +165,7 @@ under the current "no paid feeds" rule.
 ### Destatis — EU fuel price comparison
 
 - URL opened:
-  https://www.destatis.de/Europa/DE/Thema/Verkehr/kraftstoffpreise.html
+  <https://www.destatis.de/Europa/DE/Thema/Verkehr/kraftstoffpreise.html>
 - Coverage: German and EU pump prices for Euro-super 95 (E5) and diesel only.
   No HVO100.
 - Update frequency: weekly, following the EU Weekly Oil Bulletin; text last
@@ -184,7 +184,7 @@ under the current "no paid feeds" rule.
 ### European Commission — Weekly Oil Bulletin
 
 - URL opened:
-  https://energy.ec.europa.eu/data-and-analysis/weekly-oil-bulletin_en
+  <https://energy.ec.europa.eu/data-and-analysis/weekly-oil-bulletin_en>
 - Coverage: weekly consumer prices for petroleum products in EU countries.
   The published files are "eurosuper 95" and "diesel" maps plus price
   workbooks; no HVO100 product.
@@ -202,9 +202,9 @@ under the current "no paid feeds" rule.
 
 ### UFOP — Marktinformation Ölsaaten und Biokraftstoffe
 
-- URL opened: https://www.ufop.de/medien/downloads/agrar-info/marktinformationen
+- URL opened: <https://www.ufop.de/medien/downloads/agrar-info/marktinformationen>
 - PDF opened (October 2026 issue):
-  https://www.ufop.de/index.php/download_file/15108/619/
+  <https://www.ufop.de/index.php/download_file/15108/619/>
 - Coverage: monthly oilseed, vegetable-oil and biodiesel market report. The
   October 2026 issue discusses HVO import volumes but contains **no HVO100
   price table**. It reports biodiesel/feedstock prices from AMI, not a pump or
@@ -223,8 +223,8 @@ under the current "no paid feeds" rule.
 ### Neste — Half-year financial report January–June 2026
 
 - URL opened:
-  https://news.cision.com/neste/r/neste-s-half-year-financial-report-for-january-june-2026,c4377234
-- PDF opened: https://mb.cision.com/Main/16699/4377234/4201826.pdf
+  <https://news.cision.com/neste/r/neste-s-half-year-financial-report-for-january-june-2026,c4377234>
+- PDF opened: <https://mb.cision.com/Main/16699/4377234/4201826.pdf>
 - Coverage: company financials and market commentary. It contains a dated
   European HVO Class II price observation and a quarterly renewable-products
   sales margin, but no German retail or national average series.
@@ -243,9 +243,9 @@ under the current "no paid feeds" rule.
 
 ### Partnersamverkan — HVO-Index vid pump (Sweden)
 
-- URL opened: https://partnersamverkan.se/index/index-hvo
+- URL opened: <https://partnersamverkan.se/index/index-hvo>
 - Latest PDF opened:
-  https://partnersamverkan.se/app/uploads/sites/2/2026/10/HVO-pump-2026-09.pdf
+  <https://partnersamverkan.se/app/uploads/sites/2/2026/10/HVO-pump-2026-09.pdf>
 - Coverage: Swedish national **pump** HVO index, base January 2016 = 100.
   It is an index used in public-transport contracts, not a price in SEK/l and
   not a German series.
@@ -264,7 +264,7 @@ under the current "no paid feeds" rule.
 ### Fastmarkets — HVO price launch article
 
 - URL opened:
-  https://www.fastmarkets.com/insights/fastmarkets-price-launch-what-is-hydrotreated-vegetable-oil-hvo
+  <https://www.fastmarkets.com/insights/fastmarkets-price-launch-what-is-hydrotreated-vegetable-oil-hvo>
 - Coverage: announcement of twelve European HVO price assessments (Crop, UCO,
   Tallow, POME; outrights, premiums and margins). The free article contains no
   current price values.
@@ -279,7 +279,7 @@ under the current "no paid feeds" rule.
 ### Greenea — HVO and SAF coprocessing article
 
 - URL opened:
-  https://www.greenea.com/en/publication/hvo-and-saf-coprocessing-why-is-the-potential-not-maximized/
+  <https://www.greenea.com/en/publication/hvo-and-saf-coprocessing-why-is-the-potential-not-maximized/>
 - Coverage: European HVO market commentary. Gives a premium range over gasoil,
   not a German price series and not a dated daily/monthly index.
 - Update frequency: occasional article; May 2026.
@@ -293,7 +293,7 @@ under the current "no paid feeds" rule.
 ### hvo100.team — secondary article republishing Argus values
 
 - URL opened:
-  https://hvo100.team/hvo100-guenstiger-als-diesel-grosshandel/
+  <https://hvo100.team/hvo100-guenstiger-als-diesel-grosshandel/>
 - Coverage: German wholesale Diesel/HVO monthly averages, explicitly sourced
   from Argus. This is a secondary reproduction, not an independent source.
 - Update frequency: irregular campaign article; 25 September 2026.
