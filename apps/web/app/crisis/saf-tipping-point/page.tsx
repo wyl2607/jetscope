@@ -9,7 +9,7 @@ import { loadEuEtsPressure } from '@/lib/eu-ets-pressure-read-model';
 import { esgSafJetReference } from '@/lib/esg-saf-economics';
 import { assumed, derived, missing, observed, type Figure } from '@/lib/figure';
 import { loadPathwayComparison, toPathwayCostRow } from '@/lib/pathways-read-model';
-import { getDashboardReadModel, toDecisionReadModel, toTippingPointReadModel } from '@/lib/product-read-model';
+import { getDashboardReadModel, toDecisionReadModel, toTippingPointReadModel, type SafAllowanceMode } from '@/lib/product-read-model';
 import { buildPageMetadata } from '@/lib/seo';
 import {
   formatSourceCoverageLag,
@@ -78,8 +78,16 @@ function tippingSignalTone(signal?: string): string {
   return 'text-warning';
 }
 
-export default async function SafTippingPointPage() {
-  const readModel = await getDashboardReadModel();
+export default async function SafTippingPointPage({
+  searchParams
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = (await searchParams) ?? {};
+  const allowanceParam = Array.isArray(params.allowance) ? params.allowance[0] : params.allowance;
+  const safAllowance: SafAllowanceMode =
+    allowanceParam === 'statutory' || allowanceParam === 'remote_airport' ? allowanceParam : 'none';
+  const readModel = await getDashboardReadModel('zh', safAllowance);
   const projectJetReference = esgSafJetReference(readModel.market);
   const tippingPoint = toTippingPointReadModel(readModel.tippingPoint);
   const airlineDecision = toDecisionReadModel(readModel.airlineDecision);

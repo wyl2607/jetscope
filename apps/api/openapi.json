@@ -58,6 +58,16 @@
             "exclusiveMinimum": 0.0,
             "title": "Reserve Weeks",
             "type": "number"
+          },
+          "saf_allowance": {
+            "default": "none",
+            "enum": [
+              "none",
+              "statutory",
+              "remote_airport"
+            ],
+            "title": "Saf Allowance",
+            "type": "string"
           }
         },
         "required": [
@@ -174,6 +184,13 @@
               }
             ],
             "title": "Residual Fuel Cost Exposure"
+          },
+          "saf_allowance_coverage_pct": {
+            "default": 0.0,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Saf Allowance Coverage Pct",
+            "type": "number"
           },
           "saf_premium_basis": {
             "enum": [
@@ -4582,6 +4599,23 @@
               ],
               "description": "Optional extra fuel cost EUR m (context)",
               "title": "Extra Fuel Cost Eur M"
+            }
+          },
+          {
+            "description": "EU ETS SAF allowances (Directive 2003/87/EC Art. 3c(6)): none, statutory per-pathway rate, or 100 % at remote airports",
+            "in": "query",
+            "name": "saf_allowance",
+            "required": false,
+            "schema": {
+              "default": "none",
+              "description": "EU ETS SAF allowances (Directive 2003/87/EC Art. 3c(6)): none, statutory per-pathway rate, or 100 % at remote airports",
+              "enum": [
+                "none",
+                "statutory",
+                "remote_airport"
+              ],
+              "title": "Saf Allowance",
+              "type": "string"
             }
           }
         ],

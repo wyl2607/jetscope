@@ -3,7 +3,7 @@ import type { AirlineDecisionResponse } from '@/lib/product-read-model';
 import { getAirlineDecisionSignalLabel } from '@/lib/market-signals';
 
 type Props = {
-  decision: Pick<AirlineDecisionResponse, 'signal' | 'probabilities' | 'saf_premium_pct' | 'saf_premium_basis' | 'saf_reference_period' | 'method' | 'fare_pass_through_pct' | 'labor_cost_impact_eur_m' | 'extra_fuel_cost_eur_m' | 'residual_fuel_cost_exposure'> | null;
+  decision: Pick<AirlineDecisionResponse, 'signal' | 'probabilities' | 'saf_premium_pct' | 'saf_premium_basis' | 'saf_reference_period' | 'saf_allowance_coverage_pct' | 'method' | 'fare_pass_through_pct' | 'labor_cost_impact_eur_m' | 'extra_fuel_cost_eur_m' | 'residual_fuel_cost_exposure'> | null;
   reserveWeeks: Figure;
   pathwayKey: string;
 };
@@ -78,6 +78,9 @@ export function AirlineDecisionMatrix({ decision, reserveWeeks, pathwayKey }: Pr
               {decision.saf_premium_basis === 'market_reference'
                 ? `EASA ${decision.saf_reference_period ?? '—'} 市场参考价`
                 : '生产成本估算'}
+              {decision.saf_allowance_coverage_pct != null && decision.saf_allowance_coverage_pct > 0
+                ? `，已计 EU ETS SAF 配额补贴 ${Math.round(decision.saf_allowance_coverage_pct)}%`
+                : ''}
               {'）· 概率为启发式情景，不是观测'}
             </p>
           )}
