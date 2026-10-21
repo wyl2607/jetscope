@@ -103,7 +103,7 @@ under the current "no paid feeds" rule.
   under open data/open source license even for commercial use." The example
   response for `/stats` shows `CC BY NC`; that inconsistency should be checked
   before any use.
-- Automatic fetching: yes, JSON API with a free API key, but only for the three
+- Automatic fetching: yes, JSON API with free registration, but only for the three
   statutory fuel types.
 - Verdict: **not usable for HVO100** — data model has no HVO. Could become
   usable if MTS-K coverage changes.
