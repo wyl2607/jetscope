@@ -9,6 +9,7 @@ import {
   type MarketHistory,
   type MarketSnapshot,
   type ReserveSignal,
+  type SafAllowanceMode,
   type TippingPointResponse
 } from '@/lib/product-read-model';
 
@@ -240,7 +241,10 @@ function computeTopRiskSignal(history: MarketHistory | null): DashboardReadModel
   };
 }
 
-export async function getDashboardReadModel(locale: DisplayLocale = 'zh'): Promise<DashboardReadModel> {
+export async function getDashboardReadModel(
+  locale: DisplayLocale = 'zh',
+  safAllowance: SafAllowanceMode = 'none'
+): Promise<DashboardReadModel> {
   try {
     const [market, scenarios, history, reserve, sourceCoverage, aviationEvent, marketHealth] = await Promise.all([
       fetchJson<MarketSnapshot>('/market/snapshot'),
@@ -273,7 +277,8 @@ export async function getDashboardReadModel(locale: DisplayLocale = 'zh'): Promi
           fossil_jet_usd_per_l: String(fossilJetUsdPerL),
           carbon_price_eur_per_t: String(carbonPriceEurPerT),
           subsidy_usd_per_l: '0',
-          blend_rate_pct: '6'
+          blend_rate_pct: '6',
+          saf_allowance: safAllowance
         })}`).catch(() => null)
       : Promise.resolve(null);
     let airlineDecisionPromise: Promise<AirlineDecisionResponse | null> = Promise.resolve(null);
@@ -282,7 +287,8 @@ export async function getDashboardReadModel(locale: DisplayLocale = 'zh'): Promi
         fossil_jet_usd_per_l: String(fossilJetUsdPerL),
         reserve_weeks: String(reserveWeeks),
         carbon_price_eur_per_t: String(carbonPriceEurPerT),
-        pathway_key: 'hefa'
+        pathway_key: 'hefa',
+        saf_allowance: safAllowance
       });
       if (mapping?.fare_pass_through_pct != null) {
         decisionQuery.set('fare_pass_through_pct', String(mapping.fare_pass_through_pct));
