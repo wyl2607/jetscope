@@ -1,6 +1,6 @@
 # Fuel Complex & SAF market layer (2026-09)
 
-Status: Phase A, B1/B3/B4, C1/C2 live (518dbfb); C3 (EASA pathway costs) in review. Owner: Claude (design/review), user (merge/deploy).
+Status: Phase A, B1/B3/B4, C1–C4, threshold alerts, airline decision matrix live (1d0bc37); #427 in review (EASA reference expires after 400 days in the airline decision, `saf_allowance` honoured); B2 blocked on a verified public HVO source. Owner: Claude (design/review), user (merge/deploy).
 
 ## Goal
 
@@ -55,7 +55,7 @@ changes, with every number dated and sourced.
 | A1 | history never publishes seed/missing rows as latest | #377 |
 | A2 | SAF market layer: `data/curated/market/saf_market_prices.json` + loader; buyer cost for HEFA = market reference when one exists, production cost otherwise; `market_check` block on tipping-point; headline `signal` and engine events use buyer cost | #378 |
 | A3 | Carbon: compliance value = zero-rating (2.5 kg/L × EUA) everywhere; `carbon_reduction_pct` stays an LCA figure with no money attached | #378 |
-| A4 | Jet crack from same-date EIA spot table (Brent + Gulf jet); EU proxy uses the actual ratio when both are observed that day, fixed 1.20 only as fallback (ratio used while ≤ 21 days old; 2026-09-23: 1.51, EU proxy 0.867 → 1.092 USD/L) | this branch |
+| A4 | Jet crack from same-date EIA spot table (Brent + Gulf jet); EU proxy uses the actual ratio when both are observed that day, fixed 1.20 only as fallback (ratio used while ≤ 21 days old; 2026-09-23: 1.51, EU proxy 0.867 → 1.092 USD/L) | #379 |
 
 Done when: with the production inputs above, the tipping-point signal is not
 `switch_window_opening`, the engine emits no HEFA CROSSOVER, the response
@@ -97,7 +97,7 @@ compliance-adjusted gap separately, and API/web suites are green.
   Transcribed from free Fastmarkets insight articles (the database is
   paywalled) into `data/curated/market/feedstock_prices.json`; stale after
   30 days. No current public tallow price, so no tallow.
-- C3 (this branch): pathway production-cost bands now come from EASA's 2025
+- C3 (live, #385): pathway production-cost bands now come from EASA's 2025
   reference prices (briefing note 2026-02-26,
   <https://www.easa.europa.eu/en/downloads/143282/en>, Table 1), curated in
   `data/curated/market/easa_reference_prices.json` and converted at
@@ -122,7 +122,7 @@ compliance-adjusted gap separately, and API/web suites are green.
   use, 5.2 M allowances ≈ EUR 430 M, 530 kt SAF (Commission, 2026-09-15).
   Curated in `data/curated/market/eu_ets_saf_allowances.json`. COM(2026) 616
   (2026-07-27) proposes extending to 2040 with 110 M more allowances; not law.
-- C4 (implemented, locally validated 2026-10-02): pathway rows link to esg's external
+- C4 (live, #405): pathway rows link to esg's external
   SAF project-economics model (HEFA_EU / ATJ_Brazil / FT_biomass_DE / PtL_EU_2025).
   The dated EU jet proxy is converted to EUR/L using the snapshot's dated ECB
   FX quote and labelled estimated, with both input sources/statuses/dates shown.
@@ -132,15 +132,17 @@ compliance-adjusted gap separately, and API/web suites are green.
   notes disclose remaining legacy assumptions. See
   `docs/DESIGN-2026-09-esg-saf-economics.md` (option A). Local gates green:
   `api:test`, `api:openapi:check`, `web:gate`, `npm test`.
-- Threshold alerts (implemented): Jet–SAF spread (≤15% premium, retaining
+- Threshold alerts (live, #405): Jet–SAF spread (≤15% premium, retaining
   #389's statutory-allowance what-if) and EUA (≥100 EUR/t, labelled assumption)
   on the tipping-point report in zh/en/de. Seed, missing and stale inputs
   suppress alerts with a visible reason; annual SAF reference expiry is an
   explicit 400-day assumption. See [threshold policy](THRESHOLD_ALERTS.md).
   Diesel–HVO remains deferred until B2's public HVO source is verified.
-- Airline decision matrix (this branch): `buy_spot_saf` / `sign_long_term_offtake`
+- Airline decision matrix (live, #425): `buy_spot_saf` / `sign_long_term_offtake`
   are driven by the SAF buyer premium (HEFA: EASA market reference via
   `market_check`; other pathways: EASA production-cost low end vs fossil + ETS),
   no longer by EUA/200 and the LCA reduction %. `switch_window_opening` needs a
   premium ≤ 15 %. The response carries `saf_premium_pct`, its basis and period,
   and `method=heuristic_scenario`; the weights stay a labelled heuristic.
+  Follow-ups in #427 (400-day expiry of the EASA reference; `saf_allowance`
+  applied); the 15 % gate still compares the rounded premium.
