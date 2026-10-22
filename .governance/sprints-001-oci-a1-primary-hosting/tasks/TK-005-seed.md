@@ -35,3 +35,4 @@ bash scripts/oci-a1/seed.sh --dry-run
 
 ## 状态历史
 - 2026-10-22 CST: planned
+- 2026-10-22 23:32 CST: lane-chain 由 deepseek-v4.1-flash 一次过了质量门。Coordinator 审查密钥处理：令牌在 oci 上生成，只经管道传到 usa，umask 077、原子替换、64 位 hex 格式校验，不打印也不落 Mac 磁盘。发现 1 个 minor：`awk -v t=\$tok` 让令牌出现在进程参数里，usa 上的非 root 用户可以用 ps 看到 → 记入 CR-005。状态改为 reviewing。

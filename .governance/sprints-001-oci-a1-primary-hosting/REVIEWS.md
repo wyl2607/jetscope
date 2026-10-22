@@ -8,6 +8,8 @@
 | CR-001 | TK-001 | 0 | open | 2026-10-22 21:37 CST: created |
 | CR-002 | TK-002 | 0 | open | 2026-10-22 21:37 CST: created |
 | CR-004 | TK-004 | 0 | open | 2026-10-22 21:37 CST: created |
+| CR-003 | TK-003A,TK-003B | 0 | open | 2026-10-22 23:32 CST: created |
+| CR-005 | TK-005 | 0 | open | 2026-10-22 23:32 CST: created |
 
 ## 字段说明
 - **rounds**：已完成 review 轮数（initial = 1，第一次 recheck = 2，以此类推）
