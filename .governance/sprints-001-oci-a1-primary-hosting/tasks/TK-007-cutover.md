@@ -34,3 +34,4 @@ bash scripts/oci-a1/cutover.sh --rollback --dry-run
 
 ## 状态历史
 - 2026-10-22 CST: planned
+- 2026-10-22 23:47 CST: lane-chain 由 deepseek-v4.1-flash 一次过了质量门（865 行），已合并。Coordinator 预检：dry-run 的 0–7 个阶段与 brief 一致；第 3 步的库快照用 /tmp 下可预测的文件名（与 CR-005 F1 同类）→ 记入 CR-007。状态改为 reviewing，交 Claude 子 agent 评审（architecture+security）。
