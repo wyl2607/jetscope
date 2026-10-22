@@ -35,3 +35,4 @@ bash scripts/oci-a1/bootstrap.sh --dry-run
 ## 状态历史
 - 2026-10-22 CST: planned
 - 2026-10-22 21:00 CST: executing（batch-001-001，lane-race：deepseek-v4.1-flash + codex，fallback nemotron:free）
+- 2026-10-22 22:05 CST: lane-race 两份都过了质量门，选用 deepseek 版（每步已满足就跳过、可重复执行，签名和 sha256 双重校验，原子替换并保留 .prev）。Coordinator 在本机实测签名链路：release-keys `main/keys.list` 共 29 把公钥，v22.23.4 的 SHASUMS256 由 `5BE8A3F6C8A5C01D106C0AD820B1A390B168D356` 签名，校验为 Good。待 CR-004 修复：运行时信任 keys.list 里的任意公钥，没有按 RFC 固定签名者指纹；指纹没做格式校验。状态改为 reviewing。
