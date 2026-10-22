@@ -114,6 +114,8 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
     echo "would: JETSCOPE_HOST_DATA_DIR=$HOST_DATA_DIR docker compose -f docker-compose.prod.yml up -d api"
     if [[ "$API_ONLY" -eq 1 ]]; then
       echo "would: skip systemd web rebuild (--api-only)"
+    elif [[ -n "$NODE_BIN" ]]; then
+      echo "would: npm run web:build && [sudo] systemctl restart jetscope-web.service"
     else
       echo "would: npm run web:build && systemctl restart jetscope-web.service"
     fi
@@ -205,6 +207,17 @@ set -euo pipefail
 cd "$REMOTE_DIR"
 test -f docker-compose.prod.yml
 test -f .env || { echo "ERROR: missing $REMOTE_DIR/.env"; exit 1; }
+# When the smoke probes a non-loopback address (oci-a1), the API must be bound
+# to it, and that binding lives in .env. Checking before the rebuild keeps a
+# missing line from replacing a working container with one that only listens on
+# 127.0.0.1 and fails the smoke a minute later. The pattern is expanded locally.
+if [ "$SMOKE_BASE" != "127.0.0.1" ]; then
+  if ! grep -qxF "JETSCOPE_API_BIND=$SMOKE_BASE" .env; then
+    echo "ERROR: .env is missing JETSCOPE_API_BIND=$SMOKE_BASE (required for the $SMOKE_BASE smoke probes)" >&2
+    exit 1
+  fi
+  echo "ok: .env binds the API to $SMOKE_BASE"
+fi
 if ! command -v docker >/dev/null 2>&1; then
   echo "ERROR: docker not installed on remote"
   exit 1
@@ -347,7 +360,7 @@ JETSCOPE_BUILD_SHA="$DEPLOY_COMMIT" NODE_OPTIONS=--max-old-space-size=768 npm ru
 sleep 3
 \$SUDO systemctl is-active --quiet jetscope-web.service && echo "jetscope-web.service active" || {
   echo "ERROR: jetscope-web.service did not come back up"
-  journalctl -u jetscope-web.service -n 40 --no-pager || tail -n 40 /var/log/jetscope-web.log || true
+  \$SUDO journalctl -u jetscope-web.service -n 40 --no-pager || true
   exit 1
 }
 REMOTE

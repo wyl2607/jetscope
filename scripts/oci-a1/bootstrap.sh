@@ -56,6 +56,20 @@ for arg in "$@"; do
   esac
 done
 
+# Validate on the local side before either value reaches an ssh command line:
+# NODE_VERSION and NODE_SIGNER_FPRS are interpolated into remote shell text.
+if [[ ! "$NODE_VERSION" =~ ^v22\.[0-9]+\.[0-9]+$ ]]; then
+  echo "ERROR: NODE_VERSION='$NODE_VERSION' does not match ^v22\\.[0-9]+\\.[0-9]+\$" >&2
+  exit 1
+fi
+read -r -a NODE_SIGNER_FPR_LIST <<< "$NODE_SIGNER_FPRS"
+(( ${#NODE_SIGNER_FPR_LIST[@]} > 0 )) \
+  || { echo "ERROR: NODE_SIGNER_FPRS is empty" >&2; exit 1; }
+for fpr in "${NODE_SIGNER_FPR_LIST[@]}"; do
+  [[ "$fpr" =~ ^[A-F0-9]{40}$ ]] \
+    || { echo "ERROR: NODE_SIGNER_FPRS contains an invalid fingerprint: '$fpr'" >&2; exit 1; }
+done
+
 if [[ "$DRY_RUN" -eq 1 ]]; then
   echo "==> DRY-RUN: no SSH, no network, no remote changes"
   echo "host=$OCI ip=$OCI_IP standby=$USA node_version=$NODE_VERSION"
@@ -63,11 +77,11 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
   echo "would: ssh -o BatchMode=yes $OCI bash -s -- $NODE_VERSION $NODE_SIGNER_FPRS"
   echo "would: cd / (ubuntu home is 750)"
   echo "would: preflight (read-only, abort on any failure):"
-  echo "would:   sudo tailscale serve status  -> empty or contains 'No serve config'"
-  echo "would:   sudo tailscale funnel status -> empty or contains 'No serve config'"
-  echo "would:   df -Pk / -> available KiB >= $((5 * 1024 * 1024)) (5 GiB)"
-  echo "would:   docker compose version"
   echo "would:   sudo -n true"
+  echo "would:   sudo -n tailscale serve status  -> exit 0 and contains 'No serve config'"
+  echo "would:   sudo -n tailscale funnel status -> exit 0 and contains 'No serve config'"
+  echo "would:   df -Pk / -> available KiB >= $((5 * 1024 * 1024)) (5 GiB)"
+  echo "would:   docker info (proves the daemon socket is reachable)"
   echo "would: ensure /opt/jetscope and /opt/jetscope/data are ubuntu:ubuntu 750"
   echo "would: if /opt/node-22/bin/node --version != $NODE_VERSION:"
   echo "would:   download https://nodejs.org/dist/$NODE_VERSION/node-$NODE_VERSION-linux-arm64.tar.xz"
@@ -82,7 +96,7 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
   echo "would:   extract to /opt/node-22.new, keep the old tree as /opt/node-22.prev, then rename"
   echo "would:   assert /opt/node-22/bin/node --version == $NODE_VERSION"
   echo "would: else print ok: node $NODE_VERSION already installed"
-  echo "would: if sqlite3 is missing: sudo apt-get install -y sqlite3"
+  echo "would: if sqlite3 is missing: sudo apt-get install -y sqlite3 (retry after apt-get update on failure)"
   echo "would: else print ok: sqlite3 already installed"
   echo "would: print summary: node version, /opt/jetscope modes, serve/funnel status"
   exit 0
@@ -105,14 +119,19 @@ abort() {
 }
 
 echo "==> preflight (read-only)"
+sudo -n true 2>/dev/null || abort "passwordless sudo is not available for $(id -un)"
+echo "ok: passwordless sudo"
+
 for kind in serve funnel; do
-  out="$(sudo tailscale "$kind" status 2>&1 || true)"
-  if [[ -z "${out//[[:space:]]/}" || "$out" == *"No serve config"* ]]; then
-    echo "ok: tailscale $kind status is empty"
-  else
+  if ! out="$(sudo -n tailscale "$kind" status 2>&1)"; then
     printf '%s\n' "$out" >&2
-    abort "tailscale $kind is configured on this host; RFC SEC-02 requires it to stay empty"
+    abort "tailscale $kind status failed; RFC SEC-02 preflight cannot be verified"
   fi
+  if [[ "$out" != *"No serve config"* ]]; then
+    printf '%s\n' "$out" >&2
+    abort "tailscale $kind is configured on this host; RFC SEC-02 requires it to stay unconfigured"
+  fi
+  echo "ok: tailscale $kind has no serve config"
 done
 
 avail_kb="$(df -Pk / | awk 'NR==2 {print $4}')"
@@ -122,12 +141,9 @@ if (( avail_kb < 5 * 1024 * 1024 )); then
 fi
 echo "ok: / has ${avail_kb} KiB free (>= 5 GiB)"
 
-docker compose version >/dev/null 2>&1 \
-  || abort "docker compose is not available for user $(id -un)"
-echo "ok: docker compose available"
-
-sudo -n true 2>/dev/null || abort "passwordless sudo is not available for $(id -un)"
-echo "ok: passwordless sudo"
+docker info >/dev/null 2>&1 \
+  || abort "docker daemon is not reachable for user $(id -un); is the user in the docker group?"
+echo "ok: docker daemon reachable"
 
 echo "==> directories"
 for dir in /opt/jetscope /opt/jetscope/data; do
@@ -158,6 +174,7 @@ else
   chmod 700 "$GNUPGHOME"
   cleanup() {
     gpgconf --kill all >/dev/null 2>&1 || true
+    sudo rm -rf "$PREFIX.new" >/dev/null 2>&1 || true
     rm -rf "$work" "$GNUPGHOME"
   }
   trap cleanup EXIT
@@ -214,8 +231,10 @@ else
   echo " -> extracting to $PREFIX"
   sudo rm -rf "$PREFIX.new"
   sudo mkdir -p "$PREFIX.new"
-  sudo tar -xJf "$work/$tarball" -C "$PREFIX.new" --strip-components=1 \
+  sudo tar -xJf "$work/$tarball" -C "$PREFIX.new" --strip-components=1 --no-same-owner \
     || abort "could not extract $tarball"
+  sudo chown -R root:root "$PREFIX.new" \
+    || abort "could not make $PREFIX.new root-owned"
   staged="$("$PREFIX.new/bin/node" --version 2>/dev/null || true)"
   [[ "$staged" == "$NODE_VERSION" ]] \
     || abort "$PREFIX.new/bin/node reports '$staged', expected $NODE_VERSION"
@@ -234,7 +253,13 @@ echo "==> sqlite3"
 if command -v sqlite3 >/dev/null 2>&1; then
   echo "ok: sqlite3 $(sqlite3 --version | awk '{print $1}') already installed"
 else
-  sudo apt-get install -y sqlite3 || abort "apt-get install sqlite3 failed"
+  # </dev/null keeps apt-get from consuming the rest of this `bash -s` script.
+  if ! sudo DEBIAN_FRONTEND=noninteractive apt-get install -y sqlite3 </dev/null; then
+    sudo DEBIAN_FRONTEND=noninteractive apt-get update </dev/null \
+      || abort "apt-get update failed"
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y sqlite3 </dev/null \
+      || abort "apt-get install sqlite3 failed"
+  fi
   command -v sqlite3 >/dev/null 2>&1 || abort "sqlite3 still missing after install"
   echo "ok: sqlite3 $(sqlite3 --version | awk '{print $1}') installed"
 fi

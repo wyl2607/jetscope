@@ -25,9 +25,8 @@
 #      state of every JetScope unit.
 #
 # Installed files:
-#   infra/server/oci-a1/systemd/{jetscope-web.service,
-#     jetscope-sqlite-backup.service,jetscope-sqlite-backup.timer,
-#     jetscope-health-check.service,jetscope-health-check.timer}
+#   every infra/server/oci-a1/systemd/*.service and *.timer (template units
+#     such as jetscope-alert@.service included)
 #     -> /etc/systemd/system/ (root:root 644)
 #   infra/server/oci-a1/health-alert-on-change.sh
 #     -> /usr/local/bin/jetscope-health-alert-on-change (root:root 755)
@@ -51,13 +50,14 @@ UNIT_DIR=/etc/systemd/system
 ALERT_NAME=health-alert-on-change.sh
 ALERT_DEST=/usr/local/bin/jetscope-health-alert-on-change
 
-UNIT_FILES=(
-  jetscope-web.service
-  jetscope-sqlite-backup.service
-  jetscope-sqlite-backup.timer
-  jetscope-health-check.service
-  jetscope-health-check.timer
-)
+# Every unit in the source directory, template units included. The list is not
+# hard-coded so a new unit cannot be silently left out of an install.
+UNIT_FILES=()
+while IFS= read -r unit_path; do
+  UNIT_FILES+=("$(basename "$unit_path")")
+done < <(find "$UNIT_SRC" -maxdepth 1 -type f \
+  \( -name '*.service' -o -name '*.timer' \) -print | LC_ALL=C sort)
+(( ${#UNIT_FILES[@]} > 0 )) || { echo "no units found in $UNIT_SRC" >&2; exit 1; }
 TIMERS=(
   jetscope-sqlite-backup.timer
   jetscope-health-check.timer
@@ -98,6 +98,7 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
   done
   echo "would:   $ALERT_SRC"
   echo "would: sudo systemd-analyze verify \$stage/*.service \$stage/*.timer"
+  echo "would: template units (*@.service) are verified through a test instance name"
   echo "would: for each unit: sudo cmp -s \$stage/<name> $UNIT_DIR/<name>; install -o root -g root -m 644 when different"
   echo "would: sudo cmp -s \$stage/$ALERT_NAME $ALERT_DEST; install -o root -g root -m 755 when different"
   echo "would: sudo systemctl daemon-reload (only if any installed file changed)"
@@ -105,6 +106,7 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
   echo "would: sudo systemctl list-timers --all (filter ${TIMERS[0]} ${TIMERS[1]})"
   echo "would: print is-enabled/is-active for ${TIMERS[0]}, ${TIMERS[1]} and jetscope-web.service"
   echo "would: remove \$stage"
+  echo "note: template units such as jetscope-alert@.service are installed but never enabled"
   echo "note: jetscope-web.service is installed but not enabled; enable it manually before the first deploy:"
   echo "note:   sudo systemctl enable --now jetscope-web.service"
   exit 0
@@ -195,11 +197,27 @@ done
 echo "==> systemd-analyze verify"
 verify_paths=()
 for name in "${units[@]}"; do
-  verify_paths+=("$stage/$name")
+  case "$name" in
+    *@.service)
+      # systemd-analyze cannot verify a template file under its literal name;
+      # verify a throwaway instance instead. The instance is never installed.
+      instance="${name%@.service}@test.service"
+      cp "$stage/$name" "$stage/$instance"
+      sudo systemd-analyze verify "$stage/$instance" \
+        || abort "systemd-analyze verify failed for $name; nothing was installed"
+      rm -f "$stage/$instance"
+      echo "ok: systemd-analyze verify passed for $name (as $instance)"
+      ;;
+    *)
+      verify_paths+=("$stage/$name")
+      ;;
+  esac
 done
-sudo systemd-analyze verify "${verify_paths[@]}" \
-  || abort "systemd-analyze verify failed; nothing was installed"
-echo "ok: systemd-analyze verify passed"
+if (( ${#verify_paths[@]} > 0 )); then
+  sudo systemd-analyze verify "${verify_paths[@]}" \
+    || abort "systemd-analyze verify failed; nothing was installed"
+  echo "ok: systemd-analyze verify passed"
+fi
 
 echo "==> units -> $unit_dir"
 changed=0

@@ -2,7 +2,7 @@
 [Unit]
 Description=JetScope SQLite online backup (oci-a1 primary)
 After=local-fs.target
-ConditionPathExists=/opt/jetscope/data/market.db
+OnFailure=jetscope-alert@%n.service
 
 [Service]
 Type=oneshot

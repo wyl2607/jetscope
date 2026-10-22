@@ -5,11 +5,12 @@
 
 | CR | TK | rounds | status | last_action |
 |----|----|--------|--------|-------------|
-| CR-001 | TK-001 | 1 | needs_fix | 2026-10-22 23:39 CST: R1 clean 但有 4 条 minor/nit 被接受，等 R2 修复 |
-| CR-002 | TK-002 | 1 | needs_fix | 2026-10-22 23:40 CST: C1 已由 R1 修复（cfe0477）；R1 评审 F1–F3 accepted，进 R2 |
-| CR-004 | TK-004 | 1 | needs_fix | 2026-10-22 23:40 CST: C1/C2 已由 R1 修复（cfe0477，VALIDSIG 用真实文件验证过）；F1–F6 进 R2 |
+| CR-001 | TK-001 | 1 | recheck | 2026-10-22 23:46 CST: R2 修复已合并，等 recheck |
+| CR-002 | TK-002 | 1 | recheck | 2026-10-22 23:46 CST: R2 修复已合并，等 recheck |
+| CR-004 | TK-004 | 1 | recheck | 2026-10-22 23:46 CST: R2 修复已合并，等 recheck |
 | CR-003 | TK-003A,TK-003B | 1 | needs_fix | 2026-10-22 23:44 CST: R1 7 条全部 accepted（F1 keepalive、F2 connect timeout、F6 buildId 是真实风险），进 R3 |
-| CR-005 | TK-005 | 1 | needs_fix | 2026-10-22 23:40 CST: C1 已由 R1 修复；评审 7 条中 F1 accepted、6 条 rejected；C2 accepted，进 R2 |
+| CR-005 | TK-005 | 1 | recheck | 2026-10-22 23:46 CST: R2 修复已合并，等 recheck |
+| CR-006 | TK-006 | 1 | needs_fix | 2026-10-22 23:46 CST: Coordinator 发现首次安装死锁（C1）和告警时机（C2），进 R4 |
 
 ## 字段说明
 - **rounds**：已完成 review 轮数（initial = 1，第一次 recheck = 2，以此类推）
