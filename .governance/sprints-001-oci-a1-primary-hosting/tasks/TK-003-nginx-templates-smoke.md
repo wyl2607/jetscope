@@ -36,3 +36,4 @@ bash scripts/oci-a1/nginx-smoke.sh
 ## 状态历史
 - 2026-10-22 CST: planned
 - 2026-10-22 21:00 CST: executing（batch-001-001，lane-race：deepseek-v4.1-flash + codex，fallback nemotron:free）
+- 2026-10-22 21:50 CST: split → TK-003A（模板）、TK-003B（smoke）。原因：lane-race 的 codex 撞额度（rc=1 quota），deepseek rc=0 没有产物，nemotron 免费模型兜底超时（rc=124）。
