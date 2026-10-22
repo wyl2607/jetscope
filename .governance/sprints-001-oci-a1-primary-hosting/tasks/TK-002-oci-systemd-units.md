@@ -37,3 +37,4 @@ bash -n infra/server/oci-a1/health-alert-on-change.sh
 ## 状态历史
 - 2026-10-22 CST: planned
 - 2026-10-22 21:00 CST: executing（batch-001-001，lane-race：deepseek-v4.1-flash + codex，fallback nemotron:free）
+- 2026-10-22 21:55 CST: lane-race 两份都过了质量门。合并方式：systemd 单元取 codex 版（health-check 单元带 After 依赖，并用 `LogsDirectory` + `BindPaths` 让写死的 /var/log 路径可写）；告警脚本取 deepseek 版（ERR trap 保证始终 exit 0，组件按完整单词匹配）。Coordinator 模拟时复现了一个缺陷：health-check.sh 每整 10 分钟**不管服务健康与否**都会发 `ok` 事件，导致故障期间出现假的 failed→ok→failed 告警。已记入 CR-002，等修复。状态改为 reviewing。
