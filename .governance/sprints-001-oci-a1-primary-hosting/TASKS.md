@@ -13,8 +13,8 @@
 | TK-003B | nginx-smoke.sh 容器化回归测试 | reviewing | TK-003A | `scripts/oci-a1/nginx-smoke.sh` | architecture,security | 由 Coordinator 在 oci-a1 /tmp 下用 docker 实跑 |
 | TK-004 | bootstrap.sh：目录、Node 22 签名校验安装、sqlite3、Funnel 预检 | reviewing | — | `scripts/oci-a1/bootstrap.sh` | security | — |
 | TK-005 | seed.sh：密钥搬运、ADMIN_TOKEN 轮换、usa 权限修正、库快照 | reviewing | — | `scripts/oci-a1/seed.sh` | security,architecture | — |
-| TK-006 | install-units.sh + oci-backup.sh 加 jetscope 段 | planned | TK-002 | `scripts/oci-a1/install-units.sh`、`~/oci-a1-deploy/oci-backup.sh`（仓库外） | default,security | — |
-| TK-007 | cutover.sh：切换 / 回切 / 阶段日志 / 维护片段 | planned | TK-003, TK-005 | `scripts/oci-a1/cutover.sh` | architecture,security | review A2/A3 的落点 |
+| TK-006 | install-units.sh + oci-backup.sh 加 jetscope 段 | reviewing | TK-002 | `scripts/oci-a1/install-units.sh`、`~/oci-a1-deploy/oci-backup.sh`（仓库外） | default,security | — |
+| TK-007 | cutover.sh：切换 / 回切 / 阶段日志 / 维护片段 | executing | TK-003, TK-005 | `scripts/oci-a1/cutover.sh` | architecture,security | review A2/A3 的落点 |
 | TK-008 | 文档与用户执行清单 | planned | TK-001..TK-007 | `docs/DEPLOY-OCI-A1.md`、`docs/DEPLOY_USA_VPS.md`、`docs/PRODUCTION_RISK_REGISTER.md`、`OPERATIONS.md` | default | 纯文档但含部署指令 → 加 security 复核 |
 
 ## 字段说明
