@@ -34,3 +34,4 @@ bash scripts/oci-a1/bootstrap.sh --dry-run
 
 ## 状态历史
 - 2026-10-22 CST: planned
+- 2026-10-22 21:00 CST: executing（batch-001-001，lane-race：deepseek-v4.1-flash + codex，fallback nemotron:free）

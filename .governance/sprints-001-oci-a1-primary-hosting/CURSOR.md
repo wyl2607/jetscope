@@ -2,8 +2,8 @@
 
 ## 当前状态
 <!-- Machine fields: new writes must use "- key: `value`". Legacy variants are read-only compatibility. -->
-- current_phase: `scheduler`
-- current_tk: `—`
+- current_phase: `execution`
+- current_tk: `TK-001,TK-002,TK-003,TK-004`
 - current_cr: `—`
 - current_round: `—`
 - escalated: `false`
@@ -13,10 +13,10 @@
 
 | TK | 标题 | 状态 |
 |----|------|------|
-| TK-001 | compose 端口变量化 + 部署脚本参数化 + oci 封装 | planned |
-| TK-002 | oci-a1 systemd 单元模板 + 告警脚本 | planned |
-| TK-003 | usa nginx 模板 + nginx-smoke | planned |
-| TK-004 | bootstrap.sh | planned |
+| TK-001 | compose 端口变量化 + 部署脚本参数化 + oci 封装 | executing |
+| TK-002 | oci-a1 systemd 单元模板 + 告警脚本 | executing |
+| TK-003 | usa nginx 模板 + nginx-smoke | executing |
+| TK-004 | bootstrap.sh | executing |
 | TK-005 | seed.sh | planned |
 | TK-006 | install-units.sh + oci-backup | planned |
 | TK-007 | cutover.sh | planned |
@@ -24,6 +24,7 @@
 
 ## 最近动作
 <!-- 时间倒序，每行：`- YYYY-MM-DD HH:MM CST: <一句话动作>` -->
+- 2026-10-22 21:00 CST: Scheduler：batch-001-001 = TK-001..TK-004（写入范围不冲突，容量 4）；TK-005 下一批；无需 split
 - 2026-10-22 20:59 CST: Sprint 001 initialized, awaiting TK-001
 
 ## 下一步

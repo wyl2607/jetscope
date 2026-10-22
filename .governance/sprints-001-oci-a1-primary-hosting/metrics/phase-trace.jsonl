@@ -1,1 +1,3 @@
 {"ts":"2026-10-22T12:59:02Z","sprint":"sprints-001-oci-a1-primary-hosting","tk":null,"phase":"sprint-init","action":"enter","agent_role":"coordinator"}
+{"ts":"2026-10-22T13:00:23Z","sprint":"sprints-001-oci-a1-primary-hosting","tk":null,"phase":"scheduler","action":"batch","batch":"batch-001-001","tks":["TK-001","TK-002","TK-003","TK-004"],"agent_role":"coordinator"}
+{"ts":"2026-10-22T13:00:23Z","sprint":"sprints-001-oci-a1-primary-hosting","tk":null,"phase":"execution","action":"enter","agent_role":"coordinator"}
