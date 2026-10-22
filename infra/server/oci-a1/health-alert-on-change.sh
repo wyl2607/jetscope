@@ -27,7 +27,9 @@
 #
 # Status mapping: ok|recovered -> healthy, failed -> unhealthy, recovering is a
 # transient state and is only logged. status=ok carries per-component HTTP codes
-# in the error field, so only components that report 200 count as healthy there.
+# in the error field (api=<code> readiness=<word> web=<code>), so only components
+# that report 200 count as healthy there. readiness is a word, not a code: like
+# health-check.sh itself (REQUIRE_READINESS=0), liveness alone decides the API.
 # The script always exits 0: it must never disturb the health check that invoked it.
 
 set -Eeuo pipefail
@@ -129,16 +131,17 @@ COMPONENTS=""
 TEXT="$SUMMARY $ERROR_TEXT"
 if [ "$STATUS" = "ok" ]; then
     # health-check.sh emits status=ok every 10 minutes regardless of health,
-    # with the measured codes in error (api=000 readiness=000 web=200). Trust
-    # the codes instead of the summary: a component that is not 200 keeps its
-    # previous state this round, so a real incident cannot fake a recovery.
+    # with the measured values in error (api=000 readiness=unknown web=200).
+    # Trust the codes instead of the summary: a component that is not 200 keeps
+    # its previous state this round, so a real incident cannot fake a recovery.
+    # readiness is a word, and health-check.sh only requires it when
+    # REQUIRE_READINESS=1 (default 0), so liveness (api=200) alone decides.
     API_CODE="$(http_code_from_error api)"
-    READINESS_CODE="$(http_code_from_error readiness)"
     WEB_CODE="$(http_code_from_error web)"
-    if [ "$API_CODE" = "200" ] && [ "$READINESS_CODE" = "200" ]; then
+    if [ "$API_CODE" = "200" ]; then
         COMPONENTS="api"
     else
-        log "status=ok but api=${API_CODE:-unknown} readiness=${READINESS_CODE:-unknown}; api state unchanged"
+        log "status=ok but api=${API_CODE:-unknown}; api state unchanged"
     fi
     if [ "$WEB_CODE" = "200" ]; then
         COMPONENTS="${COMPONENTS:+$COMPONENTS }web"
