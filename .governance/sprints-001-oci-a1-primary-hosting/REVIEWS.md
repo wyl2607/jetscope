@@ -5,9 +5,9 @@
 
 | CR | TK | rounds | status | last_action |
 |----|----|--------|--------|-------------|
-| CR-001 | TK-001 | 0 | open | 2026-10-22 21:37 CST: created |
+| CR-001 | TK-001 | 1 | needs_fix | 2026-10-22 23:39 CST: R1 clean 但有 4 条 minor/nit 被接受，等 R2 修复 |
 | CR-002 | TK-002 | 0 | open | 2026-10-22 21:37 CST: created |
-| CR-004 | TK-004 | 0 | open | 2026-10-22 21:37 CST: created |
+| CR-004 | TK-004 | 1 | needs_fix | 2026-10-22 23:39 CST: R1 6 条 minor/nit 全部接受，C1/C2 修复中 |
 | CR-003 | TK-003A,TK-003B | 0 | open | 2026-10-22 23:32 CST: created |
 | CR-005 | TK-005 | 0 | open | 2026-10-22 23:32 CST: created |
 
