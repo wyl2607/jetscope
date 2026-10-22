@@ -35,6 +35,11 @@ OCI="${JETSCOPE_OCI_HOST:-oci-a1-ts}"
 OCI_IP="${JETSCOPE_OCI_IP:-100.81.227.79}"
 USA="${JETSCOPE_USA_HOST:-usa-vps}"
 NODE_VERSION="${NODE_VERSION:-v22.23.4}"
+# Signer of the $NODE_VERSION SHASUMS256.txt.sig: only this primary key
+# fingerprint (space-separated list) may validate the manifest. Update it when
+# NODE_VERSION changes; the fingerprint for a release is the primary key in the
+# gpg status VALIDSIG line.
+NODE_SIGNER_FPRS="${NODE_SIGNER_FPRS:-5BE8A3F6C8A5C01D106C0AD820B1A390B168D356}"
 
 DRY_RUN=0
 for arg in "$@"; do
@@ -54,7 +59,8 @@ done
 if [[ "$DRY_RUN" -eq 1 ]]; then
   echo "==> DRY-RUN: no SSH, no network, no remote changes"
   echo "host=$OCI ip=$OCI_IP standby=$USA node_version=$NODE_VERSION"
-  echo "would: ssh -o BatchMode=yes $OCI bash -s -- $NODE_VERSION"
+  echo "node signer fingerprints (NODE_SIGNER_FPRS): $NODE_SIGNER_FPRS"
+  echo "would: ssh -o BatchMode=yes $OCI bash -s -- $NODE_VERSION $NODE_SIGNER_FPRS"
   echo "would: cd / (ubuntu home is 750)"
   echo "would: preflight (read-only, abort on any failure):"
   echo "would:   sudo tailscale serve status  -> empty or contains 'No serve config'"
@@ -69,7 +75,9 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
   echo "would:   download https://nodejs.org/dist/$NODE_VERSION/SHASUMS256.txt.sig"
   echo "would:   download https://raw.githubusercontent.com/nodejs/release-keys/main/keys.list"
   echo "would:   import each https://raw.githubusercontent.com/nodejs/release-keys/main/keys/<fingerprint>.asc"
-  echo "would:   into a temporary GNUPGHOME, then gpg --verify SHASUMS256.txt.sig SHASUMS256.txt"
+  echo "would:   into a temporary GNUPGHOME, then gpg --batch --status-fd 1 --verify SHASUMS256.txt.sig SHASUMS256.txt"
+  echo "would:   read the primary key fingerprint (last field of the [GNUPG:] VALIDSIG line)"
+  echo "would:   abort unless that fingerprint is one of: $NODE_SIGNER_FPRS"
   echo "would:   grep ' node-$NODE_VERSION-linux-arm64.tar.xz\$' SHASUMS256.txt | sha256sum -c -"
   echo "would:   extract to /opt/node-22.new, keep the old tree as /opt/node-22.prev, then rename"
   echo "would:   assert /opt/node-22/bin/node --version == $NODE_VERSION"
@@ -81,10 +89,11 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
 fi
 
 echo "==> connecting to $OCI (tailnet $OCI_IP); standby $USA is not touched"
-ssh -o BatchMode=yes -o ConnectTimeout=12 "$OCI" bash -s -- "$NODE_VERSION" <<'REMOTE'
+ssh -o BatchMode=yes -o ConnectTimeout=12 "$OCI" bash -s -- "$NODE_VERSION" "$NODE_SIGNER_FPRS" <<'REMOTE'
 set -Eeuo pipefail
 
 NODE_VERSION="${1:-v22.23.4}"
+NODE_SIGNER_FPRS="${2:-5BE8A3F6C8A5C01D106C0AD820B1A390B168D356}"
 PREFIX=/opt/node-22
 RELEASE_KEYS_URL="https://raw.githubusercontent.com/nodejs/release-keys/main"
 
@@ -172,6 +181,8 @@ else
     fingerprint="${fingerprint%$'\r'}"
     [[ -z "$fingerprint" ]] && continue
     [[ "$fingerprint" == \#* ]] && continue
+    [[ "$fingerprint" =~ ^[A-F0-9]{40}$ ]] \
+      || abort "keys.list contained an invalid key fingerprint: '$fingerprint'"
     curl -fsSL --retry 3 -o "$work/$fingerprint.asc" "$RELEASE_KEYS_URL/keys/$fingerprint.asc" \
       || abort "could not download release key $fingerprint"
     gpg --batch --quiet --import "$work/$fingerprint.asc" 2>/dev/null \
@@ -181,10 +192,19 @@ else
   (( key_count > 0 )) || abort "keys.list produced no keys"
   echo "ok: imported $key_count release keys"
 
-  echo " -> gpg --verify SHASUMS256.txt.sig SHASUMS256.txt"
-  gpg --batch --verify "$work/SHASUMS256.txt.sig" "$work/SHASUMS256.txt" \
+  echo " -> gpg --batch --status-fd 1 --verify SHASUMS256.txt.sig SHASUMS256.txt"
+  verify_status="$(gpg --batch --status-fd 1 \
+    --verify "$work/SHASUMS256.txt.sig" "$work/SHASUMS256.txt" 2>"$work/gpg-verify.log")" \
     || abort "GPG signature verification failed (SEC-04)"
-  echo "ok: SHASUMS256.txt signature verified"
+  signer_fpr="$(printf '%s\n' "$verify_status" \
+    | awk '/^\[GNUPG:\] VALIDSIG / { fpr = $NF } END { print fpr }')"
+  [[ -n "$signer_fpr" ]] \
+    || abort "gpg did not report a VALIDSIG primary key fingerprint; refusing to trust the manifest"
+  case " $NODE_SIGNER_FPRS " in
+    *" $signer_fpr "*) ;;
+    *) abort "SHASUMS256.txt.sig signed by $signer_fpr, which is not an allowed Node signer (NODE_SIGNER_FPRS=$NODE_SIGNER_FPRS)" ;;
+  esac
+  echo "ok: SHASUMS256.txt signature verified (signer $signer_fpr)"
 
   echo " -> sha256sum -c"
   ( cd "$work" && grep -- " node-$NODE_VERSION-linux-arm64.tar.xz\$" SHASUMS256.txt | sha256sum -c - ) \

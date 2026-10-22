@@ -26,8 +26,9 @@
 #   OCI_TG_ALERT              alert command, default /usr/local/bin/oci-tg-alert
 #
 # Status mapping: ok|recovered -> healthy, failed -> unhealthy, recovering is a
-# transient state and is only logged. The script always exits 0: it must never
-# disturb the health check that invoked it.
+# transient state and is only logged. status=ok carries per-component HTTP codes
+# in the error field, so only components that report 200 count as healthy there.
+# The script always exits 0: it must never disturb the health check that invoked it.
 
 set -Eeuo pipefail
 
@@ -102,6 +103,12 @@ SUMMARY="$(json_string summary)"
 ERROR_TEXT="$(json_string error)"
 [ -n "$STATUS" ] || stop "payload has no status field (producer=${PRODUCER:-unknown})"
 
+# Prints the numeric code after "<name>=" in the error field, or nothing.
+http_code_from_error() {
+    printf '%s' "$ERROR_TEXT" | tr -s '[:space:]' '\n' \
+        | sed -n "s/^$1=\([0-9][0-9]*\)\$/\\1/p" | head -n 1
+}
+
 case "$STATUS" in
     ok|recovered)
         TARGET=ok
@@ -120,13 +127,33 @@ esac
 
 COMPONENTS=""
 TEXT="$SUMMARY $ERROR_TEXT"
-if printf '%s' "$TEXT" | grep -qiE '(^|[^[:alnum:]_])api([^[:alnum:]_]|$)'; then
-    COMPONENTS="api"
+if [ "$STATUS" = "ok" ]; then
+    # health-check.sh emits status=ok every 10 minutes regardless of health,
+    # with the measured codes in error (api=000 readiness=000 web=200). Trust
+    # the codes instead of the summary: a component that is not 200 keeps its
+    # previous state this round, so a real incident cannot fake a recovery.
+    API_CODE="$(http_code_from_error api)"
+    READINESS_CODE="$(http_code_from_error readiness)"
+    WEB_CODE="$(http_code_from_error web)"
+    if [ "$API_CODE" = "200" ] && [ "$READINESS_CODE" = "200" ]; then
+        COMPONENTS="api"
+    else
+        log "status=ok but api=${API_CODE:-unknown} readiness=${READINESS_CODE:-unknown}; api state unchanged"
+    fi
+    if [ "$WEB_CODE" = "200" ]; then
+        COMPONENTS="${COMPONENTS:+$COMPONENTS }web"
+    else
+        log "status=ok but web=${WEB_CODE:-unknown}; web state unchanged"
+    fi
+else
+    if printf '%s' "$TEXT" | grep -qiE '(^|[^[:alnum:]_])api([^[:alnum:]_]|$)'; then
+        COMPONENTS="api"
+    fi
+    if printf '%s' "$TEXT" | grep -qiE '(^|[^[:alnum:]_])web([^[:alnum:]_]|$)'; then
+        COMPONENTS="${COMPONENTS:+$COMPONENTS }web"
+    fi
 fi
-if printf '%s' "$TEXT" | grep -qiE '(^|[^[:alnum:]_])web([^[:alnum:]_]|$)'; then
-    COMPONENTS="${COMPONENTS:+$COMPONENTS }web"
-fi
-[ -n "$COMPONENTS" ] || stop "cannot infer api/web component from payload: $TEXT"
+[ -n "$COMPONENTS" ] || stop "no api/web component to act on from payload: $TEXT (status=$STATUS)"
 
 if ! mkdir -p "$STATE_DIR" 2>/dev/null; then
     stop "state dir is not writable: $STATE_DIR"
