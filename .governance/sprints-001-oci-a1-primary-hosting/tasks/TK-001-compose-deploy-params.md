@@ -40,3 +40,6 @@ bash -n scripts/deploy-usa-vps.sh scripts/deploy-oci-a1.sh
 ## 状态历史
 - 2026-10-22 CST: planned
 - 2026-10-22 21:00 CST: executing（batch-001-001，lane-race：deepseek-v4.1-flash + codex，fallback nemotron:free）
+- 2026-10-22 21:10 CST: Coordinator 在 oci-a1 /tmp 一次性实测 arm64（HEAD ed1b006，Node v22.23.4）：`docker build apps/api` 通过，耗时 50s；`npm ci` 耗时 10.6s，内存峰值 350MB；`npm run web:build` 通过，耗时 65.7s，内存峰值 505MB（`--max-old-space-size=768`）。现场已清理。Done criteria 的 arm64 一项已满足。
+- 2026-10-22 21:40 CST: lane-race 两份都过了质量门（codex、deepseek-v4.1-flash），选用 deepseek 版。理由：非默认值时 dry-run 如实打印冒烟地址和跳过项；codex 版在部署 oci 时 dry-run 仍显示 127.0.0.1，会误导。
+- 2026-10-22 21:40 CST: **纠正 RFC/brief 的错误（被证伪）**：生产用的是仓库根目录的 `docker-compose.prod.yml`（usa 上容器的 compose 标签 `config_files=docker-compose.prod.yml`、`working_dir=/opt/jetscope` 可以证实），不是 `infra/server/docker-compose.prod.yml`。端口变量改到根目录文件的 api 服务上；infra/server 那份不动。在 oci-a1 上用 `docker compose config` 验证：变量不设或为空时绑 127.0.0.1，设为 100.81.227.79 时绑 tailnet IP。合并后重跑质量门：usa 默认 dry-run 输出逐字相同（IDENTICAL）。状态改为 reviewing。

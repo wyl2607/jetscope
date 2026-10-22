@@ -6,7 +6,7 @@
 
 | id | title | status | blocked_by | write_scope | reviewer_lanes | notes |
 |----|-------|--------|------------|-------------|----------------|-------|
-| TK-001 | compose 端口变量化 + 部署脚本参数化 + oci 封装 | executing | — | `infra/server/docker-compose.prod.yml`、`scripts/deploy-usa-vps.sh`、`scripts/deploy-oci-a1.sh` | default,architecture | 含 arm64 一次性构建实测 |
+| TK-001 | compose 端口变量化 + 部署脚本参数化 + oci 封装 | reviewing | — | `infra/server/docker-compose.prod.yml`、`scripts/deploy-usa-vps.sh`、`scripts/deploy-oci-a1.sh` | default,architecture | 含 arm64 一次性构建实测 |
 | TK-002 | oci-a1 systemd 单元模板 + 状态变化告警脚本 | executing | — | `infra/server/oci-a1/systemd/**`、`infra/server/oci-a1/health-alert-on-change.sh` | default,security | — |
 | TK-003 | usa nginx 模板 + nginx-smoke 回归测试 | executing | — | `infra/server/oci-a1/nginx/**`、`scripts/oci-a1/nginx-smoke.sh` | architecture,security | review A1 blocker 的落点 |
 | TK-004 | bootstrap.sh：目录、Node 22 签名校验安装、sqlite3、Funnel 预检 | executing | — | `scripts/oci-a1/bootstrap.sh` | security | — |

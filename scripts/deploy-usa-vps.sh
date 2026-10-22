@@ -22,6 +22,22 @@
 #   bash scripts/deploy-usa-vps.sh --rebuild --dry-run
 #   JETSCOPE_REMOTE_DIR=/opt/jetscope bash scripts/deploy-usa-vps.sh --rebuild
 #
+# Environment:
+#   JETSCOPE_DEPLOY_HOST    SSH host (default usa-vps)
+#   JETSCOPE_REMOTE_DIR     remote checkout (default /opt/jetscope)
+#   JETSCOPE_HOST_DATA_DIR  host directory mounted at /app/data (default $REMOTE_DIR/data)
+#   JETSCOPE_PUBLIC_HOST    public vhost name the smoke sends as Host (default saf.meichen.beauty)
+#   JETSCOPE_NODE_BIN       prepended to PATH for the remote web build when non-empty
+#                           (default empty; oci-a1 uses /opt/node-22/bin)
+#   JETSCOPE_SMOKE_BASE     address the remote smoke uses for the direct API (:8000)
+#                           and Web (:3000) probes (default 127.0.0.1; oci-a1 uses its
+#                           tailnet address)
+#   JETSCOPE_EDGE_SMOKE     1 (default) also probes the host nginx entrypoint; 0 skips
+#                           the TLS /sources probe and the Host-header /v1/health probe
+#                           (oci-a1 has no host nginx)
+#   SUDO                    not set locally: the remote web rebuild computes it as sudo
+#                           unless the login user is already root
+#
 # SQLite first-switch (idempotent, only on --rebuild, before the container is replaced):
 #   Host directory ${JETSCOPE_HOST_DATA_DIR:-$REMOTE_DIR/data} is mounted at /app/data.
 #   If jetscope-api has a non-empty /app/data/market.db and the host file is missing
@@ -48,6 +64,15 @@ ALLOW_UNMERGED=0
 ALLOW_EMPTY_DB=0
 DRY_RUN=0
 HOST_DATA_DIR="${JETSCOPE_HOST_DATA_DIR:-$REMOTE_DIR/data}"
+# Extra PATH entry for the remote web build. Empty on usa, which already has the
+# Node it uses on PATH. oci-a1 keeps Node under /opt/node-22 instead.
+NODE_BIN="${JETSCOPE_NODE_BIN:-}"
+# Address the remote smoke talks to when it bypasses host nginx. usa listens on
+# loopback; oci-a1 listens on its tailnet address.
+SMOKE_BASE="${JETSCOPE_SMOKE_BASE:-127.0.0.1}"
+# 1 = also probe the host nginx entrypoint; 0 = this host has no nginx in front
+# (oci-a1; traffic reaches it through the usa nginx).
+EDGE_SMOKE="${JETSCOPE_EDGE_SMOKE:-1}"
 
 for arg in "$@"; do
   case "$arg" in
@@ -75,6 +100,9 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
   echo "container=jetscope-api"
   echo "container_db=/app/data/market.db"
   echo "rebuild=$REBUILD api_only=$API_ONLY allow_unmerged=$ALLOW_UNMERGED allow_empty_db=$ALLOW_EMPTY_DB"
+  if [[ -n "$NODE_BIN" ]]; then
+    echo "node_bin=$NODE_BIN (prepended to PATH for the remote web build)"
+  fi
   echo "would: rsync $ROOT/ -> $HOST:$REMOTE_DIR/ (excludes .env, data/*.db, data/*.sqlite; no --delete)"
   echo "would: record HEAD in $REMOTE_DIR/.deploy-commit"
   if [[ "$REBUILD" -eq 1 ]]; then
@@ -92,7 +120,10 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
   else
     echo "would: skip image rebuild and SQLite migration (pass --rebuild; the running container is not replaced)"
   fi
-  echo "would: remote smoke against 127.0.0.1:8000 and 127.0.0.1:3000"
+  if [[ "$EDGE_SMOKE" != "1" ]]; then
+    echo "would: skip host nginx edge probes (JETSCOPE_EDGE_SMOKE=$EDGE_SMOKE)"
+  fi
+  echo "would: remote smoke against $SMOKE_BASE:8000 and $SMOKE_BASE:3000"
   exit 0
 fi
 
@@ -271,8 +302,12 @@ REMOTE
     ssh "$HOST" bash -s <<REMOTE
 set -euo pipefail
 cd "$REMOTE_DIR"
+[ "\$(id -u)" = 0 ] && SUDO= || SUDO=sudo
+if [ -n "$NODE_BIN" ]; then
+  export PATH="$NODE_BIN:\$PATH"
+fi
 test -f apps/web/package.json || { echo "ERROR: missing $REMOTE_DIR/apps/web"; exit 1; }
-systemctl list-unit-files jetscope-web.service >/dev/null 2>&1 || {
+\$SUDO systemctl list-unit-files jetscope-web.service >/dev/null 2>&1 || {
   echo "ERROR: jetscope-web.service is not installed on this host."
   echo "       Install it per docs/DEPLOY_USA_VPS.md, or pass --api-only."
   exit 1
@@ -308,9 +343,9 @@ fi
 # leaves the previous version running.
 JETSCOPE_BUILD_SHA="$DEPLOY_COMMIT" NODE_OPTIONS=--max-old-space-size=768 npm run web:build
 
-systemctl restart jetscope-web.service
+\$SUDO systemctl restart jetscope-web.service
 sleep 3
-systemctl is-active --quiet jetscope-web.service && echo "jetscope-web.service active" || {
+\$SUDO systemctl is-active --quiet jetscope-web.service && echo "jetscope-web.service active" || {
   echo "ERROR: jetscope-web.service did not come back up"
   journalctl -u jetscope-web.service -n 40 --no-pager || tail -n 40 /var/log/jetscope-web.log || true
   exit 1
@@ -333,15 +368,15 @@ attempt=0
 max_attempts=30
 while [ \$attempt -lt \$max_attempts ]; do
   attempt=\$((attempt + 1))
-  if curl -fsS --max-time 5 http://127.0.0.1:8000/v1/health >/dev/null 2>&1; then
+  if curl -fsS --max-time 5 http://$SMOKE_BASE:8000/v1/health >/dev/null 2>&1; then
     echo "API health OK after \$attempt attempt(s)"
-    curl -fsS --max-time 5 http://127.0.0.1:8000/v1/version || echo "api version route not yet deployed"
+    curl -fsS --max-time 5 http://$SMOKE_BASE:8000/v1/version || echo "api version route not yet deployed"
     echo
-    curl -fsS --max-time 8 http://127.0.0.1:8000/v1/market/health | head -c 500 || echo "market/health not yet deployed"
+    curl -fsS --max-time 8 http://$SMOKE_BASE:8000/v1/market/health | head -c 500 || echo "market/health not yet deployed"
     echo
-    curl -fsS --max-time 8 http://127.0.0.1:8000/v1/events/lufthansa-q2-2026-earnings | head -c 300 || echo "events route not yet deployed"
+    curl -fsS --max-time 8 http://$SMOKE_BASE:8000/v1/events/lufthansa-q2-2026-earnings | head -c 300 || echo "events route not yet deployed"
     echo
-    curl -fsS --max-time 8 http://127.0.0.1:8000/v1/reserves/eu | head -c 300 || true
+    curl -fsS --max-time 8 http://$SMOKE_BASE:8000/v1/reserves/eu | head -c 300 || true
     echo
     break
   fi
@@ -366,7 +401,7 @@ done
 # The second probe carries the public Host header on purpose: host nginx serves
 # a named vhost and answers naked-IP requests from its default server, so an
 # unadorned http://127.0.0.1/ proves nothing about the public entrypoint.
-if curl -fsS --max-time 20 http://127.0.0.1:3000/ >/dev/null 2>&1; then
+if curl -fsS --max-time 20 http://$SMOKE_BASE:3000/ >/dev/null 2>&1; then
   echo "WEB responding on :3000"
 else
   echo "WEB not responding on :3000 — check: systemctl status jetscope-web.service"
@@ -380,7 +415,7 @@ fi
 # and the only page this smoke check read was /sources, which is not rewritten.
 # A route that answers 3xx here is a redirect loop, not a redirect.
 for path in /faq /reports; do
-  code="\$(curl -s -o /dev/null --max-time 15 -w '%{http_code}' "http://127.0.0.1:3000\$path" || echo 000)"
+  code="\$(curl -s -o /dev/null --max-time 15 -w '%{http_code}' "http://$SMOKE_BASE:3000\$path" || echo 000)"
   if [ "\$code" = "200" ]; then
     echo "OK \$path — default locale rewrite resolves"
   else
@@ -389,10 +424,14 @@ for path in /faq /reports; do
   fi
 done
 
-for probe in "http://127.0.0.1:3000/sources||direct :3000" "|$PUBLIC_HOST|via nginx as $PUBLIC_HOST"; do
+for probe in "http://$SMOKE_BASE:3000/sources||direct :3000" "|$PUBLIC_HOST|via nginx as $PUBLIC_HOST"; do
   url="\$(printf '%s' "\$probe" | cut -d'|' -f1)"
   host_header="\$(printf '%s' "\$probe" | cut -d'|' -f2)"
   label="\$(printf '%s' "\$probe" | cut -d'|' -f3)"
+  if [ -n "\$host_header" ] && [ "$EDGE_SMOKE" != "1" ]; then
+    echo "SKIP /sources \$label — host nginx edge probe disabled (JETSCOPE_EDGE_SMOKE=$EDGE_SMOKE)"
+    continue
+  fi
   if [ -n "\$host_header" ]; then
     # Probe the vhost over TLS, with the name pinned to this host.
     #
@@ -428,11 +467,15 @@ for probe in "http://127.0.0.1:3000/sources||direct :3000" "|$PUBLIC_HOST|via ng
 done
 
 # nginx must not let its catch-all swallow the API prefix.
-if curl -fsS --max-time 10 -H "Host: $PUBLIC_HOST" http://127.0.0.1/v1/health >/dev/null 2>&1; then
-  echo "OK /v1/health via nginx as $PUBLIC_HOST"
+if [ "$EDGE_SMOKE" = "1" ]; then
+  if curl -fsS --max-time 10 -H "Host: $PUBLIC_HOST" http://127.0.0.1/v1/health >/dev/null 2>&1; then
+    echo "OK /v1/health via nginx as $PUBLIC_HOST"
+  else
+    echo "FAIL /v1/health via nginx — check the /v1 location order in the active nginx config"
+    exit 1
+  fi
 else
-  echo "FAIL /v1/health via nginx — check the /v1 location order in the active nginx config"
-  exit 1
+  echo "SKIP /v1/health via nginx — host nginx edge probe disabled (JETSCOPE_EDGE_SMOKE=$EDGE_SMOKE)"
 fi
 REMOTE
 
