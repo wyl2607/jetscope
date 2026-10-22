@@ -24,6 +24,7 @@
   - AI 亲自执行任何远程变更
 
 ## 车道（并行 lanes）
+
 | lane | TKs | write_scope 摘要 |
 |------|-----|-----------------|
 | L-A | TK-001 | `infra/server/docker-compose.prod.yml`、`scripts/deploy-usa-vps.sh`、`scripts/deploy-oci-a1.sh` |

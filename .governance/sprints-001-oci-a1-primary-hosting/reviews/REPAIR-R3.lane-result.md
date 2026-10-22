@@ -11,7 +11,7 @@
 | `infra/server/oci-a1/nginx/jetscope-site.conf` | 4 个 proxy 到 upstream 的 location 统一 `proxy_connect_timeout 3s;`（`/_next/static/` 为新增）。 |
 | `infra/server/oci-a1/nginx/README.md` | 新增 `X-JetScope-Served-By` 的说明（`oci-a1` / `usa` / `none`，只含名字不含 IP）。 |
 | `scripts/oci-a1/nginx-smoke.sh` | 补 `/en/admin`、`/de/admin/x` 的 401；补 b/d/e/f 的 HSTS 断言；固定 curl 镜像；渲染 usa 的 served-by 正则；写明 token 鉴权由代码审查保证。 |
-| `apps/web/next.config.mjs` | 加 `generateBuildId: async () => process.env.JETSCOPE_BUILD_SHA || null` 及原因注释。 |
+| `apps/web/next.config.mjs` | 加 `generateBuildId: async () => process.env.JETSCOPE_BUILD_SHA \|\| null` 及原因注释。 |
 | `TK-RESULT.md` | 本报告（新增）。 |
 
 ## 逐条对照
@@ -94,7 +94,7 @@ request "/de/admin/x"  -> 401
 // oci-a1 and usa build separately; the same commit must produce the same
 // buildId so /_next/static assets still match after a failover. Returning
 // null falls back to Next's default random id when the SHA is not set.
-generateBuildId: async () => process.env.JETSCOPE_BUILD_SHA || null,
+generateBuildId: async () => process.env.JETSCOPE_BUILD_SHA \|\| null,
 ```
 
 `JETSCOPE_BUILD_SHA` 已在构建时由部署脚本注入；未设置时返回 `null`，Next 使用默认随机 id。

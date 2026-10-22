@@ -77,19 +77,19 @@ usa 热备照旧用 `deploy-usa-vps.sh`。`release.sh` 和 `auto-deploy.sh` 这�
 
 ## 3. 影响面
 
-**仓库内修改**
+### 仓库内修改
 - `infra/server/docker-compose.prod.yml`：端口改为 `${JETSCOPE_API_BIND:-127.0.0.1}`（usa 行为不变）。
 - `scripts/deploy-usa-vps.sh`：`$SUDO`、`JETSCOPE_NODE_BIN`、`JETSCOPE_SMOKE_BASE`、`JETSCOPE_EDGE_SMOKE` 四处，默认值全部保持现行为。
 - 新增：`scripts/deploy-oci-a1.sh`；`scripts/oci-a1/{bootstrap,seed,install-units,cutover}.sh`；`infra/server/oci-a1/` 下的 web、backup、health-check 单元，以及 nginx 片段（upstream、method map、served-by map、维护片段）作为模板。
 - 文档：新增 `docs/DEPLOY-OCI-A1.md`；`OPERATIONS.md`、`docs/DEPLOY_USA_VPS.md` 标注 usa 是热备；`docs/PRODUCTION_RISK_REGISTER.md` 加 tailnet 依赖风险。
 
-**仓库外修改**
+### 仓库外修改
 - usa-vps：`/etc/nginx/conf.d/jetscope-upstream.conf`（新）、`sites-enabled/jetscope`（proxy_pass 改用 upstream 变量）、root crontab 的 health-check 环境变量。
 - oci-a1：`/opt/jetscope`、`/opt/node-22`、3 组 systemd 单元、`/usr/local/bin/oci-backup.sh`（加 jetscope 段）。
 
 **新增依赖**：Node 22 官方 tarball（oci-a1）；不新增 npm/pip 依赖。
 
-**兼容性**
+### 兼容性
 - usa 部署：所有新变量都有默认值，`deploy-usa-vps.sh` 不带新变量时行为完全不变。dry-run 输出要逐行对比来证明这一点。
 - 网络依赖：主站多了一跳 usa→oci-a1 tailnet；tailnet 断开时读请求落到 usa，写请求 502。
 - 资源：oci-a1 增加约 280MB 常驻内存，构建时短时 1–2GB；usa 的负载不变，直到观察期后停掉热备。
