@@ -103,3 +103,21 @@ usa 热备照旧用 `deploy-usa-vps.sh`。`release.sh` 和 `auto-deploy.sh` 这�
 5. **ARM64 镜像**：`apps/api/Dockerfile` 的基础镜像和 pip 依赖在 arm64 上能否构建（esg 在 oci-a1 能构建，说明 Python 栈大体没问题，但要实测）；`next build` 的原生依赖（如 swc、lightningcss）在 linux-arm64 上的可用性。
 6. **health-check 的 bus 写入**（`JETSCOPE_BUS_WRITE`）在 oci-a1 上是否启用，事件来源怎么标注。
 7. **观察期结束后停 usa 热备**的判定指标（本期不执行，但要先定好指标）。
+
+## Review Decision（2026-10-22，Coordinator）
+
+评审详情见 [draft.review.md](draft.review.md)。下面的结论在 RFC 阶段并入方案正文。
+
+| finding | 决定 | 落实方式 / 理由 |
+|---|---|---|
+| A1 变量 proxy_pass 吞掉路径 | **接受（blocker）** | 现有各 location 都是同路径转发（`/v1/`→`/v1/`、`/`→`/`），所以改为**不带 URI** 的 `proxy_pass http://$jetscope_api_up;`，nginx 会原样转发请求 URI 和 query。切换脚本的冒烟覆盖 `/v1/health`、`/v1/market/health`、带 query 的读请求、`/sources`、`/_next/static/*`、`/admin`（401），在 oci 主和强制走 backup 两种状态下各跑一遍 |
+| A2 回切时并发写 | **接受** | 回切顺序：维护片段 → `docker stop jetscope-api`（usa）→ oci `.backup` → 传到 usa 临时文件 → `integrity_check` 加行数校验 → `mv` 原子替换（旧库留 `*.pre-rollback-<ts>`）→ 启动 usa api → 改 nginx → 冒烟 |
+| A3 阶段状态与恢复 | **部分接受** | 接受：`cutover.sh` 写 `/var/lib/jetscope-cutover/<ts>/{phases.log,manifest}`（每个阶段的开始和结束、备份路径、sha256），每个阶段可重复执行，任一步失败就停下，并打印恢复命令。**驳回「失败自动回退」**：自动回退会在部分失败时再动一次线上，比停下来让人判断风险更大；现有 health-talkie cutover 也是同样做法 |
+| A4 无告警闭环 | **接受** | oci-a1 上把 `JETSCOPE_BUS_WRITE` 指向一个小脚本，只在**状态变化**（ok→failed、failed→ok）时调用已有的 `/usr/local/bin/oci-tg-alert`，避免每分钟刷屏；事件里带主机名。usa 热备的 health-check 同样只报本机状态，并在消息里标明 `usa-standby` |
+| SEC-01 usa `.env` 644 | **接受** | 切换前 usa 上执行 `chmod 600`（由用户跑）；**轮换 `JETSCOPE_ADMIN_TOKEN`**（usa 上有 3 个可登录的非 root 用户，已经暴露）。新令牌由 seed 脚本在 oci-a1 生成后，同步写入两台机器的 `.env`，全程不打印。`.env.api-keys` 里的第三方 key 先查清楚是哪些服务，再决定是否轮换（RFC 阶段列清单） |
+| SEC-02 tailnet 暴露面 | **部分接受** | 接受：bootstrap 预检要求 oci-a1 的 `tailscale serve/funnel status` 为空，否则中止；文档建议用户在 Tailscale ACL 里限制只有 usa 节点能访问 oci-a1 的 3000/8000（这是用户控制台的操作）。**驳回主机防火墙**：oci-a1 的 iptables 有已知坑（不能 `netfilter-persistent save`，Oracle 默认规则），esg 的 8001 已经是同样的暴露面；tailnet 成员都是用户自己的设备，而写端点本身还有 `X-Admin-Token` 校验 |
+| SEC-03 备份权限 | **接受** | oci-a1 的 backup 单元设 `UMask=0077`；oci-backup.sh 只把最新一份 jetscope 备份放进快照（沿用已有的 `ocibak` 组可读、其他用户不可读规则） |
+| SEC-04 Node 供应链 | **接受** | 固定版本（RFC 阶段选定当时最新的 22.x LTS 补丁版）；从 nodejs/release-keys 取发布者公钥，按 README 列出的指纹导入，`gpg --verify SHASUMS256.txt.sig` 通过后再校验 tarball 的 sha256 |
+| SEC-05 写请求面 | **接受，并已核实** | Coordinator 已核对：`apps/web` 里**没有 server actions**；写入口只有 6 个路由处理函数（`app/api/{scenarios,scenarios/[scenarioId],policies/refuel-eu,pathways,market/refresh,research/refresh}/route.ts` 的 POST/PUT/DELETE），全部用 `proxyToApi` 转发原方法；API 侧的写端点都 `Depends(require_admin_token)`。所以「非 GET/HEAD/OPTIONS 的请求只走主库」可以覆盖全部写路径。RFC 中冻结这张「路由 × 方法」表，冒烟里加一条：强制走 backup 时 POST 返回 502，不能落到 usa |
+
+**draft 正文的未决问题因此关闭**：§4-1（A1）、§4-2（SEC-05）、§4-3（SEC-01）、§4-6（A4）。§4-4（tailnet 明文）接受现状：WireGuard 隧道加密，且和 esg 做法一致。§4-5（arm64 构建）和 §4-7（停热备的判定指标）留到 RFC 和第一个 Sprint 实测解决。
