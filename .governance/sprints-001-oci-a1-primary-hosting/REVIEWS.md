@@ -5,12 +5,12 @@
 
 | CR | TK | rounds | status | last_action |
 |----|----|--------|--------|-------------|
-| CR-001 | TK-001 | 1 | recheck | 2026-10-22 23:46 CST: R2 修复已合并，等 recheck |
-| CR-002 | TK-002 | 1 | recheck | 2026-10-22 23:46 CST: R2 修复已合并，等 recheck |
-| CR-004 | TK-004 | 1 | recheck | 2026-10-22 23:46 CST: R2 修复已合并，等 recheck |
-| CR-003 | TK-003A,TK-003B | 1 | recheck | 2026-10-22 23:49 CST: R3 已合并；Coordinator 在 oci-a1 重跑 smoke，全部 PASS（含新增的 admin 路径和 HSTS 断言） |
-| CR-005 | TK-005 | 1 | recheck | 2026-10-22 23:46 CST: R2 修复已合并，等 recheck |
-| CR-006 | TK-006 | 1 | recheck | 2026-10-22 23:49 CST: R4 已合并 |
+| CR-001 | TK-001 | 2 | resolved | 2026-10-22 23:52 CST: recheck 全部 fixed，关闭 |
+| CR-002 | TK-002 | 2 | needs_fix | 2026-10-22 23:52 CST: recheck 发现 N1 回归（readiness 是单词不是状态码），进 R6 |
+| CR-004 | TK-004 | 2 | resolved | 2026-10-22 23:52 CST: recheck 全部 fixed，关闭 |
+| CR-003 | TK-003A,TK-003B | 2 | resolved | 2026-10-22 23:52 CST: recheck 全部 fixed，关闭 |
+| CR-005 | TK-005 | 2 | resolved | 2026-10-22 23:52 CST: recheck 全部 fixed，关闭 |
+| CR-006 | TK-006 | 2 | resolved | 2026-10-22 23:52 CST: recheck 全部 fixed，关闭 |
 | CR-007 | TK-007 | 1 | needs_fix | 2026-10-22 23:51 CST: R1 2 major（恢复命令方向反了、没处理 -journal）+ 6 minor/nit 全部 accepted，进 R5 |
 
 ## 字段说明
