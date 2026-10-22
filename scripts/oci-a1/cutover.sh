@@ -13,8 +13,10 @@
 # Usage:
 #   bash scripts/oci-a1/cutover.sh              # cut over to oci-a1
 #   bash scripts/oci-a1/cutover.sh --rollback   # roll back to usa-vps
+#   bash scripts/oci-a1/cutover.sh --resume-smoke  # cutover phases 5-6 only
 #   bash scripts/oci-a1/cutover.sh --dry-run    # print the plan for the above
 #   bash scripts/oci-a1/cutover.sh --rollback --dry-run
+#   bash scripts/oci-a1/cutover.sh --resume-smoke --dry-run
 #   bash scripts/oci-a1/cutover.sh --help
 #
 # Cutover phases (all idempotent):
@@ -26,15 +28,21 @@
 #      sites-available/jetscope.maint from the live file with the include
 #      inserted, point sites-enabled/jetscope at it, reload, expect POST 503;
 #   3. final DB sync (same mechanics as seed.sh): usa sqlite3 .backup -> oci-a1,
-#      integrity_check + per-table row counts, stop oci api, keep the old DB as
-#      market.db.pre-cutover-<ts>, swap, start, wait up to 60s for /v1/health;
+#      integrity_check + per-table row counts, stop oci api (a hot
+#      market.db-journal aborts), keep the old DB as market.db.pre-cutover-<ts>,
+#      swap, start, wait up to 60s for /v1/health;
 #   4. install conf.d/jetscope-upstream.conf and sites-available/jetscope.oci-a1,
 #      atomically switch the symlink, nginx -t (restore .maint on failure),
 #      reload;
 #   5. remove the maintenance snippet and reload;
-#   6. public smoke from this Mac: 200 + X-JetScope-Served-By: oci-a1 on
-#      /v1/health, page-as-of on /sources, 401 on /admin without credentials;
+#   6. public smoke from this Mac (cache-busted, a Cloudflare HIT fails): 200 +
+#      X-JetScope-Served-By: oci-a1 on /v1/health and /sources, page-as-of on
+#      /sources, 401 on /admin without credentials;
 #   7. print the summary and the rollback command, then remove jetscope.maint.
+#
+# --resume-smoke runs only phases 5 and 6 (remove the maintenance snippet if it
+# is still there, then the public smoke). Use it when the edge is already on
+# oci-a1 and only phase 5 or a false-negative phase 6 failed.
 #
 # Rollback phases:
 #   0. read-only preflight: usa has the original site file and is not already
@@ -42,7 +50,8 @@
 #   1. enable the maintenance gate and expect POST 503;
 #   2. stop the usa api with docker-compose v1;
 #   3. oci sqlite3 .backup -> usa, integrity_check + row counts, stop is already
-#      done, keep the old DB as market.db.pre-rollback-<ts>, swap, start the api,
+#      done (a hot market.db-journal aborts), keep the old DB as
+#      market.db.pre-rollback-<ts>, swap, start the api,
 #      wait up to 60s for 127.0.0.1:8000/v1/health;
 #   4. switch the symlink back to the original site, reload, remove the upstream
 #      file only after nginx -t still passes;
@@ -51,7 +60,7 @@
 # Environment:
 #   JETSCOPE_USA_HOST     usa-vps SSH host, run as root (default: usa-vps)
 #   JETSCOPE_OCI_HOST     oci-a1 SSH host, ubuntu with sudo (default: oci-a1-ts)
-#   JETSCOPE_OCI_IP       oci-a1 tailnet IP (default: 100.81.227.79)
+#   JETSCOPE_OCI_IP       oci-a1 tailnet IPv4 (default: 100.81.227.79)
 #   JETSCOPE_PUBLIC_HOST  public hostname for the smoke test
 #                         (default: saf.meichen.beauty)
 #
@@ -90,6 +99,7 @@ DRY_RUN=0
 for arg in "$@"; do
   case "$arg" in
     --rollback) MODE=rollback ;;
+    --resume-smoke) MODE=resume ;;
     --dry-run) DRY_RUN=1 ;;
     --help|-h)
       awk 'NR==1 {next} /^set -Eeuo pipefail$/ {exit} {print}' "${BASH_SOURCE[0]}"
@@ -102,12 +112,24 @@ for arg in "$@"; do
   esac
 done
 
+if [[ ! "$OCI_IP" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+  echo "ABORT: JETSCOPE_OCI_IP must be an IPv4 address, got: $OCI_IP" >&2
+  exit 1
+fi
+
 if (( DRY_RUN )); then
   echo "==> DRY-RUN: no SSH, no network, no remote changes"
   echo "mode=$MODE usa=$USA oci=$OCI ($OCI_IP) public=$PUBLIC_HOST"
   echo "templates: $NGINX_SRC"
   echo "log on $USA: /var/lib/jetscope-cutover/<UTC ts>/{phases.log,manifest}"
-  if [[ "$MODE" == cutover ]]; then
+  if [[ "$MODE" == resume ]]; then
+    cat <<EOF
+==> 5/7 lift the maintenance gate
+would: rm $MAINT_SNIPPET if present; nginx -t && systemctl reload nginx
+==> 6/7 public smoke from this Mac
+would: same checks as cutover phase 6 (cache-busted, served-by oci-a1 on /v1/health and /sources)
+EOF
+  elif [[ "$MODE" == cutover ]]; then
     cat <<EOF
 ==> 0/7 preflight (read-only)
 would: ssh $USA true and ssh $OCI true
@@ -131,14 +153,16 @@ would: nginx -t && systemctl reload nginx (restore the symlink if nginx -t fails
 would: on $USA: curl -k --resolve $PUBLIC_HOST:443:127.0.0.1 -X POST
 would:   https://$PUBLIC_HOST/v1/scenarios returns 503
 ==> 3/7 final market.db sync -> $OCI
-would: on $USA: sqlite3 $USA_DB ".backup /tmp/jetscope-cutover.<ts>.<pid>.db"
-would: stream it to $OCI:$OCI_ROOT/data/.market.db.cutover.<ts>
+would: on $USA: mktemp /root/jetscope-cutover.XXXXXX.db, then sqlite3 $USA_DB ".backup" into it
+would: stream it to a mktemp file $OCI:$OCI_ROOT/data/.cutover-snap.XXXXXX
 would: on $OCI: PRAGMA integrity_check must return ok
 would: compare per-table count(*) of the usa snapshot and the oci copy
-would: on $OCI: docker stop jetscope-api
-would: rename $OCI_DB and any -wal/-shm to $OCI_DB.pre-cutover-<ts>
+would: on $OCI: docker stop jetscope-api, assert State.Running is false
+would: abort if $OCI_DB-journal exists and is non-empty (hot journal)
+would: rename $OCI_DB and any -wal/-shm/-journal to $OCI_DB.pre-cutover-<ts>
 would: install the new db (640 ubuntu:ubuntu), docker start jetscope-api
 would: wait up to 60s for http://$OCI_IP:8000/v1/health
+would: rm -f the snapshot files on $USA and $OCI
 ==> 4/7 upstream and site
 would: render $TPL_UPSTREAM (__OCI_IP_RE__ -> $(printf '%s' "$OCI_IP" | sed 's/\./\\./g'), __OCI_IP__ -> $OCI_IP)
 would: install it as $UPSTREAM_CONF
@@ -149,8 +173,10 @@ would: systemctl reload nginx
 ==> 5/7 lift the maintenance gate
 would: rm $MAINT_SNIPPET; nginx -t && systemctl reload nginx
 ==> 6/7 public smoke from this Mac
-would: GET https://$PUBLIC_HOST/v1/health -> 200 and X-JetScope-Served-By: oci-a1
-would: GET https://$PUBLIC_HOST/sources -> contains data-testid="page-as-of"
+would: GET https://$PUBLIC_HOST/v1/health?cb=<rand> -> 200 and X-JetScope-Served-By: oci-a1
+would: GET https://$PUBLIC_HOST/sources?cb=<rand> -> 200, X-JetScope-Served-By: oci-a1,
+would:   contains data-testid="page-as-of"
+would: any cf-cache-status: HIT fails the smoke
 would: GET https://$PUBLIC_HOST/admin without credentials -> 401
 ==> 7/7 summary
 would: print the summary and "bash scripts/oci-a1/cutover.sh --rollback"
@@ -167,14 +193,17 @@ would: install $TPL_MAINT as $MAINT_SNIPPET (644) and reload
 would: on $USA: POST https://$PUBLIC_HOST/v1/scenarios via 127.0.0.1 returns 503
 ==> 2/5 stop the usa api
 would: on $USA: cd /opt/jetscope && docker-compose -f $USA_COMPOSE stop api
+would: assert docker inspect -f '{{.State.Running}}' jetscope-api is false
 ==> 3/5 market.db sync -> $USA
-would: on $OCI: sqlite3 $OCI_DB ".backup /tmp/jetscope-rollback.<ts>.<pid>.db"
-would: stream it to $USA_ROOT/data/.market.db.rollback.<ts>
+would: on $OCI: mktemp $OCI_ROOT/data/.cutover-snap.XXXXXX, then sqlite3 $OCI_DB ".backup" into it
+would: stream it to a mktemp file $USA:$USA_ROOT/data/.cutover-snap.XXXXXX
 would: on $USA: PRAGMA integrity_check must return ok
 would: compare per-table count(*) of the oci snapshot and the usa copy
-would: rename $USA_DB and any -wal/-shm to $USA_DB.pre-rollback-<ts>
+would: abort if $USA_DB-journal exists and is non-empty (hot journal)
+would: rename $USA_DB and any -wal/-shm/-journal to $USA_DB.pre-rollback-<ts>
 would: install the new db (640), docker-compose -f $USA_COMPOSE start api
 would: wait up to 60s for http://127.0.0.1:8000/v1/health
+would: rm -f the snapshot files on $OCI and $USA
 ==> 4/5 restore the original site
 would: atomically point $SITE_LINK at $SITE_ORIG; nginx -t, restore on failure
 would: systemctl reload nginx
@@ -182,7 +211,7 @@ would: move $UPSTREAM_CONF aside, nginx -t, delete it only if the test passes,
 would: otherwise put it back; systemctl reload nginx
 ==> 5/5 lift the gate and smoke
 would: rm $MAINT_SNIPPET; nginx -t && systemctl reload nginx
-would: GET https://$PUBLIC_HOST/v1/health -> 200
+would: GET https://$PUBLIC_HOST/v1/health?cb=<rand> -> 200, no cf-cache-status HIT
 would: X-JetScope-Served-By must be absent or usa (never oci-a1)
 EOF
   fi
@@ -211,8 +240,14 @@ now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 
 usa_run() { ssh -o BatchMode=yes -o ConnectTimeout=12 "$USA" "cd / && $*"; }
 oci_run() { ssh -o BatchMode=yes -o ConnectTimeout=12 "$OCI" "cd / && $*"; }
-usa_bash() { usa_run bash -s -- "$@"; }
-oci_bash() { oci_run bash -s -- "$@"; }
+usa_bash() { local a; a=$(printf ' %q' "$@"); usa_run "bash -s --$a"; }
+oci_bash() { local a; a=$(printf ' %q' "$@"); oci_run "bash -s --$a"; }
+
+# Command run in the remote shell that moves $1 (pre-swap backup) and its
+# -wal/-shm/-journal companions back over $2 (the live db).
+restore_db_cmd() {
+  printf 'for s in "" -wal -shm -journal; do [ -e %s$s ] && mv -f %s$s %s$s; done' "$1" "$1" "$2"
+}
 
 phase_start() {
   PHASE=$1
@@ -296,7 +331,7 @@ remote_sha() {
 table_counts() {
   local run=$1
   local db=$2
-  "$run" bash -s -- "$db" <<'REMOTE'
+  "$run" "bash -s -- $(printf %q "$db")" <<'REMOTE'
 set -Eeuo pipefail
 db=$1
 tables=$(sqlite3 -readonly "$db" "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
@@ -329,7 +364,7 @@ write_maint_snippet() {
 
 expect_gate_503() {
   local code
-  code=$(usa_run "curl -s -o /dev/null -w '%{http_code}' -k --resolve $PUBLIC_HOST:443:127.0.0.1 -X POST https://$PUBLIC_HOST/v1/scenarios --max-time 15") \
+  code=$(usa_run "curl -s -o /dev/null -w '%{http_code}' -k --resolve $(printf %q "$PUBLIC_HOST:443:127.0.0.1") -X POST $(printf %q "https://$PUBLIC_HOST/v1/scenarios") --max-time 15") \
     || fail "could not check the maintenance gate on $USA"
   [[ "$code" == 503 ]] || fail "maintenance gate returned $code for POST /v1/scenarios, want 503"
   printf 'ok: POST /v1/scenarios returns 503\n'
@@ -357,10 +392,82 @@ public_status() {
   printf '%s\n' "$resp" | awk 'NR==1 {print $2; exit}'
 }
 
+public_cb() {
+  printf '%s?cb=%s%s' "$1" "$RANDOM" "$RANDOM"
+}
+
+public_no_cache_hit() {
+  local resp=$1
+  local what=$2
+  local h
+  h=$(public_header "$resp" cf-cache-status)
+  [[ "$h" != *[Hh][Ii][Tt]* ]] || fail "public $what was served from the Cloudflare cache ($h); the smoke result is not trustworthy"
+}
+
 public_header() {
   local resp=$1
   local name=$2
   printf '%s\n' "$resp" | grep -i "^$name:" | head -n 1 | tr -d '\r' || true
+}
+
+lift_gate_cutover() {
+  phase_start "5/7-lift-gate"
+  STATE="edge on oci-a1; maintenance snippet being removed"
+  RECOVERY="  ssh $USA 'rm -f $MAINT_SNIPPET && nginx -t && systemctl reload nginx'
+  # then, to re-run only the public smoke: bash scripts/oci-a1/cutover.sh --resume-smoke"
+  usa_bash "$MAINT_SNIPPET" <<'REMOTE'
+set -Eeuo pipefail
+rm -f "$1"
+nginx -t
+systemctl reload nginx
+echo "ok: maintenance gate removed"
+REMOTE
+  STATE="edge on oci-a1; writes and reads go to oci-a1"
+  RECOVERY="  bash scripts/oci-a1/cutover.sh --rollback"
+  phase_done
+}
+
+smoke_cutover() {
+  local health sources status served admin_code
+  phase_start "6/7-public-smoke"
+  STATE="edge on oci-a1; public smoke in progress"
+  RECOVERY="  bash scripts/oci-a1/cutover.sh --resume-smoke   # if the smoke result looks like a false alarm
+  bash scripts/oci-a1/cutover.sh --rollback"
+  health=$(public_get "$(public_cb /v1/health)") || fail "public GET https://$PUBLIC_HOST/v1/health failed"
+  status=$(public_status "$health")
+  [[ "$status" == 200 ]] || fail "public /v1/health returned $status, want 200"
+  public_no_cache_hit "$health" /v1/health
+  printf 'ok: public /v1/health 200\n'
+  served=$(public_header "$health" X-JetScope-Served-By)
+  [[ "$served" == *"oci-a1"* ]] || fail "public /v1/health X-JetScope-Served-By='$served', want oci-a1"
+  printf 'ok: %s\n' "$served"
+
+  sources=$(public_get "$(public_cb /sources)") || fail "public GET https://$PUBLIC_HOST/sources failed"
+  status=$(public_status "$sources")
+  [[ "$status" == 200 ]] || fail "public /sources returned $status, want 200"
+  public_no_cache_hit "$sources" /sources
+  served=$(public_header "$sources" X-JetScope-Served-By)
+  [[ "$served" == *"oci-a1"* ]] || fail "public /sources X-JetScope-Served-By='$served', want oci-a1"
+  printf '%s' "$sources" | grep -q 'data-testid="page-as-of"' \
+    || fail "public /sources lacks data-testid=\"page-as-of\""
+  printf 'ok: public /sources has page-as-of, %s\n' "$served"
+
+  admin_code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "https://$PUBLIC_HOST/admin") \
+    || fail "public GET https://$PUBLIC_HOST/admin failed"
+  [[ "$admin_code" == 401 ]] || fail "public /admin without credentials returned $admin_code, want 401"
+  printf 'ok: public /admin without credentials 401\n'
+  phase_done
+}
+
+run_resume_smoke() {
+  STATE="no changes made"
+  RECOVERY="  nothing to undo"
+  check_ssh
+  prepare_log
+  lift_gate_cutover
+  smoke_cutover
+  printf '\nresume-smoke complete\n'
+  printf '  log: %s:%s\n' "$USA" "$LOG_DIR"
 }
 
 run_cutover() {
@@ -402,7 +509,7 @@ ip=$3
 nginx -t >/dev/null
 cur="$(readlink -f /etc/nginx/sites-enabled/jetscope || true)"
 if [[ "$cur" == "$new" ]]; then
-  echo "already cut over to $new; use --rollback" >&2
+  echo "already cut over to $new; use --rollback, or --resume-smoke if only phase 5 or 6 failed" >&2
   exit 1
 fi
 curl -fsS --max-time 10 "http://$ip:8000/v1/health" >/dev/null \
@@ -476,14 +583,13 @@ REMOTE
   phase_done
 
   phase_start "3/7-db-sync"
-  USA_DUMP="/tmp/jetscope-cutover.$TS.$$.db"
-  OCI_INCOMING="$OCI_ROOT/data/.market.db.cutover.$TS"
+  USA_DUMP=$(usa_run "mktemp /root/jetscope-cutover.XXXXXX.db") || fail "could not create a snapshot file on $USA"
+  OCI_INCOMING=$(oci_run "mktemp $(printf %q "$OCI_ROOT/data")/.cutover-snap.XXXXXX") || fail "could not create a snapshot file on $OCI"
   usa_bash "$USA_DB" "$USA_DUMP" <<'REMOTE'
 set -Eeuo pipefail
 db=$1
 dump=$2
 [[ -f "$db" ]] || { echo "missing $db" >&2; exit 1; }
-rm -f "$dump"
 sqlite3 "$db" ".backup '$dump'" || { echo "sqlite3 .backup failed" >&2; exit 1; }
 chmod 600 "$dump"
 printf 'ok: snapshot %s bytes sha256=%s\n' "$(stat -c %s "$dump")" "$(sha256sum "$dump" | cut -c1-8)"
@@ -510,8 +616,8 @@ REMOTE
   OCI_PRE_DB="$OCI_DB.pre-cutover-$TS"
   STATE="maintenance gate on; oci api is being stopped and its db replaced"
   RECOVERY="  ssh $OCI 'docker start jetscope-api && curl -fsS http://$OCI_IP:8000/v1/health'
-  ssh $OCI 'docker stop jetscope-api && mv $OCI_DB $OCI_PRE_DB && docker start jetscope-api'
-  # the pre-cutover db is kept at $OCI_PRE_DB (plus -wal/-shm if present)"
+  # if the swap already happened, restore the pre-cutover db (incl. -wal/-shm/-journal):
+  ssh $OCI 'docker stop jetscope-api && $(restore_db_cmd "$OCI_PRE_DB" "$OCI_DB"); docker start jetscope-api'"
   oci_bash "$OCI_DB" "$OCI_INCOMING" "$OCI_PRE_DB" "$OCI_IP" <<'REMOTE'
 set -Eeuo pipefail
 db=$1
@@ -527,14 +633,20 @@ restart() {
   fi
 }
 trap restart EXIT
+running=$(docker inspect -f '{{.State.Running}}' jetscope-api) || { echo "docker inspect jetscope-api failed" >&2; exit 1; }
+[[ "$running" == false ]] || { echo "jetscope-api is still running after docker stop" >&2; exit 1; }
 [[ -e "$db" ]] || { echo "missing $db" >&2; exit 1; }
+if [[ -s "$db-journal" ]]; then
+  echo "hot journal $db-journal present: the db may hold an unfinished transaction; start the API once normally, then retry" >&2
+  exit 1
+fi
 mv "$db" "$pre"
-for sfx in -wal -shm; do
+for sfx in -wal -shm -journal; do
   if [[ -e "$db$sfx" ]]; then mv "$db$sfx" "$pre$sfx"; fi
 done
 if ! mv "$incoming" "$db"; then
   mv "$pre" "$db"
-  for sfx in -wal -shm; do
+  for sfx in -wal -shm -journal; do
     if [[ -e "$pre$sfx" ]]; then mv "$pre$sfx" "$db$sfx"; fi
   done
   echo "could not move the new db into place; previous db restored" >&2
@@ -559,13 +671,15 @@ if [[ "$ok" != 1 ]]; then
 fi
 printf 'ok: oci api healthy after swap; previous db at %s\n' "$pre"
 REMOTE
+  usa_run "rm -f $(printf %q "$USA_DUMP")" || fail "could not delete the snapshot $USA_DUMP on $USA"
+  oci_run "rm -f $(printf %q "$OCI_INCOMING")" || fail "could not delete the snapshot $OCI_INCOMING on $OCI"
   OCI_INCOMING=""
   USA_DUMP=""
   pre_sha=$(remote_sha oci_run "$OCI_PRE_DB") || fail "could not hash $OCI_PRE_DB on $OCI"
   manifest_add "$pre_sha" "$OCI:$OCI_PRE_DB"
   STATE="maintenance gate on; oci api is running on the synced db"
   RECOVERY="  ssh $OCI 'docker start jetscope-api && curl -fsS http://$OCI_IP:8000/v1/health'
-  ssh $OCI 'docker stop jetscope-api && mv $OCI_PRE_DB $OCI_DB && docker start jetscope-api'"
+  ssh $OCI 'docker stop jetscope-api && $(restore_db_cmd "$OCI_PRE_DB" "$OCI_DB"); docker start jetscope-api'"
   phase_done
 
   phase_start "4/7-upstream-and-site"
@@ -613,43 +727,8 @@ REMOTE
   ssh $USA 'rm -f $UPSTREAM_CONF'"
   phase_done
 
-  phase_start "5/7-lift-gate"
-  STATE="edge on oci-a1; maintenance snippet being removed"
-  RECOVERY="  ssh $USA 'nginx -t && systemctl reload nginx'"
-  usa_bash "$MAINT_SNIPPET" <<'REMOTE'
-set -Eeuo pipefail
-rm -f "$1"
-nginx -t
-systemctl reload nginx
-echo "ok: maintenance gate removed"
-REMOTE
-  STATE="edge on oci-a1; writes and reads go to oci-a1"
-  RECOVERY="  bash scripts/oci-a1/cutover.sh --rollback"
-  phase_done
-
-  phase_start "6/7-public-smoke"
-  STATE="edge on oci-a1; public smoke in progress"
-  RECOVERY="  bash scripts/oci-a1/cutover.sh --rollback"
-  health=$(public_get /v1/health) || fail "public GET https://$PUBLIC_HOST/v1/health failed"
-  status=$(public_status "$health")
-  [[ "$status" == 200 ]] || fail "public /v1/health returned $status, want 200"
-  printf 'ok: public /v1/health 200\n'
-  served=$(public_header "$health" X-JetScope-Served-By)
-  [[ "$served" == *"oci-a1"* ]] || fail "public /v1/health X-JetScope-Served-By='$served', want oci-a1"
-  printf 'ok: %s\n' "$served"
-
-  sources=$(public_get /sources) || fail "public GET https://$PUBLIC_HOST/sources failed"
-  status=$(public_status "$sources")
-  [[ "$status" == 200 ]] || fail "public /sources returned $status, want 200"
-  printf '%s' "$sources" | grep -q 'data-testid="page-as-of"' \
-    || fail "public /sources lacks data-testid=\"page-as-of\""
-  printf 'ok: public /sources has page-as-of\n'
-
-  admin_code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "https://$PUBLIC_HOST/admin") \
-    || fail "public GET https://$PUBLIC_HOST/admin failed"
-  [[ "$admin_code" == 401 ]] || fail "public /admin without credentials returned $admin_code, want 401"
-  printf 'ok: public /admin without credentials 401\n'
-  phase_done
+  lift_gate_cutover
+  smoke_cutover
 
   phase_start "7/7-summary"
   usa_run "rm -f $(printf %q "$SITE_MAINT")"
@@ -708,21 +787,22 @@ REMOTE
   STATE="maintenance gate on; stopping the usa api"
   RECOVERY="  ssh $USA 'cd /opt/jetscope && docker-compose -f $USA_COMPOSE start api'
   ssh $USA 'rm -f $MAINT_SNIPPET && nginx -t && systemctl reload nginx'"
-  usa_run "cd /opt/jetscope && docker-compose -f $USA_COMPOSE stop api"
+  usa_run "cd /opt/jetscope && docker-compose -f $(printf %q "$USA_COMPOSE") stop api"
+  running=$(usa_run "docker inspect -f '{{.State.Running}}' jetscope-api") || fail "could not inspect jetscope-api on $USA"
+  [[ "$running" == false ]] || fail "jetscope-api on $USA is still running after docker-compose stop (State.Running=$running)"
   STATE="maintenance gate on; usa api stopped; oci db is authoritative"
   RECOVERY="  ssh $USA 'cd /opt/jetscope && docker-compose -f $USA_COMPOSE start api'
   ssh $USA 'rm -f $MAINT_SNIPPET && nginx -t && systemctl reload nginx'"
   phase_done
 
   phase_start "3/5-db-sync"
-  OCI_DUMP="/tmp/jetscope-rollback.$TS.$$.db"
-  USA_INCOMING="$USA_ROOT/data/.market.db.rollback.$TS"
+  OCI_DUMP=$(oci_run "mktemp $(printf %q "$OCI_ROOT/data")/.cutover-snap.XXXXXX") || fail "could not create a snapshot file on $OCI"
+  USA_INCOMING=$(usa_run "mktemp $(printf %q "$USA_ROOT/data")/.cutover-snap.XXXXXX") || fail "could not create a snapshot file on $USA"
   oci_bash "$OCI_DB" "$OCI_DUMP" <<'REMOTE'
 set -Eeuo pipefail
 db=$1
 dump=$2
 [[ -f "$db" ]] || { echo "missing $db" >&2; exit 1; }
-rm -f "$dump"
 sqlite3 "$db" ".backup '$dump'" || { echo "sqlite3 .backup failed" >&2; exit 1; }
 chmod 600 "$dump"
 printf 'ok: snapshot %s bytes sha256=%s\n' "$(stat -c %s "$dump")" "$(sha256sum "$dump" | cut -c1-8)"
@@ -749,10 +829,8 @@ REMOTE
   USA_PRE_DB="$USA_DB.pre-rollback-$TS"
   STATE="maintenance gate on; usa api stopped; swapping the usa db"
   RECOVERY="  ssh $USA 'cd /opt/jetscope && docker-compose -f $USA_COMPOSE start api'
-  # the pre-rollback db is kept at $USA_PRE_DB (plus -wal/-shm if present)
-  ssh $USA 'cd /opt/jetscope && docker-compose -f $USA_COMPOSE stop api &&
-    mv $USA_PRE_DB $USA_DB &&
-    docker-compose -f $USA_COMPOSE start api'"
+  # if the swap already happened, restore the pre-rollback db (incl. -wal/-shm/-journal):
+  ssh $USA 'cd /opt/jetscope && docker-compose -f $USA_COMPOSE stop api && $(restore_db_cmd "$USA_PRE_DB" "$USA_DB"); docker-compose -f $USA_COMPOSE start api'"
   usa_bash "$USA_DB" "$USA_INCOMING" "$USA_PRE_DB" <<'REMOTE'
 set -Eeuo pipefail
 db=$1
@@ -760,13 +838,17 @@ incoming=$2
 pre=$3
 [[ -f "$incoming" ]] || { echo "missing $incoming" >&2; exit 1; }
 [[ -e "$db" ]] || { echo "missing $db" >&2; exit 1; }
+if [[ -s "$db-journal" ]]; then
+  echo "hot journal $db-journal present: the db may hold an unfinished transaction; start the API once normally, then retry" >&2
+  exit 1
+fi
 mv "$db" "$pre"
-for sfx in -wal -shm; do
+for sfx in -wal -shm -journal; do
   if [[ -e "$db$sfx" ]]; then mv "$db$sfx" "$pre$sfx"; fi
 done
 if ! mv "$incoming" "$db"; then
   mv "$pre" "$db"
-  for sfx in -wal -shm; do
+  for sfx in -wal -shm -journal; do
     if [[ -e "$pre$sfx" ]]; then mv "$pre$sfx" "$db$sfx"; fi
   done
   echo "could not move the new db into place; previous db restored" >&2
@@ -775,20 +857,20 @@ fi
 chmod 640 "$db"
 printf 'ok: %s installed; previous db at %s\n' "$db" "$pre"
 REMOTE
+  oci_run "rm -f $(printf %q "$OCI_DUMP")" || fail "could not delete the snapshot $OCI_DUMP on $OCI"
+  usa_run "rm -f $(printf %q "$USA_INCOMING")" || fail "could not delete the snapshot $USA_INCOMING on $USA"
   USA_INCOMING=""
   OCI_DUMP=""
   pre_sha=$(remote_sha usa_run "$USA_PRE_DB") || fail "could not hash $USA_PRE_DB on $USA"
   manifest_add "$pre_sha" "$USA:$USA_PRE_DB"
 
-  usa_run "cd /opt/jetscope && docker-compose -f $USA_COMPOSE start api"
+  usa_run "cd /opt/jetscope && docker-compose -f $(printf %q "$USA_COMPOSE") start api"
   wait_http usa_run "http://127.0.0.1:8000/v1/health" \
     || fail "usa api did not answer 127.0.0.1:8000/v1/health within 60s (previous db at $USA_PRE_DB)"
   printf 'ok: usa api healthy\n'
   STATE="maintenance gate on; usa api running on the synced db"
   RECOVERY="  ssh $USA 'cd /opt/jetscope && docker-compose -f $USA_COMPOSE start api'
-  ssh $USA 'cd /opt/jetscope && docker-compose -f $USA_COMPOSE stop api &&
-    mv $USA_PRE_DB $USA_DB &&
-    docker-compose -f $USA_COMPOSE start api'"
+  ssh $USA 'cd /opt/jetscope && docker-compose -f $USA_COMPOSE stop api && $(restore_db_cmd "$USA_PRE_DB" "$USA_DB"); docker-compose -f $USA_COMPOSE start api'"
   phase_done
 
   phase_start "4/5-restore-site"
@@ -823,7 +905,7 @@ fi
 systemctl reload nginx
 printf 'ok: %s -> %s\n' "$link" "$(readlink "$link")"
 REMOTE
-  STATE="maintenance gate on; edge points at the original usa site"
+  STATE="edge points at the original usa site, which has no maintenance include; writes are already back on usa (the snippet file is unused until removed)"
   RECOVERY="  ssh $USA 'rm -f $MAINT_SNIPPET && nginx -t && systemctl reload nginx'"
   phase_done
 
@@ -840,9 +922,10 @@ REMOTE
   STATE="rollback complete: usa serves directly again"
   RECOVERY="  bash scripts/oci-a1/cutover.sh"
 
-  health=$(public_get /v1/health) || fail "public GET https://$PUBLIC_HOST/v1/health failed"
+  health=$(public_get "$(public_cb /v1/health)") || fail "public GET https://$PUBLIC_HOST/v1/health failed"
   status=$(public_status "$health")
   [[ "$status" == 200 ]] || fail "public /v1/health returned $status, want 200"
+  public_no_cache_hit "$health" /v1/health
   printf 'ok: public /v1/health 200\n'
   served=$(public_header "$health" X-JetScope-Served-By)
   if [[ "$served" == *"oci-a1"* ]]; then
@@ -858,8 +941,8 @@ REMOTE
   printf 'cutover: bash scripts/oci-a1/cutover.sh\n'
 }
 
-if [[ "$MODE" == rollback ]]; then
-  run_rollback
-else
-  run_cutover
-fi
+case "$MODE" in
+  rollback) run_rollback ;;
+  resume) run_resume_smoke ;;
+  *) run_cutover ;;
+esac
