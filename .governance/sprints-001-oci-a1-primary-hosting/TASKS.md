@@ -10,7 +10,7 @@
 | TK-002 | oci-a1 systemd 单元模板 + 状态变化告警脚本 | reviewing | — | `infra/server/oci-a1/systemd/**`、`infra/server/oci-a1/health-alert-on-change.sh` | default,security | — |
 | TK-003 | usa nginx 模板 + nginx-smoke 回归测试 | split | — | `infra/server/oci-a1/nginx/**`、`scripts/oci-a1/nginx-smoke.sh` | architecture,security | split → TK-003A, TK-003B（两条主线 + 兜底全部失败后拆分） |
 | TK-003A | nginx 模板：upstream/读写 map/served-by/站点/维护片段 | reviewing | — | `infra/server/oci-a1/nginx/**` | architecture,security | review A1 blocker 的落点 |
-| TK-003B | nginx-smoke.sh 容器化回归测试 | executing | TK-003A | `scripts/oci-a1/nginx-smoke.sh` | architecture,security | 由 Coordinator 在 oci-a1 /tmp 下用 docker 实跑 |
+| TK-003B | nginx-smoke.sh 容器化回归测试 | reviewing | TK-003A | `scripts/oci-a1/nginx-smoke.sh` | architecture,security | 由 Coordinator 在 oci-a1 /tmp 下用 docker 实跑 |
 | TK-004 | bootstrap.sh：目录、Node 22 签名校验安装、sqlite3、Funnel 预检 | reviewing | — | `scripts/oci-a1/bootstrap.sh` | security | — |
 | TK-005 | seed.sh：密钥搬运、ADMIN_TOKEN 轮换、usa 权限修正、库快照 | executing | — | `scripts/oci-a1/seed.sh` | security,architecture | — |
 | TK-006 | install-units.sh + oci-backup.sh 加 jetscope 段 | planned | TK-002 | `scripts/oci-a1/install-units.sh`、`~/oci-a1-deploy/oci-backup.sh`（仓库外） | default,security | — |
