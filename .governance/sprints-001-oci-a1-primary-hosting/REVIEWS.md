@@ -6,12 +6,12 @@
 | CR | TK | rounds | status | last_action |
 |----|----|--------|--------|-------------|
 | CR-001 | TK-001 | 2 | resolved | 2026-10-22 23:52 CST: recheck 全部 fixed，关闭 |
-| CR-002 | TK-002 | 2 | needs_fix | 2026-10-22 23:52 CST: recheck 发现 N1 回归（readiness 是单词不是状态码），进 R6 |
+| CR-002 | TK-002 | 3 | resolved | 2026-10-23 01:55 CST: R6（16b5b29）修 N1，recheck fixed，关闭 |
 | CR-004 | TK-004 | 2 | resolved | 2026-10-22 23:52 CST: recheck 全部 fixed，关闭 |
 | CR-003 | TK-003A,TK-003B | 2 | resolved | 2026-10-22 23:52 CST: recheck 全部 fixed，关闭 |
 | CR-005 | TK-005 | 2 | resolved | 2026-10-22 23:52 CST: recheck 全部 fixed，关闭 |
 | CR-006 | TK-006 | 2 | resolved | 2026-10-22 23:52 CST: recheck 全部 fixed，关闭 |
-| CR-007 | TK-007 | 1 | needs_fix | 2026-10-22 23:51 CST: R1 2 major（恢复命令方向反了、没处理 -journal）+ 6 minor/nit 全部 accepted，进 R5 |
+| CR-007 | TK-007 | 2 | resolved | 2026-10-23 01:55 CST: R5（af27a21）F1–F8/C1 recheck 全部 fixed；新 N-1/N-2 由 Coordinator 修（9ffbdf7），N-3..N-5 nit 不修（N-5 上线前实测） |
 
 ## 字段说明
 - **rounds**：已完成 review 轮数（initial = 1，第一次 recheck = 2，以此类推）

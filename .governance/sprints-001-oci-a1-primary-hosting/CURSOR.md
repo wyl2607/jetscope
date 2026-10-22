@@ -29,3 +29,4 @@
 
 ## 下一步
 - `/sprint-tick` 进入 Scheduler：TK-001..TK-005 无写入冲突，可作为 ready 批次并行派发
+- 2026-10-23 01:55 CST: R6（16b5b29）、TK-008（61b95bb）、R5（af27a21，DeepSeek 两次无产物后改派 Claude 子 agent）合入；CR-002/007 recheck resolved；N-1/N-2 由 Coordinator 修（9ffbdf7）。TK-001..008 全部 done → 下一步 /sprint-exit，然后由用户按 docs/DEPLOY-OCI-A1.md 执行上线
