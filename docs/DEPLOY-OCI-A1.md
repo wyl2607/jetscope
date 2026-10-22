@@ -178,7 +178,7 @@ bash scripts/oci-a1/cutover.sh
 
 验证：输出 `cutover complete`；公网 `/v1/health` 返回 200 且 `X-JetScope-Served-By` 含 `oci-a1`；`/sources` 有 `data-testid="page-as-of"`；`/admin` 无凭据返回 401。
 
-失败怎么办：脚本在任何阶段失败都会停下，打印当前状态、恢复命令和日志路径，不会自动回退（`nginx -t` 失败是唯一的就地恢复）。当前版本不接受 `--resume-smoke`；如果已经切到 oci-a1 后公网冒烟失败，重跑 `cutover.sh` 会被预检拒绝，需要先按失败输出的 recovery 处理，或者执行回切后重来。
+失败怎么办：脚本在任何阶段失败都会停下，打印当前状态、恢复命令和日志路径，不会自动回退（`nginx -t` 失败是唯一的就地恢复）。如果已经切到 oci-a1、只是撤维护片段或公网冒烟失败（例如 Cloudflare 缓存误报），不要重跑 `cutover.sh`（预检会拒绝），改跑 `bash scripts/oci-a1/cutover.sh --resume-smoke`：它只撤掉残留的维护片段并重做公网冒烟。换库阶段失败时按输出的 recovery 从 `market.db.pre-cutover-<时间戳>` 还原；停容器后发现非空 `market.db-journal`（热日志）会中止，先让 API 正常启动一次再重试。
 
 ## 回切到 usa
 
