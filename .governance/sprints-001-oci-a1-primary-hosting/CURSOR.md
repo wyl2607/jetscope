@@ -2,10 +2,10 @@
 
 ## 当前状态
 <!-- Machine fields: new writes must use "- key: `value`". Legacy variants are read-only compatibility. -->
-- current_phase: `execution`
-- current_tk: `TK-001,TK-002,TK-003,TK-004`
-- current_cr: `—`
-- current_round: `—`
+- current_phase: `review`
+- current_tk: `TK-001,TK-002,TK-004`
+- current_cr: `CR-001,CR-002,CR-004`
+- current_round: `1`
 - escalated: `false`
 
 ## 进度快照
@@ -13,10 +13,10 @@
 
 | TK | 标题 | 状态 |
 |----|------|------|
-| TK-001 | compose 端口变量化 + 部署脚本参数化 + oci 封装 | executing |
-| TK-002 | oci-a1 systemd 单元模板 + 告警脚本 | executing |
+| TK-001 | compose 端口变量化 + 部署脚本参数化 + oci 封装 | reviewing |
+| TK-002 | oci-a1 systemd 单元模板 + 告警脚本 | reviewing |
 | TK-003 | usa nginx 模板 + nginx-smoke | executing |
-| TK-004 | bootstrap.sh | executing |
+| TK-004 | bootstrap.sh | reviewing |
 | TK-005 | seed.sh | planned |
 | TK-006 | install-units.sh + oci-backup | planned |
 | TK-007 | cutover.sh | planned |

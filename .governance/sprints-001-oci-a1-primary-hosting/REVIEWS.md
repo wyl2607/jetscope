@@ -15,3 +15,6 @@
   - `rejected` 全部 finding 被驳回并留痕
   - `escalated` 轮次 > 5 熔断
 - **last_action**：CST 时间 + 一句摘要
+| CR-001 | TK-001 | 0 | open | 2026-10-22 21:37 CST: created |
+| CR-002 | TK-002 | 0 | open | 2026-10-22 21:37 CST: created |
+| CR-004 | TK-004 | 0 | open | 2026-10-22 21:37 CST: created |
