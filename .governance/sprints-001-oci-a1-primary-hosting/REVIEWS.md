@@ -8,9 +8,9 @@
 | CR-001 | TK-001 | 1 | recheck | 2026-10-22 23:46 CST: R2 修复已合并，等 recheck |
 | CR-002 | TK-002 | 1 | recheck | 2026-10-22 23:46 CST: R2 修复已合并，等 recheck |
 | CR-004 | TK-004 | 1 | recheck | 2026-10-22 23:46 CST: R2 修复已合并，等 recheck |
-| CR-003 | TK-003A,TK-003B | 1 | needs_fix | 2026-10-22 23:44 CST: R1 7 条全部 accepted（F1 keepalive、F2 connect timeout、F6 buildId 是真实风险），进 R3 |
+| CR-003 | TK-003A,TK-003B | 1 | recheck | 2026-10-22 23:49 CST: R3 已合并；Coordinator 在 oci-a1 重跑 smoke，全部 PASS（含新增的 admin 路径和 HSTS 断言） |
 | CR-005 | TK-005 | 1 | recheck | 2026-10-22 23:46 CST: R2 修复已合并，等 recheck |
-| CR-006 | TK-006 | 1 | needs_fix | 2026-10-22 23:46 CST: Coordinator 发现首次安装死锁（C1）和告警时机（C2），进 R4 |
+| CR-006 | TK-006 | 1 | recheck | 2026-10-22 23:49 CST: R4 已合并 |
 | CR-007 | TK-007 | 0 | open | 2026-10-22 23:47 CST: created |
 
 ## 字段说明

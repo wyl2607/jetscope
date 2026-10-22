@@ -37,6 +37,15 @@ sudo nginx -t && sudo systemctl reload nginx
 the `map $upstream_addr $jetscope_served_by` regex. Do not leave either
 placeholder in the installed file.
 
+## Response header
+
+Every location adds `X-JetScope-Served-By: oci-a1|usa|none`. The value is the
+name only, never an IP. `oci-a1` means the request was served by the tailnet
+address, `usa` by `127.0.0.1`, and `none` means nginx generated the response
+itself (for example the Basic Auth `401` or the maintenance `503`) without
+contacting a backend. A `502` after a failed connect records the address nginx
+tried, so it can be labelled with that upstream.
+
 During a cutover, copy `jetscope-maintenance.conf` into
 `/etc/nginx/snippets/` so non-GET/HEAD/OPTIONS requests get `503` with
 `Retry-After: 120`; delete that file to lift the gate. Leaving the snippet
