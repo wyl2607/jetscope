@@ -2,7 +2,7 @@
 
 ## 当前状态
 <!-- Machine fields: new writes must use "- key: `value`". Legacy variants are read-only compatibility. -->
-- current_phase: `sprint-init`   <!-- scheduler | execution | review | delivery | sprint-init | sprint-exit -->
+- current_phase: `scheduler`
 - current_tk: `—`
 - current_cr: `—`
 - current_round: `—`
@@ -24,7 +24,7 @@
 
 ## 最近动作
 <!-- 时间倒序，每行：`- YYYY-MM-DD HH:MM CST: <一句话动作>` -->
-- <YYYY-MM-DD HH:MM> CST: Sprint 初始化完成，等待开始 TK-001
+- 2026-10-22 20:59 CST: Sprint 001 initialized, awaiting TK-001
 
 ## 下一步
-- <!-- 下一个 phase 入口动作 -->
+- `/sprint-tick` 进入 Scheduler：TK-001..TK-005 无写入冲突，可作为 ready 批次并行派发
