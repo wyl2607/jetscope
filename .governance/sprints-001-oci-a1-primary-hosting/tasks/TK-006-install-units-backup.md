@@ -35,3 +35,4 @@ bash -n ~/oci-a1-deploy/oci-backup.sh
 ## 状态历史
 - 2026-10-22 CST: planned
 - 2026-10-22 23:41 CST: lane-chain 由 deepseek-v4.1-flash 一次过了质量门，已合并。Coordinator 预检：单元列表写死了（R2 要新增 jetscope-alert@.service → 并入 R2，改为安装 systemd 目录下的全部文件）；health-check timer 必须在第一次部署之后再启用，否则会先发一次故障告警（写进 TK-008 文档的执行顺序）。oci-backup.sh（仓库外）的 jetscope 段由 Coordinator 自己改，尚未完成。状态改为 reviewing。
+- 2026-10-22 23:42 CST: Coordinator 直接完成仓库外部分：`~/oci-a1-deploy/oci-backup.sh` 加 jetscope 段（取 /opt/jetscope/data/backups 下最新的 market-*.db.gz，gzip -t 校验后以 600 放进快照，不复制 .env；没有备份时跳过）。已装到 oci-a1 的 /usr/local/bin/oci-backup.sh（旧版留作 .pre-jetscope，回退：`sudo cp -p /usr/local/bin/oci-backup.sh.pre-jetscope /usr/local/bin/oci-backup.sh`），手动跑一次 Result=success（30M，jetscope 段按预期跳过）。
