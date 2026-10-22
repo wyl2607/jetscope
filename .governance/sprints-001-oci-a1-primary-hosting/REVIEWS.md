@@ -5,6 +5,9 @@
 
 | CR | TK | rounds | status | last_action |
 |----|----|--------|--------|-------------|
+| CR-001 | TK-001 | 0 | open | 2026-10-22 21:37 CST: created |
+| CR-002 | TK-002 | 0 | open | 2026-10-22 21:37 CST: created |
+| CR-004 | TK-004 | 0 | open | 2026-10-22 21:37 CST: created |
 
 ## 字段说明
 - **rounds**：已完成 review 轮数（initial = 1，第一次 recheck = 2，以此类推）
@@ -15,6 +18,3 @@
   - `rejected` 全部 finding 被驳回并留痕
   - `escalated` 轮次 > 5 熔断
 - **last_action**：CST 时间 + 一句摘要
-| CR-001 | TK-001 | 0 | open | 2026-10-22 21:37 CST: created |
-| CR-002 | TK-002 | 0 | open | 2026-10-22 21:37 CST: created |
-| CR-004 | TK-004 | 0 | open | 2026-10-22 21:37 CST: created |
