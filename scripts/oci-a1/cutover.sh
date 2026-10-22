@@ -463,6 +463,9 @@ run_resume_smoke() {
   STATE="no changes made"
   RECOVERY="  nothing to undo"
   check_ssh
+  cur=$(usa_run "readlink -f $(printf %q "$SITE_LINK")") || fail "could not read $SITE_LINK on $USA"
+  [[ "$cur" == "$SITE_NEW" ]] \
+    || fail "--resume-smoke needs $SITE_LINK -> $SITE_NEW, found '$cur'; the cutover did not reach the site switch, follow the recovery from that run instead"
   prepare_log
   lift_gate_cutover
   smoke_cutover
@@ -919,8 +922,8 @@ nginx -t
 systemctl reload nginx
 echo "ok: maintenance gate removed"
 REMOTE
-  STATE="rollback complete: usa serves directly again"
-  RECOVERY="  bash scripts/oci-a1/cutover.sh"
+  STATE="edge on usa, maintenance gate removed; public smoke pending"
+  RECOVERY="  check by hand: curl -sI https://$PUBLIC_HOST/v1/health (expect 200, no X-JetScope-Served-By: oci-a1)"
 
   health=$(public_get "$(public_cb /v1/health)") || fail "public GET https://$PUBLIC_HOST/v1/health failed"
   status=$(public_status "$health")
@@ -934,6 +937,8 @@ REMOTE
   printf 'ok: served-by is absent or usa (%s)\n' "${served:-none}"
   phase_done
 
+  STATE="rollback complete: usa serves directly again"
+  RECOVERY="  bash scripts/oci-a1/cutover.sh"
   printf '\nrollback complete\n'
   printf '  edge:      %s serving %s directly again\n' "$USA" "$PUBLIC_HOST"
   printf '  db backup: %s:%s\n' "$USA" "$USA_PRE_DB"
