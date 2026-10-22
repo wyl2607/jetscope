@@ -15,7 +15,7 @@
 | TK-005 | seed.sh：密钥搬运、ADMIN_TOKEN 轮换、usa 权限修正、库快照 | done | — | `scripts/oci-a1/seed.sh` | security,architecture | — |
 | TK-006 | install-units.sh + oci-backup.sh 加 jetscope 段 | done | TK-002 | `scripts/oci-a1/install-units.sh`、`~/oci-a1-deploy/oci-backup.sh`（仓库外） | default,security | — |
 | TK-007 | cutover.sh：切换 / 回切 / 阶段日志 / 维护片段 | reviewing | TK-003, TK-005 | `scripts/oci-a1/cutover.sh` | architecture,security | review A2/A3 的落点 |
-| TK-008 | 文档与用户执行清单 | planned | TK-001..TK-007 | `docs/DEPLOY-OCI-A1.md`、`docs/DEPLOY_USA_VPS.md`、`docs/PRODUCTION_RISK_REGISTER.md`、`OPERATIONS.md` | default | 纯文档但含部署指令 → 加 security 复核 |
+| TK-008 | 文档与用户执行清单 | executing | TK-001..TK-007 | `docs/DEPLOY-OCI-A1.md`、`docs/DEPLOY_USA_VPS.md`、`docs/PRODUCTION_RISK_REGISTER.md`、`OPERATIONS.md` | default | 纯文档但含部署指令 → 加 security 复核 |
 
 ## 字段说明
 - **write_scope**：路径前缀白名单，Executor 只能写其中的文件
