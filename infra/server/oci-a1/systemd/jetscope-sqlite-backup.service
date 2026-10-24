@@ -1,0 +1,14 @@
+# Source: RFC sprints-001-oci-a1-primary-hosting, "Architecture choice — Backup" and SEC-03.
+[Unit]
+Description=JetScope SQLite online backup (oci-a1 primary)
+After=local-fs.target
+OnFailure=jetscope-alert@%n.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+UMask=0077
+WorkingDirectory=/opt/jetscope
+ExecStart=/bin/bash /opt/jetscope/scripts/backup-sqlite.sh
+StandardOutput=journal
+StandardError=journal
