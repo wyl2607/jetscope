@@ -14,7 +14,7 @@ services:
     mem_limit: 512m
     cpus: "1.0"
     ports:
-      - "127.0.0.1:8000:8000"
+      - "${JETSCOPE_API_BIND:-127.0.0.1}:8000:8000"
     environment:
       JETSCOPE_DATABASE_URL: sqlite:///./data/market.db
       JETSCOPE_ADMIN_TOKEN: ${JETSCOPE_ADMIN_TOKEN}

@@ -10,6 +10,10 @@ const nextConfig = {
   // whole workspace install. `outputFileTracingRoot` below is what makes the
   // trace reach across the workspace root.
   output: 'standalone',
+  // oci-a1 and usa build separately; the same commit must produce the same
+  // buildId so /_next/static assets still match after a failover. Returning
+  // null falls back to Next's default random id when the SHA is not set.
+  generateBuildId: async () => process.env.JETSCOPE_BUILD_SHA || null,
   typedRoutes: true,
   outputFileTracingRoot: rootDir,
   // Inlined at build time: the systemd unit starts the server without it.

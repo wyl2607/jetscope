@@ -1,0 +1,12 @@
+# Source: RFC sprints-001-oci-a1-primary-hosting, "Architecture choice — Backup".
+[Unit]
+Description=Run JetScope SQLite backup daily before oci-backup (oci-a1)
+
+[Timer]
+OnCalendar=*-*-* 01:10:00 UTC
+Persistent=true
+RandomizedDelaySec=5min
+Unit=jetscope-sqlite-backup.service
+
+[Install]
+WantedBy=timers.target

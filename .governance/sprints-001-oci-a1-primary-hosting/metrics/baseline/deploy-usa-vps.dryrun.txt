@@ -1,0 +1,51 @@
+### --rebuild --dry-run
+==> DRY-RUN: no SSH, no rsync, no docker, no remote changes
+host=usa-vps
+remote_dir=/opt/jetscope
+host_data_dir=/opt/jetscope/data
+container=jetscope-api
+container_db=/app/data/market.db
+rebuild=1 api_only=0 allow_unmerged=0 allow_empty_db=0
+would: rsync <ROOT>/ -> usa-vps:/opt/jetscope/ (excludes .env, data/*.db, data/*.sqlite; no --delete)
+would: record HEAD in /opt/jetscope/.deploy-commit
+would: docker compose -f docker-compose.prod.yml build api   # old container keeps serving
+would: mkdir -p /opt/jetscope/data
+would: if /opt/jetscope/data/market.db is non-empty: skip docker cp (idempotent; never overwrite)
+would: else if jetscope-api is missing, or /app/data/market.db is missing or empty: fail with exit 1 (use --allow-empty-db to continue)
+would: else: PRAGMA wal_checkpoint(FULL); docker stop jetscope-api; docker cp market.db and non-empty -wal/-shm to /opt/jetscope/data
+would: JETSCOPE_HOST_DATA_DIR=/opt/jetscope/data docker compose -f docker-compose.prod.yml up -d api
+would: npm run web:build && systemctl restart jetscope-web.service
+would: remote smoke against 127.0.0.1:8000 and 127.0.0.1:3000
+rc=0
+### --rebuild --api-only --dry-run
+==> DRY-RUN: no SSH, no rsync, no docker, no remote changes
+host=usa-vps
+remote_dir=/opt/jetscope
+host_data_dir=/opt/jetscope/data
+container=jetscope-api
+container_db=/app/data/market.db
+rebuild=1 api_only=1 allow_unmerged=0 allow_empty_db=0
+would: rsync <ROOT>/ -> usa-vps:/opt/jetscope/ (excludes .env, data/*.db, data/*.sqlite; no --delete)
+would: record HEAD in /opt/jetscope/.deploy-commit
+would: docker compose -f docker-compose.prod.yml build api   # old container keeps serving
+would: mkdir -p /opt/jetscope/data
+would: if /opt/jetscope/data/market.db is non-empty: skip docker cp (idempotent; never overwrite)
+would: else if jetscope-api is missing, or /app/data/market.db is missing or empty: fail with exit 1 (use --allow-empty-db to continue)
+would: else: PRAGMA wal_checkpoint(FULL); docker stop jetscope-api; docker cp market.db and non-empty -wal/-shm to /opt/jetscope/data
+would: JETSCOPE_HOST_DATA_DIR=/opt/jetscope/data docker compose -f docker-compose.prod.yml up -d api
+would: skip systemd web rebuild (--api-only)
+would: remote smoke against 127.0.0.1:8000 and 127.0.0.1:3000
+rc=0
+### --dry-run
+==> DRY-RUN: no SSH, no rsync, no docker, no remote changes
+host=usa-vps
+remote_dir=/opt/jetscope
+host_data_dir=/opt/jetscope/data
+container=jetscope-api
+container_db=/app/data/market.db
+rebuild=0 api_only=0 allow_unmerged=0 allow_empty_db=0
+would: rsync <ROOT>/ -> usa-vps:/opt/jetscope/ (excludes .env, data/*.db, data/*.sqlite; no --delete)
+would: record HEAD in /opt/jetscope/.deploy-commit
+would: skip image rebuild and SQLite migration (pass --rebuild; the running container is not replaced)
+would: remote smoke against 127.0.0.1:8000 and 127.0.0.1:3000
+rc=0
