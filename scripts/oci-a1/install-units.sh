@@ -4,8 +4,10 @@
 # Run this from the MacBook after bootstrap.sh and seed.sh. It is idempotent:
 # files are staged over scp, verified with systemd-analyze, compared with cmp
 # and only installed when they differ. daemon-reload runs only when something
-# changed. The two timers are enabled and started; jetscope-web.service is
-# installed but never enabled or started here.
+# changed. jetscope-web.service is installed but never enabled or started here.
+# The backup timer is enabled and started; the health-check timer is enabled
+# only when jetscope-web.service is already active, so a first install cannot
+# alert before the first deploy.
 #
 # Usage:
 #   bash scripts/oci-a1/install-units.sh             # preflight + apply
@@ -17,10 +19,13 @@
 #      /usr/local/bin/oci-tg-alert exists (missing alert command is a warning,
 #      not an abort);
 #   2. stage the unit files and the alert hook in a mktemp -d directory on
-#      oci-a1, sudo systemd-analyze verify the units, then install each file
-#      only when sudo cmp -s reports a difference;
-#   3. daemon-reload when any unit changed, then enable --now the sqlite-backup
-#      and health-check timers (never jetscope-web.service);
+#      oci-a1, sudo systemd-analyze verify the units (jetscope-web.service is
+#      left out of the verify when /opt/jetscope/node_modules/.bin/next does
+#      not exist yet), then install each file only when sudo cmp -s reports a
+#      difference;
+#   3. daemon-reload when any unit changed, then enable --now the
+#      sqlite-backup timer; the health-check timer is enabled --now only when
+#      jetscope-web.service is active (re-run after the first deploy);
 #   4. print the two timers from systemctl list-timers plus the enabled/active
 #      state of every JetScope unit.
 #
@@ -91,6 +96,7 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
   echo "would:   test -d /opt/jetscope (abort if missing)"
   echo "would:   test -x /opt/node-22/bin/node (abort if missing)"
   echo "would:   test -x /usr/local/bin/oci-tg-alert (warn only if missing)"
+  echo "would:   test -x /opt/jetscope/node_modules/.bin/next (read-only)"
   echo "would: stage=\$(ssh $OCI mktemp -d /tmp/jetscope-units.XXXXXX)"
   echo "would: scp -q these files to \$stage:"
   for name in "${UNIT_FILES[@]}"; do
@@ -98,17 +104,23 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
   done
   echo "would:   $ALERT_SRC"
   echo "would: sudo systemd-analyze verify \$stage/*.service \$stage/*.timer"
+  echo "would:   if /opt/jetscope/node_modules/.bin/next is missing, leave jetscope-web.service out of verify:"
+  echo "would:     warn: jetscope-web.service not verified (next not deployed yet)"
+  echo "would:   jetscope-web.service is still installed below"
   echo "would: template units (*@.service) are verified through a test instance name"
   echo "would: for each unit: sudo cmp -s \$stage/<name> $UNIT_DIR/<name>; install -o root -g root -m 644 when different"
   echo "would: sudo cmp -s \$stage/$ALERT_NAME $ALERT_DEST; install -o root -g root -m 755 when different"
   echo "would: sudo systemctl daemon-reload (only if any installed file changed)"
-  echo "would: sudo systemctl enable --now ${TIMERS[0]} ${TIMERS[1]}"
+  echo "would: sudo systemctl enable --now ${TIMERS[0]}"
+  echo "would: if systemctl is-active --quiet jetscope-web.service: sudo systemctl enable --now ${TIMERS[1]}"
+  echo "would: else: note: ${TIMERS[1]} not enabled yet; after the first deploy run: bash scripts/oci-a1/install-units.sh"
   echo "would: sudo systemctl list-timers --all (filter ${TIMERS[0]} ${TIMERS[1]})"
   echo "would: print is-enabled/is-active for ${TIMERS[0]}, ${TIMERS[1]} and jetscope-web.service"
   echo "would: remove \$stage"
   echo "note: template units such as jetscope-alert@.service are installed but never enabled"
   echo "note: jetscope-web.service is installed but not enabled; enable it manually before the first deploy:"
   echo "note:   sudo systemctl enable --now jetscope-web.service"
+  echo "note: re-run this script after the first deploy to enable ${TIMERS[1]}"
   exit 0
 fi
 
@@ -195,8 +207,20 @@ for name in "${units[@]}" "$alert_name"; do
 done
 
 echo "==> systemd-analyze verify"
+# jetscope-web.service points at /opt/jetscope/node_modules/.bin/next, which
+# only exists after the first deploy. Verifying it before that fails with
+# "not executable"; skip only that unit, install it as usual.
+if [[ -x /opt/jetscope/node_modules/.bin/next ]]; then
+  verify_web=1
+else
+  verify_web=0
+  echo "warn: jetscope-web.service not verified (next not deployed yet)"
+fi
 verify_paths=()
 for name in "${units[@]}"; do
+  if [[ "$name" == "jetscope-web.service" && "$verify_web" -eq 0 ]]; then
+    continue
+  fi
   case "$name" in
     *@.service)
       # systemd-analyze cannot verify a template file under its literal name;
@@ -251,10 +275,21 @@ else
   echo "ok: nothing changed; daemon-reload not needed"
 fi
 
-echo "==> enable --now timers"
-sudo systemctl enable --now jetscope-sqlite-backup.timer jetscope-health-check.timer \
-  || abort "could not enable the timers"
-echo "ok: jetscope-sqlite-backup.timer and jetscope-health-check.timer enabled"
+echo "==> enable timers"
+sudo systemctl enable --now jetscope-sqlite-backup.timer \
+  || abort "could not enable jetscope-sqlite-backup.timer"
+echo "ok: jetscope-sqlite-backup.timer enabled"
+
+# Enabling the health-check timer before the first deploy would fire a failure
+# alert for a service that is not running yet. It stays disabled until a second
+# run of this script sees jetscope-web.service active.
+if systemctl is-active --quiet jetscope-web.service; then
+  sudo systemctl enable --now jetscope-health-check.timer \
+    || abort "could not enable jetscope-health-check.timer"
+  echo "ok: jetscope-health-check.timer enabled"
+else
+  echo "note: jetscope-health-check.timer not enabled yet; after the first deploy run: bash scripts/oci-a1/install-units.sh"
+fi
 
 echo "==> status"
 sudo systemctl list-timers --all --no-pager \
