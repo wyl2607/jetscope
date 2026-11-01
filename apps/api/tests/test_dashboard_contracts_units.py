@@ -147,7 +147,38 @@ def test_market_reference_decides_the_headline_over_production_bands() -> None:
     assert {row.cost_basis for row in response.pathways} == {"production_cost"}
 
 
-def test_airline_decision_response_uses_real_signal_mapping_and_preserves_inputs(monkeypatch) -> None:
+def test_airline_decision_response_uses_market_reference_for_hefa_and_production_cost_for_atj() -> None:
+    fossil_jet_usd_per_l = 0.877
+    carbon_price_eur_per_t = 85.53
+    market_check = contracts._saf_market_check(fossil_jet_usd_per_l, carbon_price_eur_per_t)
+    assert market_check is not None
+
+    hefa = contracts.build_airline_decision_response(
+        fossil_jet_usd_per_l=fossil_jet_usd_per_l,
+        reserve_weeks=6.0,
+        carbon_price_eur_per_t=carbon_price_eur_per_t,
+        pathway_key="hefa",
+    )
+    atj = contracts.build_airline_decision_response(
+        fossil_jet_usd_per_l=fossil_jet_usd_per_l,
+        reserve_weeks=6.0,
+        carbon_price_eur_per_t=carbon_price_eur_per_t,
+        pathway_key="atj",
+    )
+
+    assert hefa.saf_premium_basis == "market_reference"
+    assert hefa.saf_reference_period == market_check.period
+    assert hefa.saf_premium_pct == market_check.premium_pct
+    assert atj.saf_premium_basis == "production_cost"
+    assert atj.saf_reference_period is None
+    expected_atj_premium = contracts._premium_pct(
+        contracts.get_pathway_cost("atj").min_usd_per_l,
+        fossil_jet_usd_per_l + contracts.carbon_credit_usd_per_l(carbon_price_eur_per_t),
+    )
+    assert atj.saf_premium_pct == expected_atj_premium
+
+
+def test_high_hefa_premium_blocks_switch_signal_even_when_offtake_dominates(monkeypatch) -> None:
     pathway = _pathway("hefa", "HEFA", 1.0, 1.5)
     probabilities = AirlineDecisionProbabilities(
         raise_fares=0.10,
@@ -171,6 +202,7 @@ def test_airline_decision_response_uses_real_signal_mapping_and_preserves_inputs
             probabilities=probabilities,
             dominant_response="sign_long_term_offtake",
             reserve_signal="normal",
+            saf_premium_pct=kwargs["saf_premium_pct"],
         )
 
     monkeypatch.setattr(contracts, "get_pathway_cost", fake_get_pathway_cost)
@@ -178,17 +210,20 @@ def test_airline_decision_response_uses_real_signal_mapping_and_preserves_inputs
     monkeypatch.setattr(contracts, "utcnow", lambda: datetime(2030, 1, 1, tzinfo=UTC))
 
     response = contracts.build_airline_decision_response(
-        fossil_jet_usd_per_l=1.4,
-        reserve_weeks=2.5,
-        carbon_price_eur_per_t=90.0,
+        fossil_jet_usd_per_l=0.877,
+        reserve_weeks=6.0,
+        carbon_price_eur_per_t=85.53,
         pathway_key="hefa",
     )
 
     assert seen_pathway_keys == ["hefa"]
     assert response.inputs.pathway_key == "hefa"
-    assert response.inputs.reserve_weeks == pytest.approx(2.5)
+    assert response.inputs.reserve_weeks == pytest.approx(6.0)
     assert response.probabilities.sign_long_term_offtake == pytest.approx(0.45)
-    assert response.signal == "switch_window_opening"
+    assert response.saf_premium_basis == "market_reference"
+    assert response.saf_reference_period is not None
+    assert response.saf_premium_pct > 15.0
+    assert response.signal == "incremental_adjustment"
 
 
 def test_reserve_signal_response_maps_source_and_rounds_coverage_weeks(monkeypatch) -> None:
