@@ -35,10 +35,12 @@ OCI="${JETSCOPE_OCI_HOST:-oci-a1-ts}"
 OCI_IP="${JETSCOPE_OCI_IP:-100.81.227.79}"
 USA="${JETSCOPE_USA_HOST:-usa-vps}"
 NODE_VERSION="${NODE_VERSION:-v22.23.4}"
-# Signer of the $NODE_VERSION SHASUMS256.txt.sig: only this primary key
-# fingerprint (space-separated list) may validate the manifest. Update it when
+# Signer of the $NODE_VERSION SHASUMS256.txt.sig: only these primary key
+# fingerprints (space-separated list) may validate the manifest. Update it when
 # NODE_VERSION changes; the fingerprint for a release is the primary key in the
-# gpg status VALIDSIG line.
+# gpg status VALIDSIG line. The list is validated item by item locally, then
+# passed to the remote side comma-separated because ssh rejoins argv into one
+# string and would otherwise split only the first fingerprint into $2.
 NODE_SIGNER_FPRS="${NODE_SIGNER_FPRS:-5BE8A3F6C8A5C01D106C0AD820B1A390B168D356}"
 
 DRY_RUN=0
@@ -69,12 +71,18 @@ for fpr in "${NODE_SIGNER_FPR_LIST[@]}"; do
   [[ "$fpr" =~ ^[A-F0-9]{40}$ ]] \
     || { echo "ERROR: NODE_SIGNER_FPRS contains an invalid fingerprint: '$fpr'" >&2; exit 1; }
 done
+# ssh joins argv back into a single string, so a space-separated list would
+# reach the remote script as several arguments. Pass one comma-separated word.
+NODE_SIGNER_FPRS_REMOTE=""
+for fpr in "${NODE_SIGNER_FPR_LIST[@]}"; do
+  NODE_SIGNER_FPRS_REMOTE="${NODE_SIGNER_FPRS_REMOTE:+$NODE_SIGNER_FPRS_REMOTE,}$fpr"
+done
 
 if [[ "$DRY_RUN" -eq 1 ]]; then
   echo "==> DRY-RUN: no SSH, no network, no remote changes"
   echo "host=$OCI ip=$OCI_IP standby=$USA node_version=$NODE_VERSION"
   echo "node signer fingerprints (NODE_SIGNER_FPRS): $NODE_SIGNER_FPRS"
-  echo "would: ssh -o BatchMode=yes $OCI bash -s -- $NODE_VERSION $NODE_SIGNER_FPRS"
+  echo "would: ssh -o BatchMode=yes $OCI bash -s -- $NODE_VERSION $NODE_SIGNER_FPRS_REMOTE"
   echo "would: cd / (ubuntu home is 750)"
   echo "would: preflight (read-only, abort on any failure):"
   echo "would:   sudo -n true"
@@ -103,11 +111,12 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
 fi
 
 echo "==> connecting to $OCI (tailnet $OCI_IP); standby $USA is not touched"
-ssh -o BatchMode=yes -o ConnectTimeout=12 "$OCI" bash -s -- "$NODE_VERSION" "$NODE_SIGNER_FPRS" <<'REMOTE'
+ssh -o BatchMode=yes -o ConnectTimeout=12 "$OCI" bash -s -- "$NODE_VERSION" "$NODE_SIGNER_FPRS_REMOTE" <<'REMOTE'
 set -Eeuo pipefail
 
 NODE_VERSION="${1:-v22.23.4}"
 NODE_SIGNER_FPRS="${2:-5BE8A3F6C8A5C01D106C0AD820B1A390B168D356}"
+IFS=, read -r -a NODE_SIGNER_FPR_LIST <<< "$NODE_SIGNER_FPRS"
 PREFIX=/opt/node-22
 RELEASE_KEYS_URL="https://raw.githubusercontent.com/nodejs/release-keys/main"
 
@@ -217,10 +226,15 @@ else
     | awk '/^\[GNUPG:\] VALIDSIG / { fpr = $NF } END { print fpr }')"
   [[ -n "$signer_fpr" ]] \
     || abort "gpg did not report a VALIDSIG primary key fingerprint; refusing to trust the manifest"
-  case " $NODE_SIGNER_FPRS " in
-    *" $signer_fpr "*) ;;
-    *) abort "SHASUMS256.txt.sig signed by $signer_fpr, which is not an allowed Node signer (NODE_SIGNER_FPRS=$NODE_SIGNER_FPRS)" ;;
-  esac
+  signer_allowed=0
+  for allowed_fpr in "${NODE_SIGNER_FPR_LIST[@]}"; do
+    if [[ "$signer_fpr" == "$allowed_fpr" ]]; then
+      signer_allowed=1
+      break
+    fi
+  done
+  (( signer_allowed )) \
+    || abort "SHASUMS256.txt.sig signed by $signer_fpr, which is not an allowed Node signer (NODE_SIGNER_FPRS=$NODE_SIGNER_FPRS)"
   echo "ok: SHASUMS256.txt signature verified (signer $signer_fpr)"
 
   echo " -> sha256sum -c"
