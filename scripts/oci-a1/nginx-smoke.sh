@@ -4,8 +4,13 @@
 # It runs nginx 1.24 in docker together with two fake upstreams (oci, usa) on
 # one private docker network and asserts the behaviour the cutover relies on:
 # path/query preservation, read failover, writes never failing over, Basic Auth
-# on /admin, the maintenance gate and X-JetScope-Served-By. It never connects
-# to oci-a1 or usa-vps; docker on the local host is the only requirement.
+# on /admin, the maintenance gate, X-JetScope-Served-By and HSTS. It never
+# connects to oci-a1 or usa-vps; docker on the local host is the only
+# requirement.
+#
+# Token auth on the API write endpoints (401/403) is NOT checked here because
+# the backends are fake. It is guaranteed by code review: every write route in
+# apps/api uses Depends(require_admin_token), see the RFC write-entry table.
 #
 # Usage (any working directory):
 #   bash scripts/oci-a1/nginx-smoke.sh            # run, then remove everything
@@ -16,6 +21,7 @@
 # Environment:
 #   NGINX_IMAGE  nginx image used for the edge and both backends
 #                (default: nginx:1.24, matching usa-vps 1.24.0)
+#   CURL_IMAGE   client image (default: curlimages/curl:8.11.1, pinned)
 #
 # Exits non-zero when any assertion fails or a container command fails. Test
 # certificates, the Basic Auth file and the rendered configs live under a
@@ -23,7 +29,7 @@
 set -Eeuo pipefail
 
 NGINX_IMAGE="${NGINX_IMAGE:-nginx:1.24}"
-CURL_IMAGE="curlimages/curl"
+CURL_IMAGE="${CURL_IMAGE:-curlimages/curl:8.11.1}"
 
 KEEP=0
 DRY_RUN=0
@@ -252,11 +258,13 @@ EOF
 render_upstream() {
   local rendered
   OCI_IP_RE=${OCI_IP//./\\.}
+  USA_IP_RE=${USA_IP//./\\.}
   rendered=$(<"$NGINX_SRC/jetscope-upstream.conf")
   rendered=${rendered//__OCI_IP_RE__/$OCI_IP_RE}
   rendered=${rendered//__OCI_IP__/$OCI_IP}
   rendered=${rendered//127.0.0.1:8000/$USA_IP:8000}
   rendered=${rendered//127.0.0.1:3000/$USA_IP:3000}
+  rendered=${rendered//"127\.0\.0\.1:[0-9]+\$"/"$USA_IP_RE:[0-9]+\$"}
   printf '%s\n' "$rendered" > "$T/conf.d/jetscope-upstream.conf"
 }
 
@@ -398,6 +406,7 @@ request "/sources"
 expect_status "b" 200
 expect_body_has "b" "backend=oci"
 expect_header_eq "b" "X-JetScope-Served-By" "oci-a1"
+expect_header_present "b" "Strict-Transport-Security"
 
 log ""
 log "c) POST /v1/scenarios reaches the oci api"
@@ -408,6 +417,11 @@ expect_body_has "c" "backend=oci"
 log ""
 log "d) /admin requires Basic Auth"
 request "/admin"
+expect_status "d" 401
+expect_header_present "d" "Strict-Transport-Security"
+request "/en/admin"
+expect_status "d" 401
+request "/de/admin/x"
 expect_status "d" 401
 request "/admin" -u tester:testpass
 expect_status "d" 200
@@ -420,10 +434,13 @@ request "/v1/health"
 expect_status "e" 200
 expect_body_has "e" "backend=usa"
 expect_header_eq "e" "X-JetScope-Served-By" "usa"
+expect_header_present "e" "Strict-Transport-Security"
 request "/v1/scenarios" -X POST
 expect_status "e" 502
+expect_header_present "e" "Strict-Transport-Security"
 request "/api/pathways" -X PUT
 expect_status "e" 502
+expect_header_present "e" "Strict-Transport-Security"
 request "/admin" -u tester:testpass
 expect_status "e" 502
 nginx_test "g: while oci is down"
@@ -461,6 +478,7 @@ sleep 1
 request "/v1/scenarios" -X POST
 expect_status "f" 503
 expect_header_present "f" "Retry-After"
+expect_header_present "f" "Strict-Transport-Security"
 request "/v1/health"
 expect_status "f" 200
 nginx_test "g: maintenance active"
