@@ -1,0 +1,196 @@
+# TK-007 — cutover.sh result
+
+## Changed files
+
+| File | Purpose |
+| --- | --- |
+| `scripts/oci-a1/cutover.sh` | New cutover/rollback driver: read-only preflight, per-phase `phases.log` + `manifest` on usa, nginx backup, maintenance gate, final `.backup` DB sync with integrity/row-count checks, upstream + site install with symlink rollback on failed `nginx -t`, public smoke, and the reverse rollback path. Supports `--rollback`, `--dry-run` (no SSH, no network), `--help`. |
+
+No other file was created or modified; nothing was committed or pushed.
+
+## Validation (verbatim)
+
+### `bash -n`
+
+```text
+$ bash -n scripts/oci-a1/cutover.sh
+$ echo $?
+0
+```
+
+### `shellcheck -S warning`
+
+```text
+$ shellcheck -S warning scripts/oci-a1/cutover.sh
+$ echo $?
+0
+```
+
+### `bash scripts/oci-a1/cutover.sh --dry-run`
+
+```text
+==> DRY-RUN: no SSH, no network, no remote changes
+mode=cutover usa=usa-vps oci=oci-a1-ts (100.81.227.79) public=saf.meichen.beauty
+templates: /Users/yumei/fleet/jr-oci-rev/TK-007/infra/server/oci-a1/nginx
+log on usa-vps: /var/lib/jetscope-cutover/<UTC ts>/{phases.log,manifest}
+==> 0/7 preflight (read-only)
+would: ssh usa-vps true and ssh oci-a1-ts true
+would: on oci-a1-ts: curl -fsS http://100.81.227.79:8000/v1/health
+would: on oci-a1-ts: curl -fsS http://100.81.227.79:3000/sources contains data-testid="page-as-of"
+would: on oci-a1-ts: sudo tailscale serve status / funnel status empty or "No serve config"
+would: on oci-a1-ts: /opt/jetscope/.env exists and contains JETSCOPE_API_BIND=
+would: on usa-vps: nginx -t
+would: on usa-vps: curl -fsS http://100.81.227.79:8000/v1/health
+would: on usa-vps: /etc/nginx/sites-available/jetscope exists and /etc/nginx/sites-enabled/jetscope does not already point at /etc/nginx/sites-available/jetscope.oci-a1
+==> 1/7 backup usa nginx
+would: mkdir /root/nginx-backup-jetscope-<ts>/{sites-available,conf.d,snippets}
+would: copy /etc/nginx/sites-available/jetscope, /etc/nginx/conf.d/ and /etc/nginx/snippets/ into it
+would: write every copied file and its sha256 into the manifest
+==> 2/7 maintenance gate
+would: install /Users/yumei/fleet/jr-oci-rev/TK-007/infra/server/oci-a1/nginx/jetscope-maintenance.conf as /etc/nginx/snippets/jetscope-maintenance.conf (644)
+would: copy /etc/nginx/sites-available/jetscope to /etc/nginx/sites-available/jetscope.maint and insert
+would:   include /etc/nginx/snippets/jetscope-maintenance*.conf;
+would:   before the first location block, then atomically point /etc/nginx/sites-enabled/jetscope at it
+would: nginx -t && systemctl reload nginx (restore the symlink if nginx -t fails)
+would: on usa-vps: curl -k --resolve saf.meichen.beauty:443:127.0.0.1 -X POST
+would:   https://saf.meichen.beauty/v1/scenarios returns 503
+==> 3/7 final market.db sync -> oci-a1-ts
+would: on usa-vps: sqlite3 /opt/jetscope/data/market.db ".backup /tmp/jetscope-cutover.<ts>.<pid>.db"
+would: stream it to oci-a1-ts:/opt/jetscope/data/.market.db.cutover.<ts>
+would: on oci-a1-ts: PRAGMA integrity_check must return ok
+would: compare per-table count(*) of the usa snapshot and the oci copy
+would: on oci-a1-ts: docker stop jetscope-api
+would: rename /opt/jetscope/data/market.db and any -wal/-shm to /opt/jetscope/data/market.db.pre-cutover-<ts>
+would: install the new db (640 ubuntu:ubuntu), docker start jetscope-api
+would: wait up to 60s for http://100.81.227.79:8000/v1/health
+==> 4/7 upstream and site
+would: render /Users/yumei/fleet/jr-oci-rev/TK-007/infra/server/oci-a1/nginx/jetscope-upstream.conf (__OCI_IP_RE__ -> 100\.81\.227\.79, __OCI_IP__ -> 100.81.227.79)
+would: install it as /etc/nginx/conf.d/jetscope-upstream.conf
+would: render /Users/yumei/fleet/jr-oci-rev/TK-007/infra/server/oci-a1/nginx/jetscope-site.conf and install it as /etc/nginx/sites-available/jetscope.oci-a1
+would: atomically point /etc/nginx/sites-enabled/jetscope at /etc/nginx/sites-available/jetscope.oci-a1
+would: nginx -t; on failure restore /etc/nginx/sites-available/jetscope.maint, remove /etc/nginx/conf.d/jetscope-upstream.conf, nginx -t
+would: systemctl reload nginx
+==> 5/7 lift the maintenance gate
+would: rm /etc/nginx/snippets/jetscope-maintenance.conf; nginx -t && systemctl reload nginx
+==> 6/7 public smoke from this Mac
+would: GET https://saf.meichen.beauty/v1/health -> 200 and X-JetScope-Served-By: oci-a1
+would: GET https://saf.meichen.beauty/sources -> contains data-testid="page-as-of"
+would: GET https://saf.meichen.beauty/admin without credentials -> 401
+==> 7/7 summary
+would: print the summary and "bash scripts/oci-a1/cutover.sh --rollback"
+would: rm /etc/nginx/sites-available/jetscope.maint
+```
+
+Exit status: `0`.
+
+### `bash scripts/oci-a1/cutover.sh --rollback --dry-run`
+
+```text
+==> DRY-RUN: no SSH, no network, no remote changes
+mode=rollback usa=usa-vps oci=oci-a1-ts (100.81.227.79) public=saf.meichen.beauty
+templates: /Users/yumei/fleet/jr-oci-rev/TK-007/infra/server/oci-a1/nginx
+log on usa-vps: /var/lib/jetscope-cutover/<UTC ts>/{phases.log,manifest}
+==> 0/5 preflight (read-only)
+would: ssh usa-vps true and ssh oci-a1-ts true
+would: on usa-vps: /etc/nginx/sites-available/jetscope exists, nginx -t passes, /etc/nginx/sites-enabled/jetscope points at /etc/nginx/sites-available/jetscope.oci-a1
+would:   (refuse if it is still on the original site or never reached the cutover site)
+==> 1/5 maintenance gate
+would: install /Users/yumei/fleet/jr-oci-rev/TK-007/infra/server/oci-a1/nginx/jetscope-maintenance.conf as /etc/nginx/snippets/jetscope-maintenance.conf (644) and reload
+would: on usa-vps: POST https://saf.meichen.beauty/v1/scenarios via 127.0.0.1 returns 503
+==> 2/5 stop the usa api
+would: on usa-vps: cd /opt/jetscope && docker-compose -f /opt/jetscope/docker-compose.prod.yml stop api
+==> 3/5 market.db sync -> usa-vps
+would: on oci-a1-ts: sqlite3 /opt/jetscope/data/market.db ".backup /tmp/jetscope-rollback.<ts>.<pid>.db"
+would: stream it to /opt/jetscope/data/.market.db.rollback.<ts>
+would: on usa-vps: PRAGMA integrity_check must return ok
+would: compare per-table count(*) of the oci snapshot and the usa copy
+would: rename /opt/jetscope/data/market.db and any -wal/-shm to /opt/jetscope/data/market.db.pre-rollback-<ts>
+would: install the new db (640), docker-compose -f /opt/jetscope/docker-compose.prod.yml start api
+would: wait up to 60s for http://127.0.0.1:8000/v1/health
+==> 4/5 restore the original site
+would: atomically point /etc/nginx/sites-enabled/jetscope at /etc/nginx/sites-available/jetscope; nginx -t, restore on failure
+would: systemctl reload nginx
+would: move /etc/nginx/conf.d/jetscope-upstream.conf aside, nginx -t, delete it only if the test passes,
+would: otherwise put it back; systemctl reload nginx
+==> 5/5 lift the gate and smoke
+would: rm /etc/nginx/snippets/jetscope-maintenance.conf; nginx -t && systemctl reload nginx
+would: GET https://saf.meichen.beauty/v1/health -> 200
+would: X-JetScope-Served-By must be absent or usa (never oci-a1)
+```
+
+Exit status: `0`.
+
+No SSH, `scp`, `rsync`, or remote `curl` was executed during development; the
+dry-runs exit before any connection is opened.
+
+## Done criteria (TK-007)
+
+| Criterion | Status | Evidence |
+| --- | --- | --- |
+| Cutover: preflight (oci tailnet smoke, Funnel off, seed done) | Done | Phase `0/7`: oci `/v1/health`, `/sources` with `data-testid="page-as-of"`, `tailscale serve/funnel` empty or `No serve config`, `JETSCOPE_API_BIND=` in `.env`, usa `nginx -t`, usa→oci health, usa not already cut over. |
+| Cutover: open maintenance gate | Done | Phase `2/7`: installs the snippet, derives `.maint` from the live site with the include before the first `location`, atomic symlink swap, `nginx -t && reload`, asserts POST `/v1/scenarios` = 503 on usa loopback. |
+| Cutover: final DB sync | Done | Phase `3/7`: usa `sqlite3 .backup` → oci temp, `PRAGMA integrity_check`, per-table `count(*)` on both sides, `docker stop`, old DB (and `-wal`/`-shm`) → `market.db.pre-cutover-<ts>`, atomic `mv`, `chown ubuntu:ubuntu`, `docker start`, 60 s health wait. |
+| Cutover: upstream + new site, lift gate, smoke with `served-by=oci-a1` | Done | Phases `4/7`–`6/7`: renders both templates (escaped `__OCI_IP_RE__` first), installs `conf.d` + `sites-available/jetscope.oci-a1`, atomic symlink swap with immediate `.maint` restore on failed `nginx -t`, reload, snippet removal, public 200 + header, `/sources`, `/admin` 401; phase `7/7` removes `.maint` and prints the rollback command. |
+| Rollback: gate → stop usa api → oci `.backup` → usa temp → integrity + counts → atomic replace (`*.pre-rollback-<ts>`) → start → restore site → lift gate → smoke | Done | Phases `0/5`–`5/5` implement exactly that order with docker-compose v1 (`docker-compose -f /opt/jetscope/docker-compose.prod.yml stop|start api`); upstream removal is test-first (`mv` aside, `nginx -t`, restore on failure). |
+| Every phase writes `phases.log` / `manifest`; failure prints state + recovery and exits 1 without auto-rollback | Done | `phase_start`/`phase_done`/`phase_fail` append UTC `START`/`DONE`/`FAIL` to `/var/lib/jetscope-cutover/<ts>/phases.log` on usa. `manifest` gets every nginx backup file + sha256 and every DB kept file + sha256. `fail` prints `current state` and `recovery`, then `exit 1`; an `ERR` trap routes unexpected failures there too. Only a failed `nginx -t` restores the previous symlink, as TK-007 requires. |
+| Both `--dry-run` modes pass | Done | Both commands above exit `0`; they never open SSH or the network. |
+
+## Implementation notes
+
+- **Template rendering** uses bash substitution, not `sed`: in a `sed`
+  replacement `\.` collapses to `.`, which would have installed an unescaped
+  regex (`~100.81.227.79:...`) in the `map $upstream_addr` block. Bash
+  substitution preserves `100\.81\.227\.79` exactly. `__OCI_IP_RE__` is
+  replaced before `__OCI_IP__` (README order), and the script aborts if either
+  placeholder survives.
+- **WAL/SHM handling:** before replacing a live DB, the old `market.db-wal` and
+  `market.db-shm` (when present) are renamed alongside the old DB, so a stale
+  WAL can never be applied to the new file. They are restored if the new DB
+  cannot be moved into place.
+- **Rollback preflight guard:** rollback requires the symlink to currently point
+  at `jetscope.oci-a1`. It refuses when the edge is still on the original site
+  (already rolled back) or on `jetscope.maint` (the cutover never completed its
+  DB sync), because in those states copying oci's DB over usa's could revert
+  authoritative data. This is intentionally stricter than the minimum stated in
+  the card; documented here as a safety decision.
+- **Idempotency:** the snippet upload is an atomic overwrite; `.maint` is
+  regenerated from the original each run; symlink swaps are
+  `ln -sfn <temp> && mv -T`; `docker stop/start`, `rm -f`, and the DB swap
+  tolerate a repeated run. Whole-script re-runs are guarded (cutover refuses
+  when already on `jetscope.oci-a1`; rollback per above).
+- **Failure behavior:** no automatic full rollback. `nginx -t` failures at the
+  maintenance-site or new-site swap restore the previous symlink and, for the
+  new site, remove `conf.d/jetscope-upstream.conf`, then stop with `FAIL`.
+- **Logging:** log directory creation is the first write after SSH
+  reachability. An SSH failure before that point cannot be logged remotely
+  (`ABORT` is printed and the script exits 1).
+
+## Known residual risks
+
+1. **No live rehearsal was possible** (remote access forbidden for this task).
+   The script is statically valid and its dry-runs pass, but the first real run
+   is the first execution of the remote paths.
+2. **Assumes GNU coreutils on usa** (`mv -T`, `cp -a`, `sort -z`, `xargs -0`,
+   `stat -c`, `sha256sum`) and `bash` as the remote shell. This matches the
+   verified Ubuntu host but is not probed.
+3. **`nginx -t` accepts the `.maint` include placement only if the first
+   `location` belongs to the HTTPS server block.** The live site is
+   hand-edited; if a `location` ever appears inside the port-80 redirect block
+   first, the gate would be inserted there. `nginx -t` would still pass, but
+   the POST assertion would fail immediately (with no live regression) because
+   it checks 503 before proceeding.
+4. **The maintenance snippet is server-context `if`/`return`**; it depends on
+   nginx 1.24 semantics already covered by `nginx-smoke.sh`. `/admin` is also
+   covered by the gate (non-GET), which matches the frozen write-path contract.
+5. **Owner/mode of the restored usa DB** is root:root 0640 (the script runs as
+   root and the container runs as root, so it is readable). If the live DB was
+   intentionally owned by another user, that ownership is not preserved;
+   `/opt/jetscope/data/market.db.pre-rollback-<ts>` keeps the old file intact.
+6. **Public smoke depends on Cloudflare and DNS.** A Cloudflare challenge or a
+   cached `/sources` would surface as a smoke failure after the edge is already
+   switched; the printed recovery command is `--rollback`.
+7. **The 60 s health waits** are fixed per the card; a slow oci API start would
+   stop the cutover with the maintenance gate still on and the recovery
+   commands printed (no automatic rollback).
+8. **Rollback refuses on a partially failed cutover** (see the guard above);
+   recovery then follows the printed phase commands rather than `--rollback`.
