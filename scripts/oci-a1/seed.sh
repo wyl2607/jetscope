@@ -236,10 +236,10 @@ tok=$(openssl rand -hex 32)
 tokfile=$(mktemp /opt/jetscope/.admin-token.seed.XXXXXX)
 printf '%s' "$tok" > "$tokfile"
 tmp=$(mktemp "$env.rotate.XXXXXX")
-awk -v t="$tok" '
-  /^JETSCOPE_ADMIN_TOKEN=/ { print "JETSCOPE_ADMIN_TOKEN=" t; found=1; next }
+T="$tok" awk '
+  /^JETSCOPE_ADMIN_TOKEN=/ { print "JETSCOPE_ADMIN_TOKEN=" ENVIRON["T"]; found=1; next }
   { print }
-  END { if (!found) print "JETSCOPE_ADMIN_TOKEN=" t }
+  END { if (!found) print "JETSCOPE_ADMIN_TOKEN=" ENVIRON["T"] }
 ' "$env" > "$tmp"
 chmod 600 "$tmp"
 mv "$tmp" "$env"
@@ -257,10 +257,10 @@ env=$1
 token=$(cat)
 [[ "$token" =~ ^[0-9a-f]{64}$ ]] || { echo "ABORT: token on stdin is not 64 lowercase hex chars" >&2; exit 1; }
 tmp=$(mktemp "$env.rotate.XXXXXX")
-awk -v t="$token" '
-  /^JETSCOPE_ADMIN_TOKEN=/ { print "JETSCOPE_ADMIN_TOKEN=" t; found=1; next }
+T="$token" awk '
+  /^JETSCOPE_ADMIN_TOKEN=/ { print "JETSCOPE_ADMIN_TOKEN=" ENVIRON["T"]; found=1; next }
   { print }
-  END { if (!found) print "JETSCOPE_ADMIN_TOKEN=" t }
+  END { if (!found) print "JETSCOPE_ADMIN_TOKEN=" ENVIRON["T"] }
 ' "$env" > "$tmp"
 chmod 600 "$tmp"
 mv "$tmp" "$env"
