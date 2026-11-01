@@ -1,7 +1,6 @@
 # Source: RFC sprints-001-oci-a1-primary-hosting, "Architecture choice — Alerts" and review A4.
 [Unit]
 Description=Run JetScope health check every minute (oci-a1)
-Requires=jetscope-health-check.service
 
 [Timer]
 OnCalendar=*-*-* *:*:00

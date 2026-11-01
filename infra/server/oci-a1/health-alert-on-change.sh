@@ -167,7 +167,7 @@ fi
 if [ -n "$ERROR_TEXT" ]; then
     DETAIL="$DETAIL error=$ERROR_TEXT"
 fi
-DETAIL="$(printf '%s' "$DETAIL" | tr '\n' ' ' | cut -c1-800)"
+DETAIL="$(printf '%s' "$DETAIL" | tr '\n\r' '  ' | cut -c1-800)"
 
 for COMPONENT in $COMPONENTS; do
     STATE_FILE="$STATE_DIR/$COMPONENT.state"

@@ -82,12 +82,12 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
     echo "would: on $OCI: openssl rand -hex 32, atomically replace JETSCOPE_ADMIN_TOKEN= in $OCI_ENV (mode 600)"
     echo "would: ssh $OCI 'cat <token temp>' | ssh $USA 'atomically replace JETSCOPE_ADMIN_TOKEN= in $USA_ENV (mode 600)'"
     echo "would: print both token lengths and sha256 prefixes, assert they match"
-    echo "would: note that the usa api needs 'docker compose -f docker-compose.prod.yml up -d api' and oci takes effect at deploy"
+    echo "would: note that the usa api needs 'docker-compose -f docker-compose.prod.yml up -d api' and oci takes effect at deploy"
   else
     echo "==> 4/6 rotate JETSCOPE_ADMIN_TOKEN: skipped (--rotate-admin-token not given)"
   fi
   echo "==> 5/6 market.db snapshot"
-  echo "would: on $USA: sqlite3 $USA_DB '.backup /tmp/<random>.db'"
+  echo "would: on $USA: dump=\$(sudo mktemp /root/jetscope-seed.XXXXXX.db); sudo sqlite3 $USA_DB \".backup \$dump\""
   echo "would: ssh $USA cat <snapshot> | ssh $OCI 'cat > $OCI_INCOMING'"
   echo "would: on $OCI: PRAGMA integrity_check must return ok"
   echo "would: list every table from sqlite_master on both the usa snapshot and the oci copy, count(*) each, abort on any difference"
@@ -123,7 +123,7 @@ cleanup() {
     TOKEN_FILE=""
   fi
   if [[ -n "$USA_DUMP" ]]; then
-    ssh_run "$USA" "rm -f $(printf %q "$USA_DUMP")" >/dev/null 2>&1 || true
+    ssh_run "$USA" "sudo rm -f $(printf %q "$USA_DUMP")" >/dev/null 2>&1 || true
     USA_DUMP=""
   fi
   if [[ -n "${OCI_INCOMING_CREATED:-}" ]]; then
@@ -284,28 +284,33 @@ REMOTE
     || abort "token length or sha256 prefix differs between hosts"
   echo "ok: token length and sha256 prefix match on both hosts"
   echo "note: restart the usa api to load the new token:"
-  echo "note:   ssh $USA 'cd /opt/jetscope && docker compose -f docker-compose.prod.yml up -d api'"
+  echo "note:   ssh $USA 'cd /opt/jetscope && docker-compose -f docker-compose.prod.yml up -d api'"
   echo "note: oci-a1 picks it up at deploy time; update any other client that holds the old token."
 else
   echo "==> 4/6 rotate JETSCOPE_ADMIN_TOKEN: skipped (--rotate-admin-token not given)"
 fi
 
 echo "==> 5/6 market.db snapshot"
-USA_DUMP="/tmp/jetscope-seed.$$.$RANDOM.db"
+# The snapshot lands in root's home, not a predictable /tmp name: usa has
+# non-root users, and a fixed path there is a symlink/pre-creation target. The
+# actual path comes back from the remote mktemp and is used for every later
+# read and for cleanup.
+USA_DUMP=$(ssh_run "$USA" "sudo mktemp /root/jetscope-seed.XXXXXX.db") \
+  || abort "could not create the usa snapshot file"
+[[ -n "$USA_DUMP" ]] || abort "$USA returned an empty snapshot path"
 ssh_run "$USA" bash -s -- "$USA_DB" "$USA_DUMP" <<'REMOTE'
 set -euo pipefail
 cd /
 db=$1 dump=$2
 [[ -f "$db" ]] || { echo "ABORT: $db not found" >&2; exit 1; }
-rm -f "$dump"
-sqlite3 "$db" ".backup '$dump'" || { echo "ABORT: sqlite3 .backup failed" >&2; exit 1; }
-chmod 600 "$dump"
-printf 'ok: snapshot %s bytes\n' "$(stat -c %s "$dump")"
+sudo sqlite3 "$db" ".backup '$dump'" || { echo "ABORT: sqlite3 .backup failed" >&2; exit 1; }
+sudo chmod 600 "$dump"
+printf 'ok: snapshot %s bytes\n' "$(sudo stat -c %s "$dump")"
 REMOTE
 
 echo " -> streaming snapshot to $OCI"
 OCI_INCOMING_CREATED=1
-ssh_run "$USA" "cat $(printf %q "$USA_DUMP")" \
+ssh_run "$USA" "sudo cat $(printf %q "$USA_DUMP")" \
   | ssh_run "$OCI" "cd / && umask 077 && cat > $(printf %q "$OCI_INCOMING")" \
   || abort "snapshot transfer failed"
 ssh_run "$OCI" "chmod 640 $(printf %q "$OCI_INCOMING")" || abort "could not chmod $OCI_INCOMING"
@@ -318,22 +323,24 @@ echo "ok: PRAGMA integrity_check: ok"
 table_counts() {
   local host=$1
   local db=$2
-  ssh_run "$host" bash -s -- "$db" <<'REMOTE'
+  local use_sudo=$3
+  ssh_run "$host" bash -s -- "$db" "$use_sudo" <<'REMOTE'
 set -euo pipefail
 cd /
-db=$1
-tables=$(sqlite3 -readonly "$db" "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+db=$1 use_sudo=$2
+if [[ "$use_sudo" = "1" ]]; then SUDO=sudo; else SUDO=; fi
+tables=$($SUDO sqlite3 -readonly "$db" "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
 [[ -n "$tables" ]] || { echo "ABORT: no tables in $db" >&2; exit 1; }
 while IFS= read -r t; do
   q=${t//\"/\"\"}
-  n=$(sqlite3 -readonly "$db" "SELECT count(*) FROM \"$q\"")
+  n=$($SUDO sqlite3 -readonly "$db" "SELECT count(*) FROM \"$q\"")
   printf '%s\t%s\n' "$t" "$n"
 done <<< "$tables"
 REMOTE
 }
 
-usa_counts=$(table_counts "$USA" "$USA_DUMP")
-oci_counts=$(table_counts "$OCI" "$OCI_INCOMING")
+usa_counts=$(table_counts "$USA" "$USA_DUMP" 1)
+oci_counts=$(table_counts "$OCI" "$OCI_INCOMING" 0)
 if [[ "$usa_counts" != "$oci_counts" ]]; then
   printf 'usa snapshot:\n%s\noci copy:\n%s\n' "$usa_counts" "$oci_counts" >&2
   abort "row counts differ between the usa snapshot and the oci copy"
