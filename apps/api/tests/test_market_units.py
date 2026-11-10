@@ -190,56 +190,38 @@ def test_parse_eia_brent_quote_reads_date_from_wholesale_table_title() -> None:
     assert market._parse_eia_brent_quote(EIA_PRICES_HTML) == (116.15, datetime(2026, 9, 21, tzinfo=UTC))
 
 
-# Trimmed from https://www.eia.gov/dnav/pet/pet_pri_spt_s1_d.htm as served on 2026-09-23.
-EIA_SPOT_HTML = """
-<tr> <th class="Series5">09/11/26</th> <th class="Series5">09/14/26</th> <th class="Series5">09/15/26</th> </tr>
-<tr class="DataRow"> <td class="DataStub2">Kerosene-Type Jet Fuel<br> </td> </tr>
-<tr class="DataRow"> <td width="228" class="DataStub"> <table class="data2"> <tr> <td width="3"></td>
-<td class="DataStub1">U.S. Gulf Coast</td> </tr> </table> </td>
-<td width="76" class="DataB">4.521</td> <td width="76" class="DataB">4.488</td> <td width="76" class="Current2">NA</td>
-<td width="76" class="DataHist"><a href="./hist/LeafHandler.ashx" class="Hist">1990-2026</a></td> </tr>
+JET_FRED_CSV = """observation_date,DJFUELUSGULF
+2026-09-11,4.521
+2026-09-14,4.488
+2026-09-15,4.705
+2026-09-16,.
+"""
+
+BRENT_FRED_CSV = """observation_date,DCOILBRENTEU
+2026-09-11,121.25
+2026-09-14,121.25
+2026-09-15,130.80
+2026-09-16,128.00
 """
 
 
-def test_parse_eia_spot_jet_skips_na_and_keeps_its_own_date() -> None:
-    assert market._parse_eia_spot_jet_gulf_coast(EIA_SPOT_HTML) == (4.488, datetime(2026, 9, 14, tzinfo=UTC))
-
-
-def test_jet_ingest_falls_back_to_eia_when_fred_fails(monkeypatch: pytest.MonkeyPatch) -> None:
-    def fake_fetch(url: str, timeout_s: float | None = None) -> str:
-        if "fred" in url:
-            raise TimeoutError("The read operation timed out")
-        return EIA_SPOT_HTML
-
-    monkeypatch.setattr(market, "_fetch_text", fake_fetch)
-    details: dict[str, object] = {"sources": {}}
-
-    value = market._ingest_jet_market_value(details)
-
-    jet = details["sources"]["jet"]  # type: ignore[index]
-    assert value == pytest.approx(round(4.488 / 3.785411784, 3))
-    assert jet["source"] == "eia"
-    assert jet["status"] == "ok"
-    assert jet["observed_at"].startswith("2026-09-14")
-
-
-EIA_SPOT_WITH_BRENT_HTML = """
-<tr> <th class="Series5">09/14/26</th> <th class="Series5">09/15/26</th> <th class="Series5">09/16/26</th> </tr>
-<tr class="DataRow"> <td class="DataStub"> <table class="data2"> <tr>
-<td class="DataStub1">Brent - Europe</td> </tr> </table> </td>
-<td class="DataB">121.25</td> <td class="DataB">130.80</td> <td class="Current2">128.00</td> </tr>
-<tr class="DataRow"> <td class="DataStub2">Kerosene-Type Jet Fuel<br> </td> </tr>
-<tr class="DataRow"> <td class="DataStub"> <table class="data2"> <tr>
-<td class="DataStub1">U.S. Gulf Coast</td> </tr> </table> </td>
-<td class="DataB">4.488</td> <td class="DataB">4.705</td> <td class="Current2">NA</td> </tr>
-"""
-
-
-def test_jet_brent_ratio_uses_latest_day_eia_prints_both() -> None:
-    ratio, day = market._parse_eia_spot_jet_brent_ratio(EIA_SPOT_WITH_BRENT_HTML)
+def test_parse_fred_jet_brent_ratio_uses_latest_common_day() -> None:
+    ratio, day = market._parse_fred_jet_brent_ratio(JET_FRED_CSV, BRENT_FRED_CSV)
 
     assert day == datetime(2026, 9, 15, tzinfo=UTC)
     assert ratio == pytest.approx((4.705 / market.LITERS_PER_US_GALLON) / (130.80 / market.LITERS_PER_BARREL))
+
+
+def test_parse_fred_jet_brent_ratio_raises_without_common_day() -> None:
+    jet_csv = """observation_date,DJFUELUSGULF
+2026-09-11,4.521
+"""
+    brent_csv = """observation_date,DCOILBRENTEU
+2026-09-12,121.25
+"""
+
+    with pytest.raises(ValueError, match="no day with both"):
+        market._parse_fred_jet_brent_ratio(jet_csv, brent_csv)
 
 
 def test_jet_eu_proxy_uses_same_day_ratio_instead_of_fixed_multiplier(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -281,8 +263,24 @@ def test_jet_eu_proxy_uses_same_day_ratio_instead_of_fixed_multiplier(monkeypatc
             assert "1.511" in result[key]["method"]
 
 
-def test_stale_jet_brent_ratio_falls_back_to_fixed_multiplier(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(market, "_fetch_text", lambda _url: EIA_SPOT_WITH_BRENT_HTML)
+def test_ingest_jet_brent_ratio_reads_fresh_fred_series(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_fetch(url: str, timeout_s: float | None = None) -> str:
+        return JET_FRED_CSV if "DJFUELUSGULF" in url else BRENT_FRED_CSV
+
+    monkeypatch.setattr(market, "_fetch_text", fake_fetch)
+    monkeypatch.setattr(market, "utcnow", lambda: datetime(2026, 9, 20, tzinfo=UTC))
+
+    ratio, observed = market._ingest_jet_brent_ratio()
+
+    assert observed == datetime(2026, 9, 15, tzinfo=UTC)
+    assert ratio == pytest.approx((4.705 / market.LITERS_PER_US_GALLON) / (130.80 / market.LITERS_PER_BARREL))
+
+
+def test_ingest_jet_brent_ratio_returns_none_when_fred_is_stale(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_fetch(url: str, timeout_s: float | None = None) -> str:
+        return JET_FRED_CSV if "DJFUELUSGULF" in url else BRENT_FRED_CSV
+
+    monkeypatch.setattr(market, "_fetch_text", fake_fetch)
     monkeypatch.setattr(market, "utcnow", lambda: datetime(2026, 10, 30, tzinfo=UTC))
 
     assert market._ingest_jet_brent_ratio() is None
