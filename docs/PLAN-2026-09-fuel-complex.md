@@ -1,6 +1,6 @@
 # Fuel Complex & SAF market layer (2026-09)
 
-Status: Phase A, B1/B3/B4, C1–C4, threshold alerts, airline decision matrix live (1d0bc37); #427 in review (EASA reference expires after 400 days in the airline decision, `saf_allowance` honoured); B2 blocked on a verified public HVO source. Owner: Claude (design/review), user (merge/deploy).
+Status: Phase A, B1/B3/B4, C1–C4, threshold alerts, airline decision matrix merged on main (#427 EASA 400-day expiry + `saf_allowance`, #431 unrounded 15 % gate); production still serves 1d0bc37 (2026-11-10), so #427/#431 await deploy. A4 ratio source moved from the retired EIA spot table to FRED (this PR). B2 blocked: no licensable public HVO100 series (see `docs/research/hvo-price-sources-2026-10.md`). Owner: Claude (design/review), user (merge/deploy).
 
 ## Goal
 
@@ -55,7 +55,7 @@ changes, with every number dated and sourced.
 | A1 | history never publishes seed/missing rows as latest | #377 |
 | A2 | SAF market layer: `data/curated/market/saf_market_prices.json` + loader; buyer cost for HEFA = market reference when one exists, production cost otherwise; `market_check` block on tipping-point; headline `signal` and engine events use buyer cost | #378 |
 | A3 | Carbon: compliance value = zero-rating (2.5 kg/L × EUA) everywhere; `carbon_reduction_pct` stays an LCA figure with no money attached | #378 |
-| A4 | Jet crack from same-date EIA spot table (Brent + Gulf jet); EU proxy uses the actual ratio when both are observed that day, fixed 1.20 only as fallback (ratio used while ≤ 21 days old; 2026-09-23: 1.51, EU proxy 0.867 → 1.092 USD/L) | #379 |
+| A4 | Jet crack from the same-date EIA Gulf jet and Brent spot series; EU proxy uses the actual ratio when both are observed that day, fixed 1.20 only as fallback (ratio used while ≤ 21 days old; 2026-09-23: 1.51, EU proxy 0.867 → 1.092 USD/L). EIA retired the HTML spot table (now JS-rendered) by 2026-11, silently forcing the 1.20 fallback (2026-11-10: EU proxy 0.738 USD/L; the observed 2026-11-03 ratio 1.647 gives 1.014); the ratio now reads the same EIA series from FRED (DJFUELUSGULF ÷ DCOILBRENTEU) | #379, this PR |
 
 Done when: with the production inputs above, the tipping-point signal is not
 `switch_window_opening`, the engine emits no HEFA CROSSOVER, the response
@@ -75,8 +75,10 @@ compliance-adjusted gap separately, and API/web suites are green.
   2026-09-10): CPI +2.9 %, motor fuels +27.7 % at a weight of 30.46 per mille,
   so a static direct contribution of about 0.84 pp; CPI excluding heating oil
   and motor fuels +2.0 %. Curated in `data/curated/market/destatis_cpi.json`.
-- B2 (next): Diesel–HVO100 spread, only once a dated public HVO source is
-  verified; a single station page is not a national price.
+- B2 (blocked): Diesel–HVO100 spread, only once a dated public HVO source is
+  verified; a single station page is not a national price. The 2026-10 survey
+  (#430) found only Argus O.M.R. (wholesale), whose terms forbid reuse; MTS-K
+  excludes HVO100. Unblocking needs a licence decision by the owner.
 - B4 (live): EV vs diesel vs petrol cost per 100 km. Household power
   from BDEW-Strompreisanalyse 08/2026 (37.0 ct/kWh, 2026 Jan–Aug new-customer
   tariffs, 3,500 kWh/a, incl. VAT), with Destatis 2026-H1 (37.97 ct/kWh, all
