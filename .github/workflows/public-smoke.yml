@@ -34,11 +34,15 @@ jobs:
           )
           for endpoint in "${endpoints[@]}"; do
             echo "::group::${endpoint}"
-            curl --fail --silent --show-error --location \
+            if ! curl --fail --silent --show-error --location --max-redirs 3 \
               --connect-timeout 10 --max-time 20 \
               --output /dev/null \
               --write-out "status=%{http_code} time=%{time_total}s\n" \
-              "${BASE_URL}${endpoint}"
+              "${BASE_URL}${endpoint}"; then
+              echo "::error::${endpoint} failed"
+              curl -sS -I --max-time 10 "${BASE_URL}${endpoint}" || true
+              exit 1
+            fi
             echo "::endgroup::"
           done
 
@@ -48,11 +52,11 @@ jobs:
           set -euo pipefail
           tmp="$(mktemp -d)"
           trap 'rm -rf "$tmp"' EXIT
-          curl --fail --silent --show-error --location \
+          curl --fail --silent --show-error --location --max-redirs 3 \
             --connect-timeout 10 --max-time 20 \
             --output "$tmp/events.json" \
             "${BASE_URL}/v1/events"
-          curl --fail --silent --show-error --location \
+          curl --fail --silent --show-error --location --max-redirs 3 \
             --connect-timeout 10 --max-time 20 \
             --output "$tmp/snapshot.json" \
             "${BASE_URL}/v1/market/snapshot"
