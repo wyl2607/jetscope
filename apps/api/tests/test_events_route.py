@@ -22,6 +22,7 @@ def test_list_events_count_matches_events():
 def test_every_listed_event_has_detail_route():
     client = _client()
     events = client.get("/v1/events").json()["events"]
+    assert events
 
     for event in events:
         response = client.get(f"/v1/events/{event['id']}")
