@@ -25,6 +25,15 @@
       "admin": "Admin"
     }
   },
+  "error_page": {
+    "error_kicker": "Fehler",
+    "error_title": "Etwas ist schiefgelaufen",
+    "error_description": "Der Server ist auf einen unerwarteten Fehler gestoßen. Bitte versuchen Sie es erneut.",
+    "retry": "Erneut versuchen",
+    "not_found_title": "Seite nicht gefunden",
+    "not_found_description": "Die gesuchte Seite wurde möglicherweise verschoben oder entfernt.",
+    "home": "Zur Startseite"
+  },
   "home": {
     "title": "JetScope Einstieg für Luftfahrtkraftstoff-Entscheidungen",
     "description": "Ein Fünf-Minuten-Überblick über europäische Jet-A-Stresssignale, SAF-Kipppunkt-Ereignisse, EU-ETS-Kosteneffekte und KI-gestützte Research-Workflows.",
