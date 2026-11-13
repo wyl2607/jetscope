@@ -20,6 +20,10 @@ def _url_fields(value: object, key_path: tuple[str, ...] = ()):
             yield from _url_fields(nested_value, (*key_path, str(index)))
 
 
+def test_curated_market_files_discovered():
+    assert MARKET_FILES, f"no curated market files found in {MARKET_DATA_DIR}"
+
+
 @pytest.mark.parametrize("market_file", MARKET_FILES, ids=lambda path: path.name)
 def test_curated_market_file_has_note(market_file: Path):
     document = json.loads(market_file.read_text(encoding="utf-8"))
@@ -33,5 +37,8 @@ def test_curated_market_file_has_note(market_file: Path):
 def test_curated_market_urls_use_https(market_file: Path):
     document = json.loads(market_file.read_text(encoding="utf-8"))
 
-    for key_path, url in _url_fields(document):
+    url_fields = list(_url_fields(document))
+
+    assert url_fields, f"{market_file.name}: no source URL fields"
+    for key_path, url in url_fields:
         assert url.startswith("https://"), f"{market_file.name}:{'.'.join(key_path)}"
