@@ -24,6 +24,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          headers="$(mktemp)"
+          trap 'rm -f "$headers"' EXIT
           endpoints=(
             "/v1/health"
             "/v1/market/health"
@@ -34,13 +36,15 @@ jobs:
           )
           for endpoint in "${endpoints[@]}"; do
             echo "::group::${endpoint}"
+            : > "$headers"
             if ! curl --fail --silent --show-error --location --max-redirs 3 \
               --connect-timeout 10 --max-time 20 \
+              --dump-header "$headers" \
               --output /dev/null \
               --write-out "status=%{http_code} time=%{time_total}s\n" \
               "${BASE_URL}${endpoint}"; then
               echo "::error::${endpoint} failed"
-              curl -sS -I --max-time 10 "${BASE_URL}${endpoint}" || true
+              cat "$headers"
               exit 1
             fi
             echo "::endgroup::"
