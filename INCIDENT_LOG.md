@@ -10,4 +10,12 @@ This file records real failures, repeated regressions, root causes, fixes, and p
 
 ## Current Incidents
 
-- No active JetScope incident is recorded for the 2026-04-24 development-zone baseline close-out.
+### 2026-11-07 Public HTTPS unreachable — Cloudflare 301 self-loop
+
+- **Symptom**: The last successful public smoke run was `42393936815` at 2026-11-07T16:58Z. Every later smoke run fails (for example `43395791910`); a direct `curl` against the public host aborts with `(47) Maximum redirects followed`, i.e. a 301 redirect that keeps pointing back at itself.
+- **Impact**: The public site is unreachable since 2026-11-07T16:58Z, and the 15-minute `Public Smoke Monitor` workflow has been red on every run since.
+- **Root cause**: Suspected, unverified: Cloudflare SSL/TLS mode is set to Flexible, so Cloudflare talks to the origin over port 80 while the origin `infra/server/nginx.conf:62-66` unconditionally 301-redirects port 80 back to `https://`, producing an endless redirect loop.
+- **Affected surfaces**: Public HTTPS edge for `saf.meichen.beauty` (all `/v1/*` and `/dashboard` paths); the `Public Smoke Monitor` workflow `.github/workflows/public-smoke.yml`.
+- **Fix**: Pending: operator sets the Cloudflare SSL/TLS mode to Full (strict) so the edge reaches the origin over 443.
+- **Verification**: `curl -fsS --location https://saf.meichen.beauty/v1/health` — must stop redirecting and return a healthy JSON body instead of `(47) Maximum redirects followed`.
+- **Prevention**: Have the smoke workflow print the response headers on failure, so a redirect chain is visible in the workflow log rather than only as a bare curl exit code.
