@@ -49,11 +49,18 @@ updates:
     directory: /apps/api
     schedule:
       interval: monthly
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     groups:
-      python-runtime:
+      python-minor-patch:
         patterns:
           - '*'
+        update-types: [minor, patch]
+      python-major:
+        patterns:
+          - '*'
+        update-types: [major]
 
   - package-ecosystem: github-actions
     directory: /
