@@ -1,0 +1,23 @@
+# Source: RFC sprints-001-oci-a1-primary-hosting, "Architecture choice — Alerts" and review A4.
+[Unit]
+Description=JetScope API and web health check (oci-a1 primary)
+After=network-online.target docker.service tailscaled.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/opt/jetscope
+Environment=JETSCOPE_PUBLIC_URL=http://100.81.227.79:3000/
+Environment=JETSCOPE_API_HEALTH_URL=http://100.81.227.79:8000/v1/health
+Environment=JETSCOPE_API_READINESS_URL=http://100.81.227.79:8000/v1/readiness
+Environment=JETSCOPE_HEALTH_ALLOW_RESTART=0
+Environment=JETSCOPE_BUS_WRITE=/usr/local/bin/jetscope-health-alert-on-change
+StateDirectory=jetscope-health
+# health-check.sh hard-codes /var/log/jetscope-health.log.  Map that path into
+# a systemd-managed, ubuntu-writable LogsDirectory without changing the script.
+LogsDirectory=jetscope-health
+BindPaths=/var/log/jetscope-health:/var/log
+ExecStart=/bin/bash /opt/jetscope/infra/server/health-check.sh
+StandardOutput=journal
+StandardError=journal

@@ -14,6 +14,20 @@ APPROVE_JETSCOPE_RELEASE=<approval-token> ./scripts/release.sh --approval-token 
 
 This is the default operational memory for future AI sessions. Do not re-discover or invent an alternative release flow unless the user explicitly changes it.
 
+## Primary Host And Publish Order (2026-10-22)
+
+生产主站是 oci-a1，usa-vps 是热备。日常发布固定先主站、后热备，两边必须部署同一个提交：
+
+```bash
+bash scripts/deploy-oci-a1.sh --rebuild
+```
+
+```bash
+bash scripts/deploy-usa-vps.sh --rebuild
+```
+
+`release.sh` 和 `auto-deploy.sh` 本期没有改动，上面的流程描述仍只覆盖 usa；多目标发布使用这两条 deploy 命令。拓扑、首次上线、切换、回切和数据同步方式见 [docs/DEPLOY-OCI-A1.md](docs/DEPLOY-OCI-A1.md)。
+
 ## Release Sequence
 
 `./scripts/release.sh --approval-token <approval-token>` executes this exact order by default after `APPROVE_JETSCOPE_RELEASE` matches the token:
