@@ -7,7 +7,7 @@ alembic==1.20.1
 pydantic==2.14.3
 pydantic-settings==2.16.3
 httpx==0.28.1
-anthropic==1.15.0
+anthropic==2.8.0
 feedparser==6.0.14
 # SQLite support (sqlite3 included in Python, but adding packages for robustness)
 aiosqlite==0.22.1
