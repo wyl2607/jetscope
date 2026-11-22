@@ -4,7 +4,7 @@ Where the UI refactor stands, how the work is delegated, and what comes next.
 Written to be readable by a person or an AI agent arriving with no prior
 context. `docs/UI_CONTRACT.md` is the rules; this file is the position.
 
-Last updated against `main` at the merge of PR #301.
+Last updated against main at the merge of PR #435 (b2bf074, 2026-10-29).
 
 ## What the program is for
 
