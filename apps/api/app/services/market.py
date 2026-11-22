@@ -43,8 +43,6 @@ MARKET_SOURCE_URLS = {
     "jet_fred": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DJFUELUSGULF",
     "jet_ara_rotterdam": "https://www.investing.com/commodities/jet-fuel-cargoes-cif-nwe-futures",
     "brent_eia": "https://www.eia.gov/todayinenergy/prices.php",
-    # EIA daily spot table; FRED DJFUELUSGULF republishes the same Gulf Coast jet series.
-    "jet_eia_spot": "https://www.eia.gov/dnav/pet/pet_pri_spt_s1_d.htm",
     "cbam_price": "https://taxation-customs.ec.europa.eu/carbon-border-adjustment-mechanism/price-cbam-certificates_en",
     "ecb_eur_usd": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
     "eu_ets_eex": "https://www.eex.com/en/market-data/environmental-markets/spot-market",
@@ -301,8 +299,8 @@ def _jet_proxy_method(prefix: str, ratio: float | None, ratio_observed_at: objec
     if ratio is None:
         return f"{prefix} × 1.20 (public EU jet crack and ARA basis multiplier)"
     return (
-        f"{prefix} × {ratio:.3f} (EIA U.S. Gulf Coast jet ÷ Brent, same day "
-        f"{str(ratio_observed_at)[:10]}; fixed 1.20 only when EIA has no recent day)"
+        f"{prefix} × {ratio:.3f} (FRED DJFUELUSGULF ÷ DCOILBRENTEU, EIA U.S. Gulf Coast jet ÷ Brent spot, "
+        f"same day {str(ratio_observed_at)[:10]}; fixed 1.20 only when no recent common day)"
     )
 
 
@@ -478,46 +476,14 @@ def _parse_eia_brent_quote(html: str) -> tuple[float, datetime | None] | None:
     return value, header_dates[0] if header_dates else None
 
 
-def _eia_spot_row(html: str, stub: str, *, section: str | None = None) -> list[tuple[datetime, float]]:
-    """Dated numeric cells of one row of EIA's daily spot table (NA cells dropped)."""
-    import re
-
-    normalized = " ".join(html.split())
-    dates = re.findall(r'class="Series5"[^>]*>\s*([0-9]{2}/[0-9]{2}/[0-9]{2})\s*<', normalized)
-    start = normalized.find(section) if section is not None else 0
-    row_start = normalized.find(f'class="DataStub1">{stub}<', start) if start >= 0 else -1
-    if not dates or row_start < 0:
-        raise ValueError(f"{stub} row not found on EIA spot page")
-    row = normalized[row_start : normalized.find("</tr>", normalized.find("</table>", row_start))]
-    cells = re.findall(r'class="(?:DataB|Current2)">\s*([^<]*?)\s*<', row)
-    if len(cells) != len(dates):
-        raise ValueError("EIA spot page columns do not line up with its dates")
-    series: list[tuple[datetime, float]] = []
-    for raw, day in zip(cells, dates):
-        try:
-            value = float(raw)
-        except ValueError:
-            continue
-        series.append((datetime.strptime(day, "%m/%d/%y").replace(tzinfo=timezone.utc), value))
-    return series
-
-
-def _parse_eia_spot_jet_gulf_coast(html: str) -> tuple[float, datetime]:
-    """Latest U.S. Gulf Coast kerosene-type jet fuel price (USD/gal) and its date."""
-    series = _eia_spot_row(html, "U.S. Gulf Coast", section="Kerosene-Type Jet Fuel")
-    if not series:
-        raise ValueError("No numeric jet fuel price on EIA spot page")
-    observed_at, value = series[-1]
-    return value, observed_at
-
-
-def _parse_eia_spot_jet_brent_ratio(html: str) -> tuple[float, datetime]:
-    """Gulf Coast jet ÷ Brent per litre on the latest day EIA prints both."""
-    jet = dict(_eia_spot_row(html, "U.S. Gulf Coast", section="Kerosene-Type Jet Fuel"))
-    brent = dict(_eia_spot_row(html, "Brent - Europe"))
+def _parse_fred_jet_brent_ratio(jet_csv: str, brent_csv: str) -> tuple[float, datetime]:
+    """Jet ÷ Brent per litre on the latest day FRED publishes both series."""
+    cutoff = datetime.min.replace(tzinfo=timezone.utc)
+    jet = dict(_parse_fred_csv_history(jet_csv, cutoff=cutoff))
+    brent = dict(_parse_fred_csv_history(brent_csv, cutoff=cutoff))
     common = sorted(set(jet) & set(brent))
     if not common:
-        raise ValueError("EIA spot page has no day with both jet and Brent")
+        raise ValueError("FRED has no day with both jet and Brent")
     day = common[-1]
     ratio = _to_usd_per_l_from_usd_per_gal(jet[day]) / _to_usd_per_l_from_usd_per_bbl(brent[day])
     return ratio, day
@@ -752,32 +718,15 @@ def _ingest_jet_market_value(details: dict[str, object]) -> float | None:
         )
     except Exception as error:
         _set_source_detail(details, "jet", source="fred", status="error", error=str(error))
-        try:
-            jet_usd_per_gal, observed_at = _parse_eia_spot_jet_gulf_coast(_fetch_text(MARKET_SOURCE_URLS["jet_eia_spot"]))
-            jet_value = _round(_to_usd_per_l_from_usd_per_gal(jet_usd_per_gal), 3)
-            _set_source_detail(
-                details,
-                "jet",
-                source="eia",
-                status="ok",
-                value=jet_value,
-                extra={
-                    "quality": "observed",
-                    "quote_kind": "spot",
-                    "product_id": "EIA U.S. Gulf Coast Kerosene-Type Jet Fuel",
-                    "region": "us",
-                    "observed_at": isoformat_z(observed_at),
-                },
-            )
-        except Exception as fallback_error:
-            _set_source_detail(details, "jet", source="eia", status="error", error=str(fallback_error))
     return jet_value
 
 
 def _ingest_jet_brent_ratio() -> tuple[float, datetime] | None:
-    """Same-day jet/Brent ratio from EIA's spot table, or None to keep the fixed multiplier."""
+    """Same-day jet/Brent ratio from FRED (EIA series), or None to keep the fixed multiplier."""
     try:
-        ratio, observed_at = _parse_eia_spot_jet_brent_ratio(_fetch_text(MARKET_SOURCE_URLS["jet_eia_spot"]))
+        jet_csv = _fetch_text(MARKET_SOURCE_URLS["jet_fred"])
+        brent_csv = _fetch_text(MARKET_SOURCE_URLS["brent_fred"])
+        ratio, observed_at = _parse_fred_jet_brent_ratio(jet_csv, brent_csv)
     except Exception:
         return None
     if utcnow() - observed_at > timedelta(days=JET_BRENT_RATIO_MAX_AGE_DAYS):
