@@ -1,5 +1,7 @@
 # Deploy JetScope to USA VPS
 
+> **2026-10-22 起 usa-vps 是热备**：主站为 oci-a1（Cloudflare → usa nginx → tailnet → oci-a1），usa 只承接 oci-a1 不可用时的读请求。发布顺序固定为先 `bash scripts/deploy-oci-a1.sh --rebuild`，冒烟通过后再 `bash scripts/deploy-usa-vps.sh --rebuild`。拓扑、首次上线和回切见 [DEPLOY-OCI-A1.md](DEPLOY-OCI-A1.md)。
+
 **Target host**: SSH alias `usa-vps` → `<usa-vps-hostname>` (`<usa-vps-public-ip>`; Tailscale optional). Do not put the public address in this repo.
 **Production path**: `/opt/jetscope`
 **Running services (verified 2026-08-05)**: Docker Compose `jetscope-api` on `127.0.0.1:8000`; systemd-owned Next.js on `127.0.0.1:3000`; nginx serves `saf.meichen.beauty`
