@@ -25,6 +25,15 @@
       "admin": "Admin"
     }
   },
+  "error_page": {
+    "error_kicker": "Error",
+    "error_title": "Something went wrong",
+    "error_description": "The server hit an unexpected error. Please try again.",
+    "retry": "Try again",
+    "not_found_title": "Page not found",
+    "not_found_description": "The page you are looking for may have been moved or removed.",
+    "home": "Back to home"
+  },
   "home": {
     "title": "JetScope Aviation Fuel Transition Decision Entry",
     "description": "A five-minute view of Europe jet fuel stress signals, SAF tipping-point events, EU ETS cost impact, and AI-assisted research workflows.",
