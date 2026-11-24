@@ -479,12 +479,13 @@ for probe in "http://$SMOKE_BASE:3000/sources||direct :3000" "|$PUBLIC_HOST|via 
   fi
 done
 
-# nginx must not let its catch-all swallow the API prefix.
+# nginx must not let its catch-all swallow the API prefix. HTTPS without -k:
+# port 80 only redirects, and a bad certificate would break the edge too.
 if [ "$EDGE_SMOKE" = "1" ]; then
-  if curl -fsS --max-time 10 -H "Host: $PUBLIC_HOST" http://127.0.0.1/v1/health >/dev/null 2>&1; then
+  if curl -fsS --max-time 10 --resolve "$PUBLIC_HOST:443:127.0.0.1" "https://$PUBLIC_HOST/v1/health" >/dev/null 2>&1; then
     echo "OK /v1/health via nginx as $PUBLIC_HOST"
   else
-    echo "FAIL /v1/health via nginx — check the /v1 location order in the active nginx config"
+    echo "FAIL /v1/health via nginx — check the /v1 location order and the certificate in the active nginx config"
     exit 1
   fi
 else
