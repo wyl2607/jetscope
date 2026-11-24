@@ -1,6 +1,6 @@
 # Fuel Complex & SAF market layer (2026-09)
 
-Status: Phase A, B1/B3/B4, C1–C4, threshold alerts, airline decision matrix merged on main (#427 EASA 400-day expiry + `saf_allowance`, #431 unrounded 15 % gate); production still serves 1d0bc37 (2026-11-10), so #427/#431 await deploy. A4 ratio source moved from the retired EIA spot table to FRED (this PR). B2 blocked: no licensable public HVO100 series (see `docs/research/hvo-price-sources-2026-10.md`). Owner: Claude (design/review), user (merge/deploy).
+Status: Phase A, B1/B3/B4, C1–C4, threshold alerts and the airline decision matrix are merged on main, including #427 (EASA 400-day expiry + `saf_allowance`), #431 (unrounded 15 % gate) and #439 (A4 ratio from FRED). Production still serves 1d0bc37 (deployed 2026-10-19), so #427/#431/#439 await a full `--rebuild` deploy; the public host has also been unreachable since 2026-11-07 (Cloudflare 301 loop, see `INCIDENT_LOG.md`). B2 blocked: no licensable public HVO100 series (see `docs/research/hvo-price-sources-2026-10.md`). Owner: Claude (design/review), user (merge/deploy).
 
 ## Goal
 
@@ -55,7 +55,7 @@ changes, with every number dated and sourced.
 | A1 | history never publishes seed/missing rows as latest | #377 |
 | A2 | SAF market layer: `data/curated/market/saf_market_prices.json` + loader; buyer cost for HEFA = market reference when one exists, production cost otherwise; `market_check` block on tipping-point; headline `signal` and engine events use buyer cost | #378 |
 | A3 | Carbon: compliance value = zero-rating (2.5 kg/L × EUA) everywhere; `carbon_reduction_pct` stays an LCA figure with no money attached | #378 |
-| A4 | Jet crack from the same-date EIA Gulf jet and Brent spot series; EU proxy uses the actual ratio when both are observed that day, fixed 1.20 only as fallback (ratio used while ≤ 21 days old; 2026-09-23: 1.51, EU proxy 0.867 → 1.092 USD/L). EIA retired the HTML spot table (now JS-rendered) by 2026-11, silently forcing the 1.20 fallback (2026-11-10: EU proxy 0.738 USD/L; the observed 2026-11-03 ratio 1.647 gives 1.014); the ratio now reads the same EIA series from FRED (DJFUELUSGULF ÷ DCOILBRENTEU) | #379, this PR |
+| A4 | Jet crack from the same-date EIA Gulf jet and Brent spot series; EU proxy uses the actual ratio when both are observed that day, fixed 1.20 only as fallback (ratio used while ≤ 21 days old; 2026-09-23: 1.51, EU proxy 0.867 → 1.092 USD/L). EIA retired the HTML spot table (now JS-rendered) by 2026-11, silently forcing the 1.20 fallback (2026-11-10: EU proxy 0.738 USD/L; the observed 2026-11-03 ratio 1.647 gives 1.014); the ratio now reads the same EIA series from FRED (DJFUELUSGULF ÷ DCOILBRENTEU) | #379, #439 |
 
 Done when: with the production inputs above, the tipping-point signal is not
 `switch_window_opening`, the engine emits no HEFA CROSSOVER, the response
@@ -147,4 +147,4 @@ compliance-adjusted gap separately, and API/web suites are green.
   premium ≤ 15 %. The response carries `saf_premium_pct`, its basis and period,
   and `method=heuristic_scenario`; the weights stay a labelled heuristic.
   Follow-ups in #427 (400-day expiry of the EASA reference; `saf_allowance`
-  applied); the 15 % gate still compares the rounded premium.
+  applied) and #431 (the 15 % gate compares the unrounded premium).
