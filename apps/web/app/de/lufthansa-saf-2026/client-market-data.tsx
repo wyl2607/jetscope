@@ -8,7 +8,43 @@ interface MarketSnapshot {
   source_status: {
     overall: string;
   };
-  values: Record<string, number>;
+  values: Record<string, number | null>;
+}
+
+type MetricDisplay = {
+  text: string;
+  badge: string | null;
+  missing: boolean;
+};
+
+const MISSING_LABEL = 'Daten fehlen';
+const STALE_LABEL = 'veraltet';
+const ESTIMATED_LABEL = 'geschätzt';
+
+function metricDisplay(
+  raw: number | null | undefined,
+  detail: SourceCoverageMetric | undefined,
+  format: (value: number) => string
+): MetricDisplay {
+  const value = typeof raw === 'number' && Number.isFinite(raw) ? raw : null;
+  const status = detail?.status;
+  const degraded = Boolean(detail?.fallback_used) ||
+    status === 'seed' || status === 'fallback' || status === 'missing' ||
+    status === 'error' || status === 'unavailable';
+
+  if (value == null || degraded) {
+    return { text: '—', badge: MISSING_LABEL, missing: true };
+  }
+  if (status === 'stale') {
+    return { text: format(value), badge: STALE_LABEL, missing: false };
+  }
+  if (status === 'estimated') {
+    return { text: format(value), badge: ESTIMATED_LABEL, missing: false };
+  }
+  if (detail && status !== 'live' && status !== 'ok') {
+    return { text: '—', badge: MISSING_LABEL, missing: true };
+  }
+  return { text: format(value), badge: null, missing: false };
 }
 
 export default function ClientMarketData() {
@@ -80,11 +116,11 @@ export default function ClientMarketData() {
   }
 
   const v = data.values;
-  const brent = v.brent_usd_per_bbl ?? 0;
-  const jetEu = v.jet_eu_proxy_usd_per_l ?? 0;
-  const euEts = v.eu_ets_price_eur_per_t ?? 0;
-  const germanyPremium = v.germany_premium_pct ?? 0;
-  const rotterdam = v.rotterdam_jet_fuel_usd_per_l ?? 0;
+  const brent = metricDisplay(v.brent_usd_per_bbl, coverageByMetric.brent_usd_per_bbl, (value) => `$${value.toFixed(2)}`);
+  const jetEu = metricDisplay(v.jet_eu_proxy_usd_per_l, coverageByMetric.jet_eu_proxy_usd_per_l, (value) => `$${value.toFixed(3)}`);
+  const rotterdam = metricDisplay(v.rotterdam_jet_fuel_usd_per_l, coverageByMetric.rotterdam_jet_fuel_usd_per_l, (value) => `$${value.toFixed(3)}`);
+  const euEts = metricDisplay(v.eu_ets_price_eur_per_t, coverageByMetric.eu_ets_price_eur_per_t, (value) => `€${value.toFixed(2)}`);
+  const germanyPremium = metricDisplay(v.germany_premium_pct, coverageByMetric.germany_premium_pct, (value) => `+${value.toFixed(1)}%`);
   const sourceStatus = data.source_status?.overall ?? 'unknown';
 
   return (
@@ -102,33 +138,43 @@ export default function ClientMarketData() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <MetricCard
           label="Brent"
-          value={`$${brent.toFixed(2)}`}
+          value={brent.text}
           unit="USD/bbl"
           detail={coverageByMetric.brent_usd_per_bbl}
+          badge={brent.badge}
+          missing={brent.missing}
         />
         <MetricCard
           label="Jet EU"
-          value={`$${jetEu.toFixed(3)}`}
+          value={jetEu.text}
           unit="USD/L"
           detail={coverageByMetric.jet_eu_proxy_usd_per_l}
+          badge={jetEu.badge}
+          missing={jetEu.missing}
         />
         <MetricCard
           label="Rotterdam"
-          value={`$${rotterdam.toFixed(3)}`}
+          value={rotterdam.text}
           unit="USD/L"
           detail={coverageByMetric.rotterdam_jet_fuel_usd_per_l}
+          badge={rotterdam.badge}
+          missing={rotterdam.missing}
         />
         <MetricCard
           label="EU ETS"
-          value={`€${euEts.toFixed(2)}`}
+          value={euEts.text}
           unit="EUR/tCO₂"
           detail={coverageByMetric.eu_ets_price_eur_per_t}
+          badge={euEts.badge}
+          missing={euEts.missing}
         />
         <MetricCard
           label="DE-Aufschlag"
-          value={`+${germanyPremium.toFixed(1)}%`}
+          value={germanyPremium.text}
           unit="auf Jet"
           detail={coverageByMetric.germany_premium_pct}
+          badge={germanyPremium.badge}
+          missing={germanyPremium.missing}
           highlight
         />
       </div>
@@ -140,15 +186,19 @@ export default function ClientMarketData() {
   );
 }
 
-function MetricCard({ label, value, unit, detail, highlight }: {
+function MetricCard({ label, value, unit, detail, highlight, badge, missing }: {
   label: string;
   value: string;
   unit: string;
   detail?: SourceCoverageMetric;
   highlight?: boolean;
+  badge?: string | null;
+  missing?: boolean;
 }) {
-  const statusColor = detail?.fallback_used || detail?.status === 'seed' ? 'border-warning' :
+  const statusColor = missing ? 'border-danger' :
+    detail?.fallback_used || detail?.status === 'seed' ? 'border-warning' :
     detail?.status === 'ok' ? 'border-success' :
+    detail?.status === 'stale' || detail?.status === 'estimated' ? 'border-warning' :
     detail ? 'border-danger' :
     'border-line';
 
@@ -157,6 +207,9 @@ function MetricCard({ label, value, unit, detail, highlight }: {
       <p className="text-xs text-muted uppercase tracking-wide">{label}</p>
       <p className="text-lg font-bold text-ink mt-1">{value}</p>
       <p className="text-xs text-muted">{unit}</p>
+      {badge && (
+        <p className={`text-xs mt-1 ${missing ? 'text-danger' : 'text-warning'}`}>{badge}</p>
+      )}
       {detail?.confidence_score !== undefined && (
         <p className="text-xs text-muted mt-1">
           Vertrauen: {(detail.confidence_score * 100).toFixed(0)}%

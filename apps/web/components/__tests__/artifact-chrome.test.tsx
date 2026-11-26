@@ -528,6 +528,77 @@ describe('artifacts do not draw their own card', () => {
     expect(container.querySelector('h2')).toBeNull();
   });
 
+  it('ClientMarketData labels missing, seed and stale market metrics instead of rendering zero', async () => {
+    vi.mocked(fetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/api/market')) {
+        return {
+          ok: true,
+          json: async () => ({
+            generated_at: '2026-08-06T06:00:00Z',
+            source_status: { overall: 'degraded' },
+            values: {
+              brent_usd_per_bbl: null,
+              jet_eu_proxy_usd_per_l: 0,
+              eu_ets_price_eur_per_t: 80,
+              germany_premium_pct: 2.5,
+              rotterdam_jet_fuel_usd_per_l: 0.72
+            }
+          })
+        } as Response;
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          metrics: [
+            {
+              metric_key: 'brent_usd_per_bbl',
+              source_name: 'mock',
+              source_type: 'live_feed',
+              confidence_score: 0.9,
+              fallback_used: false,
+              status: 'missing',
+              region: 'eu',
+              market_scope: 'jet_fuel'
+            },
+            {
+              metric_key: 'jet_eu_proxy_usd_per_l',
+              source_name: 'seed-baseline',
+              source_type: 'seed',
+              confidence_score: 0.1,
+              fallback_used: true,
+              status: 'seed',
+              region: 'eu',
+              market_scope: 'jet_fuel'
+            },
+            {
+              metric_key: 'eu_ets_price_eur_per_t',
+              source_name: 'mock',
+              source_type: 'live_feed',
+              confidence_score: 0.8,
+              fallback_used: false,
+              status: 'stale',
+              region: 'eu',
+              market_scope: 'carbon'
+            }
+          ]
+        })
+      } as Response;
+    });
+
+    const { container } = render(<ClientMarketData />);
+
+    await waitFor(() => {
+      expect(container.textContent).toMatch(/Brent/);
+    });
+
+    expect(container.textContent).not.toMatch(/\$0\.00/);
+    expect(container.textContent).not.toMatch(/\$0\.000/);
+    expect(container.textContent).toMatch(/Daten fehlen/);
+    expect(container.textContent).toMatch(/veraltet/);
+    expect(container.textContent).toMatch(/€80\.00/);
+  });
+
   it('ClientBreakevenCalculator renders bare with data', () => {
     const { container } = render(<ClientBreakevenCalculator />);
 
