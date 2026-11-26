@@ -54,3 +54,36 @@ test('market signal helpers centralize dashboard, reserve, and signal semantics'
   assert.equal(getAirlineDecisionSignalLabel('capacity_stress_dominant'), 'Capacity stress dominant');
   assert.equal(getPathwayStatusLabel('premium'), 'Fossil still advantaged');
 });
+
+test('missing jet price values produce no jet-price alert', async () => {
+  const { computeDashboardAlertBanners } = await importWebLib('apps/web/lib/market-signals.ts');
+
+  assert.deepEqual(computeDashboardAlertBanners({ values: {} }, undefined), []);
+  assert.deepEqual(
+    computeDashboardAlertBanners(
+      { values: { jet_eu_proxy_usd_per_l: null, jet_usd_per_l: null } },
+      undefined
+    ),
+    []
+  );
+});
+
+test('jet price alert falls back to direct value when proxy is missing', async () => {
+  const { computeDashboardAlertBanners } = await importWebLib('apps/web/lib/market-signals.ts');
+
+  const banners = computeDashboardAlertBanners({ values: { jet_usd_per_l: 1.31 } }, undefined);
+
+  assert.equal(banners.length, 1);
+  assert.equal(banners[0].title, 'Jet Fuel Price Alert');
+});
+
+test('jet price alert prefers the proxy value over the direct value', async () => {
+  const { computeDashboardAlertBanners } = await importWebLib('apps/web/lib/market-signals.ts');
+
+  const banners = computeDashboardAlertBanners(
+    { values: { jet_eu_proxy_usd_per_l: 1.25, jet_usd_per_l: 1.4 } },
+    undefined
+  );
+
+  assert.deepEqual(banners, []);
+});

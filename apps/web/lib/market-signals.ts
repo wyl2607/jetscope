@@ -1,4 +1,4 @@
-import type { DashboardReadModel } from '@/lib/product-read-model';
+import { resolveSnapshotMetric, type DashboardReadModel } from '@/lib/product-read-model';
 
 function envNumber(name: string, defaultValue: number): number {
   const raw = process.env[name];
@@ -33,8 +33,8 @@ export function computeDashboardAlertBanners(
   const banners: AlertBanner[] = [];
   const values = market?.values ?? {};
 
-  const jetEu = values.jet_eu_proxy_usd_per_l ?? values.jet_usd_per_l ?? 0;
-  if (Number.isFinite(jetEu) && jetEu >= JET_PRICE_ALERT_THRESHOLD_USD_PER_L) {
+  const jetEu = resolveSnapshotMetric(values, 'jet_eu_proxy_usd_per_l', 'jet_usd_per_l').value;
+  if (jetEu != null && jetEu >= JET_PRICE_ALERT_THRESHOLD_USD_PER_L) {
     banners.push({
       level: 'alert',
       title: 'Jet Fuel Price Alert',
