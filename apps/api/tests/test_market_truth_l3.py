@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.base import Base
@@ -38,6 +38,13 @@ def _default_numbers() -> list[float]:
         float(market_service.DEFAULT_CARBON_PROXY_USD_PER_T),
         float(market_service.DEFAULT_JET_EU_PROXY_USD_PER_L),
     ]
+
+
+def _stub_live_sources(monkeypatch, sources: dict[str, dict[str, object]]) -> None:
+    def stub_ingest() -> tuple[dict[str, float | None], str, dict[str, object]]:
+        return {}, "degraded", {"sources": sources, "overall": "degraded"}
+
+    monkeypatch.setattr(market_service, "_ingest_live_market_values", stub_ingest)
 
 
 def test_all_sources_down_marks_every_metric_missing_without_seeds(monkeypatch) -> None:
@@ -177,3 +184,114 @@ def test_health_is_false_when_jet_and_brent_are_missing(monkeypatch) -> None:
     assert health.healthy is False
     assert "jet_missing" in health.reasons
     assert "brent_missing" in health.reasons
+
+
+def test_partial_refresh_keeps_seed_only_metrics_missing(monkeypatch) -> None:
+    db = _session()
+    market_service.seed_market_snapshot_set(db)
+    now = datetime.now(UTC)
+    _stub_live_sources(
+        monkeypatch,
+        {
+            "brent": {
+                "source": "eia",
+                "status": "ok",
+                "quality": "observed",
+                "value": 81.5,
+                "observed_at": now.isoformat(),
+                "fetched_at": now.isoformat(),
+            }
+        },
+    )
+
+    market_service.refresh_market_snapshot_set(db)
+    snapshot = market_service.build_market_snapshot_response(db)
+
+    brent = snapshot.source_details["brent"]
+    assert brent.status == "live"
+    assert brent.value == 81.5
+    assert snapshot.values["brent_usd_per_bbl"] == 81.5
+
+    for metric_key in (
+        "jet_usd_per_l",
+        "carbon_proxy_usd_per_t",
+        "eu_ets_price_eur_per_t",
+        "usd_per_eur",
+        "germany_premium_pct",
+    ):
+        assert snapshot.values[metric_key] is None
+
+    jet = snapshot.source_details["jet"]
+    assert jet.status == "missing"
+    assert jet.value is None
+    for number in _default_numbers():
+        assert number not in snapshot.values.values()
+
+    persisted_seed_values = db.scalars(
+        select(MarketSnapshot.value).where(MarketSnapshot.metric_key == "jet_usd_per_l")
+    ).all()
+    assert market_service.DEFAULT_JET_USD_PER_L in persisted_seed_values
+
+
+def test_fresh_fetch_with_stale_observation_stays_stale(monkeypatch) -> None:
+    db = _session()
+    now = datetime.now(UTC)
+    observed_at = now - timedelta(days=12)
+    _stub_live_sources(
+        monkeypatch,
+        {
+            "brent": {
+                "source": "eia",
+                "status": "ok",
+                "quality": "observed",
+                "value": 79.25,
+                "observed_at": observed_at.isoformat(),
+                "fetched_at": now.isoformat(),
+            }
+        },
+    )
+
+    market_service.refresh_market_snapshot_set(db)
+    snapshot = market_service.build_market_snapshot_response(db)
+
+    brent = snapshot.source_details["brent"]
+    assert brent.status == "stale"
+    assert brent.value == 79.25
+    assert brent.as_of is not None
+    assert brent.as_of.date() == observed_at.date()
+    assert brent.observed_at == observed_at
+    assert brent.fetched_at is not None
+    assert brent.fetched_at > brent.observed_at
+    assert brent.fetched_at.date() == now.date()
+    assert snapshot.values["brent_usd_per_bbl"] == 79.25
+
+
+def test_fresh_fetch_with_expired_observation_is_missing_even_with_seeds(monkeypatch) -> None:
+    db = _session()
+    market_service.seed_market_snapshot_set(db)
+    now = datetime.now(UTC)
+    observed_at = now - timedelta(days=20)
+    _stub_live_sources(
+        monkeypatch,
+        {
+            "brent": {
+                "source": "eia",
+                "status": "ok",
+                "quality": "observed",
+                "value": 82.0,
+                "observed_at": observed_at.isoformat(),
+                "fetched_at": now.isoformat(),
+            }
+        },
+    )
+
+    market_service.refresh_market_snapshot_set(db)
+    snapshot = market_service.build_market_snapshot_response(db)
+
+    brent = snapshot.source_details["brent"]
+    assert brent.status == "missing"
+    assert brent.value is None
+    assert brent.as_of is None
+    assert snapshot.values["brent_usd_per_bbl"] is None
+    for number in _default_numbers():
+        assert number not in snapshot.values.values()
