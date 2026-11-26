@@ -90,13 +90,13 @@ export type SafAllowanceBasis = {
 
 export type TippingPointReadModel = {
   generatedAt: string | null;
-  effectiveFossilJetUsdPerL: number;
+  effectiveFossilJetUsdPerL: number | null;
   signal: string;
   inputs: {
-    fossilJetUsdPerL: number;
-    carbonPriceEurPerT: number;
-    subsidyUsdPerL: number;
-    blendRatePct: number;
+    fossilJetUsdPerL: number | null;
+    carbonPriceEurPerT: number | null;
+    subsidyUsdPerL: number | null;
+    blendRatePct: number | null;
   };
   pathways: PathwayCostRow[];
 };
@@ -335,13 +335,13 @@ export function toTippingPointReadModel(
       });
   return {
     generatedAt: response.generated_at,
-    effectiveFossilJetUsdPerL: response.effective_fossil_jet_usd_per_l ?? 0,
+    effectiveFossilJetUsdPerL: finiteNumberOrNull(response.effective_fossil_jet_usd_per_l),
     signal: response.signal ?? 'fossil_still_advantaged',
     inputs: {
-      fossilJetUsdPerL: response.inputs?.fossil_jet_usd_per_l ?? 0,
-      carbonPriceEurPerT: response.inputs?.carbon_price_eur_per_t ?? 0,
-      subsidyUsdPerL: response.inputs?.subsidy_usd_per_l ?? 0,
-      blendRatePct: response.inputs?.blend_rate_pct ?? 0,
+      fossilJetUsdPerL: finiteNumberOrNull(response.inputs?.fossil_jet_usd_per_l),
+      carbonPriceEurPerT: finiteNumberOrNull(response.inputs?.carbon_price_eur_per_t),
+      subsidyUsdPerL: finiteNumberOrNull(response.inputs?.subsidy_usd_per_l),
+      blendRatePct: finiteNumberOrNull(response.inputs?.blend_rate_pct),
     },
     pathways: (response.pathways ?? []).map((row) => toPathwayCostRow(row, pathwayOpts)),
   };
